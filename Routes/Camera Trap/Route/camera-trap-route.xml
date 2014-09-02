@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+    xsi:schemaLocation="
+http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
+
+    <!--FIXME: Add route IDs to all routes and sub-routes -->
+    <!--
+        TODO: Add Deployment Metadata backport
+    -->
+    <camelContext xmlns="http://camel.apache.org/schema/blueprint" >
+        <route id="TestFileRoute">
+            <from uri="file:Process?moveFailed=Error_CamelTrap&amp;delete=true"/>
+            <log message="Starting Camera Trap Process" /> 
+            <to uri="extractor:extract?location=CameraTrapData" />
+            <transform>
+                <simple>deployment_manifest.xml</simple>
+            </transform>
+            <to uri="reader:file?type=text" />
+            <to uri="direct:process" />
+        </route>
+        <route id="TestProcessManifest">
+            <from uri="direct:process" />
+            <log message="Starting Data processing... " /> 
+            <!--
+                TODO: Get the required number of PIDs from Fedora    
+                
+                TODO: Determin 'owner' of data and ensure that it is 'set' when
+                      inserting data into Fedora
+
+                FIXME: Figure out best way to propogate the PIDs thru the system
+                ??? Store PIDs in manifest.xml as attributes ???
+                ??? Test to see if this doesn't mess up the xsl transforms ???
+                ~~~ or ~~~
+                ??? Add as Camel header if the above doesn't work ???
+            -->
+            <multicast>
+                <to uri="direct:manifest" />
+                <to uri="direct:researcher" />
+                <to uri="direct:volunteer" />
+                <to uri="direct:processImages" />
+            </multicast>
+            <log message="Finished Data processing!" /> 
+        </route>
+        <route>
+            <from uri="direct:manifest" />
+            <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
+            <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
+            <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
+            <!--
+                TODO: Collect all the resource PIDs and format into RDF
+                
+                TODO: Create XML document with resources and transformed manifest
+                
+                TODO: Change the following to insert manifest into Fedora
+            -->
+            <to uri="file://CameraTrapOutput?fileName=newManifest.xml" />
+            <log message="Manifest translated" /> 
+        </route>
+        <route>
+            <from uri="direct:researcher" />
+            <to uri="xslt:file:Input/xslt/researcher.xsl"/>
+            <to uri="file://CameraTrapOutput?fileName=ResearcherObservations.xml" />
+            <!--
+                TODO: Change the following to insert obervations into Fedora
+            -->
+            <log message="Researcher's Observation file created" /> 
+        </route>
+        <route id="TransformVolunteerData" >
+            <from uri="direct:volunteer" />
+            <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
+            <to uri="file://CameraTrapOutput?fileName=VolunteerObservations.xml" />
+            <!--
+                TODO: Change the following to insert obervations into Fedora
+            -->
+            <log message="Volunteer's Observation file created" /> 
+        </route>
+        <route id="ProcessImages" >
+            <from uri="direct:processImages" /> 
+            <log message="Starting Image processing..." /> 
+            <split>
+                <xpath>//ImageFileName/text()</xpath>
+                <to uri="reader:file" />
+                <to uri="direct:transformImage" />
+            </split> 
+            <!--
+                TODO: Aggergate Image process information (paths to files) and FITS output
+                      and insert into Fedora
+            --> 
+            <log message="Finished processing Images" />           
+        </route>
+        <route id="TransformImages">
+            <from uri="direct:transformImage" />
+            <multicast>
+                <to uri="direct:createThumbnail" />
+                <to uri="direct:createResampled" />
+                <!--
+                    TODO: Add FITS component to route
+                -->
+            </multicast>
+            <log message="Image processed" />
+        </route>
+        <route id="CreateThumbnailImage" >
+            <from uri="direct:createThumbnail" />
+            <to uri="thumbnailator:image?keepRatio=false&amp;size=(72,96)"/>
+            <to uri="file://CameraTrapOutput/thumbnail" />
+        </route>
+        <route id="CreateResampledImage">
+            <from uri="direct:createResampled" />
+            <!--
+                NOTE: This might not be needed
+
+                FIXME: Figure out what the Drush scripts are doing to 'normalized'
+                      the image. Based on conversation with Dan didn't sound like
+                      it was changing the quality of the original
+                FIXME: If 'normalized' image is needed and should be the same
+                       size as the original, remove size requirement from route
+            -->
+            <to uri="thumbnailator:image?quality=80%&amp;size=(2048,1536)"/>
+            <to uri="file://CameraTrapOutput/resample" />
+        </route>
+    </camelContext>
+        
+</blueprint>
