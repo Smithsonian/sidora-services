@@ -11,7 +11,7 @@ public class FedoraComponentIntegrationTest extends CamelTestSupport
 {
 
     //TODO: Add purge to end of all routes to remove test objects
-//    @Test
+    @Test
     public void testGetNextPid() throws Exception
     {
         MockEndpoint mock = getMockEndpoint("mock:result");
@@ -31,7 +31,7 @@ public class FedoraComponentIntegrationTest extends CamelTestSupport
 
     }
 
-//    @Test
+    @Test
     public void testIngestWithPid() throws Exception
     {
         MockEndpoint mock = getMockEndpoint("mock:result");
@@ -46,7 +46,7 @@ public class FedoraComponentIntegrationTest extends CamelTestSupport
         assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
     }
 
-//    @Test
+    @Test
     public void testIngest() throws Exception
     {
         MockEndpoint mock = getMockEndpoint("mock:result");
@@ -61,7 +61,6 @@ public class FedoraComponentIntegrationTest extends CamelTestSupport
         assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
     }
 
-    //FedoraClient.addDatastream(pid, "OBJ").content(new FileInputStream(image)).mimeType("image/jpeg").controlGroup("M").execute(client);
     @Test
     public void testDatastream() throws Exception
     {
