@@ -17,7 +17,8 @@ import org.apache.camel.impl.DefaultEndpoint;
  */
 public class FedoraDatastreamEndpoint extends DefaultEndpoint
 {
-
+    //TODO: Add owner...
+    //TODO: Create Fedora(Base|Default)Endpoint that has options like pid, owner, ...?...
     private String pid;
     private String name;
     private String type;

@@ -35,6 +35,7 @@ public class FedoraDatastreamProducer extends DefaultProducer
     @Override
     public void process(Exchange exchange) throws Exception
     {
+        //TODO: Add owner!
         Message in = exchange.getIn();
         InputStream body = in.getBody(InputStream.class);
 
@@ -50,22 +51,26 @@ public class FedoraDatastreamProducer extends DefaultProducer
 
         if (pid == null)
         {
-            throw new RuntimeException("fedora:datastream producer requires a parent PID");
-        }
+            pid = exchange.getIn().getHeader("CamelFedoraPid", String.class);
+            if (pid == null)
+            {
+                throw new RuntimeException("fedora:datastream producer requires a parent PID");
+            }//end if
+        }//end if
         else if (name == null)
         {
             throw new RuntimeException("fedora:datastream producer requires a Datastream name");
-        }
+        }//end else if
         else if (type == null)
         {
             //TODO: Needed if Body is string ... could default
             //TODO: Needed if Body is File... could type be determined? (Didn't work first time when testing... try again?)
             throw new RuntimeException("fedora:datastream producer requires a Datastream type");
-        }
+        }//end else if
         else if (group == null)
         {
             throw new RuntimeException("fedora:datastream producer requires a Datastream control group");
-        }
+        }//end else if
 
         AddDatastream datastream = FedoraClient.addDatastream(pid, name).content(body).mimeType(type).controlGroup(group);
 
@@ -73,6 +78,8 @@ public class FedoraDatastreamProducer extends DefaultProducer
 
         Map<String, Object> headers = in.getHeaders();
         headers.put("CamelFedoraStatus", response.getStatus());
+
+        LOG.debug(String.format("Datastream: %s (%s) Status = %d [Mime Type = %s Control Group = %s]", name, pid, response.getStatus(), type, group));
 
         Message out = exchange.getOut();
         out.setHeaders(headers);

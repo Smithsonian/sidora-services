@@ -38,7 +38,7 @@ class FedoraIngestProducer extends DefaultProducer
         Message in = exchange.getIn();
         String pid = this.endpoint.getPid();
 
-        Ingest ingest = null;
+        Ingest ingest;
 
         //??? Add the ability to get the PID from header also???
         if (pid == null || pid.isEmpty())
@@ -55,6 +55,8 @@ class FedoraIngestProducer extends DefaultProducer
         Map<String, Object> headers = in.getHeaders();
         headers.put("CamelFedoraPid", response.getPid());
         headers.put("CamelFedoraStatus", response.getStatus());
+
+        LOG.debug(String.format("Ingest: Pid = %s Status = %d", response.getPid(), response.getStatus()));
 
         Message out = exchange.getOut();
         out.setHeaders(headers);

@@ -45,7 +45,10 @@ class FedoraPidProducer extends DefaultProducer
             Message in = exchange.getIn();
             Map<String, Object> headers = in.getHeaders();
 
+            //TODO: Make CamelFedoraPid a constant... where?
             headers.put("CamelFedoraPid", pid.getPid());
+
+            LOG.debug(String.format("Pid: %s Status = %d", pid.getPid(), pid.getStatus()));
 
             Message out = exchange.getOut();
 
