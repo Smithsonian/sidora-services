@@ -5,7 +5,6 @@
 
 package com.asoroka.sidora.datatype;
 
-import static com.asoroka.sidora.datatype.Namespaces.XML_DATATYPES_NAMESPACE;
 import static com.google.common.base.Suppliers.memoize;
 import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Sets.filter;
@@ -14,6 +13,7 @@ import static java.util.Collections.max;
 import static java.util.EnumSet.allOf;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
+import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 import static org.joda.time.format.ISODateTimeFormat.dateParser;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -35,7 +35,7 @@ import com.google.common.base.Supplier;
  */
 public enum DataType {
 
-    String(XML_DATATYPES_NAMESPACE + "string", null) {
+    String(W3C_XML_SCHEMA_NS_URI + "string", null) {
 
         /*
          * Anything can be parsed as merely a String.
@@ -53,7 +53,7 @@ public enum DataType {
             return EnumSet.of((DataType) this);
         }
     },
-    Decimal(XML_DATATYPES_NAMESPACE + "decimal", String) {
+    Decimal(W3C_XML_SCHEMA_NS_URI + "decimal", String) {
 
         @Override
         public boolean canParse(final String s) {
@@ -63,7 +63,7 @@ public enum DataType {
             return Integer.canParse(parts[0]) && Integer.canParse(parts[0]);
         }
     },
-    Integer(XML_DATATYPES_NAMESPACE + "integer", Decimal) {
+    Integer(W3C_XML_SCHEMA_NS_URI + "integer", Decimal) {
 
         @Override
         public boolean canParse(final String s) {
@@ -75,14 +75,14 @@ public enum DataType {
             }
         }
     },
-    NonNegativeInteger(XML_DATATYPES_NAMESPACE + "nonNegativeInteger", Integer) {
+    NonNegativeInteger(W3C_XML_SCHEMA_NS_URI + "nonNegativeInteger", Integer) {
 
         @Override
         public boolean canParse(final String s) {
             return Integer.canParse(s) && (java.lang.Integer.parseInt(s) > -1);
         }
     },
-    PositiveInteger(XML_DATATYPES_NAMESPACE + "positiveInteger", NonNegativeInteger) {
+    PositiveInteger(W3C_XML_SCHEMA_NS_URI + "positiveInteger", NonNegativeInteger) {
 
         @Override
         public boolean canParse(final String s) {
@@ -107,14 +107,14 @@ public enum DataType {
                     });
         }
     },
-    Boolean(XML_DATATYPES_NAMESPACE + "boolean", String) {
+    Boolean(W3C_XML_SCHEMA_NS_URI + "boolean", String) {
 
         @Override
         public boolean canParse(final String s) {
             return BOOLEAN_TRUE.matcher(s).matches() || BOOLEAN_FALSE.matcher(s).matches();
         }
     },
-    DateTime(XML_DATATYPES_NAMESPACE + "dateTime", String) {
+    DateTime(W3C_XML_SCHEMA_NS_URI + "dateTime", String) {
 
         @Override
         public boolean canParse(final String s) {
@@ -140,9 +140,9 @@ public enum DataType {
     public final URI xsdType;
 
     /**
-     * The self-type of this DataType. We must record it because Java does not handle self-types well.
+     * This DataType, recorded because Java doesn't handle lexical "this" as we might like.
      */
-    final DataType selftype = this;
+    final DataType self = this;
 
     /**
      * The immediate supertype of this DataType.
@@ -157,7 +157,7 @@ public enum DataType {
 
         @Override
         public Set<DataType> get() {
-            return EnumSet.of(selftype, EnumSet.of(supertype, supertype.supertypes().toArray(new DataType[0]))
+            return EnumSet.of(self, EnumSet.of(supertype, supertype.supertypes().toArray(new DataType[0]))
                     .toArray(
                             new DataType[0]));
         }
@@ -215,6 +215,17 @@ public enum DataType {
     public boolean isNumeric() {
         return supertypes().contains(Decimal);
     }
+
+    /**
+     * isNumeric() in a {@link Predicate} form for use with collections and streams
+     */
+    public static Predicate<DataType> isNumeric = new Predicate<DataType>() {
+
+        @Override
+        public boolean apply(final DataType t) {
+            return t.isNumeric();
+        }
+    };
 
     private static final Logger log = getLogger(DataType.class);
 

@@ -7,14 +7,6 @@
 	<packaging>pom</packaging>
 	<name>CSV Metadata Generation Facilities</name>
 
-	<contributors>
-		<contributor>
-			<name>A. Soroka</name>
-			<email>ocymum@gmail.com</email>
-			<timezone>-5</timezone>
-		</contributor>
-	</contributors>
-
 	<developers>
 		<developer>
 			<id>ocymum</id>
@@ -51,6 +43,21 @@
 
 	<dependencyManagement>
 		<dependencies>
+
+			<!-- functional utilities and more -->
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>18.0</version>
+			</dependency>
+
+			<!-- dependency injection -->
+			<dependency>
+				<groupId>javax.inject</groupId>
+				<artifactId>javax.inject</artifactId>
+				<version>1</version>
+				<scope>provided</scope>
+			</dependency>
 
 			<!-- logging -->
 			<dependency>
@@ -152,7 +159,11 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-war-plugin</artifactId>
-					<version>2.3</version>
+					<version>2.4</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.17</version>
 				</plugin>
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
@@ -169,23 +180,12 @@
 							<goals>
 								<goal>prepare-agent</goal>
 							</goals>
-
-							<configuration>
-								<destFile>${sonar.jacoco.reportPath}</destFile>
-								<propertyName>jacoco.agent.unit.arg</propertyName>
-								<append>true</append>
-							</configuration>
 						</execution>
 						<execution>
 							<id>default-prepare-agent-integration</id>
 							<goals>
 								<goal>prepare-agent-integration</goal>
 							</goals>
-							<configuration>
-								<destFile>${sonar.jacoco.itReportPath}</destFile>
-								<propertyName>jacoco.agent.it.arg</propertyName>
-								<append>true</append>
-							</configuration>
 						</execution>
 						<execution>
 							<id>default-report</id>
@@ -198,6 +198,29 @@
 							<goals>
 								<goal>report-integration</goal>
 							</goals>
+						</execution>
+						<execution>
+							<id>default-check</id>
+							<goals>
+								<goal>check</goal>
+							</goals>
+							<configuration>
+								<rules>
+									<rule>
+										<element>CLASS</element>
+										<excludes>
+											<exclude>*Test</exclude>
+										</excludes>
+										<limits>
+											<limit>
+												<counter>INSTRUCTION</counter>
+												<value>COVEREDRATIO</value>
+												<minimum>0.80</minimum>
+											</limit>
+										</limits>
+									</rule>
+								</rules>
+							</configuration>
 						</execution>
 					</executions>
 				</plugin>
@@ -213,10 +236,6 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>versions-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>

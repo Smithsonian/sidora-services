@@ -15,11 +15,12 @@ import com.asoroka.sidora.datatype.DataType;
 /**
  * @author ajs6f
  */
-public abstract class RunningMinMaxHeuristic implements TypeDeterminationHeuristic {
+public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>> implements
+        TypeDeterminationHeuristic<T> {
 
-    protected Float numericMinimum;
+    protected Float numericMinimum = null;
 
-    protected Float numericMaximum;
+    protected Float numericMaximum = null;
 
     /*
      * (non-Javadoc)
@@ -36,11 +37,6 @@ public abstract class RunningMinMaxHeuristic implements TypeDeterminationHeurist
         return mostLikelyType(value).isNumeric();
     }
 
-    @Override
-    public boolean isLikelyNumeric() {
-        return mostLikelyType().isNumeric();
-    }
-
     /*
      * (non-Javadoc)
      * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#addValue(java.lang.String)
@@ -49,8 +45,8 @@ public abstract class RunningMinMaxHeuristic implements TypeDeterminationHeurist
     public void addValue(final String value) {
         if (isLikelyNumeric(value)) {
             final float floatValue = parseFloat(value);
-            numericMinimum = min(numericMinimum, floatValue);
-            numericMaximum = max(numericMaximum, floatValue);
+            numericMinimum = (numericMinimum == null) ? floatValue : min(numericMinimum, floatValue);
+            numericMaximum = (numericMaximum == null) ? floatValue : max(numericMaximum, floatValue);
         }
 
     }
@@ -61,7 +57,7 @@ public abstract class RunningMinMaxHeuristic implements TypeDeterminationHeurist
      */
     @Override
     public Float getNumericMaximum() {
-        if (isLikelyNumeric()) {
+        if (mostLikelyType().isNumeric()) {
             return numericMaximum;
         }
         throw new NotANumericFieldException();
@@ -73,10 +69,17 @@ public abstract class RunningMinMaxHeuristic implements TypeDeterminationHeurist
      */
     @Override
     public Float getNumericMinimum() {
-        if (isLikelyNumeric()) {
+        if (mostLikelyType().isNumeric()) {
             return numericMinimum;
         }
         throw new NotANumericFieldException();
     }
+
+    /*
+     * (non-Javadoc)
+     * @see java.lang.Object#clone()
+     */
+    @Override
+    abstract public T clone();
 
 }
