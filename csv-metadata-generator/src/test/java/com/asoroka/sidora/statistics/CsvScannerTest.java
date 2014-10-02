@@ -88,6 +88,50 @@ public class CsvScannerTest {
     }
 
     @Test
+    public void testStrictOperationWithLimitedScan() throws IOException {
+        final ArrayList<DataType> expectedResults = newArrayList(PositiveInteger, String, Boolean, DateTime);
+        final CsvScanner testScanner;
+        try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
+            log.debug("Found header map: {}", parser.getHeaderMap());
+            testScanner = new CsvScanner(parser, new StrictHeuristic());
+            testScanner.scan(2);
+        }
+        final List<DataType> guesses = new ArrayList<>();
+        int i = 0;
+        for (final TypeDeterminationHeuristic<?> strategy : testScanner.getStrategies()) {
+            final DataType guess = strategy.mostLikelyType();
+            log.debug("I think column {} is of type: {}", i++, guess);
+            guesses.add(guess);
+        }
+        assertEquals("Failed to find the correct column types!", expectedResults, guesses);
+        assertEquals("Didn't find the right number of numeric datatypes!", 1, size(filter(guesses,
+                isNumeric)));
+        final RunningMinMaxHeuristic<?> firstColumnStrategy =
+                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(0);
+        final RunningMinMaxHeuristic<?> secondColumnStrategy =
+                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(1);
+        assertTrue("Didn't find first column to be numeric!", firstColumnStrategy.mostLikelyType().isNumeric());
+        assertEquals("Didn't find the proper maximum in the first column!", (Float) 3F, firstColumnStrategy
+                .getNumericMaximum());
+        assertEquals("Didn't find the proper minimum in the first column!", (Float) 1F, firstColumnStrategy
+                .getNumericMinimum());
+        assertFalse("Found second column to be numeric when it should not be!", secondColumnStrategy.mostLikelyType()
+                .isNumeric());
+        try {
+            secondColumnStrategy.getNumericMaximum();
+            fail();
+        } catch (final NotANumericFieldException e) {
+            // expected
+        }
+        try {
+            secondColumnStrategy.getNumericMinimum();
+            fail();
+        } catch (final NotANumericFieldException e) {
+            // expected
+        }
+    }
+
+    @Test
     public void testFractionalOperation() throws IOException {
         final ArrayList<DataType> expectedResults = newArrayList(PositiveInteger, String, Boolean, DateTime);
         final CsvScanner testScanner;
@@ -117,17 +161,5 @@ public class CsvScannerTest {
                 .getNumericMinimum());
         assertFalse("Found second column to be numeric when it should not be!", secondColumnStrategy.mostLikelyType()
                 .isNumeric());
-        try {
-            secondColumnStrategy.getNumericMaximum();
-            fail();
-        } catch (final NotANumericFieldException e) {
-            // expected
-        }
-        try {
-            secondColumnStrategy.getNumericMinimum();
-            fail();
-        } catch (final NotANumericFieldException e) {
-            // expected
-        }
     }
 }
