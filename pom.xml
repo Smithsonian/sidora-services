@@ -28,8 +28,8 @@
 	<distributionManagement>
 		<site>
 			<id>gh-pages</id>
-			<name>Deployment through GitHub's site deployment plugin</name>
-			<url>site/${project.version}</url>
+			<name>Deployment through GitHub's ghPages</name>
+			<url>scm:git:ssh://git@github.com/ocymum/csv-metadata.git</url>
 		</site>
 	</distributionManagement>
 
@@ -77,6 +77,12 @@
 				<groupId>junit</groupId>
 				<artifactId>junit</artifactId>
 				<version>4.11</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-all</artifactId>
+				<version>1.9.5</version>
 				<scope>test</scope>
 			</dependency>
 		</dependencies>
@@ -162,6 +168,10 @@
 					<version>2.4</version>
 				</plugin>
 				<plugin>
+					<artifactId>maven-site-plugin</artifactId>
+					<version>3.4</version>
+				</plugin>
+				<plugin>
 					<artifactId>maven-surefire-plugin</artifactId>
 					<version>2.17</version>
 				</plugin>
@@ -238,6 +248,23 @@
 				<artifactId>versions-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
+		<extensions>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-scm</artifactId>
+				<version>2.7</version>
+			</extension>
+			<extension>
+				<groupId>org.apache.maven.scm</groupId>
+				<artifactId>maven-scm-manager-plexus</artifactId>
+				<version>1.9.2</version>
+			</extension>
+			<extension>
+				<groupId>org.apache.maven.scm</groupId>
+				<artifactId>maven-scm-provider-gitexe</artifactId>
+				<version>1.9.2</version>
+			</extension>
+		</extensions>
 	</build>
 
 	<reporting>
