@@ -163,6 +163,20 @@ public class DataTypeTest {
                 .contains(Decimal));
     }
 
+    public void testBadBothPartsDecimal() {
+        final String testValue = "sgsg.dfgsdfg";
+        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(
+                testValue)
+                .contains(Decimal));
+    }
+
+    public void testCompletelyBadDecimal() {
+        final String testValue = "s24fgsdfg";
+        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(
+                testValue)
+                .contains(Decimal));
+    }
+
     @SafeVarargs
     private static <E> ArrayList<E> _(final E... es) {
         return newArrayList(es);

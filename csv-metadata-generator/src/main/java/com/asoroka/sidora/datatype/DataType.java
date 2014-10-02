@@ -59,8 +59,8 @@ public enum DataType {
         public boolean canParse(final String s) {
             final java.lang.String[] parts = s.split("\\.");
             if (parts.length > 2) return false;
-            if (parts.length == 0) return Integer.canParse(s);
-            return Integer.canParse(parts[0]) && Integer.canParse(parts[0]);
+            if (parts.length == 1) return Integer.canParse(s);
+            return Integer.canParse(parts[0]) && Integer.canParse(parts[1]);
         }
     },
     Integer(W3C_XML_SCHEMA_NS_URI + "integer", Decimal) {
