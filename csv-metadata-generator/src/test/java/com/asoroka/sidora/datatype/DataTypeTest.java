@@ -21,6 +21,8 @@ import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Collections.sort;
 import static java.util.EnumSet.of;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.ArrayList;
@@ -129,6 +131,36 @@ public class DataTypeTest {
         listInCorrectSorting = _(String, Boolean);
         sort(listToBeSorted, orderingByHierarchy);
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
+    }
+
+    @Test
+    public void testBadGeographies() {
+        String testValue = "23, 23, 23, 23";
+        assertFalse("Accepted a four-valued tuple as geographic coordinates!", parseableAs(testValue)
+                .contains(Geographic));
+        testValue = "23";
+        assertFalse("Accepted a one-valued tuple as geographic coordinates!", parseableAs(testValue)
+                .contains(Geographic));
+    }
+
+    public void testNoDecimalPointDecimal() {
+        final String testValue = "7087";
+        assertTrue("Failed to accept a no-decimal-point number as a legitimate Decimal!", parseableAs(testValue)
+                .contains(Decimal));
+    }
+
+    public void testBadIntegerPartDecimal() {
+        final String testValue = "fhglf.7087";
+        assertFalse("Accepted a \"number\" with non-integral integer part as a legitimate Decimal!", parseableAs(
+                testValue)
+                .contains(Decimal));
+    }
+
+    public void testBadDecimalPartDecimal() {
+        final String testValue = "34235.dfgsdfg";
+        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(
+                testValue)
+                .contains(Decimal));
     }
 
     @SafeVarargs
