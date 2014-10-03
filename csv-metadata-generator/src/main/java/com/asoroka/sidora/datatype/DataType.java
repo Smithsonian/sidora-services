@@ -125,7 +125,7 @@ public enum DataType {
             if (BOOLEAN_TRUE.matcher(s).matches()) {
                 return true;
             }
-            else if (BOOLEAN_FALSE.matcher(s).matches()) {
+            if (BOOLEAN_FALSE.matcher(s).matches()) {
                 return false;
             }
             throw new ParsingException();
@@ -239,9 +239,9 @@ public enum DataType {
 
     // private static final Logger log = getLogger(DataType.class);
 
-    static final Pattern BOOLEAN_TRUE = compile("true", CASE_INSENSITIVE);
+    static final Pattern BOOLEAN_TRUE = compile("true|t", CASE_INSENSITIVE);
 
-    static final Pattern BOOLEAN_FALSE = compile("false", CASE_INSENSITIVE);
+    static final Pattern BOOLEAN_FALSE = compile("false|f", CASE_INSENSITIVE);
 
     static final Function<java.lang.String, Float> string2float = new Function<String, Float>() {
 
