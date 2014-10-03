@@ -1,34 +1,41 @@
 
 package com.asoroka.sidora.datatype;
 
+import static java.util.Arrays.asList;
+
+import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.collect.Ordering;
 
 /**
  * @author ajs6f
  */
-public class GeographicValue {
+public class GeographicValue implements Comparable<GeographicValue> {
 
-    public Float firstCoordinate, secondCoordinate, thirdCoordinate;
+    private static final Ordering<Iterable<Float>> ordering = Ordering.<Float> natural().lexicographical();
 
-    /**
-     * @param coordinates
-     */
-    public GeographicValue(final Float... coordinates) {
-        if (coordinates.length < 2 || coordinates.length > 3) {
-            throw new IllegalArgumentException();
-        }
-        this.firstCoordinate = coordinates[0];
-        this.secondCoordinate = coordinates[1];
-        if (coordinates.length == 3) {
-            this.thirdCoordinate = coordinates[2];
-        }
-    }
+    public List<Float> coordinates = new ArrayList<>();
 
     /**
      * @param coordinates
      */
     public GeographicValue(final List<Float> coordinates) {
-        this(coordinates.toArray(new Float[0]));
+        if (coordinates.size() < 2 || coordinates.size() > 3) {
+            throw new IllegalArgumentException();
+        }
+        this.coordinates = coordinates;
     }
 
+    /**
+     * @param coordinates
+     */
+    public GeographicValue(final Float... coordinates) {
+        this(asList(coordinates));
+    }
+
+    @Override
+    public int compareTo(final GeographicValue o) {
+        return ordering.compare(this.coordinates, o.coordinates);
+    }
 }

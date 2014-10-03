@@ -190,7 +190,7 @@ public enum DataType {
      * @return s parsed into this DataType
      * @throws ParsingException
      */
-    abstract public <T> T parse(final String s) throws ParsingException;
+    abstract public <T extends Comparable<T>> T parse(final String s) throws ParsingException;
 
     /**
      * @param s A value to parse
@@ -228,13 +228,6 @@ public enum DataType {
      */
     public static DataType firstMostRestrictiveType(final Collection<DataType> types) {
         return max(types, orderingByHierarchy);
-    }
-
-    /**
-     * @return Can this be considered a numeric type?
-     */
-    public boolean isComparable() {
-        return supertypes().contains(Decimal);
     }
 
     // private static final Logger log = getLogger(DataType.class);

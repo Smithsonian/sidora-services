@@ -14,7 +14,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +32,7 @@ public abstract class CountAggregatingHeuristicTestFrame<T extends CountAggregat
     {
         {
             // these are all good (parseable) values for the datatype to which they are assigned
-            goodValues = new HashMap<>(DataType.values().length);
+            goodValues = new EnumMap<>(DataType.class);
             goodValues.put(String, of("Jane", "John", "Sarah", "Simon"));
             goodValues.put(Decimal, of("0", "0.1", "-1", "34.345"));
             goodValues.put(Integer, of("0", "1", "-1 ", "34"));
@@ -44,7 +44,7 @@ public abstract class CountAggregatingHeuristicTestFrame<T extends CountAggregat
                     "2014-09-30T18:58:45Z"));
 
             // copy the good values for reuse
-            oneBadValue = new HashMap<>(DataType.values().length);
+            oneBadValue = new EnumMap<>(DataType.class);
             for (final DataType type : DataType.values()) {
                 oneBadValue.put(type, newArrayList(goodValues.get(type)));
 

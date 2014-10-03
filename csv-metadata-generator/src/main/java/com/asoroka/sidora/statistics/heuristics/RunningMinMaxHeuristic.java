@@ -6,13 +6,16 @@
 package com.asoroka.sidora.statistics.heuristics;
 
 import static com.asoroka.sidora.datatype.DataType.firstMostRestrictiveType;
-import static java.lang.Float.parseFloat;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import static com.google.common.collect.Ordering.natural;
+import static org.slf4j.LoggerFactory.getLogger;
 
+import java.util.EnumMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+
 import com.asoroka.sidora.datatype.DataType;
+import com.asoroka.sidora.datatype.ParsingException;
 
 /**
  * @author ajs6f
@@ -20,11 +23,11 @@ import com.asoroka.sidora.datatype.DataType;
 public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>> implements
         TypeDeterminationHeuristic<T> {
 
-    protected Map<DataType, Object> minimums;
+    protected Map<DataType, Comparable<?>> minimums = new EnumMap<>(DataType.class);
 
-    protected Float numericMinimum = null;
+    protected Map<DataType, Comparable<?>> maximums = new EnumMap<>(DataType.class);
 
-    protected Float numericMaximum = null;
+    private static final Logger log = getLogger(RunningMinMaxHeuristic.class);
 
     /*
      * (non-Javadoc)
@@ -37,52 +40,37 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
         return firstMostRestrictiveType(DataType.parseableAs(value));
     }
 
-    protected static boolean isLikelyComparable(final String value) {
-        return mostLikelyType(value).isComparable();
-    }
-
     /*
      * (non-Javadoc)
      * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#addValue(java.lang.String)
      */
     @Override
-    public void addValue(final String value) {
-        if (isLikelyComparable(value)) {
-            final float floatValue = parseFloat(value);
-            numericMinimum = (numericMinimum == null) ? floatValue : min(numericMinimum, floatValue);
-            numericMaximum = (numericMaximum == null) ? floatValue : max(numericMaximum, floatValue);
-        }
+    public void addValue(final String input) {
+        for (final DataType type : DataType.parseableAs(input)) {
+            final Comparable<?> currentMin = minimums.get(type);
+            final Comparable<?> currentMax = maximums.get(type);
+            try {
+                final Comparable<?> value = type.parse(input);
+                minimums.put(type, (currentMin == null) ? value : natural().min(currentMin, value));
+                maximums.put(type, (currentMax == null) ? value : natural().max(currentMax, value));
+            } catch (final ParsingException e) {
+                // NO OP
+            }
 
+        }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#getNumericMaximum()
-     */
     @Override
-    public float getMaximum() {
-        if (mostLikelyType().isComparable()) {
-            return numericMaximum;
-        }
-        throw new NotAComparableFieldException();
+    public <MaxType> MaxType getMaximum() {
+        return (MaxType) maximums.get(mostLikelyType());
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#getNumericMinimum()
-     */
     @Override
-    public float getMinimum() {
-        if (mostLikelyType().isComparable()) {
-            return numericMinimum;
-        }
-        throw new NotAComparableFieldException();
+    public <MinType> MinType getMinimum() {
+        return (MinType) minimums.get(mostLikelyType());
+
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.lang.Object#clone()
-     */
     @Override
     abstract public T clone();
 
