@@ -14,7 +14,7 @@ import static java.util.EnumSet.allOf;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
-import static org.joda.time.format.ISODateTimeFormat.dateParser;
+import static org.joda.time.format.ISODateTimeFormat.dateTimeParser;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.net.URI;
@@ -93,7 +93,7 @@ public enum DataType {
 
         @Override
         public boolean canParse(final String s) {
-            final List<java.lang.String> parts = asList(s.split(","));
+            final List<java.lang.String> parts = asList(s.trim().split(","));
             // we consider only geographic data in two or three coordinates
             if (parts.size() > 3 || parts.size() < 2) return false;
             // are all coordinates proper decimals?
@@ -119,7 +119,7 @@ public enum DataType {
         @Override
         public boolean canParse(final String s) {
             try {
-                dateParser().parseDateTime(s);
+                dateTimeParser().parseDateTime(s);
                 return true;
             }
             catch (final IllegalArgumentException e) {
