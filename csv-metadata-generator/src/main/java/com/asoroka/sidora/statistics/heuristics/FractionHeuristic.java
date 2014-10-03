@@ -13,20 +13,20 @@ import com.asoroka.sidora.datatype.DataType;
 public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeuristic> {
 
     /**
-     * @param fractionOfAllowedNonparseables The fraction of nonparsing values to admit
+     * @param d The fraction of nonparsing values to admit
      */
     @Inject
-    public FractionHeuristic(final @FractionOfNonparsingValues Float fractionOfAllowedNonparseables) {
+    public FractionHeuristic(final @FractionOfNonparsingValues double d) {
         super();
-        this.fractionOfAllowedNonparseables = fractionOfAllowedNonparseables;
+        this.fractionOfAllowedNonparseables = d;
     }
 
-    private final Float fractionOfAllowedNonparseables;
+    private final double fractionOfAllowedNonparseables;
 
     @Override
     protected boolean candidacy(final DataType type) {
-        final float parseableOccurences = typeCounts.get(type) / totalNumValues();
-        return parseableOccurences > (1 - fractionOfAllowedNonparseables);
+        final float parseableOccurence = (float) typeCounts.get(type) / (float) totalNumValues();
+        return parseableOccurence >= (1 - fractionOfAllowedNonparseables);
     }
 
     @Override

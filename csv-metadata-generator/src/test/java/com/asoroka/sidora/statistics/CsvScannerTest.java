@@ -1,21 +1,15 @@
 
 package com.asoroka.sidora.statistics;
 
-import static com.asoroka.sidora.datatype.DataType.Boolean;
-import static com.asoroka.sidora.datatype.DataType.DateTime;
-import static com.asoroka.sidora.datatype.DataType.PositiveInteger;
-import static com.asoroka.sidora.datatype.DataType.String;
-import static com.asoroka.sidora.datatype.DataType.isNumeric;
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.size;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Lists.transform;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -24,142 +18,85 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.csv.CSVParser;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.internal.stubbing.answers.Returns;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.datatype.DataType;
-import com.asoroka.sidora.statistics.heuristics.FractionHeuristic;
-import com.asoroka.sidora.statistics.heuristics.NotANumericFieldException;
-import com.asoroka.sidora.statistics.heuristics.RunningMinMaxHeuristic;
-import com.asoroka.sidora.statistics.heuristics.StrictHeuristic;
 import com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic;
+import com.google.common.base.Function;
 
 public class CsvScannerTest {
 
+    @Mock
+    DataType mockDataType;
+
+    @Mock
+    TypeDeterminationHeuristic<?> mockStrategy;
+
+    /**
+     * The following peculiar locution arises from the need to provide "cloneability" while avoiding a recursive mock
+     * 
+     * @return a cloneable mock {@link TypeDeterminationHeuristic}
+     */
+    private <T extends TypeDeterminationHeuristic<T>> TypeDeterminationHeuristic<T> cloneableMockStrategy() {
+        final TypeDeterminationHeuristic<T> mocked = mock(TypeDeterminationHeuristic.class);
+        when(mocked.mostLikelyType()).thenReturn(mockDataType);
+        final Returns cloner = new Returns(mockStrategy);
+        when(mocked.clone()).thenAnswer(cloner);
+        return mocked;
+    }
+
     private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
 
-    private static final File smalltestfilewithtypos = new File(
-            "src/test/resources/test-data/small-test-with-typos.csv");
+    private ArrayList<DataType> expectedResults;
 
     private static final Logger log = getLogger(CsvScannerTest.class);
 
-    @Test
-    public void testStrictOperation() throws IOException {
-        final ArrayList<DataType> expectedResults = newArrayList(PositiveInteger, String, Boolean, DateTime);
-        final CsvScanner testScanner;
-        try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
-            log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner = new CsvScanner(parser, new StrictHeuristic());
-            testScanner.scan();
-        }
-        final List<DataType> guesses = new ArrayList<>();
-        int i = 0;
-        for (final TypeDeterminationHeuristic<?> strategy : testScanner.getStrategies()) {
-            final DataType guess = strategy.mostLikelyType();
-            log.debug("I think column {} is of type: {}", i++, guess);
-            guesses.add(guess);
-        }
-        assertEquals("Failed to find the correct column types!", expectedResults, guesses);
-        assertEquals("Didn't find the right number of numeric datatypes!", 1, size(filter(guesses,
-                isNumeric)));
-        final RunningMinMaxHeuristic<?> firstColumnStrategy =
-                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(0);
-        final RunningMinMaxHeuristic<?> secondColumnStrategy =
-                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(1);
-        assertTrue("Didn't find first column to be numeric!", firstColumnStrategy.mostLikelyType().isNumeric());
-        assertEquals("Didn't find the proper maximum in the first column!", (Float) 4F, firstColumnStrategy
-                .getNumericMaximum());
-        assertEquals("Didn't find the proper minimum in the first column!", (Float) 1F, firstColumnStrategy
-                .getNumericMinimum());
-        assertFalse("Found second column to be numeric when it should not be!", secondColumnStrategy.mostLikelyType()
-                .isNumeric());
-        try {
-            secondColumnStrategy.getNumericMaximum();
-            fail();
-        } catch (final NotANumericFieldException e) {
-            // expected
-        }
-        try {
-            secondColumnStrategy.getNumericMinimum();
-            fail();
-        } catch (final NotANumericFieldException e) {
-            // expected
-        }
+    /**
+     * Extracts the most likely type selection from a {@link TypeDeterminationHeuristic}
+     */
+    private static final Function<TypeDeterminationHeuristic<?>, DataType> getMostLikelyType =
+            new Function<TypeDeterminationHeuristic<?>, DataType>() {
+
+                @Override
+                public DataType apply(final TypeDeterminationHeuristic<?> heuristic) {
+                    return heuristic.mostLikelyType();
+                }
+            };
+
+    @Before
+    public void setUp() {
+        initMocks(this);
+        expectedResults = newArrayList(mockDataType, mockDataType, mockDataType, mockDataType);
+        when(mockStrategy.mostLikelyType()).thenReturn(mockDataType);
     }
 
     @Test
-    public void testStrictOperationWithLimitedScan() throws IOException {
-        final ArrayList<DataType> expectedResults = newArrayList(PositiveInteger, String, Boolean, DateTime);
+    public void testOperation() throws IOException {
         final CsvScanner testScanner;
         try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
             log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner = new CsvScanner(parser, new StrictHeuristic());
+            testScanner = new CsvScanner(parser, cloneableMockStrategy());
+            testScanner.scan();
+        }
+        final List<DataType> guesses =
+                transform(testScanner.getStrategies(), getMostLikelyType);
+        assertEquals("Failed to find the correct column types!", expectedResults, guesses);
+    }
+
+    @Test
+    public void testOperationWithLimitedScan() throws IOException {
+        final CsvScanner testScanner;
+        try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
+            log.debug("Found header map: {}", parser.getHeaderMap());
+            testScanner = new CsvScanner(parser, cloneableMockStrategy());
             testScanner.scan(2);
         }
-        final List<DataType> guesses = new ArrayList<>();
-        int i = 0;
-        for (final TypeDeterminationHeuristic<?> strategy : testScanner.getStrategies()) {
-            final DataType guess = strategy.mostLikelyType();
-            log.debug("I think column {} is of type: {}", i++, guess);
-            guesses.add(guess);
-        }
+        final List<DataType> guesses =
+                transform(testScanner.getStrategies(), getMostLikelyType);
         assertEquals("Failed to find the correct column types!", expectedResults, guesses);
-        assertEquals("Didn't find the right number of numeric datatypes!", 1, size(filter(guesses,
-                isNumeric)));
-        final RunningMinMaxHeuristic<?> firstColumnStrategy =
-                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(0);
-        final RunningMinMaxHeuristic<?> secondColumnStrategy =
-                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(1);
-        assertTrue("Didn't find first column to be numeric!", firstColumnStrategy.mostLikelyType().isNumeric());
-        assertEquals("Didn't find the proper maximum in the first column!", (Float) 3F, firstColumnStrategy
-                .getNumericMaximum());
-        assertEquals("Didn't find the proper minimum in the first column!", (Float) 1F, firstColumnStrategy
-                .getNumericMinimum());
-        assertFalse("Found second column to be numeric when it should not be!", secondColumnStrategy.mostLikelyType()
-                .isNumeric());
-        try {
-            secondColumnStrategy.getNumericMaximum();
-            fail();
-        } catch (final NotANumericFieldException e) {
-            // expected
-        }
-        try {
-            secondColumnStrategy.getNumericMinimum();
-            fail();
-        } catch (final NotANumericFieldException e) {
-            // expected
-        }
-    }
-
-    @Test
-    public void testFractionalOperation() throws IOException {
-        final ArrayList<DataType> expectedResults = newArrayList(PositiveInteger, String, Boolean, DateTime);
-        final CsvScanner testScanner;
-        try (final CSVParser parser = parse(smalltestfilewithtypos, UTF_8, DEFAULT.withHeader())) {
-            log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner = new CsvScanner(parser, new FractionHeuristic(0.5F));
-            testScanner.scan();
-        }
-        final List<DataType> guesses = new ArrayList<>();
-        int i = 0;
-        for (final TypeDeterminationHeuristic<?> strategy : testScanner.getStrategies()) {
-            final DataType guess = strategy.mostLikelyType();
-            log.debug("I think column {} is of type: {}", i++, guess);
-            guesses.add(guess);
-        }
-        assertEquals("Failed to find the correct column types!", expectedResults, guesses);
-        assertEquals("Didn't find the right number of numeric datatypes!", 1, size(filter(guesses,
-                isNumeric)));
-        final RunningMinMaxHeuristic<?> firstColumnStrategy =
-                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(0);
-        final RunningMinMaxHeuristic<?> secondColumnStrategy =
-                (RunningMinMaxHeuristic<?>) testScanner.getStrategies().get(1);
-        assertTrue("Didn't find first column to be numeric!", firstColumnStrategy.mostLikelyType().isNumeric());
-        assertEquals("Didn't find the proper maximum in the first column!", (Float) 6F, firstColumnStrategy
-                .getNumericMaximum());
-        assertEquals("Didn't find the proper minimum in the first column!", (Float) 1F, firstColumnStrategy
-                .getNumericMinimum());
-        assertFalse("Found second column to be numeric when it should not be!", secondColumnStrategy.mostLikelyType()
-                .isNumeric());
     }
 }

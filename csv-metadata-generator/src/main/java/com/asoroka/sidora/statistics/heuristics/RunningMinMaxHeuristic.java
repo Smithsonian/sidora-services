@@ -56,7 +56,7 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
      * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#getNumericMaximum()
      */
     @Override
-    public Float getNumericMaximum() {
+    public float getNumericMaximum() {
         if (mostLikelyType().isNumeric()) {
             return numericMaximum;
         }
@@ -68,7 +68,7 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
      * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#getNumericMinimum()
      */
     @Override
-    public Float getNumericMinimum() {
+    public float getNumericMinimum() {
         if (mostLikelyType().isNumeric()) {
             return numericMinimum;
         }

@@ -1,6 +1,10 @@
 
 package com.asoroka.sidora.statistics.heuristics;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
+import org.slf4j.Logger;
+
 import com.asoroka.sidora.datatype.DataType;
 
 /**
@@ -11,12 +15,16 @@ import com.asoroka.sidora.datatype.DataType;
  */
 public class StrictHeuristic extends CountAggregatingHeuristic<StrictHeuristic> {
 
+    private static final Logger log = getLogger(StrictHeuristic.class);
+
     /*
      * (non-Javadoc)
      * @see com.asoroka.sidora.statistics.heuristics.CountAggregatingHeuristic#candidacy(java.lang.Float)
      */
     @Override
     protected boolean candidacy(final DataType type) {
+        log.debug("For type {} found {} occurences out of {} total values", type, typeCounts.get(type),
+                totalNumValues());
         return typeCounts.get(type).equals(totalNumValues());
     }
 
@@ -28,4 +36,5 @@ public class StrictHeuristic extends CountAggregatingHeuristic<StrictHeuristic> 
     public StrictHeuristic clone() {
         return new StrictHeuristic();
     }
+
 }

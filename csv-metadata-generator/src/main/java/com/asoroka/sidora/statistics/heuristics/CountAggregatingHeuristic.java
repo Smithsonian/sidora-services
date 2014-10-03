@@ -8,6 +8,7 @@ package com.asoroka.sidora.statistics.heuristics;
 import static com.asoroka.sidora.datatype.DataType.String;
 import static com.asoroka.sidora.datatype.DataType.firstMostRestrictiveType;
 import static com.google.common.collect.Sets.filter;
+import static java.util.Objects.hash;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.EnumMap;
@@ -31,7 +32,7 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     /**
      * In this {@link Map}, we aggregate counts of parseable values for each datatype.
      */
-    protected final EnumMap<DataType, Float> typeCounts = new EnumMap<>(DataType.class);
+    protected final EnumMap<DataType, Integer> typeCounts = new EnumMap<>(DataType.class);
 
     private static final Logger log = getLogger(CountAggregatingHeuristic.class);
 
@@ -40,7 +41,7 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
      */
     public CountAggregatingHeuristic() {
         for (final DataType type : DataType.values()) {
-            typeCounts.put(type, 0F);
+            typeCounts.put(type, 0);
         }
     }
 
@@ -66,7 +67,7 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
      * 
      * @return The total number of values seen so far
      */
-    protected Float totalNumValues() {
+    protected int totalNumValues() {
         return typeCounts.get(String);
     }
 
@@ -89,4 +90,19 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
      */
     @Override
     abstract public T clone();
+
+    @Override
+    public int hashCode() {
+        return hash(typeCounts);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+
+        if (!(CountAggregatingHeuristic.class.isInstance(o))) {
+            return false;
+        }
+        final CountAggregatingHeuristic<?> oo = (CountAggregatingHeuristic<?>) o;
+        return this.hashCode() == (oo.hashCode());
+    }
 }

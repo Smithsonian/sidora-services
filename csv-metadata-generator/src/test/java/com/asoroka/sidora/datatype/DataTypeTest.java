@@ -45,6 +45,8 @@ public class DataTypeTest {
 
     private static Map<DataType, Set<String>> sampleValues;
 
+    private static Map<String, DataType> dataTypeNames;
+
     {
         {
             final ImmutableMap.Builder<DataType, Set<DataType>> b = builder();
@@ -85,6 +87,15 @@ public class DataTypeTest {
             b3.put(DateTime, newHashSet("1990-3-4"));
 
             sampleValues = b3.build();
+
+            final ImmutableMap.Builder<String, DataType> b4 = builder();
+
+            b4.putAll(ImmutableMap.of("PositiveInteger", PositiveInteger, "NonNegativeInteger", NonNegativeInteger,
+                    "Integer", Integer));
+
+            b4.putAll(ImmutableMap.of("Decimal", Decimal, "Geographic", Geographic, "Boolean", Boolean, "DateTime",
+                    DateTime, "String", String));
+            dataTypeNames = b4.build();
         }
     }
 
@@ -175,6 +186,16 @@ public class DataTypeTest {
         assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(
                 testValue)
                 .contains(Decimal));
+    }
+
+    @Test
+    public void testNames() {
+        assertEquals(
+                "Our test datatype names are fewer or greater in number than the number of actual DataTypes!",
+                DataType.values().length, dataTypeNames.size());
+        for (final String name : dataTypeNames.keySet()) {
+            assertEquals(dataTypeNames.get(name), DataType.valueOf(name));
+        }
     }
 
     @SafeVarargs

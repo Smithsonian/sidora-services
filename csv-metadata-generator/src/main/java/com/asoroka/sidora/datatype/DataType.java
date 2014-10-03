@@ -216,17 +216,6 @@ public enum DataType {
         return supertypes().contains(Decimal);
     }
 
-    /**
-     * isNumeric() in a {@link Predicate} form for use with collections and streams
-     */
-    public static Predicate<DataType> isNumeric = new Predicate<DataType>() {
-
-        @Override
-        public boolean apply(final DataType t) {
-            return t.isNumeric();
-        }
-    };
-
     private static final Logger log = getLogger(DataType.class);
 
     static final Pattern BOOLEAN_TRUE = compile("true", CASE_INSENSITIVE);
