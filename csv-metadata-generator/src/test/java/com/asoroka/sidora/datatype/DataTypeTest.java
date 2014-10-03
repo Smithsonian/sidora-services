@@ -79,7 +79,7 @@ public class DataTypeTest {
             b3.put(NonNegativeInteger, newHashSet("0"));
             b3.put(Integer, newHashSet("-1", "-9999"));
             b3.put(Decimal, newHashSet("-5344543.4563453", "6734.999"));
-            b3.put(Geographic, newHashSet("38.03,-78.478889"));
+            b3.put(Geographic, newHashSet("38.03,-78.478889", "38.03,-78.478889, 0"));
             b3.put(Boolean, newHashSet("truE", "falsE", "t", "F"));
             b3.put(String, newHashSet("oobleck"));
             b3.put(DateTime, newHashSet("1990-3-4"));
