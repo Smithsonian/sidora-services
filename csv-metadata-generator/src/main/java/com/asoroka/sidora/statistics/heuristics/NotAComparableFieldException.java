@@ -11,7 +11,7 @@ package com.asoroka.sidora.statistics.heuristics;
  * 
  * @author ajs6f
  */
-public class NotANumericFieldException extends IllegalStateException {
+public class NotAComparableFieldException extends IllegalStateException {
 
     private static final long serialVersionUID = 1L;
 

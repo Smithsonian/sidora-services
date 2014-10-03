@@ -13,7 +13,7 @@ import com.asoroka.sidora.datatype.DataType;
 public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeuristic> {
 
     /**
-     * @param d The fraction of nonparsing values to admit
+     * @param d The fraction of nonparsing values to permit
      */
     @Inject
     public FractionHeuristic(final @FractionOfNonparsingValues double d) {
@@ -21,6 +21,9 @@ public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeurist
         this.fractionOfAllowedNonparseables = d;
     }
 
+    /**
+     * The fraction of nonparsing values to permit.
+     */
     private final double fractionOfAllowedNonparseables;
 
     @Override

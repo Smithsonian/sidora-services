@@ -6,8 +6,10 @@
 package com.asoroka.sidora.datatype;
 
 import static com.google.common.base.Suppliers.memoize;
-import static com.google.common.collect.Iterables.all;
+import static com.google.common.collect.Lists.transform;
 import static com.google.common.collect.Sets.filter;
+import static java.lang.Float.parseFloat;
+import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static java.util.Collections.max;
 import static java.util.EnumSet.allOf;
@@ -25,8 +27,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 
@@ -38,94 +42,107 @@ public enum DataType {
     String(W3C_XML_SCHEMA_NS_URI + "string", null) {
 
         /*
-         * Anything can be parsed as merely a String.
-         */
-        @Override
-        public boolean canParse(final String s) {
-            return true;
-        }
-
-        /*
          * This override indicates that String is the top type.
          */
         @Override
         public Set<DataType> supertypes() {
             return EnumSet.of((DataType) this);
         }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public String parse(final java.lang.String s) {
+            return s;
+        }
+
     },
     Decimal(W3C_XML_SCHEMA_NS_URI + "decimal", String) {
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean canParse(final String s) {
-            final java.lang.String[] parts = s.split("\\.");
-            if (parts.length > 2) return false;
-            if (parts.length == 1) return Integer.canParse(s);
-            return Integer.canParse(parts[0]) && Integer.canParse(parts[1]);
+        public Float parse(final java.lang.String s) throws ParsingException {
+            try {
+                return parseFloat(s);
+            } catch (final NumberFormatException e) {
+                throw new ParsingException(e);
+            }
         }
     },
     Integer(W3C_XML_SCHEMA_NS_URI + "integer", Decimal) {
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean canParse(final String s) {
+        public Integer parse(final java.lang.String s) throws ParsingException {
             try {
-                java.lang.Integer.parseInt(s);
-                return true;
+                return parseInt(s);
             } catch (final NumberFormatException e) {
-                return false;
+                throw new ParsingException(e);
             }
         }
     },
     NonNegativeInteger(W3C_XML_SCHEMA_NS_URI + "nonNegativeInteger", Integer) {
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean canParse(final String s) {
-            return Integer.canParse(s) && (java.lang.Integer.parseInt(s) > -1);
+        public Integer parse(final java.lang.String s) throws ParsingException {
+
+            final Integer value = Integer.parse(s);
+            if (value > -1) {
+                return value;
+            }
+            throw new ParsingException("Value was negative!");
         }
     },
     PositiveInteger(W3C_XML_SCHEMA_NS_URI + "positiveInteger", NonNegativeInteger) {
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean canParse(final String s) {
-            return NonNegativeInteger.canParse(s) && (java.lang.Integer.parseInt(s) > 0);
+        public Integer parse(final java.lang.String s) throws ParsingException {
+            final Integer value = NonNegativeInteger.parse(s);
+            if (value > 0) {
+                return value;
+            }
+            throw new ParsingException("Value was negative!");
         }
     },
     Geographic(null, String) {
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean canParse(final String s) {
-            final List<java.lang.String> parts = asList(s.trim().split(","));
-            // we consider only geographic data in two or three coordinates
-            if (parts.size() > 3 || parts.size() < 2) return false;
-            // are all coordinates proper decimals?
-            return all(parts,
-                    new Predicate<String>() {
-
-                        @Override
-                        public boolean apply(final java.lang.String seg) {
-                            return Decimal.canParse(seg);
-                        }
-                    });
+        public GeographicValue parse(final String s) throws ParsingException {
+            final List<java.lang.Float> parts =
+                    transform(asList(s.trim().split(",")), string2float);
+            try {
+                return new GeographicValue(parts);
+            } catch (final IllegalArgumentException e) {
+                throw new ParsingException(e);
+            }
         }
     },
     Boolean(W3C_XML_SCHEMA_NS_URI + "boolean", String) {
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean canParse(final String s) {
-            return BOOLEAN_TRUE.matcher(s).matches() || BOOLEAN_FALSE.matcher(s).matches();
+        public Boolean parse(final java.lang.String s) throws ParsingException {
+            if (BOOLEAN_TRUE.matcher(s).matches()) {
+                return true;
+            }
+            else if (BOOLEAN_FALSE.matcher(s).matches()) {
+                return false;
+            }
+            throw new ParsingException();
         }
     },
     DateTime(W3C_XML_SCHEMA_NS_URI + "dateTime", String) {
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean canParse(final String s) {
+        public DateTime parse(final java.lang.String s) throws ParsingException {
             try {
-                dateTimeParser().parseDateTime(s);
-                return true;
+                return dateTimeParser().parseDateTime(s);
+            } catch (final IllegalArgumentException e) {
+                throw new ParsingException(e);
             }
-            catch (final IllegalArgumentException e) {
-                return false;
-            }
-
         }
     };
 
@@ -172,9 +189,10 @@ public enum DataType {
 
     /**
      * @param s
-     * @return whether s can be parsed into this DataType
+     * @return s parsed into this DataType
+     * @throws ParsingException
      */
-    abstract public boolean canParse(final String s);
+    abstract public <T> T parse(final String s) throws ParsingException;
 
     /**
      * @param s A value to parse
@@ -185,7 +203,12 @@ public enum DataType {
 
             @Override
             public boolean apply(final DataType t) {
-                return t.canParse(s.trim());
+                try {
+                    t.parse(s.trim());
+                    return true;
+                } catch (final ParsingException e) {
+                    return false;
+                }
             }
         });
     }
@@ -212,7 +235,7 @@ public enum DataType {
     /**
      * @return Can this be considered a numeric type?
      */
-    public boolean isNumeric() {
+    public boolean isComparable() {
         return supertypes().contains(Decimal);
     }
 
@@ -221,5 +244,13 @@ public enum DataType {
     static final Pattern BOOLEAN_TRUE = compile("true", CASE_INSENSITIVE);
 
     static final Pattern BOOLEAN_FALSE = compile("false", CASE_INSENSITIVE);
+
+    static final Function<java.lang.String, Float> string2float = new Function<String, Float>() {
+
+        @Override
+        public Float apply(final java.lang.String seg) {
+            return java.lang.Float.parseFloat(seg);
+        }
+    };
 
 }

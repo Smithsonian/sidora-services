@@ -19,7 +19,7 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
         log.trace("testActionWithGoodValues()...");
         for (final DataType testType : DataType.values()) {
             log.debug("Testing type: {}", testType);
-            testHeuristic = new StrictHeuristic();
+            testHeuristic = newTestInstance();
             for (final String testValue : goodValues.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
@@ -32,7 +32,7 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
     public void testActionWithOneBadValue() {
         log.trace("testActionWithOneBadValue()...");
         for (final DataType testType : oneBadValue.keySet()) {
-            testHeuristic = new StrictHeuristic();
+            testHeuristic = newTestInstance();
             for (final String testValue : oneBadValue.get(testType)) {
                 testHeuristic.addValue(testValue);
             }

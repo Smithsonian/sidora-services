@@ -18,7 +18,7 @@ public class FractionHeuristicTest extends CountAggregatingHeuristicTestFrame<Fr
 
         log.trace("testActionWithGoodValues()...");
         for (final DataType testType : DataType.values()) {
-            testHeuristic = new FractionHeuristic(0.2);
+            testHeuristic = newTestInstance();
             for (final String testValue : goodValues.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
@@ -31,7 +31,7 @@ public class FractionHeuristicTest extends CountAggregatingHeuristicTestFrame<Fr
     public void testActionWithOneBadValue() {
         log.trace("testActionWithOneBadValue()...");
         for (final DataType testType : oneBadValue.keySet()) {
-            testHeuristic = new FractionHeuristic(0.2);
+            testHeuristic = newTestInstance();
             for (final String testValue : oneBadValue.get(testType)) {
                 testHeuristic.addValue(testValue);
             }

@@ -18,23 +18,23 @@ public class RunningMinMaxHeuristicTest {
         for (byte i = 0; i < 10; i++) {
             testStrategy.addValue(String.valueOf(i));
         }
-        assertEquals("Got wrong minimum!", 0, testStrategy.getNumericMinimum(), 0);
-        assertEquals("Got wrong maximum!", 9, testStrategy.getNumericMaximum(), 0);
+        assertEquals("Got wrong minimum!", 0, testStrategy.getMinimum(), 0);
+        assertEquals("Got wrong maximum!", 9, testStrategy.getMaximum(), 0);
     }
 
     @Test
     public void testNonNumericDataType() {
         final RunningMinMaxHeuristic<?> testStrategy = createTestStrategy(Geographic);
         try {
-            testStrategy.getNumericMinimum();
+            testStrategy.getMinimum();
             fail();
-        } catch (final NotANumericFieldException e) {
+        } catch (final NotAComparableFieldException e) {
             // expected
         }
         try {
-            testStrategy.getNumericMaximum();
+            testStrategy.getMaximum();
             fail();
-        } catch (final NotANumericFieldException e) {
+        } catch (final NotAComparableFieldException e) {
             // expected
         }
     }

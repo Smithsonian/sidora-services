@@ -39,7 +39,7 @@ public abstract class CountAggregatingHeuristicTestFrame<T extends CountAggregat
             goodValues.put(NonNegativeInteger, of("0", "1", " 11", "34"));
             goodValues.put(PositiveInteger, of("354455", "13452432", "112345235 ", "34529534"));
             goodValues.put(Boolean, of("True", "False", "TruE", "FaLse"));
-            goodValues.put(Geographic, of("38.03,-78.478889", " -78.478889,38.03", "1,0", "0,1"));
+            goodValues.put(Geographic, of("38.03,-78.478889", " -78.478889,38.03", "1,0,77", "0,1"));
             goodValues.put(DateTime, of("1990-3-4", "2014-273", "2014-W40-2", "2014-W40",
                     "2014-09-30T18:58:45Z"));
 

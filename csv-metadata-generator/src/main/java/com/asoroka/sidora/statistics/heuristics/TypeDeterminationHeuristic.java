@@ -13,9 +13,9 @@ public interface TypeDeterminationHeuristic<T extends TypeDeterminationHeuristic
 
     public void addValue(final String value);
 
-    public abstract float getNumericMaximum();
+    public abstract float getMaximum();
 
-    public abstract float getNumericMinimum();
+    public abstract float getMinimum();
 
     public abstract T clone();
 
