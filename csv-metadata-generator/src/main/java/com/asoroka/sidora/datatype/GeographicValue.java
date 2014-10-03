@@ -1,8 +1,6 @@
 
 package com.asoroka.sidora.datatype;
 
-import static java.util.Arrays.asList;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,13 +23,6 @@ public class GeographicValue implements Comparable<GeographicValue> {
             throw new IllegalArgumentException();
         }
         this.coordinates = coordinates;
-    }
-
-    /**
-     * @param coordinates
-     */
-    public GeographicValue(final Float... coordinates) {
-        this(asList(coordinates));
     }
 
     @Override

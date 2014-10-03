@@ -5,14 +5,11 @@
 
 package com.asoroka.sidora.statistics.heuristics;
 
-import static com.asoroka.sidora.datatype.DataType.firstMostRestrictiveType;
+import static com.asoroka.sidora.datatype.DataType.parseableAs;
 import static com.google.common.collect.Ordering.natural;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.EnumMap;
 import java.util.Map;
-
-import org.slf4j.Logger;
 
 import com.asoroka.sidora.datatype.DataType;
 import com.asoroka.sidora.datatype.ParsingException;
@@ -27,26 +24,13 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
 
     protected Map<DataType, Comparable<?>> maximums = new EnumMap<>(DataType.class);
 
-    private static final Logger log = getLogger(RunningMinMaxHeuristic.class);
-
-    /*
-     * (non-Javadoc)
-     * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#mostLikelyType()
-     */
-    @Override
-    abstract public DataType mostLikelyType();
-
-    protected static DataType mostLikelyType(final String value) {
-        return firstMostRestrictiveType(DataType.parseableAs(value));
-    }
-
     /*
      * (non-Javadoc)
      * @see com.asoroka.sidora.statistics.heuristics.TypeDeterminationHeuristic#addValue(java.lang.String)
      */
     @Override
     public void addValue(final String input) {
-        for (final DataType type : DataType.parseableAs(input)) {
+        for (final DataType type : parseableAs(input)) {
             final Comparable<?> currentMin = minimums.get(type);
             final Comparable<?> currentMax = maximums.get(type);
             try {
