@@ -23,7 +23,6 @@ import static java.util.EnumSet.of;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,13 +30,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableMap;
 
 public class DataTypeTest {
 
-    private static final Logger log = getLogger(DataTypeTest.class);
+    // private static final Logger log = getLogger(DataTypeTest.class);
 
     private static Map<DataType, Set<DataType>> expectedParseableTypes;
 

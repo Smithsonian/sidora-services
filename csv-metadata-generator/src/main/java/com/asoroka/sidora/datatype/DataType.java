@@ -17,7 +17,6 @@ import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 import static org.joda.time.format.ISODateTimeFormat.dateTimeParser;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.net.URI;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -110,9 +108,9 @@ public enum DataType {
         @SuppressWarnings("unchecked")
         @Override
         public GeographicValue parse(final String s) throws ParsingException {
-            final List<java.lang.Float> parts =
-                    transform(asList(s.trim().split(",")), string2float);
             try {
+                final List<Float> parts =
+                        transform(asList(s.split(",")), string2float);
                 return new GeographicValue(parts);
             } catch (final IllegalArgumentException e) {
                 throw new ParsingException(e);
@@ -239,7 +237,7 @@ public enum DataType {
         return supertypes().contains(Decimal);
     }
 
-    private static final Logger log = getLogger(DataType.class);
+    // private static final Logger log = getLogger(DataType.class);
 
     static final Pattern BOOLEAN_TRUE = compile("true", CASE_INSENSITIVE);
 
@@ -249,7 +247,7 @@ public enum DataType {
 
         @Override
         public Float apply(final java.lang.String seg) {
-            return java.lang.Float.parseFloat(seg);
+            return Float.parseFloat(seg);
         }
     };
 
