@@ -28,10 +28,6 @@ public class StrictHeuristic extends CountAggregatingHeuristic<StrictHeuristic> 
         return typeCounts.get(type).equals(totalNumValues());
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.asoroka.sidora.csvmetadata.heuristics.CountAggregatingHeuristic#clone()
-     */
     @Override
     public StrictHeuristic clone() {
         return new StrictHeuristic();

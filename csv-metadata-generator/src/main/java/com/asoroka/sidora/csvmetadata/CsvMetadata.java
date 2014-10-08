@@ -7,6 +7,8 @@ import com.asoroka.sidora.csvmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
 /**
+ * A container for the results of metadata extraction on a single data file.
+ * 
  * @author ajs6f
  */
 public class CsvMetadata {
@@ -29,14 +31,25 @@ public class CsvMetadata {
         this.minMaxes = minMaxes;
     }
 
+    /**
+     * @return A list of header names, empty if there was no header row found.
+     */
     public List<String> headerNames() {
         return headerNames;
     }
 
-    public List<DataType> columnTypes() {
+    /**
+     * @return A list of field datatypes.
+     */
+    public List<DataType> fieldTypes() {
         return columnTypes;
     }
 
+    /**
+     * @return A list of closed {@link Range}s, with the minimum and maximum for each field. The values of the
+     *         endpoints of the ranges are in the Java type value-space associated to the datatype considered most
+     *         likely for that field.
+     */
     public List<Range<?>> minMaxes() {
         return minMaxes;
     }

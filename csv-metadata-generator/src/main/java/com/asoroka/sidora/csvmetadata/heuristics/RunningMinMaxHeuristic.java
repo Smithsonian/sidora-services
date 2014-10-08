@@ -16,7 +16,10 @@ import com.asoroka.sidora.csvmetadata.datatype.ParsingException;
 import com.google.common.collect.Range;
 
 /**
+ * Calculates the ranges of values supplied for each possible parseable type.
+ * 
  * @author ajs6f
+ * @param <T>
  */
 public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>> implements
         DataTypeHeuristic<T> {
@@ -32,6 +35,7 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
             final Comparable<?> currentMax = maximums.get(type);
             try {
                 final Comparable<?> value = type.parse(input);
+                // TODO avoid this repeated conditional
                 minimums.put(type, (currentMin == null) ? value : natural().min(currentMin, value));
                 maximums.put(type, (currentMax == null) ? value : natural().max(currentMax, value));
             } catch (final ParsingException e) {

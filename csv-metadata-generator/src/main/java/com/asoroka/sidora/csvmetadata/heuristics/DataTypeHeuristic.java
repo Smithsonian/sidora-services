@@ -11,8 +11,8 @@ import com.asoroka.sidora.csvmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
 /**
- * Determines into which {@link DataType} a series of values most likely falls. Also determines a minimum and maximum
- * of the supplied values.
+ * Determines into which {@link DataType} a series of values most likely falls. Also determines a range of the
+ * supplied values.
  * 
  * @author ajs6f
  * @param <T>

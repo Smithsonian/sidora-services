@@ -11,7 +11,7 @@ import com.asoroka.sidora.csvmetadata.datatype.DataType;
 import com.google.common.base.Predicate;
 
 /**
- * Test a row of fields to see if they represent a header.
+ * Tests a row of fields to see if they represent a header.
  * 
  * @author ajs6f
  */

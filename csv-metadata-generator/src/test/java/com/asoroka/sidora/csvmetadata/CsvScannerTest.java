@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.csvmetadata.statistics;
+package com.asoroka.sidora.csvmetadata;
 
 import static com.asoroka.sidora.csvmetadata.test.TestUtilities.cloneableMockStrategy;
 import static com.google.common.base.Charsets.UTF_8;
@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
+import com.asoroka.sidora.csvmetadata.CsvScanner;
 import com.asoroka.sidora.csvmetadata.datatype.DataType;
 import com.asoroka.sidora.csvmetadata.heuristics.DataTypeHeuristic;
 import com.google.common.base.Function;

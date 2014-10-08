@@ -29,7 +29,7 @@ public class CsvMetadataTest {
     public void testContainerAction() {
         final CsvMetadata testMetadata = new CsvMetadata(mockHeaderNames, mockTypes, mockRanges);
         assertEquals(mockHeaderNames, testMetadata.headerNames());
-        assertEquals(mockTypes, testMetadata.columnTypes());
+        assertEquals(mockTypes, testMetadata.fieldTypes());
         assertEquals(mockRanges, testMetadata.minMaxes());
     }
 

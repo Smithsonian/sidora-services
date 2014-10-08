@@ -21,7 +21,7 @@ import com.asoroka.sidora.csvmetadata.datatype.DataType;
 import com.google.common.base.Predicate;
 
 /**
- * A {@link DataTypeHeuristic} that aggregates count information for its field.
+ * A {@link DataTypeHeuristic} that aggregates candidate type appearance information for its field.
  * 
  * @author ajs6f
  * @param <T>
@@ -62,8 +62,8 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     }
 
     /**
-     * We make use here of the fact that String is the top type. IOW, anything that can be parsed can be parsed as a
-     * String.
+     * We make use here of the fact that {@link DataType#String} is the top type, so anything that can be parsed can
+     * be parsed as a String.
      * 
      * @return The total number of values seen so far
      */
@@ -84,10 +84,6 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.asoroka.sidora.csvmetadata.heuristics.RunningMinMaxHeuristic#clone()
-     */
     @Override
     abstract public T clone();
 
@@ -103,6 +99,6 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
             return false;
         }
         final CountAggregatingHeuristic<?> oo = (CountAggregatingHeuristic<?>) o;
-        return this.hashCode() == (oo.hashCode());
+        return this.hashCode() == oo.hashCode();
     }
 }

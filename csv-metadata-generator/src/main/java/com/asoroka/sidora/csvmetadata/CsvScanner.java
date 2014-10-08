@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.csvmetadata.statistics;
+package com.asoroka.sidora.csvmetadata;
 
 import static com.google.common.collect.Iterators.advance;
 import static com.google.common.collect.Iterators.cycle;
@@ -19,8 +19,8 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 
 /**
- * The heart of statistical workflow. Handed a {@link CSVParser}, this class will scan through it and supply the
- * values of fields to a "row" of {@link DataTypeHeuristic} strategies cloned from the configured choice.
+ * Value scanning workflow. Handed a {@link CSVParser}, this class will scan through it and supply the values of
+ * fields to a "row" of {@link DataTypeHeuristic} strategies cloned from the configured choice.
  * 
  * @author ajs6f
  */
@@ -40,7 +40,7 @@ public class CsvScanner extends AbstractIterator<CSVRecord> {
         final int numColumns = internalScanner.peek().size();
 
         log.debug("Found {} columns in our CSV.", numColumns);
-        // a "row" of strategy instances of the same length as the rows in our CSV
+        // create a "row" of strategy instances of the same length as the rows in our CSV
         this.rowOfStrategies = newArrayListWithCapacity(numColumns);
         for (int i = 0; i < numColumns; i++) {
             rowOfStrategies.add(strategy.clone());
@@ -62,7 +62,9 @@ public class CsvScanner extends AbstractIterator<CSVRecord> {
     }
 
     /**
-     * Scan rows in our CSV up to a limit.
+     * Scan rows in our CSV up to a limit, exhausting values from the internal parser as we do. <br/>
+     * WARNING: Be careful about calling this more than once on a {@link CsvScanner}. The internal parser of a scanner
+     * cannot be reset.
      * 
      * @param limit The number of rows to scan, 0 for all rows.
      */

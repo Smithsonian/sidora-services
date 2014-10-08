@@ -8,16 +8,12 @@ package com.asoroka.sidora.csvmetadata.datatype;
  */
 public class ParsingException extends Exception {
 
-    public ParsingException(final Exception e) {
-        super(e);
-    }
-
-    public ParsingException() {
-        super();
-    }
-
-    public ParsingException(final java.lang.String msg) {
+    public ParsingException(final String msg) {
         super(msg);
+    }
+
+    public ParsingException(final String msg, final Exception e) {
+        super(msg, e);
     }
 
     private static final long serialVersionUID = 1L;

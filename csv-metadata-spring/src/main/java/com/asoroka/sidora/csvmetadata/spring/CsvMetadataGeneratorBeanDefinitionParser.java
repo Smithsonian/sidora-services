@@ -12,6 +12,8 @@ import org.w3c.dom.Element;
 import com.asoroka.sidora.csvmetadata.CsvMetadataGenerator;
 
 /**
+ * Responsible for constructing {@link CsvMetadataGenerator} beans.
+ * 
  * @author ajs6f
  */
 public class CsvMetadataGeneratorBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {

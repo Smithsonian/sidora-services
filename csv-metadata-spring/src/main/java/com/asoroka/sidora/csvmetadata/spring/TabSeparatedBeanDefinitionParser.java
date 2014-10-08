@@ -7,6 +7,11 @@ import org.w3c.dom.Element;
 
 import com.asoroka.sidora.csvmetadata.formats.CsvFormat.TabSeparated;
 
+/**
+ * Responsible for constructing {@link TabSeparated} beans.
+ * 
+ * @author ajs6f
+ */
 public class TabSeparatedBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
 
     @Override

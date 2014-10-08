@@ -1,6 +1,3 @@
-/**
- * 
- */
 
 package com.asoroka.sidora.csvmetadata.spring;
 
@@ -13,6 +10,8 @@ import org.w3c.dom.Element;
 import com.asoroka.sidora.csvmetadata.heuristics.FractionHeuristic;
 
 /**
+ * Responsible for constructing {@link FractionHeuristic} beans.
+ * 
  * @author ajs6f
  */
 public class FractionHeuristicBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {

@@ -1,11 +1,8 @@
-/**
- * 
- */
 
 package com.asoroka.sidora.csvmetadata;
 
 /**
- * Indicates that a type exists only to rename another type.
+ * An effectless marker that indicates that a type exists only to rename another type for syntactical convenience.
  * 
  * @author ajs6f
  */

@@ -101,7 +101,7 @@ public class CsvMetadataParserTest {
         final CsvMetadata results = testParser.getMetadata(mockURL);
 
         final List<String> headers = results.headerNames();
-        final List<DataType> types = results.columnTypes();
+        final List<DataType> types = results.fieldTypes();
         @SuppressWarnings("rawtypes")
         // we ignore type-safety here for a simpler unit test
         final List ranges = results.minMaxes();

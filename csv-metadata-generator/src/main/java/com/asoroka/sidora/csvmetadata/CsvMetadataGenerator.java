@@ -25,10 +25,15 @@ import com.asoroka.sidora.csvmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.csvmetadata.heuristics.HeaderHeuristic;
 import com.asoroka.sidora.csvmetadata.heuristics.HeaderHeuristic.Default;
 import com.asoroka.sidora.csvmetadata.heuristics.StrictHeuristic;
-import com.asoroka.sidora.csvmetadata.statistics.CsvScanner;
 import com.google.common.base.Function;
 import com.google.common.collect.Range;
 
+/**
+ * Master entry point for the workflow. This is the class from which all parsing should initiate, via
+ * {@link #getMetadata(URL)}.
+ * 
+ * @author ajs6f
+ */
 public class CsvMetadataGenerator {
 
     private static final Charset CHARACTER_ENCODING = UTF_8;
@@ -44,23 +49,30 @@ public class CsvMetadataGenerator {
 
     private HeaderHeuristic headerStrategy = new Default();
 
-    public CsvMetadata getMetadata(final URL csvFile) throws IOException {
-
+    /**
+     * Workflow.
+     * 
+     * @param csvUrl
+     * @return The results of metadata extraction.
+     * @throws IOException
+     */
+    public CsvMetadata getMetadata(final URL csvUrl) throws IOException {
+        // attempt to extract header names
         final List<String> headerNames;
-        try (final CSVParser headerParser = parse(csvFile, CHARACTER_ENCODING, format)) {
+        try (final CSVParser headerParser = parse(csvUrl, CHARACTER_ENCODING, format)) {
             final CSVRecord firstLine = headerParser.iterator().next();
             final boolean hasHeaders = headerStrategy.apply(firstLine);
             format = hasHeaders ? format.withHeader() : format;
             headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders;
         }
-
+        // scan values up to the limit
         final List<DataTypeHeuristic<?>> strategies;
-        try (final CSVParser parser = parse(csvFile, CHARACTER_ENCODING, format)) {
+        try (final CSVParser parser = parse(csvUrl, CHARACTER_ENCODING, format)) {
             final CsvScanner scanner = new CsvScanner(parser, strategy);
             scanner.scan(scanLimit);
             strategies = scanner.getStrategies();
         }
-
+        // extract the results for each field
         final List<DataType> columnTypes = transform(strategies, extractType);
         final List<Range<?>> minMaxes = transform(strategies, extractMinMax);
 
@@ -87,22 +99,34 @@ public class CsvMetadataGenerator {
         }
     };
 
-    private List<String> emptyHeaders = emptyList();
+    private static final List<String> emptyHeaders = emptyList();
 
+    /**
+     * @param scanLimit A limit to the number of rows to scan.
+     */
     public void setScanLimit(final Integer scanLimit) {
         this.scanLimit = scanLimit;
     }
 
+    /**
+     * @param strategy The header recognition strategy to use.
+     */
     @Inject
-    public void setHeaderStrategy(final HeaderHeuristic acceptor) {
-        this.headerStrategy = acceptor;
+    public void setHeaderStrategy(final HeaderHeuristic strategy) {
+        this.headerStrategy = strategy;
     }
 
+    /**
+     * @param format The tabular data format to expect.
+     */
     @Inject
     public void setFormat(final CsvFormat format) {
         this.format = format.get();
     }
 
+    /**
+     * @param strategy The type recognition strategy to use.
+     */
     @Inject
     public void setStrategy(final DataTypeHeuristic<?> strategy) {
         this.strategy = strategy;

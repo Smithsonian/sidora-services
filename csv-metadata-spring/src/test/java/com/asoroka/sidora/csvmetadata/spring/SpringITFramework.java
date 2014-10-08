@@ -44,7 +44,7 @@ public abstract class SpringITFramework {
             final Range<?> minMaxes)
             throws IOException {
         final CsvMetadata result = testGenerator.getMetadata(testFile);
-        assertEquals("Got incorrect column types!", expectedDatatypes, result.columnTypes());
+        assertEquals("Got incorrect column types!", expectedDatatypes, result.fieldTypes());
         assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes().get(2));
         return result;
     }

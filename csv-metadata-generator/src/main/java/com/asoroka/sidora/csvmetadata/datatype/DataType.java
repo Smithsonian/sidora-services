@@ -40,6 +40,7 @@ import com.google.common.base.Supplier;
  * and</li>
  * <li>maps from our types to types in the XSD type system.</li>
  * </ul>
+ * It also offers convenience methods for working with our type system.
  * 
  * @author ajs6f
  */
@@ -70,7 +71,7 @@ public enum DataType {
             try {
                 return parseFloat(s);
             } catch (final NumberFormatException e) {
-                throw new ParsingException(e);
+                throw new ParsingException("Could not parse as Decimal!", e);
             }
         }
     },
@@ -82,7 +83,7 @@ public enum DataType {
             try {
                 return parseInt(s);
             } catch (final NumberFormatException e) {
-                throw new ParsingException(e);
+                throw new ParsingException("Could not parse as Integer!", e);
             }
         }
     },
@@ -121,7 +122,7 @@ public enum DataType {
                         transform(asList(s.split(",")), string2float);
                 return new GeographicValue(parts);
             } catch (final IllegalArgumentException e) {
-                throw new ParsingException(e);
+                throw new ParsingException("Could not parse as Geographic!", e);
             }
         }
     },
@@ -136,7 +137,7 @@ public enum DataType {
             if (BOOLEAN_FALSE.matcher(s).matches()) {
                 return false;
             }
-            throw new ParsingException();
+            throw new ParsingException("Could not parse as Boolean!");
         }
     },
     DateTime(W3C_XML_SCHEMA_NS_URI + "dateTime", String) {
@@ -147,7 +148,7 @@ public enum DataType {
             try {
                 return dateTimeParser().parseDateTime(s);
             } catch (final IllegalArgumentException e) {
-                throw new ParsingException(e);
+                throw new ParsingException("Could not parse as DataTime!", e);
             }
         }
     };
@@ -173,8 +174,8 @@ public enum DataType {
     final DataType supertype;
 
     /**
-     * A memoized form of the supertypes of this DataType. We memoize this to avoid redoing this recursive calculation
-     * in operation.
+     * A memoized form of the supertypes of this DataType, used to avoid redoing this recursive calculation during
+     * operation.
      */
     private final Supplier<Set<DataType>> supertypesSupplier = memoize(new Supplier<Set<DataType>>() {
 
@@ -222,7 +223,7 @@ public enum DataType {
     }
 
     /**
-     * An ordering by type hierarchy. Those types with more supertypes are considered "lower" than those with fewer.
+     * An ordering by type hierarchy. Those types with more supertypes are considered "larger" than those with fewer.
      */
     public static final Comparator<DataType> orderingByHierarchy = new Comparator<DataType>() {
 
@@ -242,15 +243,21 @@ public enum DataType {
 
     // private static final Logger log = getLogger(DataType.class);
 
-    static final Pattern BOOLEAN_TRUE = compile("true|t", CASE_INSENSITIVE);
+    /**
+     * How to recognize a Boolean lex for true.
+     */
+    public static final Pattern BOOLEAN_TRUE = compile("true|t", CASE_INSENSITIVE);
 
-    static final Pattern BOOLEAN_FALSE = compile("false|f", CASE_INSENSITIVE);
+    /**
+     * How to recognize a Boolean lex for false.
+     */
+    public static final Pattern BOOLEAN_FALSE = compile("false|f", CASE_INSENSITIVE);
 
     static final Function<java.lang.String, Float> string2float = new Function<String, Float>() {
 
         @Override
         public Float apply(final java.lang.String seg) {
-            return Float.parseFloat(seg);
+            return parseFloat(seg);
         }
     };
 

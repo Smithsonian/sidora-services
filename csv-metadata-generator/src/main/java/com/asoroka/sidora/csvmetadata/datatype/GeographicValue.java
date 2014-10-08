@@ -19,6 +19,9 @@ public class GeographicValue implements Comparable<GeographicValue> {
 
     private static final Ordering<Iterable<Float>> ordering = Ordering.<Float> natural().lexicographical();
 
+    /**
+     * The coordinates of this {@link GeographicValue}.
+     */
     public List<Float> coordinates = new ArrayList<>();
 
     /**
@@ -31,6 +34,11 @@ public class GeographicValue implements Comparable<GeographicValue> {
         this.coordinates = coordinates;
     }
 
+    /**
+     * Lexicographical ordering.
+     * 
+     * @see java.lang.Comparable#compareTo(java.lang.Object)
+     **/
     @Override
     public int compareTo(final GeographicValue o) {
         return ordering.compare(this.coordinates, o.coordinates);

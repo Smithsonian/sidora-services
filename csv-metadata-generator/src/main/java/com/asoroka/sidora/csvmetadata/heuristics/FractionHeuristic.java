@@ -4,7 +4,7 @@ package com.asoroka.sidora.csvmetadata.heuristics;
 import com.asoroka.sidora.csvmetadata.datatype.DataType;
 
 /**
- * A heuristic that permits a certain specified fraction of values to fail at parsing.
+ * A heuristic that permits a certain specified fraction of values to fail at parsing to the most likely type.
  * 
  * @author ajs6f
  */
@@ -18,9 +18,6 @@ public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeurist
         this.fractionOfAllowedNonparseables = d;
     }
 
-    /**
-     * The fraction of nonparsing values to permit.
-     */
     private final double fractionOfAllowedNonparseables;
 
     @Override
