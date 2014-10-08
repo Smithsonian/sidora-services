@@ -11,8 +11,8 @@
     
     <context:component-scan base-package="com.asoroka"/>
     
-    <tabular:CsvMetadataGenerator strategy="fractionStrategy" id="testGenerator"/>
+    <tabular:CsvMetadataGenerator format="tsvFormat" id="testGenerator"/>
         
-    <tabular:FractionHeuristic fraction="0.5" id="fractionStrategy"/>    
+    <tabular:TsvFormat id="tsvFormat"/>    
 
 </beans>

@@ -11,8 +11,8 @@
     
     <context:component-scan base-package="com.asoroka"/>
     
-    <tabular:CsvMetadataGenerator strategy="fractionStrategy" id="testGenerator"/>
+    <tabular:CsvMetadataGenerator headerStrategy="headerStrategy" id="testGenerator"/>
         
-    <tabular:FractionHeuristic fraction="0.5" id="fractionStrategy"/>    
+    <bean class="com.asoroka.sidora.csvmetadata.spring.SpecialHeaderHeuristic" id="headerStrategy"/>    
 
 </beans>

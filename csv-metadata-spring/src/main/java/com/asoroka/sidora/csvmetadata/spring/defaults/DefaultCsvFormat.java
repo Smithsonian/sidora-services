@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.csvmetadata.spring;
+package com.asoroka.sidora.csvmetadata.spring.defaults;
 
 import org.springframework.stereotype.Component;
 
