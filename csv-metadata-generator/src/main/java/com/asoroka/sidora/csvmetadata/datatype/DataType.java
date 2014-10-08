@@ -235,7 +235,7 @@ public enum DataType {
 
     /**
      * @param types The types to compare.
-     * @return The first type with as low as position in the hierarchy as any other.
+     * @return The first type with as "bottom-most" as position in the hierarchy as any other.
      */
     public static DataType firstMostRestrictiveType(final Collection<DataType> types) {
         return max(types, orderingByHierarchy);
