@@ -11,11 +11,11 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration("/spring-xml/default-operation.xml")
 public class DefaultOperationIT extends IT {
 
-    private static File testFile = new File("src/test/resources/test-data/simple.csv");
+    private static File testFile = new File(testDataDir, "simple.csv");
 
     @Test
     public void testWithSimpleData() throws MalformedURLException, IOException {
-        testInputs(testFile);
+        testSimpleFile(testFile);
     }
 
 }

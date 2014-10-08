@@ -28,10 +28,12 @@ import com.google.common.collect.Range;
 @RunWith(SpringJUnit4ClassRunner.class)
 public abstract class IT {
 
+    protected static final File testDataDir = new File("src/test/resources/test-data");
+
     @Inject
     protected CsvMetadataGenerator testGenerator;
 
-    public void testInputs(final File testFile) throws MalformedURLException, IOException {
+    public void testSimpleFile(final File testFile) throws MalformedURLException, IOException {
         final CsvMetadata result = testGenerator.getMetadata(testFile.toURI().toURL());
         assertEquals("Got incorrect column types!", asList(String, String, PositiveInteger), result.columnTypes());
         assertEquals("Got wrong range for a field!", Range.closed(56, 23423), result.minMaxes().get(2));

@@ -11,18 +11,18 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration("/spring-xml/operation-with-fraction-heuristic.xml")
 public class OperationWithFractionHeuristicIT extends IT {
 
-    private static File testFileSimple = new File("src/test/resources/test-data/simple.csv");
+    private static File testFileSimple = new File(testDataDir, "simple.csv");
 
-    private static File testFileSlightlyLessSimple = new File("src/test/resources/test-data/slightlysimple.csv");
+    private static File testFileSlightlyLessSimple = new File(testDataDir, "slightlysimple.csv");
 
     @Test
     public void testWithSimpleData() throws MalformedURLException, IOException {
-        testInputs(testFileSimple);
+        testSimpleFile(testFileSimple);
     }
 
     @Test
-    public void testWithFractionallyGoodData() throws MalformedURLException, IOException {
-        testInputs(testFileSlightlyLessSimple);
+    public void testWithFractionallySimpleData() throws MalformedURLException, IOException {
+        testSimpleFile(testFileSlightlyLessSimple);
     }
 
 }
