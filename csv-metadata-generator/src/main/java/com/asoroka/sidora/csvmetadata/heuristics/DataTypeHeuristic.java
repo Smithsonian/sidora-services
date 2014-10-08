@@ -5,6 +5,8 @@
 
 package com.asoroka.sidora.csvmetadata.heuristics;
 
+import javax.inject.Provider;
+
 import com.asoroka.sidora.csvmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
@@ -15,7 +17,7 @@ import com.google.common.collect.Range;
  * @author ajs6f
  * @param <T>
  */
-public interface DataTypeHeuristic<T extends DataTypeHeuristic<T>> extends Cloneable {
+public interface DataTypeHeuristic<T extends DataTypeHeuristic<T>> extends Cloneable, Provider<DataTypeHeuristic<T>> {
 
     /**
      * @return The most likely type for the proffered values.

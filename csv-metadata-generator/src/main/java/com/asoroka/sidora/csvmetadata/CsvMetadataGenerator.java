@@ -5,6 +5,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
 import static java.util.Collections.emptyList;
+import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 
 import java.io.IOException;
@@ -19,44 +20,36 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.csvmetadata.datatype.DataType;
+import com.asoroka.sidora.csvmetadata.formats.CsvFormat;
 import com.asoroka.sidora.csvmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.csvmetadata.heuristics.HeaderHeuristic;
 import com.asoroka.sidora.csvmetadata.heuristics.HeaderHeuristic.Default;
+import com.asoroka.sidora.csvmetadata.heuristics.StrictHeuristic;
 import com.asoroka.sidora.csvmetadata.statistics.CsvScanner;
 import com.google.common.base.Function;
-import com.google.common.base.Supplier;
 import com.google.common.collect.Range;
 
-public class CsvMetadataParser {
+public class CsvMetadataGenerator {
 
     private static final Charset CHARACTER_ENCODING = UTF_8;
 
-    private CSVFormat format;
+    private CSVFormat format = DEFAULT;
 
     /**
      * Default value of {@code 0} indicates no limit. See {@link CsvScanner.scan(final int limit)}.
      */
     private Integer scanLimit = 0;
 
-    private DataTypeHeuristic<?> strategy;
+    private DataTypeHeuristic<?> strategy = new StrictHeuristic();
 
-    private HeaderHeuristic headerAcceptor = new Default();
-
-    /**
-     * Default constructor.
-     */
-    @Inject
-    public CsvMetadataParser(final Supplier<CSVFormat> format, final DataTypeHeuristic<?> strategy) {
-        this.format = format.get();
-        this.strategy = strategy;
-    }
+    private HeaderHeuristic headerStrategy = new Default();
 
     public CsvMetadata getMetadata(final URL csvFile) throws IOException {
 
         final List<String> headerNames;
         try (final CSVParser headerParser = parse(csvFile, CHARACTER_ENCODING, format)) {
             final CSVRecord firstLine = headerParser.iterator().next();
-            final boolean hasHeaders = headerAcceptor.apply(firstLine);
+            final boolean hasHeaders = headerStrategy.apply(firstLine);
             format = hasHeaders ? format.withHeader() : format;
             headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders;
         }
@@ -96,13 +89,22 @@ public class CsvMetadataParser {
 
     private List<String> emptyHeaders = emptyList();
 
-    @Inject
-    public void setScanLimit(@ScanLimit final Integer scanLimit) {
+    public void setScanLimit(final Integer scanLimit) {
         this.scanLimit = scanLimit;
     }
 
     @Inject
-    public void setHeaderAcceptor(final HeaderHeuristic acceptor) {
-        this.headerAcceptor = acceptor;
+    public void setHeaderStrategy(final HeaderHeuristic acceptor) {
+        this.headerStrategy = acceptor;
+    }
+
+    @Inject
+    public void setFormat(final CsvFormat format) {
+        this.format = format.get();
+    }
+
+    @Inject
+    public void setStrategy(final DataTypeHeuristic<?> strategy) {
+        this.strategy = strategy;
     }
 }

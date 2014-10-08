@@ -1,8 +1,6 @@
 
 package com.asoroka.sidora.csvmetadata.heuristics;
 
-import javax.inject.Inject;
-
 import com.asoroka.sidora.csvmetadata.datatype.DataType;
 
 /**
@@ -15,8 +13,7 @@ public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeurist
     /**
      * @param d The fraction of nonparsing values to permit
      */
-    @Inject
-    public FractionHeuristic(final @FractionOfNonparsingValues double d) {
+    public FractionHeuristic(final double d) {
         super();
         this.fractionOfAllowedNonparseables = d;
     }

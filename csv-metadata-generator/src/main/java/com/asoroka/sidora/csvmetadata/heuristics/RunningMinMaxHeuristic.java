@@ -38,7 +38,6 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
                 // NO OP
                 // we don't care if a particular parsing fails, we are only gathering aggregate statistics
             }
-
         }
     }
 
@@ -49,5 +48,10 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
 
     @Override
     abstract public T clone();
+
+    @Override
+    public DataTypeHeuristic<T> get() {
+        return this;
+    }
 
 }

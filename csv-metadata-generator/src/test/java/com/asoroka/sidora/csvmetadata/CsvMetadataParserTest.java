@@ -35,7 +35,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.csvmetadata.datatype.DataType;
-import com.asoroka.sidora.csvmetadata.formats.CsvFormat;
 import com.asoroka.sidora.csvmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.csvmetadata.heuristics.HeaderHeuristic;
 import com.google.common.collect.Range;
@@ -96,8 +95,9 @@ public class CsvMetadataParserTest {
         final URL mockURL = mock(URL.class);
 
         when(mockURL.openStream()).thenAnswer(makeStream(testCsv));
-        final CsvMetadataParser testParser = new CsvMetadataParser(new CsvFormat.Default(), mockStrategy);
-        testParser.setHeaderAcceptor(mockHeaderHeuristic);
+        final CsvMetadataGenerator testParser = new CsvMetadataGenerator();
+        testParser.setStrategy(mockStrategy);
+        testParser.setHeaderStrategy(mockHeaderHeuristic);
         final CsvMetadata results = testParser.getMetadata(mockURL);
 
         final List<String> headers = results.headerNames();
@@ -120,8 +120,9 @@ public class CsvMetadataParserTest {
         when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
         final URL mockURL = mock(URL.class);
         when(mockURL.openStream()).thenAnswer(makeStream(testCsv));
-        final CsvMetadataParser testParser = new CsvMetadataParser(new CsvFormat.Default(), mockStrategy);
-        testParser.setHeaderAcceptor(mockHeaderHeuristic);
+        final CsvMetadataGenerator testParser = new CsvMetadataGenerator();
+        testParser.setStrategy(mockStrategy);
+        testParser.setHeaderStrategy(mockHeaderHeuristic);
 
         final CsvMetadata results = testParser.getMetadata(mockURL);
         final List<String> headers = results.headerNames();
@@ -134,9 +135,9 @@ public class CsvMetadataParserTest {
         final URL mockURL = mock(URL.class);
         when(mockURL.openStream()).thenAnswer(makeStream(testCsvWithMarker));
         final MarkingMockDataTypeHeuristic<T> testStrategy = new MarkingMockDataTypeHeuristic<>(MARKER_VALUE);
-        final CsvMetadataParser testParser =
-                new CsvMetadataParser(new CsvFormat.Default(), testStrategy);
-        testParser.setHeaderAcceptor(mockHeaderHeuristic);
+        final CsvMetadataGenerator testParser = new CsvMetadataGenerator();
+        testParser.setStrategy(testStrategy);
+        testParser.setHeaderStrategy(mockHeaderHeuristic);
         testParser.setScanLimit(2);
         testParser.getMetadata(mockURL);
         assertFalse("Discovered a marker in a row we should not have been scanning!", testStrategy.failure());
@@ -184,6 +185,11 @@ public class CsvMetadataParserTest {
 
         public boolean failure() {
             return failure;
+        }
+
+        @Override
+        public DataTypeHeuristic<T> get() {
+            return this;
         }
 
     }
