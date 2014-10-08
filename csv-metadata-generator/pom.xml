@@ -4,6 +4,8 @@
 	<artifactId>csv-metadata-generator</artifactId>
 	<name>CSV Metadata Generator</name>
 
+	<description>Core utilities for developing metadata from tabular data files.</description>
+
 	<parent>
 		<groupId>com.asoroka.sidora</groupId>
 		<artifactId>csv-metadata</artifactId>
@@ -75,6 +77,14 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+				<configuration>
+					<merge>true</merge>
+					<path>${project.version}/${project.artifactId}</path>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

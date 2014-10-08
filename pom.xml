@@ -6,6 +6,8 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>CSV Metadata Generation Facilities</name>
+	
+	<description>Simple utilities for developing metadata from tabular data files.</description>
 
 	<developers>
 		<developer>
@@ -17,21 +19,9 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git://github.com/ocymum/${project_name}.git
-    </connection>
-		<developerConnection>scm:git:git@github.com:ocymum/${project_name}.git
-    </developerConnection>
-		<url>https://github.com/ocymum/${project_name}</url>
+		<url>https://github.com/ocymum/${project.artifactId}</url>
 		<tag>HEAD</tag>
 	</scm>
-
-	<distributionManagement>
-		<site>
-			<id>gh-pages</id>
-			<name>Deployment through GitHub's ghPages</name>
-			<url>scm:git:ssh://git@github.com/ocymum/csv-metadata.git</url>
-		</site>
-	</distributionManagement>
 
 	<modules>
 		<module>csv-metadata-generator</module>
@@ -39,10 +29,26 @@
 	</modules>
 
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
 		<java.version>1.7</java.version>
 		<powermock.version>1.5.6</powermock.version>
 		<jacoco.version>0.7.2.201409121644</jacoco.version>
+		<scm-publish.scmBranch>refs/heads/gh-pages</scm-publish.scmBranch>
+		<scm-publish.pubScmUrl>scm:git:git@github.com:ocymum/csv-metadata.git</scm-publish.pubScmUrl>
+		<scm-publish.siteDocOuputDirectory>${project.reporting.outputDirectory}</scm-publish.siteDocOuputDirectory>
+		<scmPublish.checkoutDirectory>${project.build.directory}/scmpublish</scmPublish.checkoutDirectory>
+		<github.repositoryOwner>ocymum</github.repositoryOwner>
+		<github.repositoryName>csv-metadata</github.repositoryName>
 	</properties>
+
+	<distributionManagement>
+		<site>
+			<id>github-pages-site</id>
+			<name>Deployment through GitHub's site deployment plugin</name>
+			<url>${project.version}</url>
+		</site>
+	</distributionManagement>
 
 	<dependencyManagement>
 		<dependencies>
@@ -85,7 +91,7 @@
 			<dependency>
 				<groupId>org.mockito</groupId>
 				<artifactId>mockito-all</artifactId>
-				<version>1.9.5</version>
+				<version>1.10.5</version>
 				<scope>test</scope>
 			</dependency>
 			<dependency>
@@ -123,13 +129,17 @@
 				<plugin>
 					<groupId>com.github.github</groupId>
 					<artifactId>site-maven-plugin</artifactId>
-					<version>0.9</version>
+					<version>0.10</version>
 					<configuration>
 						<message>Creating site for ${project.artifactId},
 							${project.version}</message>
 						<!-- this does the trick to place every module in the correct subfolder -->
 						<path>${project.distributionManagement.site.url}</path>
-						<merge>true</merge>
+						<merge>false</merge>
+						<branch>${scm-publish.scmBranch}</branch>
+						<server>github</server>
+						<repositoryOwner>${github.repositoryOwner}</repositoryOwner>
+						<repositoryName>${github.repositoryName}</repositoryName>
 					</configuration>
 					<executions>
 						<execution>
@@ -185,6 +195,9 @@
 				<plugin>
 					<artifactId>maven-site-plugin</artifactId>
 					<version>3.4</version>
+					<configuration>
+						<skipDeploy>true</skipDeploy>
+					</configuration>
 				</plugin>
 				<plugin>
 					<artifactId>maven-surefire-plugin</artifactId>
@@ -244,6 +257,23 @@
 						</execution>
 					</executions>
 				</plugin>
+				<plugin>
+					<artifactId>maven-scm-publish-plugin</artifactId>
+					<version>1.1</version>
+					<inherited>true</inherited>
+					<configuration>
+						<checkoutDirectory>${scmPublish.checkoutDirectory}</checkoutDirectory>
+						<checkinComment>Publishing Site Docs for
+							${project.artifactId}:${project.version}
+						</checkinComment>
+						<!-- Plugins defaults to "target/staging" and since the distributionManagement 
+							section is a pain for site docs, this is easier -->
+						<content>${scm-publish.siteDocOuputDirectory}</content>
+						<skipDeletedFiles>true</skipDeletedFiles>
+						<pubScmUrl>${scm-publish.pubScmUrl}</pubScmUrl>
+						<scmBranch>${scm-publish.scmBranch}</scmBranch>
+					</configuration>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
@@ -257,6 +287,11 @@
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>versions-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+			</plugin>
+			<!-- <plugin> <artifactId>maven-scm-publish-plugin</artifactId> </plugin> -->
 		</plugins>
 		<extensions>
 			<extension>
@@ -273,6 +308,12 @@
 				<groupId>org.apache.maven.scm</groupId>
 				<artifactId>maven-scm-provider-gitexe</artifactId>
 				<version>1.9.2</version>
+			</extension>
+			<extension>
+				<!-- add support for ssh/scp -->
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh</artifactId>
+				<version>2.7</version>
 			</extension>
 		</extensions>
 	</build>
@@ -307,13 +348,13 @@
 					</reportsDirectories>
 				</configuration>
 			</plugin>
-			<plugin>
+			<!-- <plugin>
 				<artifactId>maven-changelog-plugin</artifactId>
 				<version>2.3</version>
 				<configuration>
 					<displayFileDetailUrl>http://github.com/ocymum/${project_name}/blob/master/%FILE% </displayFileDetailUrl>
 				</configuration>
-			</plugin>
+			</plugin> -->
 			<plugin>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
 				<version>2.7</version>

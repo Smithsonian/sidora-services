@@ -18,8 +18,8 @@ import com.google.common.base.Predicate;
 public interface HeaderHeuristic extends Predicate<Iterable<String>>, Provider<HeaderHeuristic> {
 
     /**
-     * This is a very simple test of whether a line is a header line. Only any line for which each field parses only
-     * as a {@link DataType.String} will be accepted.
+     * This is a very simple test of whether a line is a header line. Only any line in which each field parses only as
+     * a {@link DataType#String} will be accepted.
      */
     public static class Default implements HeaderHeuristic {
 

@@ -10,6 +10,8 @@
 	<artifactId>csv-metadata-spring</artifactId>
 	<name>Spring facilities for CSV Metadata</name>
 
+	<description>Spring utilities for developing metadata from tabular data files.</description>
+
 	<properties>
 		<spring.version>4.1.1.RELEASE</spring.version>
 	</properties>
@@ -66,6 +68,14 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+				<configuration>
+					<merge>true</merge>
+					<path>${project.version}/${project.artifactId}</path>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

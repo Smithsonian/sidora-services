@@ -37,8 +37,9 @@ public interface DataTypeHeuristic<T extends DataTypeHeuristic<T>> extends Clone
     public Range<?> getRange();
 
     /**
-     * We override {@link Object.clone()} in order to narrow its return type for type-safety.
+     * We override {@link Object#clone()} in order to narrow its return type for type-safety.
      * 
+     * @see java.lang.Object#clone()
      * @return A clone of this heuristic.
      */
     public abstract T clone();
