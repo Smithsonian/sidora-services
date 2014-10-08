@@ -4,11 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>com.asoroka.sidora</groupId>
-		<artifactId>csv-metadata</artifactId>
+		<artifactId>tabular-metadata</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>csv-metadata-spring</artifactId>
-	<name>Spring facilities for CSV Metadata</name>
+	<artifactId>tabular-metadata-spring</artifactId>
+	<name>Spring Facilities for Tabular Metadata Generation</name>
 
 	<description>Spring utilities for developing metadata from tabular data files.</description>
 
@@ -19,7 +19,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.asoroka.sidora</groupId>
-			<artifactId>csv-metadata-generator</artifactId>
+			<artifactId>tabular-metadata-generator</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>

@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.asoroka.sidora</groupId>
-	<artifactId>csv-metadata</artifactId>
+	<artifactId>tabular-metadata</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>CSV Metadata Generation Facilities</name>
@@ -24,8 +24,8 @@
 	</scm>
 
 	<modules>
-		<module>csv-metadata-generator</module>
-		<module>csv-metadata-spring</module>
+		<module>tabular-metadata-generator</module>
+		<module>tabular-metadata-spring</module>
 	</modules>
 
 	<properties>
