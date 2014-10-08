@@ -4,7 +4,7 @@
 	<artifactId>tabular-metadata-generator</artifactId>
 	<name>Tabular Metadata Generator</name>
 
-	<description>Core utilities for developing metadata from tabular data files.</description>
+	<description>Core machinery for developing metadata from tabular data files.</description>
 
 	<parent>
 		<groupId>com.asoroka.sidora</groupId>

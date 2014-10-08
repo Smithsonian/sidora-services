@@ -5,7 +5,7 @@
 	<artifactId>tabular-metadata</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<name>CSV Metadata Generation Facilities</name>
+	<name>Tabular Metadata Generation Facilities</name>
 
 	<description>Simple utilities for developing metadata from tabular data files.</description>
 
@@ -35,11 +35,11 @@
 		<powermock.version>1.5.6</powermock.version>
 		<jacoco.version>0.7.2.201409121644</jacoco.version>
 		<scm-publish.scmBranch>refs/heads/gh-pages</scm-publish.scmBranch>
-		<scm-publish.pubScmUrl>scm:git:git@github.com:ocymum/csv-metadata.git</scm-publish.pubScmUrl>
+		<scm-publish.pubScmUrl>scm:git:git@github.com:ocymum/${project.artifactId}.git</scm-publish.pubScmUrl>
 		<scm-publish.siteDocOuputDirectory>${project.reporting.outputDirectory}</scm-publish.siteDocOuputDirectory>
 		<scmPublish.checkoutDirectory>${project.build.directory}/scmpublish</scmPublish.checkoutDirectory>
 		<github.repositoryOwner>ocymum</github.repositoryOwner>
-		<github.repositoryName>csv-metadata</github.repositoryName>
+		<github.repositoryName>tabular-metadata</github.repositoryName>
 	</properties>
 
 	<distributionManagement>
