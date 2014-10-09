@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:tabular="http://asoroka.com/ns/tabular-metadata#"
+    targetNamespace="http://asoroka.com/ns/tabular-metadata-camel#" elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
+
+    <xsd:import namespace="http://asoroka.com/ns/tabular-metadata#"
+        schemaLocation="http://asoroka.com/schema/tabular-metadata"/>
+
+    <xsd:element name="TabularMetadataGenerator">
+        <xsd:annotation>
+            <xsd:documentation>
+                An extension of TabularMetadataGenerator for integrations with Apache Camel.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="tabular:TabularMetadataGeneratorType"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+
+</xsd:schema>

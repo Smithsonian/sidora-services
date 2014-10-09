@@ -52,14 +52,14 @@ public class TabularMetadataGenerator {
     /**
      * Workflow.
      * 
-     * @param csvUrl
+     * @param dataUrl
      * @return The results of metadata extraction.
      * @throws IOException
      */
-    public TabularMetadata getMetadata(final URL csvUrl) throws IOException {
+    public TabularMetadata getMetadata(final URL dataUrl) throws IOException {
         // attempt to extract header names
         final List<String> headerNames;
-        try (final CSVParser headerParser = parse(csvUrl, CHARACTER_ENCODING, format)) {
+        try (final CSVParser headerParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final CSVRecord firstLine = headerParser.iterator().next();
             final boolean hasHeaders = headerStrategy.apply(firstLine);
             format = hasHeaders ? format.withHeader() : format;
@@ -67,7 +67,7 @@ public class TabularMetadataGenerator {
         }
         // scan values up to the limit
         final List<DataTypeHeuristic<?>> strategies;
-        try (final CSVParser parser = parse(csvUrl, CHARACTER_ENCODING, format)) {
+        try (final CSVParser parser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final TabularScanner scanner = new TabularScanner(parser, strategy);
             scanner.scan(scanLimit);
             strategies = scanner.getStrategies();

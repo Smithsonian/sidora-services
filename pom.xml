@@ -9,6 +9,12 @@
 	<name>Tabular Metadata Generation Facilities</name>
 
 	<description>Simple utilities for developing metadata from tabular data files.</description>
+	
+	<modules>
+		<module>tabular-metadata-generator</module>
+		<module>tabular-metadata-spring</module>
+		<module>tabular-metadata-camel</module>
+	</modules>
 
 	<developers>
 		<developer>
@@ -24,18 +30,11 @@
 		<tag>HEAD</tag>
 	</scm>
 
-	<modules>
-		<module>tabular-metadata-generator</module>
-		<module>tabular-metadata-spring</module>
-		
-	</modules>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<java.version>1.7</java.version>
-		<powermock.version>1.5.6</powermock.version>
 		<jacoco.version>0.7.2.201409121644</jacoco.version>
 		<scm-publish.scmBranch>refs/heads/gh-pages</scm-publish.scmBranch>
 		<scm-publish.pubScmUrl>scm:git:git@github.com:ocymum/${project.artifactId}.git</scm-publish.pubScmUrl>
@@ -95,18 +94,6 @@
 				<groupId>org.mockito</groupId>
 				<artifactId>mockito-all</artifactId>
 				<version>1.10.5</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.powermock</groupId>
-				<artifactId>powermock-module-junit4</artifactId>
-				<version>${powermock.version}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.powermock</groupId>
-				<artifactId>powermock-api-mockito</artifactId>
-				<version>${powermock.version}</version>
 				<scope>test</scope>
 			</dependency>
 		</dependencies>

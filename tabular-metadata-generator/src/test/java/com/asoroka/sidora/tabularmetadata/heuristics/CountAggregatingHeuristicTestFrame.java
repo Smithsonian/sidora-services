@@ -31,37 +31,35 @@ public abstract class CountAggregatingHeuristicTestFrame<T extends CountAggregat
     protected static Map<DataType, List<String>> parseableValues;
 
     protected static Map<DataType, List<String>> oneNonparseableValue;
-    {
-        {
-            // these are all parseable values for the datatype to which they are assigned
-            parseableValues = new EnumMap<>(DataType.class);
-            parseableValues.put(String, of("Jane", "John", "Sarah", "Simon"));
-            parseableValues.put(Decimal, of("0", "0.1", "-1", "34.345"));
-            parseableValues.put(Integer, of("0", "1", "-1 ", "34"));
-            parseableValues.put(NonNegativeInteger, of("0", "1", " 11", "34"));
-            parseableValues.put(PositiveInteger, of("354455", "13452432", "112345235 ", "34529534"));
-            parseableValues.put(Boolean, of("True", "F", "TruE", "FaLse"));
-            parseableValues.put(Geographic, of("38.03,-78.478889", " -78.478889,38.03", "1,0,77", "0,1"));
-            parseableValues.put(DateTime, of("1990-3-4", "2014-273", "2014-W40-2", "2014-W40",
-                    "2014-09-30T18:58:45Z"));
+    static {
+        // these are all parseable values for the datatype to which they are assigned
+        parseableValues = new EnumMap<>(DataType.class);
+        parseableValues.put(String, of("Jane", "John", "Sarah", "Simon"));
+        parseableValues.put(Decimal, of("0", "0.1", "-1", "34.345"));
+        parseableValues.put(Integer, of("0", "1", "-1 ", "34"));
+        parseableValues.put(NonNegativeInteger, of("0", "1", " 11", "34"));
+        parseableValues.put(PositiveInteger, of("354455", "13452432", "112345235 ", "34529534"));
+        parseableValues.put(Boolean, of("True", "F", "TruE", "FaLse"));
+        parseableValues.put(Geographic, of("38.03,-78.478889", " -78.478889,38.03", "1,0,77", "0,1"));
+        parseableValues.put(DateTime, of("1990-3-4", "2014-273", "2014-W40-2", "2014-W40",
+                "2014-09-30T18:58:45Z"));
 
-            // copy the parseable values for reuse
-            oneNonparseableValue = new EnumMap<>(DataType.class);
-            for (final DataType type : DataType.values()) {
-                oneNonparseableValue.put(type, newArrayList(parseableValues.get(type)));
+        // copy the parseable values for reuse
+        oneNonparseableValue = new EnumMap<>(DataType.class);
+        for (final DataType type : DataType.values()) {
+            oneNonparseableValue.put(type, newArrayList(parseableValues.get(type)));
 
-            }
-            // here we add one nonparseable value to each list of parseable values
-            oneNonparseableValue.get(Decimal).add("0sd");
-            oneNonparseableValue.get(Integer).add("-1.3 ");
-            oneNonparseableValue.get(NonNegativeInteger).add("-11");
-            oneNonparseableValue.get(PositiveInteger).add("Q");
-            oneNonparseableValue.get(Boolean).add("Q");
-            oneNonparseableValue.get(Geographic).add("38.03");
-            oneNonparseableValue.get(DateTime).add("2014/24");
-            // nothing cannot parse as a String
-            oneNonparseableValue.remove(String);
         }
+        // here we add one nonparseable value to each list of parseable values
+        oneNonparseableValue.get(Decimal).add("0sd");
+        oneNonparseableValue.get(Integer).add("-1.3 ");
+        oneNonparseableValue.get(NonNegativeInteger).add("-11");
+        oneNonparseableValue.get(PositiveInteger).add("Q");
+        oneNonparseableValue.get(Boolean).add("Q");
+        oneNonparseableValue.get(Geographic).add("38.03");
+        oneNonparseableValue.get(DateTime).add("2014/24");
+        // nothing cannot parse as a String
+        oneNonparseableValue.remove(String);
     }
 
     @Test

@@ -12,33 +12,30 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyList;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
 import java.util.List;
 
-import org.apache.commons.csv.CSVParser;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.internal.stubbing.answers.Returns;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.powermock.core.classloader.annotations.PrepareOnlyThisForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
 import com.google.common.collect.Range;
 
-@RunWith(PowerMockRunner.class)
-@PrepareOnlyThisForTest(CSVParser.class)
 public class TabularMetadataParserTest {
 
     private static final String testHeaders = "NAME,RANK,SERIAL NUMBER";
@@ -52,17 +49,6 @@ public class TabularMetadataParserTest {
     private static final String testRow2 = "\"" + MARKER_VALUE + "\",\"Captain\",0456";
 
     private static final byte[] testCsvWithMarker = (testHeaders + "\n" + testRow1 + "\n" + testRow2).getBytes();
-
-    private static final Answer<InputStream> makeStream(final byte[] bytes) {
-        return new Answer<InputStream>() {
-
-            @Override
-            public InputStream answer(final InvocationOnMock invocation) {
-                return new ByteArrayInputStream(copyOf(bytes, bytes.length));
-            }
-        };
-
-    }
 
     @Mock
     private DataTypeHeuristic<?> mockSimpleStrategy, mockStrategy;
@@ -81,6 +67,7 @@ public class TabularMetadataParserTest {
 
     @Before
     public void setUp() {
+        initMocks(this);
         when(mockSimpleStrategy.mostLikelyType()).thenReturn(mockDataType);
         final Returns range = new Returns(testRange());
         when(mockSimpleStrategy.getRange()).thenAnswer(range);
@@ -90,9 +77,7 @@ public class TabularMetadataParserTest {
     @Test
     public void testOperationWithHeaders() throws IOException {
         when(mockHeaderHeuristic.apply(anyList())).thenReturn(true);
-        final URL mockURL = mock(URL.class);
-
-        when(mockURL.openStream()).thenAnswer(makeStream(testCsv));
+        final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
@@ -116,8 +101,7 @@ public class TabularMetadataParserTest {
     @Test
     public void testOperationWithoutHeaders() throws IOException {
         when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
-        final URL mockURL = mock(URL.class);
-        when(mockURL.openStream()).thenAnswer(makeStream(testCsv));
+        final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
@@ -130,8 +114,7 @@ public class TabularMetadataParserTest {
     @Test
     public <T extends DataTypeHeuristic<T>> void testOperationWithoutHeadersWithScanLimit() throws IOException {
         when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
-        final URL mockURL = mock(URL.class);
-        when(mockURL.openStream()).thenAnswer(makeStream(testCsvWithMarker));
+        final URL mockURL = mockURL(testCsvWithMarker);
         final MarkingMockDataTypeHeuristic testStrategy = new MarkingMockDataTypeHeuristic(MARKER_VALUE);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(testStrategy);
@@ -142,6 +125,30 @@ public class TabularMetadataParserTest {
         testParser.setScanLimit(3);
         testParser.getMetadata(mockURL);
         assertTrue("Failed to discover a marker in a row we should have been scanning!", testStrategy.failure);
+    }
+
+    private static URL mockURL(final byte[] data) throws IOException {
+        final URLConnection mockConnection = mock(URLConnection.class);
+        when(mockConnection.getInputStream()).thenAnswer(makeStream(data));
+        final URLStreamHandler handler = new URLStreamHandler() {
+
+            @Override
+            protected URLConnection openConnection(final URL whocares) {
+                return mockConnection;
+            }
+        };
+        return new URL("mock", "example.com", -1, "", handler);
+    }
+
+    private static final Answer<InputStream> makeStream(final byte[] bytes) {
+        return new Answer<InputStream>() {
+
+            @Override
+            public InputStream answer(final InvocationOnMock invocation) {
+                return new ByteArrayInputStream(copyOf(bytes, bytes.length));
+            }
+        };
+
     }
 
     private static class MarkingMockDataTypeHeuristic implements DataTypeHeuristic<MarkingMockDataTypeHeuristic> {
