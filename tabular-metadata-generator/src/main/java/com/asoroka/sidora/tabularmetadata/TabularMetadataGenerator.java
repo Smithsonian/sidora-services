@@ -47,7 +47,7 @@ public class TabularMetadataGenerator {
 
     private DataTypeHeuristic<?> strategy = new StrictHeuristic();
 
-    private HeaderHeuristic headerStrategy = new Default();
+    private HeaderHeuristic<?> headerStrategy = new Default();
 
     /**
      * Workflow.
@@ -113,7 +113,7 @@ public class TabularMetadataGenerator {
      * @param strategy The header recognition strategy to use.
      */
     @Inject
-    public void setHeaderStrategy(final HeaderHeuristic strategy) {
+    public <H extends HeaderHeuristic<?>> void setHeaderStrategy(final H strategy) {
         this.headerStrategy = strategy;
     }
 

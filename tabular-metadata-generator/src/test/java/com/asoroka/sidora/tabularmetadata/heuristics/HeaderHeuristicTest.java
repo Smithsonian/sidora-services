@@ -9,15 +9,13 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
-
 public class HeaderHeuristicTest {
 
     private static final List<String> goodData = newArrayList("NAME", "RANK", "SERIAL NUMBER");
 
     private static final List<String> badData = newArrayList("Kirk", "Captain", "00034");
 
-    private static final HeaderHeuristic testHeuristic = new HeaderHeuristic.Default();
+    private static final HeaderHeuristic<?> testHeuristic = new HeaderHeuristic.Default();
 
     @Test
     public void testDefault() {

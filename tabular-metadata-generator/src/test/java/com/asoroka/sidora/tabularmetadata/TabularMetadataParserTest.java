@@ -32,6 +32,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
 import com.google.common.collect.Range;
@@ -40,21 +41,27 @@ public class TabularMetadataParserTest {
 
     private static final String testHeaders = "NAME,RANK,SERIAL NUMBER";
 
-    private static final String testRow1 = "\"Kirk\",\"Captain\",0033";
+    private static final String testRow1 = "Kirk,Captain,0033";
 
     private static final byte[] testCsv = (testHeaders + "\n" + testRow1).getBytes();
 
     private static final String MARKER_VALUE = "Picard";
 
-    private static final String testRow2 = "\"" + MARKER_VALUE + "\",\"Captain\",0456";
+    private static final String testRow2 = MARKER_VALUE + ",Redshirt,0456";
 
     private static final byte[] testCsvWithMarker = (testHeaders + "\n" + testRow1 + "\n" + testRow2).getBytes();
+
+    private static final String testTsvHeaders = "NAME\tRANK\tSERIAL NUMBER";
+
+    private static final String testTsvRow1 = "Kirk\tCaptain\t0033";
+
+    private static final byte[] testTsv = (testTsvHeaders + "\n" + testTsvRow1).getBytes();
 
     @Mock
     private DataTypeHeuristic<?> mockSimpleStrategy, mockStrategy;
 
     @Mock
-    private HeaderHeuristic mockHeaderHeuristic;
+    private HeaderHeuristic<?> mockHeaderHeuristic;
 
     @Mock
     private DataType mockDataType;
@@ -72,6 +79,30 @@ public class TabularMetadataParserTest {
         final Returns range = new Returns(testRange());
         when(mockSimpleStrategy.getRange()).thenAnswer(range);
         mockStrategy = cloneableMockStrategy(mockSimpleStrategy);
+    }
+
+    @Test
+    public void testOperationWithSetFormat() throws IOException {
+        when(mockHeaderHeuristic.apply(anyList())).thenReturn(true);
+        final URL mockURL = mockURL(testTsv);
+        final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
+        testParser.setStrategy(mockStrategy);
+        testParser.setFormat(new TabularFormat.TabSeparated());
+        testParser.setHeaderStrategy(mockHeaderHeuristic);
+        final TabularMetadata results = testParser.getMetadata(mockURL);
+
+        final List<String> headers = results.headerNames();
+        final List<DataType> types = results.fieldTypes();
+        @SuppressWarnings("rawtypes")
+        // we ignore type-safety here for a simpler unit test
+        final List ranges = results.minMaxes();
+
+        assertEquals(asList(testHeaders.split(",")), headers);
+        assertTrue(all(types, equalTo(mockDataType)));
+        @SuppressWarnings("unchecked")
+        // we ignore type-safety here for a simpler unit test
+        final boolean rangeTest = all(ranges, equalTo(testRange()));
+        assertTrue(rangeTest);
     }
 
     @Test
