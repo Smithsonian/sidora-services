@@ -6,12 +6,11 @@
     xsi:schemaLocation="
 http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
-    <!--FIXME: Add route IDs to all routes and sub-routes -->
     <!--
         TODO: Add Deployment Metadata backport
     -->
     <camelContext xmlns="http://camel.apache.org/schema/blueprint" >
-        <route id="TestFileRoute">
+        <route id="StartCameraTrapRoute">
             <from uri="file:Process?moveFailed=Error_CamelTrap&amp;delete=true"/>
             <log message="Starting Camera Trap Process" /> 
             <to uri="extractor:extract?location=CameraTrapData" />
@@ -21,7 +20,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="reader:file?type=text" />
             <to uri="direct:process" />
         </route>
-        <route id="TestProcessManifest">
+        <route id="CameraTrapProcessManifest">
             <from uri="direct:process" />
             <log message="Starting Data processing... " /> 
             <!--
@@ -36,6 +35,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 ~~~ or ~~~
                 ??? Add as Camel header if the above doesn't work ???
             -->
+            <to uri="fedora:ingest" />
             <multicast>
                 <to uri="direct:manifest" />
                 <to uri="direct:researcher" />
@@ -44,8 +44,9 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             </multicast>
             <log message="Finished Data processing!" /> 
         </route>
-        <route>
+        <route id="CameraTrapTransformManifest" >
             <from uri="direct:manifest" />
+            <to uri="fedora:datastream?name=MANIFEST&amp;type=text/xml&amp;group=M" />
             <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
@@ -59,30 +60,35 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="file://CameraTrapOutput?fileName=newManifest.xml" />
             <log message="Manifest translated" /> 
         </route>
-        <route>
+        <route id="CameraTrapTransformResearcherData" >
             <from uri="direct:researcher" />
             <to uri="xslt:file:Input/xslt/researcher.xsl"/>
-            <to uri="file://CameraTrapOutput?fileName=ResearcherObservations.xml" />
-            <!--
-                TODO: Change the following to insert obervations into Fedora
-            -->
+            <transform>
+                <xpath>//researcher/text()</xpath>
+            </transform>
+            <to uri="fedora:datastream?name=RESEARCHER&amp;type=text/csv&amp;group=M" />
             <log message="Researcher's Observation file created" /> 
         </route>
-        <route id="TransformVolunteerData" >
+        <route id="CameraTrapTransformVolunteerData" >
             <from uri="direct:volunteer" />
             <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
-            <to uri="file://CameraTrapOutput?fileName=VolunteerObservations.xml" />
-            <!--
-                TODO: Change the following to insert obervations into Fedora
-            -->
+            <transform>
+                <xpath>//researcher/text()</xpath>
+            </transform>
+            <to uri="fedora:datastream?name=VOLUNTEER&amp;type=text/csv&amp;group=M" />
             <log message="Volunteer's Observation file created" /> 
         </route>
-        <route id="ProcessImages" >
+        <route id="CameraTrapProcessImages" >
             <from uri="direct:processImages" /> 
             <log message="Starting Image processing..." /> 
+            <setHeader headerName="FedoraParentConcept">
+                <simple>${header.CamelFedoraPid}</simple>
+            </setHeader>
             <split>
                 <xpath>//ImageFileName/text()</xpath>
                 <to uri="reader:file" />
+                <to uri="fedora:ingest" />
+                <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
                 <to uri="direct:transformImage" />
             </split> 
             <!--
@@ -91,23 +97,23 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             --> 
             <log message="Finished processing Images" />           
         </route>
-        <route id="TransformImages">
+        <route id="CameraTrapTransformImages">
             <from uri="direct:transformImage" />
             <multicast>
                 <to uri="direct:createThumbnail" />
-                <to uri="direct:createResampled" />
+                <!--<to uri="direct:createResampled" />-->
                 <!--
                     TODO: Add FITS component to route
                 -->
             </multicast>
             <log message="Image processed" />
         </route>
-        <route id="CreateThumbnailImage" >
+        <route id="CameraTrapCreateThumbnailImage" >
             <from uri="direct:createThumbnail" />
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(72,96)"/>
-            <to uri="file://CameraTrapOutput/thumbnail" />
+            <to uri="fedora:datastream?name=THUMBNAIL&amp;type=image/jpeg&amp;group=M" />
         </route>
-        <route id="CreateResampledImage">
+        <route id="CameraTrapCreateResampledImage">
             <from uri="direct:createResampled" />
             <!--
                 NOTE: This might not be needed
