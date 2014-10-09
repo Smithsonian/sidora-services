@@ -341,6 +341,7 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.9</version>
 				<configuration>
+					<includeTransitiveDependencySources>true</includeTransitiveDependencySources>
 					<linksource>true</linksource>
 				</configuration>
 			</plugin>

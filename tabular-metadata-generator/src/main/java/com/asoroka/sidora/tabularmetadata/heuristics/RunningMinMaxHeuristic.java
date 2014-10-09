@@ -16,7 +16,7 @@ import com.asoroka.sidora.tabularmetadata.datatype.ParsingException;
 import com.google.common.collect.Range;
 
 /**
- * Calculates the ranges of values supplied for each possible parseable type.
+ * Calculates the ranges of values supplied for each possible parseable type, without caching the values supplied.
  * 
  * @author ajs6f
  * @param <T>
@@ -24,8 +24,14 @@ import com.google.common.collect.Range;
 public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>> implements
         DataTypeHeuristic<T> {
 
+    /**
+     * A {@link Map} from data types to the minimum value from all presented values that were parseable in that type.
+     */
     protected Map<DataType, Comparable<?>> minimums = new EnumMap<>(DataType.class);
 
+    /**
+     * A {@link Map} from data types to the maximum value from all presented values that were parseable in that type.
+     */
     protected Map<DataType, Comparable<?>> maximums = new EnumMap<>(DataType.class);
 
     @Override
@@ -40,7 +46,7 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
                 maximums.put(type, (currentMax == null) ? value : natural().max(currentMax, value));
             } catch (final ParsingException e) {
                 // NO OP
-                // we don't care if a particular parsing fails, we are only gathering aggregate statistics
+                // we don't care if a parse attempt fails because we're garnering measures for those that succeed
             }
         }
     }

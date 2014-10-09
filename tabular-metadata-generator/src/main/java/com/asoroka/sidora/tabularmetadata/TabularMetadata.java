@@ -15,19 +15,19 @@ public class TabularMetadata {
 
     private final List<String> headerNames;
 
-    private final List<DataType> columnTypes;
+    private final List<DataType> fieldTypes;
 
     private final List<Range<?>> minMaxes;
 
     /**
      * @param headerNames
-     * @param columnTypes
+     * @param fieldTypes
      * @param minMaxes
      */
-    public TabularMetadata(final List<String> headerNames, final List<DataType> columnTypes,
+    public TabularMetadata(final List<String> headerNames, final List<DataType> fieldTypes,
             final List<Range<?>> minMaxes) {
         this.headerNames = headerNames;
-        this.columnTypes = columnTypes;
+        this.fieldTypes = fieldTypes;
         this.minMaxes = minMaxes;
     }
 
@@ -42,13 +42,14 @@ public class TabularMetadata {
      * @return A list of field datatypes.
      */
     public List<DataType> fieldTypes() {
-        return columnTypes;
+        return fieldTypes;
     }
 
     /**
      * @return A list of closed {@link Range}s, with the minimum and maximum for each field. The values of the
      *         endpoints of the ranges are in the Java type value-space associated to the datatype considered most
      *         likely for that field.
+     * @see com.google.common.collect.Range<?>
      */
     public List<Range<?>> minMaxes() {
         return minMaxes;

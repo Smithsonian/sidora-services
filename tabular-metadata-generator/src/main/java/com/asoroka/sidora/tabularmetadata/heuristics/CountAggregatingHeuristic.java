@@ -7,6 +7,7 @@ package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.firstMostRestrictiveType;
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.collect.Sets.filter;
 import static java.util.Objects.hash;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -72,6 +73,9 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     }
 
     /**
+     * Subclasses must override this method with an algorithm that uses the gathered statistics (and possibly other
+     * information) to make a determination about the most likely type of the proffered values.
+     * 
      * @return Whether this type should be considered as a candidate for selection.
      */
     abstract protected boolean candidacy(DataType d);
@@ -79,7 +83,7 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     @Override
     public void addValue(final String value) {
         super.addValue(value);
-        for (final DataType type : DataType.parseableAs(value)) {
+        for (final DataType type : parseableAs(value)) {
             typeCounts.put(type, typeCounts.get(type) + 1);
         }
     }
