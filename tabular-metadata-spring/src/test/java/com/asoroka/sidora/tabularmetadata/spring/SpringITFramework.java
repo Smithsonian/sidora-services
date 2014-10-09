@@ -18,8 +18,8 @@ import javax.inject.Inject;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.asoroka.sidora.tabularmetadata.CsvMetadata;
-import com.asoroka.sidora.tabularmetadata.CsvMetadataGenerator;
+import com.asoroka.sidora.tabularmetadata.TabularMetadata;
+import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
@@ -38,12 +38,12 @@ public abstract class SpringITFramework {
     }
 
     @Inject
-    protected CsvMetadataGenerator testGenerator;
+    protected TabularMetadataGenerator testGenerator;
 
-    public CsvMetadata testSimpleFile(final URL testFile, final List<DataType> expectedDatatypes,
+    public TabularMetadata testSimpleFile(final URL testFile, final List<DataType> expectedDatatypes,
             final Range<?> minMaxes)
             throws IOException {
-        final CsvMetadata result = testGenerator.getMetadata(testFile);
+        final TabularMetadata result = testGenerator.getMetadata(testFile);
         assertEquals("Got incorrect column types!", expectedDatatypes, result.fieldTypes());
         assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes().get(2));
         return result;

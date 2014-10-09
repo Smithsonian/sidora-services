@@ -7,10 +7,10 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.asoroka.sidora.tabularmetadata.formats.CsvFormat.Default;
-import com.asoroka.sidora.tabularmetadata.formats.CsvFormat.TabSeparated;
+import com.asoroka.sidora.tabularmetadata.formats.TabularFormat.Default;
+import com.asoroka.sidora.tabularmetadata.formats.TabularFormat.TabSeparated;
 
-public class CsvFormatTest {
+public class TabularFormatTest {
 
     @Test
     public void testDefault() {

@@ -8,11 +8,11 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  * 
  * @author ajs6f
  */
-public class CsvMetadataNamespaceHandler extends NamespaceHandlerSupport {
+public class TabularMetadataNamespaceHandler extends NamespaceHandlerSupport {
 
     @Override
     public void init() {
-        registerBeanDefinitionParser("CsvMetadataGenerator", new CsvMetadataGeneratorBeanDefinitionParser());
+        registerBeanDefinitionParser("TabularMetadataGenerator", new TabularMetadataGeneratorBeanDefinitionParser());
         registerBeanDefinitionParser("FractionHeuristic", new FractionHeuristicBeanDefinitionParser());
         registerBeanDefinitionParser("TsvFormat", new TabSeparatedBeanDefinitionParser());
 

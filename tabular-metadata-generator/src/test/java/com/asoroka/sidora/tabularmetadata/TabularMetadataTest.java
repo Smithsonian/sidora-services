@@ -10,12 +10,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.asoroka.sidora.tabularmetadata.CsvMetadata;
+import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
 @RunWith(MockitoJUnitRunner.class)
-public class CsvMetadataTest {
+public class TabularMetadataTest {
 
     @Mock
     private List<String> mockHeaderNames;
@@ -28,7 +28,7 @@ public class CsvMetadataTest {
 
     @Test
     public void testContainerAction() {
-        final CsvMetadata testMetadata = new CsvMetadata(mockHeaderNames, mockTypes, mockRanges);
+        final TabularMetadata testMetadata = new TabularMetadata(mockHeaderNames, mockTypes, mockRanges);
         assertEquals(mockHeaderNames, testMetadata.headerNames());
         assertEquals(mockTypes, testMetadata.fieldTypes());
         assertEquals(mockRanges, testMetadata.minMaxes());

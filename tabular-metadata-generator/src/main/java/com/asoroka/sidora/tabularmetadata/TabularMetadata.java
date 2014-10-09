@@ -11,7 +11,7 @@ import com.google.common.collect.Range;
  * 
  * @author ajs6f
  */
-public class CsvMetadata {
+public class TabularMetadata {
 
     private final List<String> headerNames;
 
@@ -24,7 +24,7 @@ public class CsvMetadata {
      * @param columnTypes
      * @param minMaxes
      */
-    public CsvMetadata(final List<String> headerNames, final List<DataType> columnTypes,
+    public TabularMetadata(final List<String> headerNames, final List<DataType> columnTypes,
             final List<Range<?>> minMaxes) {
         this.headerNames = headerNames;
         this.columnTypes = columnTypes;

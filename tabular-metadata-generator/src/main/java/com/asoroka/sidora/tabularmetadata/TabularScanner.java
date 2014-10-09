@@ -24,7 +24,7 @@ import com.google.common.collect.PeekingIterator;
  * 
  * @author ajs6f
  */
-public class CsvScanner extends AbstractIterator<CSVRecord> {
+public class TabularScanner extends AbstractIterator<CSVRecord> {
 
     private final PeekingIterator<CSVRecord> internalScanner;
 
@@ -32,14 +32,14 @@ public class CsvScanner extends AbstractIterator<CSVRecord> {
 
     private final List<DataTypeHeuristic<?>> rowOfStrategies;
 
-    private static final Logger log = getLogger(CsvScanner.class);
+    private static final Logger log = getLogger(TabularScanner.class);
 
-    public CsvScanner(final CSVParser parser, final DataTypeHeuristic<?> strategy) {
+    public TabularScanner(final CSVParser parser, final DataTypeHeuristic<?> strategy) {
         super();
         this.internalScanner = peekingIterator(parser.iterator());
         final int numColumns = internalScanner.peek().size();
 
-        log.debug("Found {} columns in our CSV.", numColumns);
+        log.debug("Found {} columns in our data.", numColumns);
         // create a "row" of strategy instances of the same length as the rows in our CSV
         this.rowOfStrategies = newArrayListWithCapacity(numColumns);
         for (int i = 0; i < numColumns; i++) {
@@ -63,8 +63,8 @@ public class CsvScanner extends AbstractIterator<CSVRecord> {
 
     /**
      * Scan rows in our CSV up to a limit, exhausting values from the internal parser as we do. <br/>
-     * WARNING: Be careful about calling this more than once on a {@link CsvScanner}. The internal parser of a scanner
-     * cannot be reset.
+     * WARNING: Be careful about calling this more than once on a {@link TabularScanner}. The internal parser of a
+     * scanner cannot be reset.
      * 
      * @param limit The number of rows to scan, 0 for all rows.
      */

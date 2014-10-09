@@ -34,8 +34,8 @@ import org.powermock.core.classloader.annotations.PrepareOnlyThisForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 
-import com.asoroka.sidora.tabularmetadata.CsvMetadata;
-import com.asoroka.sidora.tabularmetadata.CsvMetadataGenerator;
+import com.asoroka.sidora.tabularmetadata.TabularMetadata;
+import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
@@ -43,7 +43,7 @@ import com.google.common.collect.Range;
 
 @RunWith(PowerMockRunner.class)
 @PrepareOnlyThisForTest(CSVParser.class)
-public class CsvMetadataParserTest {
+public class TabularMetadataParserTest {
 
     private static final String testHeaders = "NAME,RANK,SERIAL NUMBER";
 
@@ -81,7 +81,7 @@ public class CsvMetadataParserTest {
         return Range.all();
     }
 
-    private static final Logger log = getLogger(CsvMetadataParserTest.class);
+    private static final Logger log = getLogger(TabularMetadataParserTest.class);
 
     @Before
     public void setUp() {
@@ -97,10 +97,10 @@ public class CsvMetadataParserTest {
         final URL mockURL = mock(URL.class);
 
         when(mockURL.openStream()).thenAnswer(makeStream(testCsv));
-        final CsvMetadataGenerator testParser = new CsvMetadataGenerator();
+        final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
-        final CsvMetadata results = testParser.getMetadata(mockURL);
+        final TabularMetadata results = testParser.getMetadata(mockURL);
 
         final List<String> headers = results.headerNames();
         final List<DataType> types = results.fieldTypes();
@@ -122,11 +122,11 @@ public class CsvMetadataParserTest {
         when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
         final URL mockURL = mock(URL.class);
         when(mockURL.openStream()).thenAnswer(makeStream(testCsv));
-        final CsvMetadataGenerator testParser = new CsvMetadataGenerator();
+        final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
 
-        final CsvMetadata results = testParser.getMetadata(mockURL);
+        final TabularMetadata results = testParser.getMetadata(mockURL);
         final List<String> headers = results.headerNames();
         assertEquals(emptyList(), headers);
     }
@@ -137,7 +137,7 @@ public class CsvMetadataParserTest {
         final URL mockURL = mock(URL.class);
         when(mockURL.openStream()).thenAnswer(makeStream(testCsvWithMarker));
         final MarkingMockDataTypeHeuristic<T> testStrategy = new MarkingMockDataTypeHeuristic<>(MARKER_VALUE);
-        final CsvMetadataGenerator testParser = new CsvMetadataGenerator();
+        final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(testStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         testParser.setScanLimit(2);

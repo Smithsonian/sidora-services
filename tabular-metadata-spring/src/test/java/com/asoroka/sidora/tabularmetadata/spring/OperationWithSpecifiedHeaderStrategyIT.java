@@ -10,14 +10,14 @@ import java.net.MalformedURLException;
 import org.junit.Test;
 import org.springframework.test.context.ContextConfiguration;
 
-import com.asoroka.sidora.tabularmetadata.CsvMetadata;
+import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 
 @ContextConfiguration("/spring-xml/operation-with-specified-header-strategy.xml")
 public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
 
     @Test
     public void testWithSimpleData() throws MalformedURLException, IOException {
-        final CsvMetadata result = testSimpleFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange());
+        final TabularMetadata result = testSimpleFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange());
         assertEquals("Found header names when we should not have!", asList(), result.headerNames());
     }
 

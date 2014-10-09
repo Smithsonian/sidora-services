@@ -24,13 +24,13 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
-import com.asoroka.sidora.tabularmetadata.CsvScanner;
+import com.asoroka.sidora.tabularmetadata.TabularScanner;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.google.common.base.Function;
 
 @RunWith(MockitoJUnitRunner.class)
-public class CsvScannerTest {
+public class TabularScannerTest {
 
     @Mock
     DataType mockDataType;
@@ -42,7 +42,7 @@ public class CsvScannerTest {
 
     private ArrayList<DataType> expectedResults;
 
-    private static final Logger log = getLogger(CsvScannerTest.class);
+    private static final Logger log = getLogger(TabularScannerTest.class);
 
     @Before
     public void setUp() {
@@ -52,10 +52,10 @@ public class CsvScannerTest {
 
     @Test
     public void testOperation() throws IOException {
-        final CsvScanner testScanner;
+        final TabularScanner testScanner;
         try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
             log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner = new CsvScanner(parser, cloneableMockStrategy(mockStrategy));
+            testScanner = new TabularScanner(parser, cloneableMockStrategy(mockStrategy));
             testScanner.scan(0);
         }
         final List<DataType> guesses =
@@ -65,10 +65,10 @@ public class CsvScannerTest {
 
     @Test
     public void testOperationWithLimitedScan() throws IOException {
-        final CsvScanner testScanner;
+        final TabularScanner testScanner;
         try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
             log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner = new CsvScanner(parser, cloneableMockStrategy(mockStrategy));
+            testScanner = new TabularScanner(parser, cloneableMockStrategy(mockStrategy));
             testScanner.scan(2);
         }
         final List<DataType> guesses =

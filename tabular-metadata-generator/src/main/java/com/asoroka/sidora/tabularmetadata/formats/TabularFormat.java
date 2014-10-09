@@ -13,7 +13,7 @@ import org.apache.commons.csv.CSVFormat;
  * 
  * @author ajs6f
  */
-public interface CsvFormat extends Provider<CSVFormat> {
+public interface TabularFormat extends Provider<CSVFormat> {
 
     /**
      * The default format.
@@ -21,7 +21,7 @@ public interface CsvFormat extends Provider<CSVFormat> {
      * @author ajs6f
      * @see org.apache.commons.csv.CSVFormat.DEFAULT
      */
-    public static class Default implements CsvFormat {
+    public static class Default implements TabularFormat {
 
         @Override
         public CSVFormat get() {
@@ -36,7 +36,7 @@ public interface CsvFormat extends Provider<CSVFormat> {
      * @author ajs6f
      * @see org.apache.commons.csv.CSVFormat.TDF
      */
-    public static class TabSeparated implements CsvFormat {
+    public static class TabSeparated implements TabularFormat {
 
         @Override
         public CSVFormat get() {

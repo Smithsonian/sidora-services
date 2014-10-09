@@ -9,18 +9,18 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.w3c.dom.Element;
 
-import com.asoroka.sidora.tabularmetadata.CsvMetadataGenerator;
+import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 
 /**
- * Responsible for constructing {@link CsvMetadataGenerator} beans.
+ * Responsible for constructing {@link TabularMetadataGenerator} beans.
  * 
  * @author ajs6f
  */
-public class CsvMetadataGeneratorBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
+public class TabularMetadataGeneratorBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
 
     @Override
     protected Class<?> getBeanClass(final Element element) {
-        return CsvMetadataGenerator.class;
+        return TabularMetadataGenerator.class;
     }
 
     @Override

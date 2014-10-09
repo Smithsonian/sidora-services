@@ -20,7 +20,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.formats.CsvFormat;
+import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.StrictHeuristic;
@@ -34,14 +34,14 @@ import com.google.common.collect.Range;
  * 
  * @author ajs6f
  */
-public class CsvMetadataGenerator {
+public class TabularMetadataGenerator {
 
     private static final Charset CHARACTER_ENCODING = UTF_8;
 
     private CSVFormat format = DEFAULT;
 
     /**
-     * Default value of {@code 0} indicates no limit. See {@link CsvScanner.scan(final int limit)}.
+     * Default value of {@code 0} indicates no limit. See {@link TabularScanner.scan(final int limit)}.
      */
     private Integer scanLimit = 0;
 
@@ -56,7 +56,7 @@ public class CsvMetadataGenerator {
      * @return The results of metadata extraction.
      * @throws IOException
      */
-    public CsvMetadata getMetadata(final URL csvUrl) throws IOException {
+    public TabularMetadata getMetadata(final URL csvUrl) throws IOException {
         // attempt to extract header names
         final List<String> headerNames;
         try (final CSVParser headerParser = parse(csvUrl, CHARACTER_ENCODING, format)) {
@@ -68,7 +68,7 @@ public class CsvMetadataGenerator {
         // scan values up to the limit
         final List<DataTypeHeuristic<?>> strategies;
         try (final CSVParser parser = parse(csvUrl, CHARACTER_ENCODING, format)) {
-            final CsvScanner scanner = new CsvScanner(parser, strategy);
+            final TabularScanner scanner = new TabularScanner(parser, strategy);
             scanner.scan(scanLimit);
             strategies = scanner.getStrategies();
         }
@@ -76,7 +76,7 @@ public class CsvMetadataGenerator {
         final List<DataType> columnTypes = transform(strategies, extractType);
         final List<Range<?>> minMaxes = transform(strategies, extractMinMax);
 
-        return new CsvMetadata(headerNames, columnTypes, minMaxes);
+        return new TabularMetadata(headerNames, columnTypes, minMaxes);
     }
 
     @TypeRenaming
@@ -120,7 +120,7 @@ public class CsvMetadataGenerator {
      * @param format The tabular data format to expect.
      */
     @Inject
-    public void setFormat(final CsvFormat format) {
+    public void setFormat(final TabularFormat format) {
         this.format = format.get();
     }
 

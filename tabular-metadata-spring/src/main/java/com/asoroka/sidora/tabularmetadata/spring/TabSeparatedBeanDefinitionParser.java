@@ -5,7 +5,7 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.w3c.dom.Element;
 
-import com.asoroka.sidora.tabularmetadata.formats.CsvFormat.TabSeparated;
+import com.asoroka.sidora.tabularmetadata.formats.TabularFormat.TabSeparated;
 
 /**
  * Responsible for constructing {@link TabSeparated} beans.
