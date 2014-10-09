@@ -35,7 +35,6 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
     private static final Logger log = getLogger(TabularScanner.class);
 
     public TabularScanner(final CSVParser parser, final DataTypeHeuristic<?> strategy) {
-        super();
         this.internalScanner = peekingIterator(parser.iterator());
         final int numColumns = internalScanner.peek().size();
 

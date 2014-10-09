@@ -31,4 +31,9 @@ public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeurist
         return new FractionHeuristic(fractionOfAllowedNonparseables);
     }
 
+    @Override
+    public FractionHeuristic get() {
+        return this;
+    }
+
 }

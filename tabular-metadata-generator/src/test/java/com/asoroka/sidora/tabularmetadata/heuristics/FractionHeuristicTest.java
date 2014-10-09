@@ -8,11 +8,15 @@ import org.junit.Test;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.FractionHeuristic;
 
 public class FractionHeuristicTest extends CountAggregatingHeuristicTestFrame<FractionHeuristic> {
 
     private static final Logger log = getLogger(FractionHeuristicTest.class);
+
+    @Override
+    protected FractionHeuristic newTestInstance() {
+        return new FractionHeuristic(0.2);
+    }
 
     @Test
     public void testActionWithGoodValues() {
@@ -20,7 +24,7 @@ public class FractionHeuristicTest extends CountAggregatingHeuristicTestFrame<Fr
         log.trace("testActionWithGoodValues()...");
         for (final DataType testType : DataType.values()) {
             testHeuristic = newTestInstance();
-            for (final String testValue : goodValues.get(testType)) {
+            for (final String testValue : parseableValues.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
             assertEquals("Didn't get the correct type for datatype " + testType + "!", testType, testHeuristic
@@ -31,18 +35,12 @@ public class FractionHeuristicTest extends CountAggregatingHeuristicTestFrame<Fr
     @Test
     public void testActionWithOneBadValue() {
         log.trace("testActionWithOneBadValue()...");
-        for (final DataType testType : oneBadValue.keySet()) {
+        for (final DataType testType : oneNonparseableValue.keySet()) {
             testHeuristic = newTestInstance();
-            for (final String testValue : oneBadValue.get(testType)) {
+            for (final String testValue : oneNonparseableValue.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
             assertEquals("Failed to admit datatype but should have!", testType, testHeuristic.mostLikelyType());
         }
     }
-
-    @Override
-    protected FractionHeuristic newTestInstance() {
-        return new FractionHeuristic(0.2);
-    }
-
 }

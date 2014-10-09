@@ -34,7 +34,7 @@ public interface DataTypeHeuristic<T extends DataTypeHeuristic<T>> extends Clone
     /**
      * @return The range taken on by proffered values in the value space of the most likely type.
      */
-    public Range<?> getRange();
+    public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange();
 
     /**
      * We override {@link Object#clone()} in order to narrow its return type for type-safety.

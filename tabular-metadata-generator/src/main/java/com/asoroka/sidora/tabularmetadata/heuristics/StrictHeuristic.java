@@ -33,4 +33,9 @@ public class StrictHeuristic extends CountAggregatingHeuristic<StrictHeuristic> 
         return new StrictHeuristic();
     }
 
+    @Override
+    public StrictHeuristic get() {
+        return this;
+    }
+
 }

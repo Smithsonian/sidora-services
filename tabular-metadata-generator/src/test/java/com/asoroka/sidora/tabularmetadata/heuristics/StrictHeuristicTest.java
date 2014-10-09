@@ -9,11 +9,15 @@ import org.junit.Test;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.StrictHeuristic;
 
 public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<StrictHeuristic> {
 
     private static final Logger log = getLogger(StrictHeuristicTest.class);
+
+    @Override
+    protected StrictHeuristic newTestInstance() {
+        return new StrictHeuristic();
+    }
 
     @Test
     public void testActionWithGoodValues() {
@@ -21,7 +25,7 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
         for (final DataType testType : DataType.values()) {
             log.debug("Testing type: {}", testType);
             testHeuristic = newTestInstance();
-            for (final String testValue : goodValues.get(testType)) {
+            for (final String testValue : parseableValues.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
             assertEquals("Didn't get the correct type for datatype " + testType + "!", testType, testHeuristic
@@ -32,19 +36,13 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
     @Test
     public void testActionWithOneBadValue() {
         log.trace("testActionWithOneBadValue()...");
-        for (final DataType testType : oneBadValue.keySet()) {
+        for (final DataType testType : oneNonparseableValue.keySet()) {
             testHeuristic = newTestInstance();
-            for (final String testValue : oneBadValue.get(testType)) {
+            for (final String testValue : oneNonparseableValue.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
             assertFalse("Got the most commonly occuring type for datatype " + testType + " but shoudn't have!",
                     testHeuristic.mostLikelyType().equals(testType));
         }
     }
-
-    @Override
-    protected StrictHeuristic newTestInstance() {
-        return new StrictHeuristic();
-    }
-
 }

@@ -14,7 +14,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,10 +31,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.powermock.core.classloader.annotations.PrepareOnlyThisForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.slf4j.Logger;
 
-import com.asoroka.sidora.tabularmetadata.TabularMetadata;
-import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
@@ -81,7 +77,7 @@ public class TabularMetadataParserTest {
         return Range.all();
     }
 
-    private static final Logger log = getLogger(TabularMetadataParserTest.class);
+    // private static final Logger log = getLogger(TabularMetadataParserTest.class);
 
     @Before
     public void setUp() {

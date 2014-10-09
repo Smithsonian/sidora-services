@@ -8,47 +8,60 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.RunningMinMaxHeuristic;
+import com.google.common.collect.Range;
 
 public class RunningMinMaxHeuristicTest {
 
     // private static final Logger log = getLogger(RunningMinMaxHeuristicTest.class);
 
+    private static TestRunningMinMaxHeuristic createTestStrategy(final DataType type) {
+        return new TestRunningMinMaxHeuristic(type);
+    }
+
     @Test
     public void testMinMax() {
-        RunningMinMaxHeuristic<?> testStrategy = createTestStrategy(Integer);
+        TestRunningMinMaxHeuristic testStrategy = createTestStrategy(Integer);
         for (byte i = 0; i < 10; i++) {
             testStrategy.addValue(String.valueOf(i));
         }
-        final Integer intMin = (Integer) testStrategy.getRange().lowerEndpoint();
-        final Integer intMax = (Integer) testStrategy.getRange().upperEndpoint();
+        final Range<Integer> intMinMax = testStrategy.getRange();
+        final Integer intMin = intMinMax.lowerEndpoint();
+        final Integer intMax = intMinMax.upperEndpoint();
         assertEquals("Got wrong minimum!", 0, intMin, 0);
         assertEquals("Got wrong maximum!", 9, intMax, 0);
         testStrategy = createTestStrategy(Decimal);
         for (byte i = 0; i < 10; i++) {
             testStrategy.addValue(String.valueOf(i));
         }
-        final Float floatMin = (Float) testStrategy.getRange().lowerEndpoint();
-        final Float floatMax = (Float) testStrategy.getRange().upperEndpoint();
+        final Range<Float> floatMinMax = testStrategy.getRange();
+        final Float floatMin = floatMinMax.lowerEndpoint();
+        final Float floatMax = floatMinMax.upperEndpoint();
         assertEquals("Got wrong minimum!", 0, floatMin, 0);
         assertEquals("Got wrong maximum!", 9, floatMax, 0);
     }
 
-    private static RunningMinMaxHeuristic<?> createTestStrategy(final DataType type) {
-        @SuppressWarnings("rawtypes")
-        final RunningMinMaxHeuristic<?> strategy = new RunningMinMaxHeuristic() {
+    private static class TestRunningMinMaxHeuristic extends RunningMinMaxHeuristic<TestRunningMinMaxHeuristic> {
 
-            @Override
-            public DataType mostLikelyType() {
-                return type;
-            }
+        public TestRunningMinMaxHeuristic(final DataType type) {
+            this.type = type;
+        }
 
-            @Override
-            public RunningMinMaxHeuristic clone() {
-                // NO OP
-                return null;
-            }
-        };
-        return strategy;
+        final DataType type;
+
+        @Override
+        public DataType mostLikelyType() {
+            return type;
+        }
+
+        @Override
+        public TestRunningMinMaxHeuristic clone() {
+            return new TestRunningMinMaxHeuristic(type);
+        }
+
+        @Override
+        public TestRunningMinMaxHeuristic get() {
+            return this;
+        }
+
     }
 }

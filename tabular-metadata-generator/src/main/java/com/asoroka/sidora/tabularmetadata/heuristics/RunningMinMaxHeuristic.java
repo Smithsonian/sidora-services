@@ -27,7 +27,7 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     /**
      * A {@link Map} from data types to the minimum value from all presented values that were parseable in that type.
      */
-    protected Map<DataType, Comparable<?>> minimums = new EnumMap<>(DataType.class);
+    private Map<DataType, Comparable<?>> minimums = new EnumMap<>(DataType.class);
 
     /**
      * A {@link Map} from data types to the maximum value from all presented values that were parseable in that type.
@@ -52,16 +52,13 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     }
 
     @Override
-    public Range<?> getRange() {
-        return Range.closed(minimums.get(mostLikelyType()), maximums.get(mostLikelyType()));
+    public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange() {
+        final MinMax min = (MinMax) minimums.get(mostLikelyType());
+        final MinMax max = (MinMax) maximums.get(mostLikelyType());
+        return Range.closed(min, max);
     }
 
     @Override
     abstract public T clone();
-
-    @Override
-    public DataTypeHeuristic<T> get() {
-        return this;
-    }
 
 }
