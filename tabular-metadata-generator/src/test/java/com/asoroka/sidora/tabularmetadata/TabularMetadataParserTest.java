@@ -73,7 +73,7 @@ public class TabularMetadataParserTest {
     @Mock
     private DataType mockDataType;
 
-    static <C extends Comparable<C>> Range<C> mockRange() {
+    static <MinMax extends Comparable<?>> Range<MinMax> testRange() {
         return Range.all();
     }
 
@@ -82,7 +82,7 @@ public class TabularMetadataParserTest {
     @Before
     public void setUp() {
         when(mockSimpleStrategy.mostLikelyType()).thenReturn(mockDataType);
-        final Returns range = new Returns(mockRange());
+        final Returns range = new Returns(testRange());
         when(mockSimpleStrategy.getRange()).thenAnswer(range);
         mockStrategy = cloneableMockStrategy(mockSimpleStrategy);
     }
@@ -108,7 +108,7 @@ public class TabularMetadataParserTest {
         assertTrue(all(types, equalTo(mockDataType)));
         @SuppressWarnings("unchecked")
         // we ignore type-safety here for a simpler unit test
-        final boolean rangeTest = all(ranges, equalTo(mockRange()));
+        final boolean rangeTest = all(ranges, equalTo(testRange()));
         assertTrue(rangeTest);
 
     }
@@ -132,19 +132,19 @@ public class TabularMetadataParserTest {
         when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
         final URL mockURL = mock(URL.class);
         when(mockURL.openStream()).thenAnswer(makeStream(testCsvWithMarker));
-        final MarkingMockDataTypeHeuristic<T> testStrategy = new MarkingMockDataTypeHeuristic<>(MARKER_VALUE);
+        final MarkingMockDataTypeHeuristic testStrategy = new MarkingMockDataTypeHeuristic(MARKER_VALUE);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(testStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         testParser.setScanLimit(2);
         testParser.getMetadata(mockURL);
-        assertFalse("Discovered a marker in a row we should not have been scanning!", testStrategy.failure());
+        assertFalse("Discovered a marker in a row we should not have been scanning!", testStrategy.failure);
         testParser.setScanLimit(3);
         testParser.getMetadata(mockURL);
-        assertTrue("Failed to discover a marker in a row we should have been scanning!", testStrategy.failure());
+        assertTrue("Failed to discover a marker in a row we should have been scanning!", testStrategy.failure);
     }
 
-    private static class MarkingMockDataTypeHeuristic<T extends DataTypeHeuristic<T>> implements DataTypeHeuristic<T> {
+    private static class MarkingMockDataTypeHeuristic implements DataTypeHeuristic<MarkingMockDataTypeHeuristic> {
 
         /**
          * @param marker
@@ -162,10 +162,9 @@ public class TabularMetadataParserTest {
             return Geographic;
         }
 
-        @SuppressWarnings("unchecked")
         @Override
-        public T clone() {
-            return (T) this;
+        public MarkingMockDataTypeHeuristic clone() {
+            return this;
         }
 
         @Override
@@ -177,18 +176,13 @@ public class TabularMetadataParserTest {
         }
 
         @Override
-        public Range<?> getRange() {
-            return mockRange();
-        }
-
-        public boolean failure() {
-            return failure;
+        public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange() {
+            return testRange();
         }
 
         @Override
-        public DataTypeHeuristic<T> get() {
+        public MarkingMockDataTypeHeuristic get() {
             return this;
         }
-
     }
 }
