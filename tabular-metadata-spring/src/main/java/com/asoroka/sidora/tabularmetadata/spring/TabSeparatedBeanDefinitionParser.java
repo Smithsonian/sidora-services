@@ -1,0 +1,27 @@
+
+package com.asoroka.sidora.tabularmetadata.spring;
+
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
+import org.w3c.dom.Element;
+
+import com.asoroka.sidora.tabularmetadata.formats.CsvFormat.TabSeparated;
+
+/**
+ * Responsible for constructing {@link TabSeparated} beans.
+ * 
+ * @author ajs6f
+ */
+public class TabSeparatedBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
+
+    @Override
+    protected Class<?> getBeanClass(final Element element) {
+        return TabSeparated.class;
+    }
+
+    @Override
+    protected void doParse(final Element element, final BeanDefinitionBuilder builder) {
+        // NO OP no configuration for this beans
+    }
+
+}

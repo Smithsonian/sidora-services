@@ -1,1 +1,1 @@
-http\://asoroka.com/schema/csv-metadata/csv-metadata-0.0.1-SNAPSHOT.xsd=com/asoroka/sidora/csvmetadata/spring/csv-metadata.xsd
+http\://asoroka.com/schema/tabular-metadata=com/asoroka/sidora/tabularmetadata/spring/tabular-metadata.xsd
