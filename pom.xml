@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
@@ -26,10 +27,12 @@
 	<modules>
 		<module>tabular-metadata-generator</module>
 		<module>tabular-metadata-spring</module>
+		
 	</modules>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<java.version>1.7</java.version>
 		<powermock.version>1.5.6</powermock.version>
@@ -271,20 +274,10 @@
 					</executions>
 				</plugin>
 				<plugin>
-					<artifactId>maven-scm-publish-plugin</artifactId>
-					<version>1.1</version>
-					<inherited>true</inherited>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>2.7</version>
 					<configuration>
-						<checkoutDirectory>${scmPublish.checkoutDirectory}</checkoutDirectory>
-						<checkinComment>Publishing Site Docs for
-							${project.artifactId}:${project.version}
-						</checkinComment>
-						<!-- Plugins defaults to "target/staging" and since the distributionManagement 
-							section is a pain for site docs, this is easier -->
-						<content>${scm-publish.siteDocOuputDirectory}</content>
-						<skipDeletedFiles>true</skipDeletedFiles>
-						<pubScmUrl>${scm-publish.pubScmUrl}</pubScmUrl>
-						<scmBranch>${scm-publish.scmBranch}</scmBranch>
+						<encoding>UTF-8</encoding>
 					</configuration>
 				</plugin>
 			</plugins>
@@ -304,7 +297,6 @@
 				<groupId>com.github.github</groupId>
 				<artifactId>site-maven-plugin</artifactId>
 			</plugin>
-			<!-- <plugin> <artifactId>maven-scm-publish-plugin</artifactId> </plugin> -->
 		</plugins>
 		<extensions>
 			<extension>

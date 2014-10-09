@@ -23,8 +23,8 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.StrictHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic.Default;
+import com.asoroka.sidora.tabularmetadata.heuristics.StrictHeuristic;
 import com.google.common.base.Function;
 import com.google.common.collect.Range;
 
@@ -102,7 +102,7 @@ public class TabularMetadataGenerator {
     private static final List<String> emptyHeaders = emptyList();
 
     /**
-     * @param scanLimit A limit to the number of rows to scan.
+     * @param scanLimit A limit to the number of rows to scan. {@code 0} indicates no limit.
      */
     public void setScanLimit(final Integer scanLimit) {
         this.scanLimit = scanLimit;
