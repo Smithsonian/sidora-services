@@ -13,6 +13,8 @@
     
     <tabular:TabularMetadataGenerator headerStrategy="headerStrategy" id="testGenerator"/>
         
-    <bean class="com.asoroka.sidora.tabularmetadata.spring.SpecialHeaderHeuristic" id="headerStrategy"/>    
+    <bean class="com.asoroka.sidora.tabularmetadata.heuristics.RegexpHeaderHeuristic" id="headerStrategy">
+        <constructor-arg value="NEVER MATCH"/>
+    </bean>    
 
 </beans>

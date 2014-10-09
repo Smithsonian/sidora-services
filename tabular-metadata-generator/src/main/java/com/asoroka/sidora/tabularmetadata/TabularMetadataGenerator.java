@@ -58,6 +58,7 @@ public class TabularMetadataGenerator {
      */
     public TabularMetadata getMetadata(final URL dataUrl) throws IOException {
         // attempt to extract header names
+        // TODO allow a HeaderHeuristic to use more information than the first line of data
         final List<String> headerNames;
         try (final CSVParser headerParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final CSVRecord firstLine = headerParser.iterator().next();
