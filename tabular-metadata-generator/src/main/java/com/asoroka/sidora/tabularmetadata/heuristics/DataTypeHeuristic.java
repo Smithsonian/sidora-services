@@ -39,7 +39,8 @@ public interface DataTypeHeuristic<T extends DataTypeHeuristic<T>> extends Clone
     public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange();
 
     /**
-     * We override {@link Object#clone()} in order to narrow its return type for type-safety.
+     * We override {@link Object#clone()} in order to narrow its return type for type-safety in the use of this
+     * method.
      * 
      * @see java.lang.Object#clone()
      * @return A clone of this heuristic.

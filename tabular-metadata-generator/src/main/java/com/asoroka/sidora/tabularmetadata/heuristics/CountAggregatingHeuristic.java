@@ -56,9 +56,6 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     }
 
     @Override
-    abstract public T clone();
-
-    @Override
     public int hashCode() {
         return super.hashCode() + 2 * hash(typeCounts);
     }

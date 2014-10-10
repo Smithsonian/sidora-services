@@ -34,6 +34,10 @@ public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>
         return me;
     }
 
+    /*
+     * (non-Javadoc)
+     * @see java.lang.Object#clone()
+     */
     @Override
     public abstract T clone();
 
