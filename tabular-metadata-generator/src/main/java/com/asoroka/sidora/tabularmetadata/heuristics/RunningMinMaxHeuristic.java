@@ -45,8 +45,8 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
                 minimums.put(type, (currentMin == null) ? v : natural().min(currentMin, v));
                 maximums.put(type, (currentMax == null) ? v : natural().max(currentMax, v));
             } catch (final ParsingException e) {
-                // NO OP
-                // we don't care if a parse attempt fails because we're garnering measures for those that succeed
+                // we are only parsing for types that have already been checked
+                throw new AssertionError("Could not parse to a type that was passed as parsing!", e);
             }
         }
     }

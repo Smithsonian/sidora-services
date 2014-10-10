@@ -6,7 +6,6 @@
 package com.asoroka.sidora.tabularmetadata.datatype;
 
 import static com.google.common.base.Suppliers.memoize;
-import static com.google.common.collect.ImmutableSet.copyOf;
 import static com.google.common.collect.Lists.transform;
 import static com.google.common.collect.Sets.filter;
 import static java.lang.Float.parseFloat;
@@ -14,12 +13,15 @@ import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static java.util.Collections.max;
 import static java.util.EnumSet.allOf;
+import static java.util.EnumSet.complementOf;
+import static java.util.EnumSet.copyOf;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 import static org.joda.time.format.ISODateTimeFormat.dateTimeParser;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -47,7 +49,7 @@ import com.google.common.base.Supplier;
  */
 public enum DataType {
 
-    String(W3C_XML_SCHEMA_NS_URI + "string", null) {
+    String(W3C_XML_SCHEMA_NS_URI + "#string", null) {
 
         /*
          * This override indicates that String is the top type.
@@ -64,31 +66,46 @@ public enum DataType {
         }
 
     },
-    Decimal(W3C_XML_SCHEMA_NS_URI + "decimal", String) {
+    Decimal(W3C_XML_SCHEMA_NS_URI + "#decimal", String) {
 
         @SuppressWarnings("unchecked")
         @Override
         public Float parse(final java.lang.String s) throws ParsingException {
             try {
-                return parseFloat(s);
+                return parseFloat(s.trim());
             } catch (final NumberFormatException e) {
                 throw new ParsingException("Could not parse as Decimal!", e);
             }
         }
     },
-    Integer(W3C_XML_SCHEMA_NS_URI + "integer", Decimal) {
+    Integer(W3C_XML_SCHEMA_NS_URI + "#integer", Decimal) {
 
         @SuppressWarnings("unchecked")
         @Override
         public Integer parse(final java.lang.String s) throws ParsingException {
             try {
-                return parseInt(s);
+                return parseInt(s.trim());
             } catch (final NumberFormatException e) {
                 throw new ParsingException("Could not parse as Integer!", e);
             }
         }
     },
-    NonNegativeInteger(W3C_XML_SCHEMA_NS_URI + "nonNegativeInteger", Integer) {
+    URI(W3C_XML_SCHEMA_NS_URI + "#anyURI", String) {
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public URI parse(final java.lang.String s) throws ParsingException {
+            try {
+                if (!URI_REGEX.matcher(s).matches()) {
+                    throw new URISyntaxException(s, "Could not validate URI!");
+                }
+                return new URI(s);
+            } catch (final URISyntaxException e) {
+                throw new ParsingException("Could not parse as URI!", e);
+            }
+        }
+    },
+    NonNegativeInteger(W3C_XML_SCHEMA_NS_URI + "#nonNegativeInteger", Integer) {
 
         @SuppressWarnings("unchecked")
         @Override
@@ -101,7 +118,7 @@ public enum DataType {
             throw new ParsingException("Value was negative!");
         }
     },
-    PositiveInteger(W3C_XML_SCHEMA_NS_URI + "positiveInteger", NonNegativeInteger) {
+    PositiveInteger(W3C_XML_SCHEMA_NS_URI + "#positiveInteger", NonNegativeInteger) {
 
         @SuppressWarnings("unchecked")
         @Override
@@ -127,7 +144,7 @@ public enum DataType {
             }
         }
     },
-    Boolean(W3C_XML_SCHEMA_NS_URI + "boolean", String) {
+    Boolean(W3C_XML_SCHEMA_NS_URI + "#boolean", String) {
 
         @SuppressWarnings("unchecked")
         @Override
@@ -141,7 +158,7 @@ public enum DataType {
             throw new ParsingException("Could not parse as Boolean!");
         }
     },
-    DateTime(W3C_XML_SCHEMA_NS_URI + "dateTime", String) {
+    DateTime(W3C_XML_SCHEMA_NS_URI + "#dateTime", String) {
 
         @SuppressWarnings("unchecked")
         @Override
@@ -154,12 +171,12 @@ public enum DataType {
         }
     };
 
-    public static final Set<DataType> setValues() {
-        return copyOf(allOf(DataType.class));
+    public static final EnumSet<DataType> setValues() {
+        return allOf(DataType.class);
     }
 
     private DataType(final String uri, final DataType supertype) {
-        this.xsdType = uri == null ? null : URI.create(uri);
+        this.xsdType = uri == null ? null : java.net.URI.create(uri);
         this.supertype = supertype;
     }
 
@@ -210,21 +227,29 @@ public enum DataType {
 
     /**
      * @param s A value to parse
-     * @return a {@link Set} of those DataTypes into which s can be parsed
+     * @return an {@link EnumSet} of those DataTypes into which s can be parsed
      */
-    public static Set<DataType> parseableAs(final String s) {
-        return filter(DataType.setValues(), new Predicate<DataType>() {
+    public static EnumSet<DataType> parseableAs(final String s) {
+        return copyOf(filter(DataType.setValues(), new Predicate<DataType>() {
 
             @Override
             public boolean apply(final DataType t) {
                 try {
-                    t.parse(s.trim());
+                    t.parse(s);
                     return true;
                 } catch (final ParsingException e) {
                     return false;
                 }
             }
-        });
+        }));
+    }
+
+    /**
+     * @param value
+     * @return an {@link EnumSet} of those DataTypes into which s cannot be parsed
+     */
+    public static EnumSet<DataType> notParseableAs(final String value) {
+        return complementOf(parseableAs(value));
     }
 
     /**
@@ -251,12 +276,12 @@ public enum DataType {
     /**
      * How to recognize a Boolean lex for true.
      */
-    public static final Pattern BOOLEAN_TRUE = compile("true|t", CASE_INSENSITIVE);
+    public static final Pattern BOOLEAN_TRUE = compile("^true|t$", CASE_INSENSITIVE);
 
     /**
      * How to recognize a Boolean lex for false.
      */
-    public static final Pattern BOOLEAN_FALSE = compile("false|f", CASE_INSENSITIVE);
+    public static final Pattern BOOLEAN_FALSE = compile("^false|f$", CASE_INSENSITIVE);
 
     static final Function<java.lang.String, Float> string2float = new Function<String, Float>() {
 
@@ -265,5 +290,11 @@ public enum DataType {
             return parseFloat(seg);
         }
     };
+
+    /**
+     * We use the well-known regex from <a href="http://tools.ietf.org/html/rfc3986#appendix-B">the standard</a> but
+     * we disallow relative URIs.
+     */
+    static Pattern URI_REGEX = compile("^(([^:/?#]+):)(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
 
 }

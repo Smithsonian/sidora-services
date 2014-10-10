@@ -20,24 +20,34 @@ public abstract class DataTypeHeuristicTestFrame<T extends DataTypeHeuristic<T>>
     }
 
     @Test
+    public void testGet() {
+        final T testHeuristic = newTestHeuristic();
+        assertTrue(testHeuristic.get() == (testHeuristic));
+    }
+
+    @Test
     public void testEquals() {
         final T testHeuristic = newTestHeuristic();
         assertTrue(testHeuristic.equals(newTestHeuristic()));
         assertFalse(testHeuristic.equals(new Object()));
 
-        final NonEqualHeuristic nonEqualObject = new NonEqualHeuristic();
-        assertFalse(testHeuristic.equals(nonEqualObject));
+        final T testHeuristic2 = newTestHeuristic();
+        testHeuristic2.addValue("anything");
+        assertFalse(testHeuristic.equals(testHeuristic2));
+
+        final TestHeuristic otherTypeOfHeuristic = new TestHeuristic();
+        assertFalse(testHeuristic.equals(otherTypeOfHeuristic));
     }
 
-    protected static class NonEqualHeuristic implements DataTypeHeuristic<NonEqualHeuristic> {
+    protected static class TestHeuristic implements DataTypeHeuristic<TestHeuristic> {
 
         @Override
-        public NonEqualHeuristic clone() {
-            return new NonEqualHeuristic();
+        public TestHeuristic clone() {
+            return new TestHeuristic();
         }
 
         @Override
-        public NonEqualHeuristic get() {
+        public TestHeuristic get() {
             return this;
         }
 

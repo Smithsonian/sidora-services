@@ -9,6 +9,7 @@ import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Integer;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.NonNegativeInteger;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.URI;
 import static com.google.common.collect.ImmutableList.of;
 
 import java.util.EnumMap;
@@ -38,6 +39,8 @@ public abstract class CountAggregatingHeuristicTestFrame<T extends CountAggregat
         parseableValues.put(PositiveInteger, of("354455", "13452432", "112345235 ", "34529534"));
         parseableValues.put(Boolean, of("True", "F", "TruE", "FaLse"));
         parseableValues.put(Geographic, of("38.03,-78.478889", " -78.478889,38.03", "1,0,77", "0,1"));
+        parseableValues.put(URI, of("http://example.com", "info:fedora/foo:bar",
+                "smb://workgroup;user:password@server/share/folder/file.txt", "about:plugins"));
         parseableValues.put(DateTime, of("1990-3-4", "2014-273", "2014-W40-2", "2014-W40",
                 "2014-09-30T18:58:45Z"));
 
@@ -48,6 +51,8 @@ public abstract class CountAggregatingHeuristicTestFrame<T extends CountAggregat
         oneNonparseableValue.put(PositiveInteger, of("354455", "13452432", "112345235 ", "34529534", "Q"));
         oneNonparseableValue.put(Boolean, of("True", "F", "TruE", "FaLse", "Q"));
         oneNonparseableValue.put(Geographic, of("38.03,-78.478889", " -78.478889,38.03", "1,0,77", "0,1", "38.03"));
+        oneNonparseableValue.put(URI, of("http://example.com", "info:fedora/foo:bar",
+                "smb://workgroup;user:password@server/share/folder/file.txt", "about:plugins", "relativeURINoWay"));
         oneNonparseableValue.put(DateTime, of("1990-3-4", "2014-273", "2014-W40-2", "2014-W40",
                 "2014-09-30T18:58:45Z", "2014/24"));
         // nothing cannot parse as a String

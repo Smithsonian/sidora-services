@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-public class RegexpHeaderHeuristicTest  {
+public class RegexpHeaderHeuristicTest extends HeaderHeuristicTestFrame<RegexpHeaderHeuristic> {
 
     private static final String pattern = "MARKER";
 
@@ -17,9 +17,14 @@ public class RegexpHeaderHeuristicTest  {
 
     private static final List<String> headerRow2 = asList("jdfhg", "saf", "324");
 
+    @Override
+    protected RegexpHeaderHeuristic newHeuristic() {
+        return new RegexpHeaderHeuristic(pattern);
+    }
+
     @Test
     public void test() {
-        final RegexpHeaderHeuristic testHeaderStrategy = new RegexpHeaderHeuristic(pattern);
+        final RegexpHeaderHeuristic testHeaderStrategy = newHeuristic();
         assertTrue("Failed to pass a row that should have passed!", testHeaderStrategy.apply(headerRow1));
         assertFalse("Passed a row that shouldn't have passed!", testHeaderStrategy.apply(headerRow2));
     }

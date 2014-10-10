@@ -1,14 +1,12 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
-import static com.google.common.collect.Sets.difference;
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.notParseableAs;
 import static java.lang.Float.NEGATIVE_INFINITY;
 import static java.util.Objects.hash;
 
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Set;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 
@@ -19,6 +17,10 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
 
     private Map<DataType, Boolean> candidateTypes = new EnumMap<>(DataType.class);
 
+    /**
+     * We define locations as {@link Float}s in order to use the special value {@link Float#NEGATIVE_INFINITY}, which
+     * does not exist for integer types in Java.
+     */
     private Map<DataType, Float> locationsOfLastNonparseables = new EnumMap<>(DataType.class);
 
     public MinimumDistanceBetweenNonparseablesHeuristic(final int minimumDistance) {
@@ -40,10 +42,10 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     @Override
     public void addValue(final String value) {
         super.addValue(value);
-        final Set<DataType> nonparseableTypes = difference(DataType.setValues(), parseableAs(value));
-        for (final DataType type : nonparseableTypes) {
-            final float distanceToLastNonParseable = totalNumValues() - locationsOfLastNonparseables.get(type);
-            if (distanceToLastNonParseable < minimumDistance) {
+        for (final DataType type : notParseableAs(value)) {
+            final float distanceToLastNonParseableOfThisType =
+                    totalNumValues() - locationsOfLastNonparseables.get(type);
+            if (distanceToLastNonParseableOfThisType < minimumDistance) {
                 // it's been too soon since the last nonparseable value of this type, knock it out of the running
                 candidateTypes.put(type, false);
             } else {
