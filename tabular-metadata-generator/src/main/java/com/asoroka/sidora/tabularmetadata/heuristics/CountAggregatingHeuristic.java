@@ -72,14 +72,6 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
         return typeCounts.get(String);
     }
 
-    /**
-     * Subclasses must override this method with an algorithm that uses the gathered statistics (and possibly other
-     * information) to make a determination about the most likely type of the proffered values.
-     * 
-     * @return Whether this type should be considered as a candidate for selection.
-     */
-    abstract protected boolean candidacy(DataType d);
-
     @Override
     public void addValue(final String value) {
         super.addValue(value);

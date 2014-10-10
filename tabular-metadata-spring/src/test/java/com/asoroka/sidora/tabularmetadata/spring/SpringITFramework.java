@@ -49,15 +49,15 @@ public abstract class SpringITFramework {
         return result;
     }
 
-    protected Range<Integer> getIntRange() {
+    protected static Range<Integer> getIntRange() {
         return Range.closed(56, 23423);
     }
 
-    protected Range<Float> getFloatRange() {
+    protected static Range<Float> getFloatRange() {
         return Range.closed(56F, 23423F);
     }
 
-    protected Range<?> getStringRange() {
+    protected static Range<?> getStringRange() {
         return Range.closed("0056", "SERIAL NUMBER");
     }
 

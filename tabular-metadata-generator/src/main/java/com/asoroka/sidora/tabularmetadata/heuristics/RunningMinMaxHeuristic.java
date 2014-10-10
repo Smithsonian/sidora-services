@@ -21,8 +21,7 @@ import com.google.common.collect.Range;
  * @author ajs6f
  * @param <T>
  */
-public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>> implements
-        DataTypeHeuristic<T> {
+public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>> extends PerTypeHeuristic<T> {
 
     /**
      * A {@link Map} from data types to the minimum value from all presented values that were parseable in that type.

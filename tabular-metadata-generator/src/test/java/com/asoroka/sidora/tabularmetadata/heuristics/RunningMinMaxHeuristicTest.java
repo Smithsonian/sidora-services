@@ -49,8 +49,8 @@ public class RunningMinMaxHeuristicTest {
         final DataType type;
 
         @Override
-        public DataType mostLikelyType() {
-            return type;
+        protected boolean candidacy(final DataType candidateType) {
+            return type.equals(candidateType);
         }
 
         @Override
@@ -62,6 +62,5 @@ public class RunningMinMaxHeuristicTest {
         public TestRunningMinMaxHeuristic get() {
             return this;
         }
-
     }
 }

@@ -37,6 +37,12 @@ import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
 import com.google.common.collect.Range;
 
+/**
+ * This relatively complicated test is so because we are trying to mock everything that can be mocked, as a means of
+ * assurance that the basic workflow (instantiated in TabularMetadataParser) is as correct as we can test it to be.
+ * 
+ * @author ajs6f
+ */
 public class TabularMetadataParserTest {
 
     private static final String testHeaders = "NAME,RANK,SERIAL NUMBER";

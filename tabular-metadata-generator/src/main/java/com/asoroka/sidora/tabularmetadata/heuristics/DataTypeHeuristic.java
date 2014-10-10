@@ -11,8 +11,10 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
 /**
- * Determines into which {@link DataType} a series of values most likely falls. Also determines a range of the
- * supplied values.
+ * Determines into which {@link DataType} a series of values most likely falls, and determines a range for the
+ * supplied values. Generally, implementations of this type should be used <i>only</i> on a single series of values
+ * drawn from a single column of a single tabular data set: it is expected that implementations will maintain state
+ * that cannot be reset for reuse.
  * 
  * @author ajs6f
  * @param <T>
