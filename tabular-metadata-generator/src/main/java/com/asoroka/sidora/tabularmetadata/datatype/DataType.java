@@ -15,6 +15,7 @@ import static java.util.Collections.max;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.copyOf;
+import static java.util.EnumSet.of;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
@@ -26,7 +27,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
@@ -55,8 +55,8 @@ public enum DataType {
          * This override indicates that String is the top type.
          */
         @Override
-        public Set<DataType> supertypes() {
-            return EnumSet.of((DataType) this);
+        public EnumSet<DataType> supertypes() {
+            return of((DataType) this);
         }
 
         @SuppressWarnings("unchecked")
@@ -136,8 +136,7 @@ public enum DataType {
         @Override
         public GeographicValue parse(final String s) throws ParsingException {
             try {
-                final List<Float> parts =
-                        transform(asList(s.split(",")), string2float);
+                final List<Float> parts = transform(asList(s.split(",")), string2float);
                 return new GeographicValue(parts);
             } catch (final IllegalArgumentException e) {
                 throw new ParsingException("Could not parse as Geographic!", e);
@@ -196,23 +195,22 @@ public enum DataType {
     final DataType supertype;
 
     /**
-     * A memoized form of the supertypes of this DataType, used to avoid redoing this recursive calculation during
-     * operation.
+     * We memoize the calculation of supertypes to avoid redoing this recursion during operation.
      */
-    private final Supplier<Set<DataType>> supertypesSupplier = memoize(new Supplier<Set<DataType>>() {
+    private final Supplier<EnumSet<DataType>> supertypesSupplier = memoize(new Supplier<EnumSet<DataType>>() {
 
         @Override
-        public Set<DataType> get() {
-            return EnumSet.of(self, EnumSet.of(supertype, supertype.supertypes().toArray(new DataType[0]))
-                    .toArray(
-                            new DataType[0]));
+        public EnumSet<DataType> get() {
+            final EnumSet<DataType> types = copyOf(supertype.supertypes());
+            types.add(self);
+            return types;
         }
     });
 
     /**
      * @return The supertypes of this type, including itself.
      */
-    public Set<DataType> supertypes() {
+    public EnumSet<DataType> supertypes() {
         return supertypesSupplier.get();
     }
 
