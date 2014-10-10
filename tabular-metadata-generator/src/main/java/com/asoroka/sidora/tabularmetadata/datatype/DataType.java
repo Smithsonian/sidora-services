@@ -96,10 +96,10 @@ public enum DataType {
         @Override
         public URI parse(final java.lang.String s) throws ParsingException {
             try {
-                if (!URI_REGEX.matcher(s).matches()) {
-                    throw new URISyntaxException(s, "Could not validate URI!");
+                if (URI_REGEX.matcher(s).matches()) {
+                    return new URI(s);
                 }
-                return new URI(s);
+                throw new URISyntaxException(s, "Could not validate URI!");
             } catch (final URISyntaxException e) {
                 throw new ParsingException("Could not parse as URI!", e);
             }
