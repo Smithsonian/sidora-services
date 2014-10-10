@@ -7,6 +7,7 @@ package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.collect.Ordering.natural;
+import static java.util.Objects.hash;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -59,6 +60,7 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     }
 
     @Override
-    abstract public T clone();
-
+    public int hashCode() {
+        return super.hashCode() + 2 * hash(minimums, maximums);
+    }
 }

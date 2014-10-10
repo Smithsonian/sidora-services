@@ -170,7 +170,7 @@ public enum DataType {
         }
     };
 
-    public static final EnumSet<DataType> setValues() {
+    public static final EnumSet<DataType> valuesSet() {
         return allOf(DataType.class);
     }
 
@@ -197,7 +197,7 @@ public enum DataType {
     /**
      * We memoize the calculation of supertypes to avoid redoing this recursion during operation.
      */
-    private final Supplier<EnumSet<DataType>> supertypesSupplier = memoize(new Supplier<EnumSet<DataType>>() {
+    private final Supplier<EnumSet<DataType>> supertypesMemo = memoize(new Supplier<EnumSet<DataType>>() {
 
         @Override
         public EnumSet<DataType> get() {
@@ -211,7 +211,7 @@ public enum DataType {
      * @return The supertypes of this type, including itself.
      */
     public EnumSet<DataType> supertypes() {
-        return supertypesSupplier.get();
+        return supertypesMemo.get();
     }
 
     /**
@@ -228,7 +228,7 @@ public enum DataType {
      * @return an {@link EnumSet} of those DataTypes into which s can be parsed
      */
     public static EnumSet<DataType> parseableAs(final String s) {
-        return copyOf(filter(DataType.setValues(), new Predicate<DataType>() {
+        return copyOf(filter(DataType.valuesSet(), new Predicate<DataType>() {
 
             @Override
             public boolean apply(final DataType t) {
@@ -251,7 +251,7 @@ public enum DataType {
     }
 
     /**
-     * An ordering by type hierarchy. Those types with more supertypes are considered "larger" than those with fewer.
+     * A simple ordering by hierarchy. Those types with more supertypes are considered "larger" than those with fewer.
      */
     public static final Comparator<DataType> orderingByHierarchy = new Comparator<DataType>() {
 
@@ -281,6 +281,12 @@ public enum DataType {
      */
     public static final Pattern BOOLEAN_FALSE = compile("^false|f$", CASE_INSENSITIVE);
 
+    /**
+     * We use the well-known regex from <a href="http://tools.ietf.org/html/rfc3986#appendix-B">the standard</a> but
+     * we disallow relative URIs.
+     */
+    static Pattern URI_REGEX = compile("^(([^:/?#]+):)(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+
     static final Function<java.lang.String, Float> string2float = new Function<String, Float>() {
 
         @Override
@@ -288,11 +294,4 @@ public enum DataType {
             return parseFloat(seg);
         }
     };
-
-    /**
-     * We use the well-known regex from <a href="http://tools.ietf.org/html/rfc3986#appendix-B">the standard</a> but
-     * we disallow relative URIs.
-     */
-    static Pattern URI_REGEX = compile("^(([^:/?#]+):)(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
-
 }

@@ -28,18 +28,4 @@ public class StrictHeuristic extends CountAggregatingHeuristic<StrictHeuristic> 
     public StrictHeuristic clone() {
         return new StrictHeuristic();
     }
-
-    @Override
-    public StrictHeuristic get() {
-        return this;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (o instanceof StrictHeuristic) {
-            return this.hashCode() == o.hashCode();
-        }
-        return false;
-    }
-
 }

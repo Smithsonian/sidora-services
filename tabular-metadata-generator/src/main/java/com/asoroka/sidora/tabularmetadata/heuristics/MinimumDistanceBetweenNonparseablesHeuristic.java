@@ -2,6 +2,8 @@
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.notParseableAs;
+import static com.google.common.base.Functions.constant;
+import static com.google.common.collect.Maps.toMap;
 import static java.lang.Float.NEGATIVE_INFINITY;
 import static java.util.Objects.hash;
 
@@ -25,12 +27,13 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
 
     public MinimumDistanceBetweenNonparseablesHeuristic(final int minimumDistance) {
         // assume that every type is a candidate
-        for (final DataType type : DataType.values()) {
-            candidateTypes.put(type, true);
-        }
-        for (final DataType type : DataType.values()) {
-            locationsOfLastNonparseables.put(type, NEGATIVE_INFINITY);
-        }
+        final Map<DataType, Boolean> allTrue = toMap(DataType.valuesSet(), constant(true));
+        candidateTypes.putAll(allTrue);
+
+        // record that we haven't yet seen any nonparseables
+        final Map<DataType, Float> originalLocations = toMap(DataType.valuesSet(), constant(NEGATIVE_INFINITY));
+        locationsOfLastNonparseables.putAll(originalLocations);
+
         this.minimumDistance = minimumDistance;
     }
 
@@ -56,27 +59,13 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     }
 
     @Override
-    public MinimumDistanceBetweenNonparseablesHeuristic get() {
-        return this;
-    }
-
-    @Override
     public MinimumDistanceBetweenNonparseablesHeuristic clone() {
         return new MinimumDistanceBetweenNonparseablesHeuristic(minimumDistance);
     }
 
     @Override
     public int hashCode() {
-        return hash(candidateTypes, totalNumValues(), locationsOfLastNonparseables);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (o instanceof MinimumDistanceBetweenNonparseablesHeuristic) {
-            final MinimumDistanceBetweenNonparseablesHeuristic oo = (MinimumDistanceBetweenNonparseablesHeuristic) o;
-            return this.hashCode() == oo.hashCode();
-        }
-        return false;
+        return super.hashCode() + 2 * hash(candidateTypes, totalNumValues(), locationsOfLastNonparseables);
     }
 
 }

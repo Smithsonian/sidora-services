@@ -6,6 +6,8 @@
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
+import static com.google.common.base.Functions.constant;
+import static com.google.common.collect.Maps.toMap;
 import static java.util.Objects.hash;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -37,9 +39,8 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
      * Initialize counts for each datatype.
      */
     public CountAggregatingHeuristic() {
-        for (final DataType type : DataType.values()) {
-            typeCounts.put(type, 0);
-        }
+        final Map<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
+        typeCounts.putAll(zeroes);
     }
 
     @Override
@@ -59,6 +60,6 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
 
     @Override
     public int hashCode() {
-        return hash(typeCounts);
+        return super.hashCode() + 2 * hash(typeCounts);
     }
 }

@@ -43,21 +43,7 @@ public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeurist
     }
 
     @Override
-    public FractionHeuristic get() {
-        return this;
-    }
-
-    @Override
     public int hashCode() {
         return super.hashCode() + 2 * hash(fractionOfAllowedNonparseables);
     }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (o instanceof FractionHeuristic) {
-            return this.hashCode() == o.hashCode();
-        }
-        return false;
-    }
-
 }
