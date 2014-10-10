@@ -14,33 +14,38 @@ public class FractionHeuristicTest extends CountAggregatingHeuristicTestFrame<Fr
     private static final Logger log = getLogger(FractionHeuristicTest.class);
 
     @Override
-    protected FractionHeuristic newTestInstance() {
-        return new FractionHeuristic(0.2);
+    protected FractionHeuristic newTestHeuristic() {
+        return new FractionHeuristic(0.2F);
     }
 
     @Test
-    public void testActionWithGoodValues() {
+    public void testActionWithParseableValues() {
 
-        log.trace("testActionWithGoodValues()...");
-        for (final DataType testType : DataType.values()) {
-            testHeuristic = newTestInstance();
+        log.trace("testActionWithParseableValues()...");
+        for (final DataType testType : parseableValues.keySet()) {
+            log.trace("Checking test type: {}", testType);
+            final FractionHeuristic testHeuristic = newTestHeuristic();
             for (final String testValue : parseableValues.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
-            assertEquals("Didn't get the correct type for datatype " + testType + "!", testType, testHeuristic
-                    .mostLikelyType());
+            final DataType mostLikelyType = testHeuristic.mostLikelyType();
+            assertEquals("Didn't get the correct type for datatype " + testType + "!", testType, mostLikelyType);
         }
     }
 
     @Test
-    public void testActionWithOneBadValue() {
-        log.trace("testActionWithOneBadValue()...");
+    public void testActionWithOneNonparseableValue() {
+        log.trace("testActionWithOneNonparseableValue()...");
         for (final DataType testType : oneNonparseableValue.keySet()) {
-            testHeuristic = newTestInstance();
+            log.trace("Checking test type: {}", testType);
+            final FractionHeuristic testHeuristic = newTestHeuristic();
             for (final String testValue : oneNonparseableValue.get(testType)) {
+                log.trace("Adding value: {}", testValue);
                 testHeuristic.addValue(testValue);
             }
-            assertEquals("Failed to admit datatype but should have!", testType, testHeuristic.mostLikelyType());
+            final DataType mostLikelyType = testHeuristic.mostLikelyType();
+            assertEquals("Failed to admit datatype but should have!", testType, mostLikelyType);
         }
+        log.trace("Done with testActionWithOneNonparseableValue().");
     }
 }

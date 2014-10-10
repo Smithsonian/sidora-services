@@ -15,16 +15,16 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
     private static final Logger log = getLogger(StrictHeuristicTest.class);
 
     @Override
-    protected StrictHeuristic newTestInstance() {
+    protected StrictHeuristic newTestHeuristic() {
         return new StrictHeuristic();
     }
 
     @Test
-    public void testActionWithGoodValues() {
-        log.trace("testActionWithGoodValues()...");
+    public void testActionWithParsingValues() {
+        log.trace("testActionWithParsingValues()...");
         for (final DataType testType : DataType.values()) {
             log.debug("Testing type: {}", testType);
-            testHeuristic = newTestInstance();
+            final StrictHeuristic testHeuristic = newTestHeuristic();
             for (final String testValue : parseableValues.get(testType)) {
                 testHeuristic.addValue(testValue);
             }
@@ -34,10 +34,10 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
     }
 
     @Test
-    public void testActionWithOneBadValue() {
-        log.trace("testActionWithOneBadValue()...");
+    public void testActionWithOneNonparsingValue() {
+        log.trace("testActionWithOneNonparsingValue()...");
         for (final DataType testType : oneNonparseableValue.keySet()) {
-            testHeuristic = newTestInstance();
+            final StrictHeuristic testHeuristic = newTestHeuristic();
             for (final String testValue : oneNonparseableValue.get(testType)) {
                 testHeuristic.addValue(testValue);
             }

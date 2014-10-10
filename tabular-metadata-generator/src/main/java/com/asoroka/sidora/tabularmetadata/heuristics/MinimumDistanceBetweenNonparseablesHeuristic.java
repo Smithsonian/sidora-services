@@ -4,6 +4,7 @@ package com.asoroka.sidora.tabularmetadata.heuristics;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.collect.Sets.difference;
 import static java.lang.Float.NEGATIVE_INFINITY;
+import static java.util.Objects.hash;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -19,8 +20,6 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     private Map<DataType, Boolean> candidateTypes = new EnumMap<>(DataType.class);
 
     private Map<DataType, Float> locationsOfLastNonparseables = new EnumMap<>(DataType.class);
-
-    private int counter = 0;
 
     public MinimumDistanceBetweenNonparseablesHeuristic(final int minimumDistance) {
         // assume that every type is a candidate
@@ -41,15 +40,15 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     @Override
     public void addValue(final String value) {
         super.addValue(value);
-        counter++;
-        final Set<DataType> nonparseableTypes = difference(DATATYPES, parseableAs(value));
+        final Set<DataType> nonparseableTypes = difference(DataType.setValues(), parseableAs(value));
         for (final DataType type : nonparseableTypes) {
-            if (counter - locationsOfLastNonparseables.get(type) < minimumDistance) {
+            final float distanceToLastNonParseable = totalNumValues() - locationsOfLastNonparseables.get(type);
+            if (distanceToLastNonParseable < minimumDistance) {
                 // it's been too soon since the last nonparseable value of this type, knock it out of the running
                 candidateTypes.put(type, false);
             } else {
                 // mark that we saw a nonparseable value for this type
-                locationsOfLastNonparseables.put(type, (float) counter);
+                locationsOfLastNonparseables.put(type, (float) totalNumValues());
             }
         }
     }
@@ -62,6 +61,20 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     @Override
     public MinimumDistanceBetweenNonparseablesHeuristic clone() {
         return new MinimumDistanceBetweenNonparseablesHeuristic(minimumDistance);
+    }
+
+    @Override
+    public int hashCode() {
+        return hash(candidateTypes, totalNumValues(), locationsOfLastNonparseables);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o instanceof MinimumDistanceBetweenNonparseablesHeuristic) {
+            final MinimumDistanceBetweenNonparseablesHeuristic oo = (MinimumDistanceBetweenNonparseablesHeuristic) o;
+            return this.hashCode() == oo.hashCode();
+        }
+        return false;
     }
 
 }

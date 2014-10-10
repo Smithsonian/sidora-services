@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-public class RegexpHeaderHeuristicTest {
+public class RegexpHeaderHeuristicTest  {
 
     private static final String pattern = "MARKER";
 

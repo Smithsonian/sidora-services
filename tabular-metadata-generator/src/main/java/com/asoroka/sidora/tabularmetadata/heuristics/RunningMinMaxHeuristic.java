@@ -34,15 +34,16 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     protected Map<DataType, Comparable<?>> maximums = new EnumMap<>(DataType.class);
 
     @Override
-    public void addValue(final String input) {
-        for (final DataType type : parseableAs(input)) {
+    public void addValue(final String value) {
+        super.addValue(value);
+        for (final DataType type : parseableAs(value)) {
             final Comparable<?> currentMin = minimums.get(type);
             final Comparable<?> currentMax = maximums.get(type);
             try {
-                final Comparable<?> value = type.parse(input);
+                final Comparable<?> v = type.parse(value);
                 // TODO avoid this repeated conditional
-                minimums.put(type, (currentMin == null) ? value : natural().min(currentMin, value));
-                maximums.put(type, (currentMax == null) ? value : natural().max(currentMax, value));
+                minimums.put(type, (currentMin == null) ? v : natural().min(currentMin, v));
+                maximums.put(type, (currentMax == null) ? v : natural().max(currentMax, v));
             } catch (final ParsingException e) {
                 // NO OP
                 // we don't care if a parse attempt fails because we're garnering measures for those that succeed

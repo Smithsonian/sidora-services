@@ -17,10 +17,6 @@ public class StrictHeuristic extends CountAggregatingHeuristic<StrictHeuristic> 
 
     private static final Logger log = getLogger(StrictHeuristic.class);
 
-    /*
-     * (non-Javadoc)
-     * @see com.asoroka.sidora.tabularmetadata.heuristics.CountAggregatingHeuristic#candidacy(java.lang.Float)
-     */
     @Override
     protected boolean candidacy(final DataType type) {
         log.debug("For type {} found {} occurences out of {} total values", type, typeCounts.get(type),
@@ -36,6 +32,14 @@ public class StrictHeuristic extends CountAggregatingHeuristic<StrictHeuristic> 
     @Override
     public StrictHeuristic get() {
         return this;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o instanceof StrictHeuristic) {
+            return this.hashCode() == o.hashCode();
+        }
+        return false;
     }
 
 }

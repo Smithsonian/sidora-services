@@ -6,6 +6,7 @@
 package com.asoroka.sidora.tabularmetadata.datatype;
 
 import static com.google.common.base.Suppliers.memoize;
+import static com.google.common.collect.ImmutableSet.copyOf;
 import static com.google.common.collect.Lists.transform;
 import static com.google.common.collect.Sets.filter;
 import static java.lang.Float.parseFloat;
@@ -153,6 +154,10 @@ public enum DataType {
         }
     };
 
+    public static final Set<DataType> setValues() {
+        return copyOf(allOf(DataType.class));
+    }
+
     private DataType(final String uri, final DataType supertype) {
         this.xsdType = uri == null ? null : URI.create(uri);
         this.supertype = supertype;
@@ -208,7 +213,7 @@ public enum DataType {
      * @return a {@link Set} of those DataTypes into which s can be parsed
      */
     public static Set<DataType> parseableAs(final String s) {
-        return filter(allOf(DataType.class), new Predicate<DataType>() {
+        return filter(DataType.setValues(), new Predicate<DataType>() {
 
             @Override
             public boolean apply(final DataType t) {

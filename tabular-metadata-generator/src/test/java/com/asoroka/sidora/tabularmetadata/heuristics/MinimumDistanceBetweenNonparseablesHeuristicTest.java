@@ -11,7 +11,8 @@ import org.junit.Test;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 
-public class MinimumDistanceBetweenNonparseablesHeuristicTest {
+public class MinimumDistanceBetweenNonparseablesHeuristicTest extends
+        DataTypeHeuristicTestFrame<MinimumDistanceBetweenNonparseablesHeuristic> {
 
     private static final int MINIMUM_DISTANCE = 2;
 
@@ -19,22 +20,24 @@ public class MinimumDistanceBetweenNonparseablesHeuristicTest {
 
     final List<String> nonPassingData = asList("1", "FOO", "BAR", "4", "5");
 
+    @Override
+    protected MinimumDistanceBetweenNonparseablesHeuristic newTestHeuristic() {
+        return new MinimumDistanceBetweenNonparseablesHeuristic(MINIMUM_DISTANCE);
+    }
+
     @Test
-    public void testPassingData() {
-        final MinimumDistanceBetweenNonparseablesHeuristic testStrategy =
-                new MinimumDistanceBetweenNonparseablesHeuristic(MINIMUM_DISTANCE);
+    public void testPassingAndNonpassingData() {
+        final MinimumDistanceBetweenNonparseablesHeuristic testStrategy = newTestHeuristic();
         for (final String i : passingData) {
             testStrategy.addValue(i);
         }
         assertEquals(
-                "Failed to accept data with nonparseable values less than or equal to the minimum distance apart!",
+                "Failed to accept type with nonparseable values less than or equal to the minimum distance apart!",
                 PositiveInteger, testStrategy.mostLikelyType());
         for (final String i : nonPassingData) {
             testStrategy.addValue(i);
         }
-        assertEquals("Failed to reject data with nonparseable values greater than the minimum distance apart!",
+        assertEquals("Failed to reject types with nonparseable values greater than the minimum distance apart!",
                 DataType.String, testStrategy.mostLikelyType());
-
     }
-
 }

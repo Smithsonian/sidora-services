@@ -1,6 +1,11 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
+import static java.util.Objects.hash;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import org.slf4j.Logger;
+
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 
 /**
@@ -10,20 +15,26 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
  */
 public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeuristic> {
 
+    private static final Logger log = getLogger(FractionHeuristic.class);
+
     /**
      * @param d The fraction of nonparsing values to permit
      */
-    public FractionHeuristic(final double d) {
+    public FractionHeuristic(final float d) {
         super();
         this.fractionOfAllowedNonparseables = d;
     }
 
-    private final double fractionOfAllowedNonparseables;
+    private final float fractionOfAllowedNonparseables;
 
     @Override
     protected boolean candidacy(final DataType type) {
-        final float parseableOccurence = (float) typeCounts.get(type) / (float) totalNumValues();
-        return parseableOccurence >= (1 - fractionOfAllowedNonparseables);
+        final float nonParseableOccurrences = totalNumValues() - typeCounts.get(type);
+        log.trace("Found {} nonparseable occurrences out of {} total values for type {}.", nonParseableOccurrences,
+                totalNumValues(), type);
+        final float nonParseableFraction = nonParseableOccurrences / totalNumValues();
+        log.trace("For a nonparseable fraction of {}.", nonParseableFraction);
+        return nonParseableFraction <= fractionOfAllowedNonparseables;
     }
 
     @Override
@@ -34,6 +45,19 @@ public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeurist
     @Override
     public FractionHeuristic get() {
         return this;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode() + 2 * hash(fractionOfAllowedNonparseables);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o instanceof FractionHeuristic) {
+            return this.hashCode() == o.hashCode();
+        }
+        return false;
     }
 
 }
