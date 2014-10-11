@@ -74,7 +74,7 @@ public abstract class SpringITFramework {
 
     protected static final List<DataType> STRING_TYPES = asList(String, String, String);
 
-    private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
+    private static <T> List<T> getFirstElements(final Iterable<SortedSet<T>> inputs) {
         final ImmutableList.Builder<T> b = builder();
         for (final SortedSet<T> s : inputs) {
             b.add(s.first());

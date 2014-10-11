@@ -14,12 +14,11 @@ import static com.asoroka.sidora.tabularmetadata.datatype.DataType.NonNegativeIn
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.URI;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.orderingByHierarchy;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.google.common.collect.ImmutableMap.builder;
-import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Sets.newHashSet;
-import static java.util.Collections.sort;
+import static java.util.Arrays.asList;
 import static java.util.EnumSet.of;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -122,26 +121,30 @@ public class DataTypeTest {
 
     @Test
     public void testOrderingByHierarchy() {
-        List<DataType> listToBeSorted = _(Decimal, PositiveInteger, NonNegativeInteger, Integer, String);
-        List<DataType> listInCorrectSorting =
-                _(PositiveInteger, NonNegativeInteger, Integer, Decimal, String);
-        sort(listToBeSorted, orderingByHierarchy);
-        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
+        List<DataType> listToBeSorted = asList(Decimal, PositiveInteger, Integer, NonNegativeInteger, String);
+        List<DataType> listInCorrectSorting = asList(PositiveInteger, NonNegativeInteger, Integer, Decimal, String);
+        List<DataType> sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
+        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
 
-        listToBeSorted = _(String, Geographic);
-        listInCorrectSorting = _(Geographic, String);
-        sort(listToBeSorted, orderingByHierarchy);
-        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
+        listToBeSorted = asList(String, Geographic);
+        listInCorrectSorting = asList(Geographic, String);
+        sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
+        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
 
-        listToBeSorted = _(String, DateTime);
-        listInCorrectSorting = _(DateTime, String);
-        sort(listToBeSorted, orderingByHierarchy);
-        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
+        listToBeSorted = asList(String, DateTime);
+        listInCorrectSorting = asList(DateTime, String);
+        sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
+        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
 
-        listToBeSorted = _(String, Boolean);
-        listInCorrectSorting = _(Boolean, String);
-        sort(listToBeSorted, orderingByHierarchy);
-        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
+        listToBeSorted = asList(String, Boolean);
+        listInCorrectSorting = asList(Boolean, String);
+        sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
+        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
+
+        listToBeSorted = asList(String, URI);
+        listInCorrectSorting = asList(URI, String);
+        sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
+        assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
     }
 
     @Test
@@ -210,8 +213,4 @@ public class DataTypeTest {
         }
     }
 
-    @SafeVarargs
-    private static <E> ArrayList<E> _(final E... es) {
-        return newArrayList(es);
-    }
 }
