@@ -51,6 +51,6 @@ public abstract class PerTypeHeuristic<T extends PerTypeHeuristic<T>> extends Va
 
     @Override
     public int hashCode() {
-        return super.hashCode() + 2 * hash(totalNumValues);
+        return super.hashCode() + 2 * hash(totalNumValues());
     }
 }

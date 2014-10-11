@@ -13,7 +13,7 @@ import org.slf4j.Logger;
  */
 public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>> implements DataTypeHeuristic<T> {
 
-    protected int totalNumValues = 0;
+    private int totalNumValues = 0;
 
     private static final Logger log = getLogger(ValueCountingHeuristic.class);
 

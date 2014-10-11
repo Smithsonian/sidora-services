@@ -11,8 +11,10 @@
     
     <context:component-scan base-package="com.asoroka"/>
     
-    <tabular:TabularMetadataGenerator headerStrategy="headerStrategy" id="testGenerator"/>
-        
+    <bean class="com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator" id="testGenerator">
+        <property name="headerStrategy" ref="headerStrategy"/>
+    </bean>
+    
     <bean class="com.asoroka.sidora.tabularmetadata.heuristics.RegexpHeaderHeuristic" id="headerStrategy">
         <constructor-arg value="NEVER MATCH"/>
     </bean>    

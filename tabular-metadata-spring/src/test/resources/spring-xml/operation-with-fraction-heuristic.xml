@@ -2,17 +2,19 @@
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="http://www.springframework.org/schema/beans"
     xmlns:context="http://www.springframework.org/schema/context"
-    xmlns:tabular="http://asoroka.com/ns/tabular-metadata#"
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
-    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
-    http://asoroka.com/ns/tabular-metadata# http://asoroka.com/schema/tabular-metadata">
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
     
     <context:annotation-config/>
     
     <context:component-scan base-package="com.asoroka"/>
     
-    <tabular:TabularMetadataGenerator strategy="fractionStrategy" id="testGenerator"/>
+    <bean class="com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator" id="testGenerator">
+        <property name="strategy" ref="fractionStrategy"/>
+    </bean>
         
-    <tabular:FractionHeuristic fraction="0.5" id="fractionStrategy"/>    
+    <bean class="com.asoroka.sidora.tabularmetadata.heuristics.FractionHeuristic" id="fractionStrategy">
+        <constructor-arg value="0.5"/>
+    </bean>    
 
 </beans>

@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import com.google.common.collect.Range;
 
 public abstract class RunningMinMaxHeuristicTestFrame<T extends RunningMinMaxHeuristic<T>> extends
-        DataTypeHeuristicTestFrame<T> {
+        PerTypeHeuristicTestFrame<T> {
 
     private static final Logger log = getLogger(RunningMinMaxHeuristicTestFrame.class);
 
