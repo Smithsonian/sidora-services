@@ -9,7 +9,7 @@
 	<name>Tabular Metadata Generation Facilities</name>
 
 	<description>Simple utilities for developing metadata from tabular data files.</description>
-	
+
 	<modules>
 		<module>tabular-metadata-generator</module>
 		<module>tabular-metadata-spring</module>
@@ -114,6 +114,9 @@
 					<configuration>
 						<source>${java.version}</source>
 						<target>${java.version}</target>
+						<compilerArgs>
+							<compilerArg>-Xlint:unchecked</compilerArg>
+						</compilerArgs>
 					</configuration>
 				</plugin>
 				<plugin>

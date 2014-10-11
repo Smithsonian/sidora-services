@@ -80,25 +80,23 @@ public class TabularMetadataGenerator {
         return new TabularMetadata(headerNames, columnTypes, minMaxes);
     }
 
-    @TypeRenaming
-    private static interface Extractor<T> extends Function<DataTypeHeuristic<?>, T> {
-    }
+    private static final Function<DataTypeHeuristic<?>, DataType> extractType =
+            new Function<DataTypeHeuristic<?>, DataType>() {
 
-    private static final Extractor<DataType> extractType = new Extractor<DataType>() {
+                @Override
+                public DataType apply(final DataTypeHeuristic<?> strategy) {
+                    return strategy.mostLikelyType();
+                }
+            };
 
-        @Override
-        public DataType apply(final DataTypeHeuristic<?> strategy) {
-            return strategy.mostLikelyType();
-        }
-    };
+    private static final Function<DataTypeHeuristic<?>, Range<?>> extractMinMax =
+            new Function<DataTypeHeuristic<?>, Range<?>>() {
 
-    private static final Extractor<Range<?>> extractMinMax = new Extractor<Range<?>>() {
-
-        @Override
-        public Range<?> apply(final DataTypeHeuristic<?> strategy) {
-            return strategy.getRange();
-        }
-    };
+                @Override
+                public Range<?> apply(final DataTypeHeuristic<?> strategy) {
+                    return strategy.getRange();
+                }
+            };
 
     private static final List<String> emptyHeaders = emptyList();
 
