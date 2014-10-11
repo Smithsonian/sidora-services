@@ -42,7 +42,7 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
                 testHeuristic.addValue(testValue);
             }
             assertFalse("Got the most commonly occuring type for datatype " + testType + " but shoudn't have!",
-                    testHeuristic.mostLikelyType().equals(testType));
+                    testHeuristic.typesAsLikely().equals(testType));
         }
     }
 }

@@ -6,12 +6,12 @@
 package com.asoroka.sidora.tabularmetadata.datatype;
 
 import static com.google.common.base.Suppliers.memoize;
+import static com.google.common.collect.FluentIterable.from;
 import static com.google.common.collect.Lists.transform;
 import static com.google.common.collect.Sets.filter;
 import static java.lang.Float.parseFloat;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-import static java.util.Collections.max;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.copyOf;
@@ -23,10 +23,10 @@ import static org.joda.time.format.ISODateTimeFormat.dateTimeParser;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
@@ -138,7 +138,7 @@ public enum DataType {
             try {
                 final List<Float> parts = transform(asList(s.split(",")), string2float);
                 return new GeographicValue(parts);
-            } catch (final IllegalArgumentException e) {
+            } catch (final NumberFormatException e) {
                 throw new ParsingException("Could not parse as Geographic!", e);
             }
         }
@@ -251,22 +251,19 @@ public enum DataType {
     }
 
     /**
-     * A simple ordering by hierarchy. Those types with more supertypes are considered "larger" than those with fewer.
+     * A simple ordering by hierarchy. Those types with more supertypes are considered "smaller" than those with
+     * fewer.
      */
     public static final Comparator<DataType> orderingByHierarchy = new Comparator<DataType>() {
 
         @Override
         public int compare(final DataType left, final DataType right) {
-            return left.supertypes().size() - right.supertypes().size();
+            return right.supertypes().size() - left.supertypes().size();
         }
     };
 
-    /**
-     * @param types The types to compare.
-     * @return The first type with as "bottom-most" as position in the hierarchy as any other.
-     */
-    public static DataType firstMostRestrictiveType(final Collection<DataType> types) {
-        return max(types, orderingByHierarchy);
+    public static SortedSet<DataType> sortByHierarchy(final Iterable<DataType> types) {
+        return from(types).toSortedSet(orderingByHierarchy);
     }
 
     // private static final Logger log = getLogger(DataType.class);

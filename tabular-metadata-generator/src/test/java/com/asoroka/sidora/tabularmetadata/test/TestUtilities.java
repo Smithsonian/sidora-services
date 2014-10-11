@@ -23,8 +23,8 @@ public abstract class TestUtilities {
     public static <T extends DataTypeHeuristic<T>> DataTypeHeuristic<T> cloneableMockStrategy(
             final DataTypeHeuristic<T> strategy) {
         final DataTypeHeuristic<T> mocked = mock(DataTypeHeuristic.class);
-        final Returns type = new Returns(strategy.mostLikelyType());
-        when(mocked.mostLikelyType()).thenAnswer(type);
+        final Returns type = new Returns(strategy.typesAsLikely());
+        when(mocked.typesAsLikely()).thenAnswer(type);
         final Returns range = new Returns(strategy.getRange());
         when(mocked.getRange()).thenAnswer(range);
         final Returns cloner = new Returns(strategy);

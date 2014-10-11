@@ -4,13 +4,13 @@ package com.asoroka.sidora.tabularmetadata;
 import static org.junit.Assert.assertEquals;
 
 import java.util.List;
+import java.util.SortedSet;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
@@ -21,7 +21,7 @@ public class TabularMetadataTest {
     private List<String> mockHeaderNames;
 
     @Mock
-    private List<DataType> mockTypes;
+    private List<SortedSet<DataType>> mockTypes;
 
     @Mock
     private List<Range<?>> mockRanges;

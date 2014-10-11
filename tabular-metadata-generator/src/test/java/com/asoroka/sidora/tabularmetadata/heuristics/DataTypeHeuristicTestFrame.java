@@ -4,6 +4,9 @@ package com.asoroka.sidora.tabularmetadata.heuristics;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Map;
+import java.util.SortedSet;
+
 import org.junit.Test;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
@@ -52,7 +55,7 @@ public abstract class DataTypeHeuristicTestFrame<T extends DataTypeHeuristic<T>>
         }
 
         @Override
-        public DataType mostLikelyType() {
+        public SortedSet<DataType> typesAsLikely() {
             // NO OP
             return null;
         }
@@ -65,6 +68,18 @@ public abstract class DataTypeHeuristicTestFrame<T extends DataTypeHeuristic<T>>
         @Override
         public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange() {
             // NO OP
+            return null;
+        }
+
+        @Override
+        public DataType mostLikelyType() {
+            // NO OP
+            return null;
+        }
+
+        @Override
+        public Map<DataType, Range<?>> getRanges() {
+            // TODO Auto-generated method stub
             return null;
         }
     }

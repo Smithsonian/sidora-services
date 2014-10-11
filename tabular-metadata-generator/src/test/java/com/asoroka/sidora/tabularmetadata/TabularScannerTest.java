@@ -24,7 +24,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
-import com.asoroka.sidora.tabularmetadata.TabularScanner;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.google.common.base.Function;

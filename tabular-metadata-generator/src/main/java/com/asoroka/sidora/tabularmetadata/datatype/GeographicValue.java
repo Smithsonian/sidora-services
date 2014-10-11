@@ -27,8 +27,9 @@ public class GeographicValue implements Comparable<GeographicValue> {
      * @param coordinates
      */
     public GeographicValue(final List<Float> coordinates) {
-        if (coordinates.size() < MINIMUM_DIMENSION || coordinates.size() > MAXIMUM_DIMENSION) {
-            throw new IllegalArgumentException("Unacceptable dimensionality for coordinates!");
+        final int size = coordinates.size();
+        if (size < MINIMUM_DIMENSION || size > MAXIMUM_DIMENSION) {
+            throw new NumberFormatException("Unacceptable dimensionality " + size + " for coordinates!");
         }
         this.coordinates = coordinates;
     }

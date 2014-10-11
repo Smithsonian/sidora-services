@@ -2,12 +2,14 @@
 package com.asoroka.sidora.tabularmetadata;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Geographic;
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.asoroka.sidora.tabularmetadata.test.TestUtilities.cloneableMockStrategy;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.collect.Iterables.all;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -23,6 +25,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +48,7 @@ import com.google.common.collect.Range;
  * 
  * @author ajs6f
  */
-public class TabularMetadataParserTest {
+public class TabularMetadataGeneratorTest {
 
     private static final String testHeaders = "NAME,RANK,SERIAL NUMBER";
 
@@ -72,16 +77,18 @@ public class TabularMetadataParserTest {
     @Mock
     private DataType mockDataType;
 
+    private Returns mockDataTypeAnswer = new Returns(mockDataType);
+
     static <MinMax extends Comparable<?>> Range<MinMax> testRange() {
         return Range.all();
     }
 
-    // private static final Logger log = getLogger(TabularMetadataParserTest.class);
+    // private static final Logger log = getLogger(TabularMetadataGeneratorTest.class);
 
     @Before
     public void setUp() {
         initMocks(this);
-        when(mockSimpleStrategy.mostLikelyType()).thenReturn(mockDataType);
+        when(mockSimpleStrategy.mostLikelyType()).thenAnswer(mockDataTypeAnswer);
         final Returns range = new Returns(testRange());
         when(mockSimpleStrategy.getRange()).thenAnswer(range);
         mockStrategy = cloneableMockStrategy(mockSimpleStrategy);
@@ -98,13 +105,15 @@ public class TabularMetadataParserTest {
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
         final List<String> headers = results.headerNames();
-        final List<DataType> types = results.fieldTypes();
+        final List<SortedSet<DataType>> types = results.fieldTypes();
         @SuppressWarnings("rawtypes")
         // we ignore type-safety here for a simpler unit test
         final List ranges = results.minMaxes();
 
         assertEquals(asList(testHeaders.split(",")), headers);
-        assertTrue(all(types, equalTo(mockDataType)));
+        for (final Set<DataType> eachType : types) {
+            assertTrue(all(eachType, equalTo(mockDataType)));
+        }
         @SuppressWarnings("unchecked")
         // we ignore type-safety here for a simpler unit test
         final boolean rangeTest = all(ranges, equalTo(testRange()));
@@ -120,18 +129,19 @@ public class TabularMetadataParserTest {
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
-        final List<String> headers = results.headerNames();
-        final List<DataType> types = results.fieldTypes();
+        final List<SortedSet<DataType>> types = results.fieldTypes();
+        for (final Set<DataType> eachType : types) {
+            assertTrue(all(eachType, equalTo(mockDataType)));
+        }
         @SuppressWarnings("rawtypes")
         // we ignore type-safety here for a simpler unit test
         final List ranges = results.minMaxes();
-
-        assertEquals(asList(testHeaders.split(",")), headers);
-        assertTrue(all(types, equalTo(mockDataType)));
         @SuppressWarnings("unchecked")
         // we ignore type-safety here for a simpler unit test
         final boolean rangeTest = all(ranges, equalTo(testRange()));
         assertTrue(rangeTest);
+        final List<String> headers = results.headerNames();
+        assertEquals(asList(testHeaders.split(",")), headers);
 
     }
 
@@ -142,8 +152,20 @@ public class TabularMetadataParserTest {
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
-
         final TabularMetadata results = testParser.getMetadata(mockURL);
+
+        final List<SortedSet<DataType>> types = results.fieldTypes();
+        for (final Set<DataType> eachType : types) {
+            assertTrue(all(eachType, equalTo(mockDataType)));
+        }
+        @SuppressWarnings("rawtypes")
+        // we ignore type-safety here for a simpler unit test
+        final List ranges = results.minMaxes();
+        @SuppressWarnings("unchecked")
+        // we ignore type-safety here for a simpler unit test
+        final boolean rangeTest = all(ranges, equalTo(testRange()));
+        assertTrue(rangeTest);
+
         final List<String> headers = results.headerNames();
         assertEquals(emptyList(), headers);
     }
@@ -202,8 +224,8 @@ public class TabularMetadataParserTest {
         public boolean failure = false;
 
         @Override
-        public DataType mostLikelyType() {
-            return Geographic;
+        public SortedSet<DataType> typesAsLikely() {
+            return sortByHierarchy(singleton(Geographic));
         }
 
         @Override
@@ -227,6 +249,18 @@ public class TabularMetadataParserTest {
         @Override
         public MarkingMockDataTypeHeuristic get() {
             return this;
+        }
+
+        @Override
+        public DataType mostLikelyType() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public Map<DataType, Range<?>> getRanges() {
+            // TODO Auto-generated method stub
+            return null;
         }
     }
 }

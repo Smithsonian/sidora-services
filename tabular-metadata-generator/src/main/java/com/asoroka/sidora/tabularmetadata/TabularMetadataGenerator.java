@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.SortedSet;
 
 import javax.inject.Inject;
 
@@ -74,18 +75,18 @@ public class TabularMetadataGenerator {
             strategies = scanner.getStrategies();
         }
         // extract the results for each field
-        final List<DataType> columnTypes = transform(strategies, extractType);
+        final List<SortedSet<DataType>> columnTypes = transform(strategies, extractType);
         final List<Range<?>> minMaxes = transform(strategies, extractMinMax);
 
         return new TabularMetadata(headerNames, columnTypes, minMaxes);
     }
 
-    private static final Function<DataTypeHeuristic<?>, DataType> extractType =
-            new Function<DataTypeHeuristic<?>, DataType>() {
+    private static final Function<DataTypeHeuristic<?>, SortedSet<DataType>> extractType =
+            new Function<DataTypeHeuristic<?>, SortedSet<DataType>>() {
 
                 @Override
-                public DataType apply(final DataTypeHeuristic<?> strategy) {
-                    return strategy.mostLikelyType();
+                public SortedSet<DataType> apply(final DataTypeHeuristic<?> strategy) {
+                    return strategy.typesAsLikely();
                 }
             };
 

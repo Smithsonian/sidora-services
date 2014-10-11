@@ -6,6 +6,7 @@
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
+import static com.google.common.collect.Maps.asMap;
 import static com.google.common.collect.Ordering.natural;
 import static java.util.Objects.hash;
 
@@ -14,6 +15,7 @@ import java.util.Map;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.datatype.ParsingException;
+import com.google.common.base.Function;
 import com.google.common.collect.Range;
 
 /**
@@ -27,7 +29,7 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     /**
      * A {@link Map} from data types to the minimum value from all presented values that were parseable in that type.
      */
-    private Map<DataType, Comparable<?>> minimums = new EnumMap<>(DataType.class);
+    protected Map<DataType, Comparable<?>> minimums = new EnumMap<>(DataType.class);
 
     /**
      * A {@link Map} from data types to the maximum value from all presented values that were parseable in that type.
@@ -53,10 +55,34 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     }
 
     @Override
+    public Map<DataType, Range<?>> getRanges() {
+        return asMap(typesAsLikely(), getRangeForType());
+    }
+
+    private Function<DataType, Range<?>> getRangeForType() {
+        return new Function<DataType, Range<?>>() {
+
+            @Override
+            public Range<?> apply(final DataType type) {
+                // the following could be shortened to three comparisons, but at a cost in clarity
+                if (minimums.containsKey(type) && maximums.containsKey(type)) {
+                    return Range.closed(minimums.get(type), maximums.get(type));
+                }
+                if (minimums.containsKey(type)) {
+                    return Range.atLeast(minimums.get(type));
+                }
+                if (maximums.containsKey(type)) {
+                    return Range.atMost(maximums.get(type));
+                }
+                return Range.all();
+            }
+        };
+    }
+
+    @Override
     public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange() {
-        final MinMax min = (MinMax) minimums.get(mostLikelyType());
-        final MinMax max = (MinMax) maximums.get(mostLikelyType());
-        return Range.closed(min, max);
+        final DataType mostLikelyType = mostLikelyType();
+        return (Range<MinMax>) getRanges().get(mostLikelyType);
     }
 
     @Override

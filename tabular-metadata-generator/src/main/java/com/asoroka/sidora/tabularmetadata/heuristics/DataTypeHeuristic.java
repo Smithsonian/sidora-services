@@ -5,6 +5,9 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
+import java.util.Map;
+import java.util.SortedSet;
+
 import javax.inject.Provider;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
@@ -22,7 +25,13 @@ import com.google.common.collect.Range;
 public interface DataTypeHeuristic<T extends DataTypeHeuristic<T>> extends Cloneable, Provider<DataTypeHeuristic<T>> {
 
     /**
-     * @return The most likely type for the proffered values.
+     * @return Types for the proffered values in order of their likelihood according to this heuristic.
+     */
+    public SortedSet<DataType> typesAsLikely();
+
+    /**
+     * @return The single most likely type for the proffered values according to this heuristic. Under any normal
+     *         regime, this should be equal to {@code typesAsLikely().first()}.
      */
     public DataType mostLikelyType();
 
@@ -34,9 +43,15 @@ public interface DataTypeHeuristic<T extends DataTypeHeuristic<T>> extends Clone
     public void addValue(final String value);
 
     /**
-     * @return The range taken on by proffered values in the value space of the most likely type.
+     * @return The range taken on by proffered values in the Java value space associated to the most likely type.
+     *         Under any normal regime, this should be equal to {@code getRanges.get(mostLikelyType())}.
      */
     public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange();
+
+    /**
+     * @return The ranges taken on by all values in the Java value space associated to each type.
+     */
+    public Map<DataType, Range<?>> getRanges();
 
     /**
      * We override {@link Object#clone()} in order to narrow its return type for type-safety in the use of this

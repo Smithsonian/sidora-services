@@ -4,6 +4,7 @@ package com.asoroka.sidora.tabularmetadata.spring;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Decimal;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
+import static com.google.common.collect.ImmutableList.builder;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.SortedSet;
 
 import javax.inject.Inject;
 
@@ -21,6 +23,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 
 /**
@@ -44,7 +47,7 @@ public abstract class SpringITFramework {
             final Range<?> minMaxes)
             throws IOException {
         final TabularMetadata result = testGenerator.getMetadata(testFile);
-        assertEquals("Got incorrect column types!", expectedDatatypes, result.fieldTypes());
+        assertEquals("Got incorrect column types!", expectedDatatypes, getFirstElements(result.fieldTypes()));
         assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes().get(2));
         return result;
     }
@@ -70,5 +73,13 @@ public abstract class SpringITFramework {
     protected static final List<DataType> SLIGHTLY_SIMPLE_TYPES = asList(String, String, Decimal);
 
     protected static final List<DataType> STRING_TYPES = asList(String, String, String);
+
+    private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
+        final ImmutableList.Builder<T> b = builder();
+        for (final SortedSet<T> s : inputs) {
+            b.add(s.first());
+        }
+        return b.build();
+    }
 
 }

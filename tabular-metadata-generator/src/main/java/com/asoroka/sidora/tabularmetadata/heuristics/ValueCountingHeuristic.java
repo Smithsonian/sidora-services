@@ -11,7 +11,8 @@ import org.slf4j.Logger;
  * 
  * @author ajs6f
  */
-public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>> implements DataTypeHeuristic<T> {
+public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>> extends
+        AbstractDataTypeHeuristic<T> {
 
     private int totalNumValues = 0;
 
@@ -32,23 +33,6 @@ public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>
         @SuppressWarnings("unchecked")
         final T me = (T) this;
         return me;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see java.lang.Object#clone()
-     */
-    @Override
-    public abstract T clone();
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this.getClass().isInstance(o)) {
-            @SuppressWarnings("unchecked")
-            final T t = (T) o;
-            return this.hashCode() == t.hashCode();
-        }
-        return false;
     }
 
     @Override

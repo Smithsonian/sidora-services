@@ -124,22 +124,22 @@ public class DataTypeTest {
     public void testOrderingByHierarchy() {
         List<DataType> listToBeSorted = _(Decimal, PositiveInteger, NonNegativeInteger, Integer, String);
         List<DataType> listInCorrectSorting =
-                _(String, Decimal, Integer, NonNegativeInteger, PositiveInteger);
+                _(PositiveInteger, NonNegativeInteger, Integer, Decimal, String);
         sort(listToBeSorted, orderingByHierarchy);
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
 
-        listToBeSorted = _(Geographic, String);
-        listInCorrectSorting = _(String, Geographic);
+        listToBeSorted = _(String, Geographic);
+        listInCorrectSorting = _(Geographic, String);
         sort(listToBeSorted, orderingByHierarchy);
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
 
-        listToBeSorted = _(DateTime, String);
-        listInCorrectSorting = _(String, DateTime);
+        listToBeSorted = _(String, DateTime);
+        listInCorrectSorting = _(DateTime, String);
         sort(listToBeSorted, orderingByHierarchy);
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
 
-        listToBeSorted = _(Boolean, String);
-        listInCorrectSorting = _(String, Boolean);
+        listToBeSorted = _(String, Boolean);
+        listInCorrectSorting = _(Boolean, String);
         sort(listToBeSorted, orderingByHierarchy);
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, listToBeSorted);
     }
