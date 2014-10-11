@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.tabularmetadata.datatype;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Ordering;
@@ -22,7 +21,7 @@ public class GeographicValue implements Comparable<GeographicValue> {
     /**
      * The coordinates of this {@link GeographicValue}.
      */
-    public List<Float> coordinates = new ArrayList<>();
+    public final List<Float> coordinates;
 
     /**
      * @param coordinates

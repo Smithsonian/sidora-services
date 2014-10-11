@@ -50,9 +50,9 @@ public class TabularMetadataGenerator {
     private HeaderHeuristic<?> headerStrategy = new Default();
 
     /**
-     * Workflow.
+     * The main entry point to application workflow.
      * 
-     * @param dataUrl
+     * @param dataUrl Where to find some tabular data.
      * @return The results of metadata extraction.
      * @throws IOException
      */

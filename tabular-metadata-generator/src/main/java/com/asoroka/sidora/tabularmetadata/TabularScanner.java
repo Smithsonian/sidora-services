@@ -20,7 +20,7 @@ import com.google.common.collect.PeekingIterator;
 
 /**
  * Value scanning workflow. Handed a {@link CSVParser}, this class will scan through it and supply the values of
- * fields to a "row" of {@link DataTypeHeuristic} strategies cloned from the configured choice.
+ * fields to a configured "row" of {@link DataTypeHeuristic} strategies cloned from the configured choice.
  * 
  * @author ajs6f
  */
