@@ -10,4 +10,6 @@ public interface Heuristic {
      */
     public void addValue(final String value);
 
+    void reset();
+
 }

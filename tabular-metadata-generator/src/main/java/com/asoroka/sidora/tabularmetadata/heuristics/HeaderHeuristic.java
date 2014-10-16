@@ -27,8 +27,6 @@ public interface HeaderHeuristic<T extends HeaderHeuristic<T>> extends Heuristic
 
     boolean isHeader();
 
-    void reset();
-
     /**
      * As the name implies, a {@link HeaderHeuristic} that treats each field in the row the same and applies a single
      * test to each. Only if every field value passes the field-test does the row pass this test. Subclasses define

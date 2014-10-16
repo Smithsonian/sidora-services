@@ -38,5 +38,4 @@ public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
                 .headerNames());
         log.trace("End testWithDataWithHeadersMatching().");
     }
-
 }

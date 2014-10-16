@@ -82,5 +82,10 @@ public abstract class DataTypeHeuristicTestFrame<T extends ValueHeuristic<T>> {
             // TODO Auto-generated method stub
             return null;
         }
+
+        @Override
+        public void reset() {
+            // NO OP
+        }
     }
 }

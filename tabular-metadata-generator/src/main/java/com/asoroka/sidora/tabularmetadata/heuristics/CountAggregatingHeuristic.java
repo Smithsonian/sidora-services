@@ -39,6 +39,10 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
      * Initialize counts for each datatype.
      */
     public CountAggregatingHeuristic() {
+        initTypeCounts();
+    }
+
+    protected void initTypeCounts() {
         final Map<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
         typeCounts.putAll(zeroes);
     }
@@ -58,5 +62,11 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     @Override
     public int hashCode() {
         return super.hashCode() + 2 * hash(typeCounts);
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+        initTypeCounts();
     }
 }

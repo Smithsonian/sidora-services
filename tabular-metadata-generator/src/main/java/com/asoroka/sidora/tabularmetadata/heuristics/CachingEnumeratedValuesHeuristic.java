@@ -17,4 +17,9 @@ public class CachingEnumeratedValuesHeuristic implements EnumeratedValuesHeurist
 
     }
 
+    @Override
+    public void reset() {
+        valuesTakenOn = new EnumMap<>(DataType.class);
+    }
+
 }

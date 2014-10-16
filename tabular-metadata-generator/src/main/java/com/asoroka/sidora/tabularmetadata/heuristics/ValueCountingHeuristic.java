@@ -39,4 +39,9 @@ public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>
     public int hashCode() {
         return hash(totalNumValues);
     }
+
+    @Override
+    public void reset() {
+        totalNumValues = 0;
+    }
 }

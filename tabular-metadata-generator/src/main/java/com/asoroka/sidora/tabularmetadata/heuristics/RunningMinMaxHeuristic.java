@@ -89,4 +89,11 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     public int hashCode() {
         return super.hashCode() + 2 * hash(minimums, maximums);
     }
+
+    @Override
+    public void reset() {
+        super.reset();
+        minimums = new EnumMap<>(DataType.class);
+        maximums = new EnumMap<>(DataType.class);
+    }
 }

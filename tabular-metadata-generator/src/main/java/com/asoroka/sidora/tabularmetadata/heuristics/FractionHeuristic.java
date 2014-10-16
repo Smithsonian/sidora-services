@@ -15,6 +15,8 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
  */
 public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeuristic> {
 
+    private final float fractionOfAllowedNonparseables;
+
     private static final Logger log = getLogger(FractionHeuristic.class);
 
     /**
@@ -24,8 +26,6 @@ public class FractionHeuristic extends CountAggregatingHeuristic<FractionHeurist
         super();
         this.fractionOfAllowedNonparseables = d;
     }
-
-    private final float fractionOfAllowedNonparseables;
 
     @Override
     protected boolean candidacy(final DataType type) {

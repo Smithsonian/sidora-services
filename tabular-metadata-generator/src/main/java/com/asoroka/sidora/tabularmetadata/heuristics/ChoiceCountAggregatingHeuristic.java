@@ -19,8 +19,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 
 /**
- * A {@link ValueHeuristic} that records the number of each possible choice of parseables made for values
- * submitted.
+ * A {@link ValueHeuristic} that records the number of each possible choice of parseables made for values submitted.
  * 
  * @author ajs6f
  */
@@ -33,7 +32,11 @@ public abstract class ChoiceCountAggregatingHeuristic<T extends ChoiceCountAggre
     private Map<EnumSet<DataType>, Integer> choiceOccurrences;
 
     protected ChoiceCountAggregatingHeuristic() {
-        // This sequence simply fills the choice map with all possible choices, each mapped to zero, to
+        initChoiceCounts();
+    }
+
+    private void initChoiceCounts() {
+        // / This sequence simply fills the choice map with all possible choices, each mapped to zero, to
         // record that we haven't yet seen any choices made. Java is verbose.
         final Set<Set<DataType>> powerSet = powerSet(DataType.valuesSet());
         choiceOccurrences = new HashMap<>(powerSet.size());
@@ -70,4 +73,9 @@ public abstract class ChoiceCountAggregatingHeuristic<T extends ChoiceCountAggre
         }
     };
 
+    @Override
+    public void reset() {
+        super.reset();
+        initChoiceCounts();
+    }
 }

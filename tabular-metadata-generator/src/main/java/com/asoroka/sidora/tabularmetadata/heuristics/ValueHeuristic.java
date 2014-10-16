@@ -9,8 +9,8 @@ import javax.inject.Provider;
 
 /**
  * Generally, implementations of this type should be used <i>only</i> on a single series of values drawn from a single
- * column of a single tabular data set: it is expected that implementations will maintain state that cannot be reset
- * for reuse.
+ * column of a single tabular data set: it is possible that implementations will maintain state that cannot be reset
+ * for reuse. {@link ValueHeuristic#reset()} should not be relied on without confirmation.
  * 
  * @author ajs6f
  * @param <T>

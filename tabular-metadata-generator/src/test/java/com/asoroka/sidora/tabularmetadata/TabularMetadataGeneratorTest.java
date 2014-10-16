@@ -252,14 +252,19 @@ public class TabularMetadataGeneratorTest {
 
         @Override
         public DataType mostLikelyType() {
-            // TODO Auto-generated method stub
+            // NO OP
             return null;
         }
 
         @Override
         public Map<DataType, Range<?>> getRanges() {
-            // TODO Auto-generated method stub
+            // NO OP
             return null;
+        }
+
+        @Override
+        public void reset() {
+            // NO OP
         }
     }
 }
