@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import org.mockito.internal.stubbing.answers.Returns;
 
-import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ValueHeuristic;
 
 /**
  * Utilities for testing.
@@ -18,11 +18,11 @@ public abstract class TestUtilities {
     /**
      * The following peculiar locution arises from the need to provide "cloneability" while avoiding a recursive mock
      * 
-     * @return a cloneable mock {@link DataTypeHeuristic}
+     * @return a cloneable mock {@link ValueHeuristic}
      */
-    public static <T extends DataTypeHeuristic<T>> DataTypeHeuristic<T> cloneableMockStrategy(
-            final DataTypeHeuristic<T> strategy) {
-        final DataTypeHeuristic<T> mocked = mock(DataTypeHeuristic.class);
+    public static <T extends ValueHeuristic<T>> ValueHeuristic<T> cloneableMockStrategy(
+            final ValueHeuristic<T> strategy) {
+        final ValueHeuristic<T> mocked = mock(ValueHeuristic.class);
         final Returns type = new Returns(strategy.typesAsLikely());
         when(mocked.typesAsLikely()).thenAnswer(type);
         final Returns range = new Returns(strategy.getRange());

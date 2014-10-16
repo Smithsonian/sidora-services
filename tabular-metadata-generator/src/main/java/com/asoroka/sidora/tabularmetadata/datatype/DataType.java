@@ -21,11 +21,14 @@ import static java.util.regex.Pattern.compile;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 import static org.joda.time.format.ISODateTimeFormat.dateTimeParser;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.regex.Pattern;
 
@@ -65,6 +68,11 @@ public enum DataType {
             return s;
         }
 
+        @Override
+        public Class<String> parsedType() {
+            return java.lang.String.class;
+        }
+
     },
     Decimal(W3C_XML_SCHEMA_NS_URI + "#decimal", String) {
 
@@ -77,6 +85,12 @@ public enum DataType {
                 throw new ParsingException("Could not parse as Decimal!", e);
             }
         }
+
+        @Override
+        public Class<Float> parsedType() {
+            // TODO Auto-generated method stub
+            return Float.class;
+        }
     },
     Integer(W3C_XML_SCHEMA_NS_URI + "#integer", Decimal) {
 
@@ -88,6 +102,11 @@ public enum DataType {
             } catch (final NumberFormatException e) {
                 throw new ParsingException("Could not parse as Integer!", e);
             }
+        }
+
+        @Override
+        public Class<Integer> parsedType() {
+            return java.lang.Integer.class;
         }
     },
     URI(W3C_XML_SCHEMA_NS_URI + "#anyURI", String) {
@@ -104,6 +123,11 @@ public enum DataType {
                 throw new ParsingException("Could not parse as URI!", e);
             }
         }
+
+        @Override
+        public Class<URI> parsedType() {
+            return java.net.URI.class;
+        }
     },
     NonNegativeInteger(W3C_XML_SCHEMA_NS_URI + "#nonNegativeInteger", Integer) {
 
@@ -117,6 +141,11 @@ public enum DataType {
             }
             throw new ParsingException("Value was negative!");
         }
+
+        @Override
+        public Class<Integer> parsedType() {
+            return java.lang.Integer.class;
+        }
     },
     PositiveInteger(W3C_XML_SCHEMA_NS_URI + "#positiveInteger", NonNegativeInteger) {
 
@@ -128,6 +157,11 @@ public enum DataType {
                 return value;
             }
             throw new ParsingException("Value was negative!");
+        }
+
+        @Override
+        public Class<Integer> parsedType() {
+            return java.lang.Integer.class;
         }
     },
     Geographic(null, String) {
@@ -141,6 +175,11 @@ public enum DataType {
             } catch (final NumberFormatException e) {
                 throw new ParsingException("Could not parse as Geographic!", e);
             }
+        }
+
+        @Override
+        public Class<GeographicValue> parsedType() {
+            return GeographicValue.class;
         }
     },
     Boolean(W3C_XML_SCHEMA_NS_URI + "#boolean", String) {
@@ -156,6 +195,11 @@ public enum DataType {
             }
             throw new ParsingException("Could not parse as Boolean!");
         }
+
+        @Override
+        public Class<Boolean> parsedType() {
+            return java.lang.Boolean.class;
+        }
     },
     DateTime(W3C_XML_SCHEMA_NS_URI + "#dateTime", String) {
 
@@ -167,6 +211,11 @@ public enum DataType {
             } catch (final IllegalArgumentException e) {
                 throw new ParsingException("Could not parse as DataTime!", e);
             }
+        }
+
+        @Override
+        public Class<DateTime> parsedType() {
+            return org.joda.time.DateTime.class;
         }
     };
 
@@ -223,6 +272,8 @@ public enum DataType {
      */
     abstract public <T extends Comparable<T>> T parse(final String s) throws ParsingException;
 
+    abstract public Class<? extends Serializable> parsedType();
+
     /**
      * @param s A value to parse
      * @return an {@link EnumSet} of those DataTypes into which s can be parsed
@@ -248,6 +299,11 @@ public enum DataType {
      */
     public static EnumSet<DataType> notParseableAs(final String value) {
         return complementOf(parseableAs(value));
+    }
+
+    public static EnumMap<DataType, Map<Class<? extends Serializable>, ? extends Serializable>> parsedTypes() {
+        return null;
+
     }
 
     /**

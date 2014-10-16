@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic.TreatsEachFieldAlikeHeaderHeuristic;
+
 public class RegexpHeaderHeuristicTest extends HeaderHeuristicTestFrame<RegexpHeaderHeuristic> {
 
     private static final String pattern = "MARKER";
@@ -24,9 +26,15 @@ public class RegexpHeaderHeuristicTest extends HeaderHeuristicTestFrame<RegexpHe
 
     @Test
     public void test() {
-        final RegexpHeaderHeuristic testHeaderStrategy = newHeuristic();
-        assertTrue("Failed to pass a row that should have passed!", testHeaderStrategy.apply(headerRow1));
-        assertFalse("Passed a row that shouldn't have passed!", testHeaderStrategy.apply(headerRow2));
+        final TreatsEachFieldAlikeHeaderHeuristic<RegexpHeaderHeuristic> testHeuristic = newHeuristic();
+        for (final String field : headerRow1) {
+            testHeuristic.addValue(field);
+        }
+        assertTrue("Failed to pass a row that should have passed!", testHeuristic.isHeader());
+        for (final String field : headerRow2) {
+            testHeuristic.addValue(field);
+        }
+        assertFalse("Passed a row that shouldn't have passed!", testHeuristic.isHeader());
     }
 
 }

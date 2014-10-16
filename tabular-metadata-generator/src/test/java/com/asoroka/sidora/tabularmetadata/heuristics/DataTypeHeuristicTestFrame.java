@@ -12,7 +12,7 @@ import org.junit.Test;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 
-public abstract class DataTypeHeuristicTestFrame<T extends DataTypeHeuristic<T>> {
+public abstract class DataTypeHeuristicTestFrame<T extends ValueHeuristic<T>> {
 
     protected abstract T newTestHeuristic();
 
@@ -42,7 +42,7 @@ public abstract class DataTypeHeuristicTestFrame<T extends DataTypeHeuristic<T>>
         assertFalse(testHeuristic.equals(otherTypeOfHeuristic));
     }
 
-    protected static class TestHeuristic implements DataTypeHeuristic<TestHeuristic> {
+    protected static class TestHeuristic implements ValueHeuristic<TestHeuristic> {
 
         @Override
         public TestHeuristic clone() {

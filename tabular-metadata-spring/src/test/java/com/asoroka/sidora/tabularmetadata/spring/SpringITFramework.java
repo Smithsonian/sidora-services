@@ -43,7 +43,7 @@ public abstract class SpringITFramework {
     @Inject
     protected TabularMetadataGenerator testGenerator;
 
-    public TabularMetadata testSimpleFile(final URL testFile, final List<DataType> expectedDatatypes,
+    public TabularMetadata testFile(final URL testFile, final List<DataType> expectedDatatypes,
             final Range<?> minMaxes)
             throws IOException {
         final TabularMetadata result = testGenerator.getMetadata(testFile);

@@ -22,10 +22,10 @@ import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
-import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic.Default;
 import com.asoroka.sidora.tabularmetadata.heuristics.StrictHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ValueHeuristic;
 import com.google.common.base.Function;
 import com.google.common.collect.Range;
 
@@ -46,7 +46,7 @@ public class TabularMetadataGenerator {
      */
     private Integer scanLimit = 0;
 
-    private DataTypeHeuristic<?> strategy = new StrictHeuristic();
+    private ValueHeuristic<?> strategy = new StrictHeuristic();
 
     private HeaderHeuristic<?> headerStrategy = new Default();
 
@@ -63,12 +63,16 @@ public class TabularMetadataGenerator {
         final List<String> headerNames;
         try (final CSVParser headerParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final CSVRecord firstLine = headerParser.iterator().next();
-            final boolean hasHeaders = headerStrategy.apply(firstLine);
+            for (final String field : firstLine) {
+                headerStrategy.addValue(field);
+            }
+            final boolean hasHeaders = headerStrategy.isHeader();
+            headerStrategy.reset();
             format = hasHeaders ? format.withHeader() : format;
             headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders;
         }
         // scan values up to the limit
-        final List<DataTypeHeuristic<?>> strategies;
+        final List<ValueHeuristic<?>> strategies;
         try (final CSVParser parser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final TabularScanner scanner = new TabularScanner(parser, strategy);
             scanner.scan(scanLimit);
@@ -81,20 +85,20 @@ public class TabularMetadataGenerator {
         return new TabularMetadata(headerNames, columnTypes, minMaxes);
     }
 
-    private static final Function<DataTypeHeuristic<?>, SortedSet<DataType>> extractType =
-            new Function<DataTypeHeuristic<?>, SortedSet<DataType>>() {
+    private static final Function<ValueHeuristic<?>, SortedSet<DataType>> extractType =
+            new Function<ValueHeuristic<?>, SortedSet<DataType>>() {
 
                 @Override
-                public SortedSet<DataType> apply(final DataTypeHeuristic<?> strategy) {
+                public SortedSet<DataType> apply(final ValueHeuristic<?> strategy) {
                     return strategy.typesAsLikely();
                 }
             };
 
-    private static final Function<DataTypeHeuristic<?>, Range<?>> extractMinMax =
-            new Function<DataTypeHeuristic<?>, Range<?>>() {
+    private static final Function<ValueHeuristic<?>, Range<?>> extractMinMax =
+            new Function<ValueHeuristic<?>, Range<?>>() {
 
                 @Override
-                public Range<?> apply(final DataTypeHeuristic<?> strategy) {
+                public Range<?> apply(final ValueHeuristic<?> strategy) {
                     return strategy.getRange();
                 }
             };
@@ -128,7 +132,7 @@ public class TabularMetadataGenerator {
      * @param strategy The type recognition strategy to use.
      */
     @Inject
-    public void setStrategy(final DataTypeHeuristic<?> strategy) {
+    public void setStrategy(final ValueHeuristic<?> strategy) {
         this.strategy = strategy;
     }
 }

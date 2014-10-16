@@ -13,7 +13,6 @@ import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -38,8 +37,8 @@ import org.mockito.stubbing.Answer;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
-import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ValueHeuristic;
 import com.google.common.collect.Range;
 
 /**
@@ -69,7 +68,7 @@ public class TabularMetadataGeneratorTest {
     private static final byte[] testTsv = (testTsvHeaders + "\n" + testTsvRow1).getBytes();
 
     @Mock
-    private DataTypeHeuristic<?> mockSimpleStrategy, mockStrategy;
+    private ValueHeuristic<?> mockSimpleStrategy, mockStrategy;
 
     @Mock
     private HeaderHeuristic<?> mockHeaderHeuristic;
@@ -96,7 +95,7 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithSetFormat() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(true);
+        when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testTsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
@@ -122,7 +121,7 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithHeaders() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(true);
+        when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
@@ -147,7 +146,7 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithoutHeaders() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
+        when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setStrategy(mockStrategy);
@@ -171,8 +170,8 @@ public class TabularMetadataGeneratorTest {
     }
 
     @Test
-    public <T extends DataTypeHeuristic<T>> void testOperationWithoutHeadersWithScanLimit() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
+    public <T extends ValueHeuristic<T>> void testOperationWithoutHeadersWithScanLimit() throws IOException {
+        when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsvWithMarker);
         final MarkingMockDataTypeHeuristic testStrategy = new MarkingMockDataTypeHeuristic(MARKER_VALUE);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
@@ -210,7 +209,7 @@ public class TabularMetadataGeneratorTest {
 
     }
 
-    private static class MarkingMockDataTypeHeuristic implements DataTypeHeuristic<MarkingMockDataTypeHeuristic> {
+    private static class MarkingMockDataTypeHeuristic implements ValueHeuristic<MarkingMockDataTypeHeuristic> {
 
         /**
          * @param marker

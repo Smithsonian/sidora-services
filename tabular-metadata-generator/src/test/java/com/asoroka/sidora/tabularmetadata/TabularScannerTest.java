@@ -25,7 +25,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ValueHeuristic;
 import com.google.common.base.Function;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -35,7 +35,7 @@ public class TabularScannerTest {
     DataType mockDataType;
 
     @Mock
-    DataTypeHeuristic<?> mockStrategy;
+    ValueHeuristic<?> mockStrategy;
 
     private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
 
@@ -76,13 +76,13 @@ public class TabularScannerTest {
     }
 
     /**
-     * Extracts the most likely type selection from a {@link DataTypeHeuristic}
+     * Extracts the most likely type selection from a {@link ValueHeuristic}
      */
-    private static final Function<DataTypeHeuristic<?>, DataType> getMostLikelyType =
-            new Function<DataTypeHeuristic<?>, DataType>() {
+    private static final Function<ValueHeuristic<?>, DataType> getMostLikelyType =
+            new Function<ValueHeuristic<?>, DataType>() {
 
                 @Override
-                public DataType apply(final DataTypeHeuristic<?> heuristic) {
+                public DataType apply(final ValueHeuristic<?> heuristic) {
                     return heuristic.mostLikelyType();
                 }
             };

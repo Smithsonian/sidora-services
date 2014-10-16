@@ -14,6 +14,6 @@ public class OperationWithTSVFormatIT extends SpringITFramework {
 
     @Test
     public void testWithTSVFormat() throws MalformedURLException, IOException {
-        testSimpleFile(getTestFile(testTSVFile), SIMPLE_TYPES, getIntRange());
+        testFile(getTestFile(testTSVFile), SIMPLE_TYPES, getIntRange());
     }
 }

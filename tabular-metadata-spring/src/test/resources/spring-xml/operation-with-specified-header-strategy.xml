@@ -16,7 +16,7 @@
     </bean>
     
     <bean class="com.asoroka.sidora.tabularmetadata.heuristics.RegexpHeaderHeuristic" id="headerStrategy">
-        <constructor-arg value="NEVER MATCH"/>
+        <constructor-arg value="MATCH"/>
     </bean>    
 
 </beans>

@@ -15,7 +15,7 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.base.Predicate;
 
 /**
- * A {@link DataTypeHeuristic} that uses some test that maps types to boolean acceptance values. The test is created
+ * A {@link ValueHeuristic} that uses some test that maps types to boolean acceptance values. The test is created
  * by overriding {@link #candidacy(DataType)}. Types are passed or rejected without any particular order other than
  * specificity of type within the hierarchy.
  * 

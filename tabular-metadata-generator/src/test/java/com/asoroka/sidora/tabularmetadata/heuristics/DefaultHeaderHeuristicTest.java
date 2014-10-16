@@ -25,8 +25,14 @@ public class DefaultHeaderHeuristicTest extends HeaderHeuristicTestFrame<HeaderH
     @Test
     public void testDefault() {
         final HeaderHeuristic.Default testHeuristic = newHeuristic();
-        assertTrue(testHeuristic.apply(goodData));
-        assertFalse(testHeuristic.apply(badData));
+        for (final String field : goodData) {
+            testHeuristic.addValue(field);
+        }
+        assertTrue(testHeuristic.isHeader());
+        for (final String field : badData) {
+            testHeuristic.addValue(field);
+        }
+        assertFalse(testHeuristic.isHeader());
     }
 
 }

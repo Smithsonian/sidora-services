@@ -8,7 +8,7 @@ import com.google.common.collect.Range;
  * @author ajs6f
  */
 public abstract class AbstractDataTypeHeuristic<T extends AbstractDataTypeHeuristic<T>> implements
-        DataTypeHeuristic<T> {
+        ValueHeuristic<T> {
 
     @Override
     public DataType mostLikelyType() {
@@ -23,7 +23,7 @@ public abstract class AbstractDataTypeHeuristic<T extends AbstractDataTypeHeuris
 
     /*
      * (non-Javadoc)
-     * @see com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic<T>#clone()
+     * @see com.asoroka.sidora.tabularmetadata.heuristics.ValueHeuristic<T>#clone()
      */
     @Override
     public abstract T clone();

@@ -12,12 +12,12 @@ public class DefaultOperationIT extends SpringITFramework {
 
     @Test
     public void testWithSimpleData() throws MalformedURLException, IOException {
-        testSimpleFile(getTestFile(testFileSimple), SIMPLE_TYPES, getIntRange());
+        testFile(getTestFile(testFileSimple), SIMPLE_TYPES, getIntRange());
     }
 
     @Test
     public void testWithSlightlySimpleData() throws MalformedURLException, IOException {
-        testSimpleFile(getTestFile(testFileSlightlyLessSimple), SLIGHTLY_SIMPLE_TYPES, getFloatRange());
+        testFile(getTestFile(testFileSlightlyLessSimple), SLIGHTLY_SIMPLE_TYPES, getFloatRange());
     }
 
 }

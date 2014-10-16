@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 
 /**
- * A {@link DataTypeHeuristic} that aggregates candidate type appearance information for its field.
+ * A {@link ValueHeuristic} that aggregates candidate type appearance information for its field.
  * 
  * @author ajs6f
  * @param <T>

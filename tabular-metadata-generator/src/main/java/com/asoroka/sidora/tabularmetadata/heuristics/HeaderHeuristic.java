@@ -4,8 +4,14 @@ package com.asoroka.sidora.tabularmetadata.heuristics;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.collect.Iterables.all;
 import static java.util.Collections.singleton;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Provider;
+
+import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.base.Predicate;
@@ -16,11 +22,17 @@ import com.google.common.base.Predicate;
  * 
  * @author ajs6f
  */
-public interface HeaderHeuristic<T extends HeaderHeuristic<T>> extends Predicate<Iterable<String>>, Provider<T> {
+public interface HeaderHeuristic<T extends HeaderHeuristic<T>> extends Heuristic,
+        Provider<T> {
+
+    boolean isHeader();
+
+    void reset();
 
     /**
      * As the name implies, a {@link HeaderHeuristic} that treats each field in the row the same and applies a single
-     * test to each. Only if every field value passes the field-test does the row pass this test.
+     * test to each. Only if every field value passes the field-test does the row pass this test. Subclasses define
+     * the test by implementing {@link #fieldTest()}.
      * 
      * @author ajs6f
      * @param <T>
@@ -28,13 +40,27 @@ public interface HeaderHeuristic<T extends HeaderHeuristic<T>> extends Predicate
     public static abstract class TreatsEachFieldAlikeHeaderHeuristic<T extends TreatsEachFieldAlikeHeaderHeuristic<T>>
             implements HeaderHeuristic<T> {
 
+        private static final Logger log = getLogger(TreatsEachFieldAlikeHeaderHeuristic.class);
+
+        private List<String> inputRow = new ArrayList<>();
+
         @Override
-        public boolean apply(final Iterable<String> inputRow) {
+        public boolean isHeader() {
+            log.trace("Checking input row: {}", inputRow);
             return all(inputRow, fieldTest());
         }
 
         protected abstract Predicate<? super String> fieldTest();
 
+        @Override
+        public void addValue(final String value) {
+            inputRow.add(value);
+        }
+
+        @Override
+        public void reset() {
+            inputRow.clear();
+        }
     }
 
     /**

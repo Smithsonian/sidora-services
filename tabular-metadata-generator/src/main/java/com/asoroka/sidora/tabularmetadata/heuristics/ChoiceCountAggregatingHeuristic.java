@@ -19,7 +19,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 
 /**
- * A {@link DataTypeHeuristic} that records the number of each possible choice of parseables made for values
+ * A {@link ValueHeuristic} that records the number of each possible choice of parseables made for values
  * submitted.
  * 
  * @author ajs6f

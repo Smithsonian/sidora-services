@@ -7,7 +7,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import org.slf4j.Logger;
 
 /**
- * A {@link DataTypeHeuristic} that counts the number of values received.
+ * A {@link ValueHeuristic} that counts the number of values received.
  * 
  * @author ajs6f
  */

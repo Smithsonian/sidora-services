@@ -14,13 +14,13 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 
-import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ValueHeuristic;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 
 /**
  * Value scanning workflow. Handed a {@link CSVParser}, this class will scan through it and supply the values of
- * fields to a configured "row" of {@link DataTypeHeuristic} strategies cloned from the configured choice.
+ * fields to a configured "row" of {@link ValueHeuristic} strategies cloned from the configured choice.
  * 
  * @author ajs6f
  */
@@ -28,13 +28,13 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
 
     private final PeekingIterator<CSVRecord> internalScanner;
 
-    private final Iterator<DataTypeHeuristic<?>> strategies;
+    private final Iterator<ValueHeuristic<?>> strategies;
 
-    private final List<DataTypeHeuristic<?>> rowOfStrategies;
+    private final List<ValueHeuristic<?>> rowOfStrategies;
 
     private static final Logger log = getLogger(TabularScanner.class);
 
-    public TabularScanner(final CSVParser parser, final DataTypeHeuristic<?> strategy) {
+    public TabularScanner(final CSVParser parser, final ValueHeuristic<?> strategy) {
         this.internalScanner = peekingIterator(parser.iterator());
         final int numColumns = internalScanner.peek().size();
 
@@ -82,7 +82,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
      * 
      * @return the row of strategies used to determine the types of fields
      */
-    public List<DataTypeHeuristic<?>> getStrategies() {
+    public List<ValueHeuristic<?>> getStrategies() {
         return rowOfStrategies;
     }
 

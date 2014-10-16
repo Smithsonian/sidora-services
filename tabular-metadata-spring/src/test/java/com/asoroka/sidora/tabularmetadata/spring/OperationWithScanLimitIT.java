@@ -21,7 +21,7 @@ public class OperationWithScanLimitIT extends SpringITFramework {
      */
     @Test
     public void testWithScanLimit() throws MalformedURLException, IOException {
-        testSimpleFile(getTestFile(testFileWithMarkerRow), SLIGHTLY_SIMPLE_TYPES, getFloatRange());
+        testFile(getTestFile(testFileWithMarkerRow), SLIGHTLY_SIMPLE_TYPES, getFloatRange());
     }
 
 }
