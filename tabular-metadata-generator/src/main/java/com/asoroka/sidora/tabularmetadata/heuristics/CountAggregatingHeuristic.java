@@ -31,20 +31,19 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     /**
      * In this {@link Map}, we aggregate counts of parseable values for each datatype.
      */
-    protected final EnumMap<DataType, Integer> typeCounts = new EnumMap<>(DataType.class);
+    protected EnumMap<DataType, Integer> typeCounts;
 
     private static final Logger log = getLogger(CountAggregatingHeuristic.class);
 
     /**
      * Initialize counts for each datatype.
      */
-    public CountAggregatingHeuristic() {
-        initTypeCounts();
-    }
-
-    protected void initTypeCounts() {
+    @Override
+    public void reset() {
+        super.reset();
+        this.typeCounts = new EnumMap<>(DataType.class);
         final Map<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
-        typeCounts.putAll(zeroes);
+        this.typeCounts.putAll(zeroes);
     }
 
     @Override
@@ -62,11 +61,5 @@ public abstract class CountAggregatingHeuristic<T extends CountAggregatingHeuris
     @Override
     public int hashCode() {
         return super.hashCode() + 2 * hash(typeCounts);
-    }
-
-    @Override
-    public void reset() {
-        super.reset();
-        initTypeCounts();
     }
 }

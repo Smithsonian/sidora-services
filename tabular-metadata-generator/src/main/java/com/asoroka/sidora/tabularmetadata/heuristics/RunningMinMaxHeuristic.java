@@ -29,12 +29,22 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     /**
      * A {@link Map} from data types to the minimum value from all presented values that were parseable in that type.
      */
-    protected Map<DataType, Comparable<?>> minimums = new EnumMap<>(DataType.class);
+    protected Map<DataType, Comparable<?>> minimums;
 
     /**
      * A {@link Map} from data types to the maximum value from all presented values that were parseable in that type.
      */
-    protected Map<DataType, Comparable<?>> maximums = new EnumMap<>(DataType.class);
+    protected Map<DataType, Comparable<?>> maximums;
+
+    /**
+     * Initialize minimums and maximums.
+     */
+    @Override
+    public void reset() {
+        super.reset();
+        this.minimums = new EnumMap<>(DataType.class);
+        this.maximums = new EnumMap<>(DataType.class);
+    }
 
     @Override
     public void addValue(final String value) {
@@ -88,12 +98,5 @@ public abstract class RunningMinMaxHeuristic<T extends RunningMinMaxHeuristic<T>
     @Override
     public int hashCode() {
         return super.hashCode() + 2 * hash(minimums, maximums);
-    }
-
-    @Override
-    public void reset() {
-        super.reset();
-        minimums = new EnumMap<>(DataType.class);
-        maximums = new EnumMap<>(DataType.class);
     }
 }

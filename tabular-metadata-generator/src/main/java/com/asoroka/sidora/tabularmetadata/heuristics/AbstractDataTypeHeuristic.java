@@ -10,6 +10,10 @@ import com.google.common.collect.Range;
 public abstract class AbstractDataTypeHeuristic<T extends AbstractDataTypeHeuristic<T>> implements
         ValueHeuristic<T> {
 
+    public AbstractDataTypeHeuristic() {
+        reset();
+    }
+
     @Override
     public DataType mostLikelyType() {
         return typesAsLikely().first();
@@ -37,5 +41,4 @@ public abstract class AbstractDataTypeHeuristic<T extends AbstractDataTypeHeuris
         }
         return false;
     }
-
 }

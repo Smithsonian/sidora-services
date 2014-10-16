@@ -31,11 +31,8 @@ public abstract class ChoiceCountAggregatingHeuristic<T extends ChoiceCountAggre
      */
     private Map<EnumSet<DataType>, Integer> choiceOccurrences;
 
-    protected ChoiceCountAggregatingHeuristic() {
-        initChoiceCounts();
-    }
-
-    private void initChoiceCounts() {
+    @Override
+    public void reset() {
         // / This sequence simply fills the choice map with all possible choices, each mapped to zero, to
         // record that we haven't yet seen any choices made. Java is verbose.
         final Set<Set<DataType>> powerSet = powerSet(DataType.valuesSet());
@@ -72,10 +69,4 @@ public abstract class ChoiceCountAggregatingHeuristic<T extends ChoiceCountAggre
             return !s.isEmpty();
         }
     };
-
-    @Override
-    public void reset() {
-        super.reset();
-        initChoiceCounts();
-    }
 }

@@ -14,7 +14,17 @@ import org.slf4j.Logger;
 public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>> extends
         AbstractDataTypeHeuristic<T> {
 
-    private int totalNumValues = 0;
+    private int totalNumValues;
+
+    /**
+     * Set the counter of values seen to zero.
+     * 
+     * @author ajs6f
+     */
+    @Override
+    public void reset() {
+        this.totalNumValues = 0;
+    }
 
     private static final Logger log = getLogger(ValueCountingHeuristic.class);
 
@@ -38,10 +48,5 @@ public abstract class ValueCountingHeuristic<T extends ValueCountingHeuristic<T>
     @Override
     public int hashCode() {
         return hash(totalNumValues);
-    }
-
-    @Override
-    public void reset() {
-        totalNumValues = 0;
     }
 }
