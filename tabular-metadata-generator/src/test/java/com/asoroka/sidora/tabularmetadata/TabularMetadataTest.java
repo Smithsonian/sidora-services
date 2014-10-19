@@ -4,6 +4,7 @@ package com.asoroka.sidora.tabularmetadata;
 import static org.junit.Assert.assertEquals;
 
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 
 import org.junit.Test;
@@ -24,7 +25,7 @@ public class TabularMetadataTest {
     private List<SortedSet<DataType>> mockTypes;
 
     @Mock
-    private List<Range<?>> mockRanges;
+    private List<Map<DataType, Range<?>>> mockRanges;
 
     @Test
     public void testContainerAction() {

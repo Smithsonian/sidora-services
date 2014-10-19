@@ -1,0 +1,20 @@
+
+package com.asoroka.sidora.tabularmetadata.heuristics.types;
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
+public abstract class ValueCountingHeuristicTestFrame<TestHeuristic extends ValueCountingHeuristic<TestHeuristic>>
+        extends HeuristicTestFrame<TestHeuristic> {
+
+    @Test
+    public void testCountingValues() {
+        final TestHeuristic testHeuristic = newTestHeuristic();
+        for (byte i = 1; i <= 100; i++) {
+            testHeuristic.addValue(String.valueOf(i));
+        }
+        assertEquals(100, testHeuristic.totalNumValues());
+    }
+
+}

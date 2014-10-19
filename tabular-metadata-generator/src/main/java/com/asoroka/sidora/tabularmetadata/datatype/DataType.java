@@ -302,6 +302,7 @@ public enum DataType {
     }
 
     public static EnumMap<DataType, Map<Class<? extends Serializable>, ? extends Serializable>> parsedTypes() {
+
         return null;
 
     }

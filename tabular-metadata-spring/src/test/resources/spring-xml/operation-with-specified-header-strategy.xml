@@ -15,7 +15,7 @@
         <property name="headerStrategy" ref="headerStrategy"/>
     </bean>
     
-    <bean class="com.asoroka.sidora.tabularmetadata.heuristics.RegexpHeaderHeuristic" id="headerStrategy">
+    <bean class="com.asoroka.sidora.tabularmetadata.heuristics.headers.RegexpHeaderHeuristic" id="headerStrategy">
         <constructor-arg value="MATCH"/>
     </bean>    
 

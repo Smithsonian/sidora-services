@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
+import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 
 @ContextConfiguration("/spring-xml/operation-with-specified-header-strategy.xml")
 public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
@@ -24,7 +25,8 @@ public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
     @Test
     public void testWithSimpleData() throws MalformedURLException, IOException {
         log.trace("testWithSimpleData()...");
-        final TabularMetadata result = testFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange());
+        final TabularMetadata result =
+                testFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange(), DataType.String);
         assertEquals("Found header names when we should not have!", asList(), result.headerNames());
         log.trace("End testWithSimpleData().");
     }
@@ -33,7 +35,7 @@ public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
     public void testWithDataWithHeadersMatching() throws MalformedURLException, IOException {
         log.trace("testWithDataWithHeadersMatching()...");
         final TabularMetadata result =
-                testFile(getTestFile(testFileSimpleWithCrazyHeaders), SIMPLE_TYPES, getIntRange());
+                testFile(getTestFile(testFileSimpleWithCrazyHeaders), SIMPLE_TYPES, getIntRange(), DataType.Integer);
         assertEquals("Didn't find header names when we should have!", asList("MATCH1", "MATCH2", "MATCH3"), result
                 .headerNames());
         log.trace("End testWithDataWithHeadersMatching().");

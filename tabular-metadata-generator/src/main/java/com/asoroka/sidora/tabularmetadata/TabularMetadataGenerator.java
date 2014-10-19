@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 
 import javax.inject.Inject;
@@ -22,10 +23,12 @@ import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
-import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic.Default;
-import com.asoroka.sidora.tabularmetadata.heuristics.StrictHeuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.ValueHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RunningMinMaxHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import com.google.common.base.Function;
 import com.google.common.collect.Range;
 
@@ -42,13 +45,15 @@ public class TabularMetadataGenerator {
     private CSVFormat format = DEFAULT;
 
     /**
-     * Default value of {@code 0} indicates no limit. See {@link TabularScanner.scan(final int limit)}.
+     * DefaultHeaderHeuristic value of {@code 0} indicates no limit. See {@link TabularScanner.scan(final int limit)}.
      */
     private Integer scanLimit = 0;
 
-    private ValueHeuristic<?> strategy = new StrictHeuristic();
+    private RangeDeterminingHeuristic<?> rangeStrategy = new RunningMinMaxHeuristic();
 
-    private HeaderHeuristic<?> headerStrategy = new Default();
+    private TypeDeterminingHeuristic<?> typeStrategy = new StrictHeuristic();
+
+    private HeaderHeuristic<?> headerStrategy = new DefaultHeaderHeuristic();
 
     /**
      * The main entry point to application workflow.
@@ -72,34 +77,37 @@ public class TabularMetadataGenerator {
             headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders;
         }
         // scan values up to the limit
-        final List<ValueHeuristic<?>> strategies;
+        final List<TypeDeterminingHeuristic<?>> typeStrategies;
+        final List<RangeDeterminingHeuristic<?>> rangeStrategies;
+
         try (final CSVParser parser = parse(dataUrl, CHARACTER_ENCODING, format)) {
-            final TabularScanner scanner = new TabularScanner(parser, strategy);
+            final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy);
             scanner.scan(scanLimit);
-            strategies = scanner.getStrategies();
+            typeStrategies = scanner.getTypeStrategies();
+            rangeStrategies = scanner.getRangeStrategies();
         }
         // extract the results for each field
-        final List<SortedSet<DataType>> columnTypes = transform(strategies, extractType);
-        final List<Range<?>> minMaxes = transform(strategies, extractMinMax);
+        final List<SortedSet<DataType>> columnTypes = transform(typeStrategies, extractType);
+        final List<Map<DataType, Range<?>>> minMaxes = transform(rangeStrategies, extractMinMax);
 
         return new TabularMetadata(headerNames, columnTypes, minMaxes);
     }
 
-    private static final Function<ValueHeuristic<?>, SortedSet<DataType>> extractType =
-            new Function<ValueHeuristic<?>, SortedSet<DataType>>() {
+    private static final Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>> extractType =
+            new Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>>() {
 
                 @Override
-                public SortedSet<DataType> apply(final ValueHeuristic<?> strategy) {
+                public SortedSet<DataType> apply(final TypeDeterminingHeuristic<?> strategy) {
                     return strategy.typesAsLikely();
                 }
             };
 
-    private static final Function<ValueHeuristic<?>, Range<?>> extractMinMax =
-            new Function<ValueHeuristic<?>, Range<?>>() {
+    private static final Function<RangeDeterminingHeuristic<?>, Map<DataType, Range<?>>> extractMinMax =
+            new Function<RangeDeterminingHeuristic<?>, Map<DataType, Range<?>>>() {
 
                 @Override
-                public Range<?> apply(final ValueHeuristic<?> strategy) {
-                    return strategy.getRange();
+                public Map<DataType, Range<?>> apply(final RangeDeterminingHeuristic<?> strategy) {
+                    return strategy.getRanges();
                 }
             };
 
@@ -132,7 +140,15 @@ public class TabularMetadataGenerator {
      * @param strategy The type recognition strategy to use.
      */
     @Inject
-    public void setStrategy(final ValueHeuristic<?> strategy) {
-        this.strategy = strategy;
+    public void setTypeStrategy(final TypeDeterminingHeuristic<?> strategy) {
+        this.typeStrategy = strategy;
+    }
+
+    /**
+     * @param strategy The range recognition strategy to use.
+     */
+    @Inject
+    public void setRangeStrategy(final RangeDeterminingHeuristic<?> strategy) {
+        this.rangeStrategy = strategy;
     }
 }
