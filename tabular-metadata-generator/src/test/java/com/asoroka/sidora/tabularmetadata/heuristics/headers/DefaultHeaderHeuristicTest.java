@@ -16,13 +16,13 @@ public class DefaultHeaderHeuristicTest extends HeaderHeuristicTestFrame<Default
     private static final List<String> badData = newArrayList("Kirk", "Captain", "00034");
 
     @Override
-    protected DefaultHeaderHeuristic newHeuristic() {
+    protected DefaultHeaderHeuristic newTestHeuristic() {
         return new DefaultHeaderHeuristic();
     }
 
     @Test
     public void testDefault() {
-        final DefaultHeaderHeuristic testHeuristic = newHeuristic();
+        final DefaultHeaderHeuristic testHeuristic = newTestHeuristic();
         for (final String field : goodData) {
             testHeuristic.addValue(field);
         }

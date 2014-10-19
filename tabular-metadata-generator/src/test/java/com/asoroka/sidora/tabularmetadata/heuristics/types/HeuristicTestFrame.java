@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.asoroka.sidora.tabularmetadata.CloneableProvider;
 import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 
 public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeuristic>> {
@@ -21,7 +20,7 @@ public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeu
     @Test
     public void testGet() {
         final TestHeuristic testHeuristic = newTestHeuristic();
-        assertTrue(((CloneableProvider<?>) testHeuristic).get() == (testHeuristic));
+        assertTrue(testHeuristic == testHeuristic.get());
     }
 
 }

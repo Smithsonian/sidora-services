@@ -1,20 +1,9 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.headers;
 
-import static org.junit.Assert.assertTrue;
+import com.asoroka.sidora.tabularmetadata.heuristics.types.HeuristicTestFrame;
 
-import org.junit.Test;
-
-import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
-
-public abstract class HeaderHeuristicTestFrame<T extends HeaderHeuristic<T>> {
-
-    protected abstract T newHeuristic();
-
-    @Test
-    public void testGet() {
-        final T testHeuristic = newHeuristic();
-        assertTrue(testHeuristic == testHeuristic.get());
-    }
-
+public abstract class HeaderHeuristicTestFrame<TestHeuristic extends HeaderHeuristic<TestHeuristic>> extends
+        HeuristicTestFrame<TestHeuristic> {
+    // TODO expands into some header strategy-specific tests
 }

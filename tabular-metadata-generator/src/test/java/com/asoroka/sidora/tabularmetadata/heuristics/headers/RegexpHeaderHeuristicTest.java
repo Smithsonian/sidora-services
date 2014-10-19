@@ -9,8 +9,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.asoroka.sidora.tabularmetadata.heuristics.headers.RegexpHeaderHeuristic;
-
 public class RegexpHeaderHeuristicTest extends HeaderHeuristicTestFrame<RegexpHeaderHeuristic> {
 
     private static final String pattern = "MARKER";
@@ -20,13 +18,13 @@ public class RegexpHeaderHeuristicTest extends HeaderHeuristicTestFrame<RegexpHe
     private static final List<String> headerRow2 = asList("jdfhg", "saf", "324");
 
     @Override
-    protected RegexpHeaderHeuristic newHeuristic() {
+    protected RegexpHeaderHeuristic newTestHeuristic() {
         return new RegexpHeaderHeuristic(pattern);
     }
 
     @Test
     public void test() {
-        final TreatsEachFieldAlikeHeaderHeuristic<RegexpHeaderHeuristic> testHeuristic = newHeuristic();
+        final TreatsEachFieldAlikeHeaderHeuristic<RegexpHeaderHeuristic> testHeuristic = newTestHeuristic();
         for (final String field : headerRow1) {
             testHeuristic.addValue(field);
         }
