@@ -8,7 +8,6 @@ package com.asoroka.sidora.tabularmetadata.heuristics.types;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.base.Functions.constant;
 import static com.google.common.collect.Maps.toMap;
-import static java.util.Objects.hash;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -36,6 +35,7 @@ public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatin
      */
     @Override
     public void reset() {
+        super.reset();
         this.typeCounts = new EnumMap<>(DataType.class);
         final Map<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
         this.typeCounts.putAll(zeroes);
@@ -51,10 +51,5 @@ public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatin
         for (final DataType type : types) {
             typeCounts.put(type, typeCounts.get(type) + 1);
         }
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode() + 2 * hash(typeCounts);
     }
 }

@@ -9,13 +9,15 @@ import java.util.Map;
 import java.util.Set;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.asoroka.sidora.tabularmetadata.heuristics.AbstractHeuristic;
 
 /**
  * A {@link EnumeratedValuesHeuristic} that maintains an in-memory map of enumerated lexes.
  * 
  * @author ajs6f
  */
-public class InMemoryEnumeratedValuesHeuristic implements EnumeratedValuesHeuristic<InMemoryEnumeratedValuesHeuristic> {
+public class InMemoryEnumeratedValuesHeuristic extends AbstractHeuristic<InMemoryEnumeratedValuesHeuristic> implements
+        EnumeratedValuesHeuristic<InMemoryEnumeratedValuesHeuristic> {
 
     EnumMap<DataType, Set<String>> valuesTakenOn = new EnumMap<>(DataType.class);
 

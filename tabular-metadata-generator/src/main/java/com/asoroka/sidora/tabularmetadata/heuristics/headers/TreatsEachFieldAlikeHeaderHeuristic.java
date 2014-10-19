@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 
+import com.asoroka.sidora.tabularmetadata.heuristics.AbstractHeuristic;
 import com.google.common.base.Predicate;
 
 /**
@@ -20,11 +21,11 @@ import com.google.common.base.Predicate;
  * @param <SelfType>
  */
 public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends TreatsEachFieldAlikeHeaderHeuristic<SelfType>>
-        implements HeaderHeuristic<SelfType> {
+        extends AbstractHeuristic<SelfType> implements HeaderHeuristic<SelfType> {
 
     private static final Logger log = getLogger(TreatsEachFieldAlikeHeaderHeuristic.class);
 
-    private List<String> inputRow = new ArrayList<>();
+    private List<String> inputRow;
 
     @Override
     public boolean isHeader() {
@@ -41,7 +42,7 @@ public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends Treat
 
     @Override
     public void reset() {
-        inputRow.clear();
+        inputRow = new ArrayList<>();
     }
 
     @Override

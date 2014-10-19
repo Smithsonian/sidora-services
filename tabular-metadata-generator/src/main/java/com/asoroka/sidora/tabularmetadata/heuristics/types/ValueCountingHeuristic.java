@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.types;
 
-import static java.util.Objects.hash;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
@@ -40,10 +39,4 @@ public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuri
     public int totalNumValues() {
         return totalNumValues;
     }
-
-    @Override
-    public int hashCode() {
-        return hash(totalNumValues);
-    }
-
 }

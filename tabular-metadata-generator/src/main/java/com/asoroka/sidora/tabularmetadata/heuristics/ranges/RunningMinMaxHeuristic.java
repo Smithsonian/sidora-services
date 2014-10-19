@@ -8,7 +8,6 @@ package com.asoroka.sidora.tabularmetadata.heuristics.ranges;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.collect.Maps.asMap;
 import static com.google.common.collect.Ordering.natural;
-import static java.util.Objects.hash;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -73,24 +72,15 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
 
             @Override
             public Range<?> apply(final DataType type) {
-                // the following could be shortened to three comparisons, but at a cost in clarity
-                if (minimums.containsKey(type) && maximums.containsKey(type)) {
-                    return Range.closed(minimums.get(type), maximums.get(type));
-                }
+                // this test may look odd or loose, but inspection of the algorithm above will convince the examiner
+                // that it is not possible for a min to exist without a max, or vice versa. So we can test for the
+                // presence of either at whim.
                 if (minimums.containsKey(type)) {
-                    return Range.atLeast(minimums.get(type));
-                }
-                if (maximums.containsKey(type)) {
-                    return Range.atMost(maximums.get(type));
+                    return Range.closed(minimums.get(type), maximums.get(type));
                 }
                 return Range.all();
             }
         };
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode() + 2 * hash(minimums, maximums);
     }
 
     @Override

@@ -111,4 +111,16 @@ public class RunningMinMaxHeuristicTest extends HeuristicTestFrame<RunningMinMax
             }
         }
     }
+
+    @Test
+    public void testMissingLimits() {
+        final RunningMinMaxHeuristic testStrategy = newTestHeuristic();
+        for (int i = -10; i <= -1; i++) {
+            testStrategy.addValue(String.valueOf(i));
+        }
+        // now we ask for a range for a data type for which it was not set
+        final Range<GeographicValue> geographicRange =
+                (Range<GeographicValue>) testStrategy.getRanges().get(DataType.Geographic);
+        assertEquals("Found a defined range where we should not have!", Range.all(), geographicRange);
+    }
 }

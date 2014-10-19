@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.types;
 
-import static java.util.Objects.hash;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
@@ -40,11 +39,6 @@ public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
     @Override
     public FractionHeuristic clone() {
         return new FractionHeuristic(fractionOfAllowedNonparseables);
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode() + 2 * hash(fractionOfAllowedNonparseables);
     }
 
     @Override
