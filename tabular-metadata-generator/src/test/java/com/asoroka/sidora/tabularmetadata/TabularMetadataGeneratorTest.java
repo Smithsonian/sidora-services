@@ -76,6 +76,9 @@ public class TabularMetadataGeneratorTest {
     @Mock
     private DataType mockDataType;
 
+    @Mock
+    private Map<DataType, Set<String>> mockEnumeratedValues;
+
     private Returns mockDataTypeAnswer = new Returns(mockDataType);
 
     static Map<DataType, Range<?>> testRange() {
@@ -90,6 +93,7 @@ public class TabularMetadataGeneratorTest {
         when(mockSimpleStrategy.mostLikelyType()).thenAnswer(mockDataTypeAnswer);
         final Returns range = new Returns(testRange());
         when(mockSimpleStrategy.getRanges()).thenAnswer(range);
+        when(mockSimpleStrategy.getEnumeratedValues()).thenReturn(mockEnumeratedValues);
         mockStrategy = cloneableMockStrategy(mockSimpleStrategy);
     }
 
@@ -100,6 +104,7 @@ public class TabularMetadataGeneratorTest {
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setTypeStrategy(mockStrategy);
         testParser.setRangeStrategy(mockStrategy);
+        testParser.setEnumStrategy(mockStrategy);
         testParser.setFormat(new TabularFormat.TabSeparated());
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
@@ -127,6 +132,7 @@ public class TabularMetadataGeneratorTest {
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setTypeStrategy(mockStrategy);
         testParser.setRangeStrategy(mockStrategy);
+        testParser.setEnumStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
@@ -144,6 +150,10 @@ public class TabularMetadataGeneratorTest {
         final List<String> headers = results.headerNames();
         assertEquals(asList(testHeaders.split(",")), headers);
 
+        for (final Map<DataType, Set<String>> v : results.enumeratedValues()) {
+            assertEquals(mockEnumeratedValues, v);
+        }
+
     }
 
     @Test
@@ -153,6 +163,7 @@ public class TabularMetadataGeneratorTest {
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setTypeStrategy(mockStrategy);
         testParser.setRangeStrategy(mockStrategy);
+        testParser.setEnumStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
@@ -183,6 +194,7 @@ public class TabularMetadataGeneratorTest {
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
         testParser.setTypeStrategy(testStrategy);
         testParser.setRangeStrategy(testStrategy);
+        testParser.setEnumStrategy(testStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         testParser.setScanLimit(2);
         testParser.getMetadata(mockURL);

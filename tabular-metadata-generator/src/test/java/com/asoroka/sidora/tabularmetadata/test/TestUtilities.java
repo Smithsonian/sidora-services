@@ -28,6 +28,8 @@ public abstract class TestUtilities {
         when(mocked.typesAsLikely()).thenAnswer(type);
         final Returns range = new Returns(strategy.getRanges());
         when(mocked.getRanges()).thenAnswer(range);
+        final Returns enums = new Returns(strategy.getEnumeratedValues());
+        when(mocked.getEnumeratedValues()).thenAnswer(enums);
         final Returns cloner = new Returns(strategy);
         when(mocked.clone()).thenAnswer(cloner);
         return mocked;
