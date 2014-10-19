@@ -14,6 +14,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import com.google.common.collect.AbstractIterator;
@@ -33,6 +34,10 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
 
     private final List<TypeDeterminingHeuristic<?>> rowOfTypeStrategies;
 
+    private final Iterator<EnumeratedValuesHeuristic<?>> enumStrategies;
+
+    private final List<EnumeratedValuesHeuristic<?>> rowOfEnumStrategies;
+
     private final Iterator<RangeDeterminingHeuristic<?>> rangeStrategies;
 
     private final List<RangeDeterminingHeuristic<?>> rowOfRangeStrategies;
@@ -40,7 +45,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
     private static final Logger log = getLogger(TabularScanner.class);
 
     public TabularScanner(final CSVParser parser, final TypeDeterminingHeuristic<?> typeStrategy,
-            final RangeDeterminingHeuristic<?> rangeStrategy) {
+            final RangeDeterminingHeuristic<?> rangeStrategy, final EnumeratedValuesHeuristic<?> enumStrategy) {
         this.internalScanner = peekingIterator(parser.iterator());
         final int numColumns = internalScanner.peek().size();
 
@@ -51,7 +56,6 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
         for (i = 0; i < numColumns; i++) {
             rowOfTypeStrategies.add(typeStrategy.clone());
         }
-        log.trace("Using {} type strategy instances.", i);
         // this.typeStrategies will cycle endlessly around our row
         this.typeStrategies = cycle(rowOfTypeStrategies);
 
@@ -60,9 +64,16 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
         for (i = 0; i < numColumns; i++) {
             rowOfRangeStrategies.add(rangeStrategy.clone());
         }
-        log.trace("Using {} range strategy instances.", i);
         // this.rangeStrategies will cycle endlessly around our row
         this.rangeStrategies = cycle(rowOfRangeStrategies);
+
+        // create a "row" of enum strategy instances of the same length as the rows in our data
+        this.rowOfEnumStrategies = newArrayListWithCapacity(numColumns);
+        for (i = 0; i < numColumns; i++) {
+            rowOfEnumStrategies.add(enumStrategy.clone());
+        }
+        // this.enumStrategies will cycle endlessly around our row
+        this.enumStrategies = cycle(rowOfEnumStrategies);
     }
 
     @Override

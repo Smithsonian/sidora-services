@@ -15,11 +15,11 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
  * 
  * @author ajs6f
  */
-public class CachingEnumeratedValuesHeuristic implements EnumeratedValuesHeuristic<CachingEnumeratedValuesHeuristic> {
+public class InMemoryEnumeratedValuesHeuristic implements EnumeratedValuesHeuristic<InMemoryEnumeratedValuesHeuristic> {
 
     EnumMap<DataType, Set<String>> valuesTakenOn = new EnumMap<>(DataType.class);
 
-    public CachingEnumeratedValuesHeuristic() {
+    public InMemoryEnumeratedValuesHeuristic() {
         super();
         for (final DataType t : DataType.values()) {
             valuesTakenOn.put(t, new HashSet<String>());
@@ -44,12 +44,12 @@ public class CachingEnumeratedValuesHeuristic implements EnumeratedValuesHeurist
     }
 
     @Override
-    public CachingEnumeratedValuesHeuristic clone() {
-        return new CachingEnumeratedValuesHeuristic();
+    public InMemoryEnumeratedValuesHeuristic clone() {
+        return new InMemoryEnumeratedValuesHeuristic();
     }
 
     @Override
-    public CachingEnumeratedValuesHeuristic get() {
+    public InMemoryEnumeratedValuesHeuristic get() {
         return this;
     }
 }

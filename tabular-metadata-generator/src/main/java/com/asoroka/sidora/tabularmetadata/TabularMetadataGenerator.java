@@ -23,6 +23,8 @@ import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
@@ -53,6 +55,8 @@ public class TabularMetadataGenerator {
 
     private TypeDeterminingHeuristic<?> typeStrategy = new StrictHeuristic();
 
+    private EnumeratedValuesHeuristic<?> enumStrategy = new InMemoryEnumeratedValuesHeuristic();
+
     private HeaderHeuristic<?> headerStrategy = new DefaultHeaderHeuristic();
 
     /**
@@ -81,7 +85,7 @@ public class TabularMetadataGenerator {
         final List<RangeDeterminingHeuristic<?>> rangeStrategies;
 
         try (final CSVParser parser = parse(dataUrl, CHARACTER_ENCODING, format)) {
-            final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy);
+            final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
             scanner.scan(scanLimit);
             typeStrategies = scanner.getTypeStrategies();
             rangeStrategies = scanner.getRangeStrategies();
@@ -150,5 +154,13 @@ public class TabularMetadataGenerator {
     @Inject
     public void setRangeStrategy(final RangeDeterminingHeuristic<?> strategy) {
         this.rangeStrategy = strategy;
+    }
+
+    /**
+     * @param strategy The enumerated-values recognition strategy to use.
+     */
+    @Inject
+    public void setEnumStrategy(final EnumeratedValuesHeuristic<?> strategy) {
+        this.enumStrategy = strategy;
     }
 }

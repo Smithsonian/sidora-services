@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import org.mockito.internal.stubbing.answers.Returns;
 
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 
@@ -38,7 +39,8 @@ public abstract class TestUtilities {
      * @author ajs6f
      */
     public static interface MockedHeuristic extends TypeDeterminingHeuristic<MockedHeuristic>,
-            RangeDeterminingHeuristic<MockedHeuristic> {
+            RangeDeterminingHeuristic<MockedHeuristic>,
+            EnumeratedValuesHeuristic<MockedHeuristic> {
         // NO CONTENT
     }
 
