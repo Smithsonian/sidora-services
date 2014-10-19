@@ -3,6 +3,7 @@ package com.asoroka.sidora.tabularmetadata;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
@@ -21,16 +22,20 @@ public class TabularMetadata {
 
     private final List<Map<DataType, Range<?>>> minMaxes;
 
+    private final List<Map<DataType, Set<String>>> enumeratedValues;
+
     /**
      * @param headerNames
      * @param fieldTypes
      * @param minMaxes
+     * @param enumeratedValues
      */
     public TabularMetadata(final List<String> headerNames, final List<SortedSet<DataType>> fieldTypes,
-            final List<Map<DataType, Range<?>>> minMaxes) {
+            final List<Map<DataType, Range<?>>> minMaxes, final List<Map<DataType, Set<String>>> enumeratedValues) {
         this.headerNames = headerNames;
         this.fieldTypes = fieldTypes;
         this.minMaxes = minMaxes;
+        this.enumeratedValues = enumeratedValues;
     }
 
     /**
@@ -41,7 +46,9 @@ public class TabularMetadata {
     }
 
     /**
-     * @return A list of field datatypes.
+     * @return A list of candidates for field datatypes, one candidate set per field. Each candidate set is sorted
+     *         according to a notion of decreasing plausibility that is specific to the type-determination strategy
+     *         used.
      */
     public List<SortedSet<DataType>> fieldTypes() {
         return fieldTypes;
@@ -60,5 +67,13 @@ public class TabularMetadata {
      */
     public List<Map<DataType, Range<?>>> minMaxes() {
         return minMaxes;
+    }
+
+    /**
+     * @return a list (one element for each field in the input file) of maps from each possible datatype to an set of
+     *         the lexes found in that field that were parseable into that data type.
+     */
+    public List<Map<DataType, Set<String>>> enumeratedValues() {
+        return enumeratedValues;
     }
 }

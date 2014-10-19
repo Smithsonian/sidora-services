@@ -4,15 +4,16 @@ package com.asoroka.sidora.tabularmetadata;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
-import static java.util.Collections.emptyList;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 
 import javax.inject.Inject;
@@ -78,23 +79,26 @@ public class TabularMetadataGenerator {
             final boolean hasHeaders = headerStrategy.isHeader();
             headerStrategy.reset();
             format = hasHeaders ? format.withHeader() : format;
-            headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders;
+            headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders(firstLine.size());
         }
         // scan values up to the limit
         final List<TypeDeterminingHeuristic<?>> typeStrategies;
         final List<RangeDeterminingHeuristic<?>> rangeStrategies;
+        final List<EnumeratedValuesHeuristic<?>> enumStrategies;
 
         try (final CSVParser parser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
             scanner.scan(scanLimit);
             typeStrategies = scanner.getTypeStrategies();
             rangeStrategies = scanner.getRangeStrategies();
+            enumStrategies = scanner.getEnumStrategies();
         }
         // extract the results for each field
         final List<SortedSet<DataType>> columnTypes = transform(typeStrategies, extractType);
         final List<Map<DataType, Range<?>>> minMaxes = transform(rangeStrategies, extractMinMax);
+        final List<Map<DataType, Set<String>>> enumValues = transform(enumStrategies, extractEnumValues);
 
-        return new TabularMetadata(headerNames, columnTypes, minMaxes);
+        return new TabularMetadata(headerNames, columnTypes, minMaxes, enumValues);
     }
 
     private static final Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>> extractType =
@@ -115,7 +119,22 @@ public class TabularMetadataGenerator {
                 }
             };
 
-    private static final List<String> emptyHeaders = emptyList();
+    private static final Function<EnumeratedValuesHeuristic<?>, Map<DataType, Set<String>>> extractEnumValues =
+            new Function<EnumeratedValuesHeuristic<?>, Map<DataType, Set<String>>>() {
+
+                @Override
+                public Map<DataType, Set<String>> apply(final EnumeratedValuesHeuristic<?> strategy) {
+                    return strategy.getEnumeratedValues();
+                }
+            };
+
+    private static final List<String> emptyHeaders(final int numFields) {
+        final List<String> headers = new ArrayList<>(numFields);
+        for (int i = 0; i <= numFields; i++) {
+            headers.add("Variable " + i);
+        }
+        return headers;
+    }
 
     /**
      * @param scanLimit A limit to the number of rows to scan. {@code 0} indicates no limit.

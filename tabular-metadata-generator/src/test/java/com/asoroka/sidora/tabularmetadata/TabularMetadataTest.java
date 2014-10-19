@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 
 import org.junit.Test;
@@ -27,12 +28,17 @@ public class TabularMetadataTest {
     @Mock
     private List<Map<DataType, Range<?>>> mockRanges;
 
+    @Mock
+    private List<Map<DataType, Set<String>>> mockEnumValues;
+
     @Test
     public void testContainerAction() {
-        final TabularMetadata testMetadata = new TabularMetadata(mockHeaderNames, mockTypes, mockRanges);
+        final TabularMetadata testMetadata =
+                new TabularMetadata(mockHeaderNames, mockTypes, mockRanges, mockEnumValues);
         assertEquals(mockHeaderNames, testMetadata.headerNames());
         assertEquals(mockTypes, testMetadata.fieldTypes());
         assertEquals(mockRanges, testMetadata.minMaxes());
+        assertEquals(mockEnumValues, testMetadata.enumeratedValues());
     }
 
 }

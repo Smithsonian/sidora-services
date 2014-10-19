@@ -8,7 +8,6 @@ import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.collect.Iterables.all;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -170,7 +169,10 @@ public class TabularMetadataGeneratorTest {
         assertTrue(rangeTest);
 
         final List<String> headers = results.headerNames();
-        assertEquals(emptyList(), headers);
+        final int numHeaders = headers.size();
+        for (int i = 0; i < numHeaders; i++) {
+            assertEquals("Variable " + i, headers.get(i));
+        }
     }
 
     @Test

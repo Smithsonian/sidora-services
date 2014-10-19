@@ -12,5 +12,5 @@ import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RunningMinMaxHeurist
  */
 @Component
 public class DefaultRangeStrategy extends RunningMinMaxHeuristic {
-
+    // NO CONTENT
 }

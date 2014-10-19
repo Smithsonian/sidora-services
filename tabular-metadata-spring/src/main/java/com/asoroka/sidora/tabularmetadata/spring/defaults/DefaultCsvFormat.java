@@ -12,5 +12,5 @@ import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
  */
 @Component
 public class DefaultCsvFormat extends TabularFormat.Default {
-
+    // NO CONTENT
 }

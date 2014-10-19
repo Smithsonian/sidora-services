@@ -12,5 +12,5 @@ import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
  */
 @Component
 public class DefaultDatatypeStrategy extends StrictHeuristic {
-
+    // NO CONTENT
 }

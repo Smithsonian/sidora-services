@@ -85,6 +85,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
                 log.trace("Operating on lex: {}", lex);
                 rangeStrategies.next().addValue(lex);
                 typeStrategies.next().addValue(lex);
+                enumStrategies.next().addValue(lex);
             }
             return nextRecord;
         }
@@ -125,6 +126,15 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
      */
     public List<RangeDeterminingHeuristic<?>> getRangeStrategies() {
         return rowOfRangeStrategies;
+    }
+
+    /**
+     * Use this to recover and interrogate the enumerated-values determining strategy instances used in scanning.
+     * 
+     * @return the row of strategies used to determine the enumerated values presented in fields
+     */
+    public List<EnumeratedValuesHeuristic<?>> getEnumStrategies() {
+        return rowOfEnumStrategies;
     }
 
 }

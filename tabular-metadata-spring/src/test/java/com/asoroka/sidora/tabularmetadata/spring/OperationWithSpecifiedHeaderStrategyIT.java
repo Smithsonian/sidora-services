@@ -7,6 +7,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.List;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -27,7 +28,12 @@ public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
         log.trace("testWithSimpleData()...");
         final TabularMetadata result =
                 testFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange(), DataType.String);
-        assertEquals("Found header names when we should not have!", asList(), result.headerNames());
+        final List<String> headerNames = result.headerNames();
+        final int numHeaders = headerNames.size();
+        for (int i = 0; i < numHeaders; i++) {
+            assertEquals("Found wrong name for header!", "Variable " + i, headerNames.get(i));
+
+        }
         log.trace("End testWithSimpleData().");
     }
 

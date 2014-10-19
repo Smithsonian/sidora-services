@@ -13,5 +13,5 @@ import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumer
  */
 @Component
 public class DefaultEnumeratedValuesStrategy extends InMemoryEnumeratedValuesHeuristic {
-
+    // NO CONTENT
 }
