@@ -43,12 +43,13 @@ public abstract class SpringITFramework {
     @Inject
     protected TabularMetadataGenerator testGenerator;
 
-    public TabularMetadata testSimpleFile(final URL testFile, final List<DataType> expectedDatatypes,
-            final Range<?> minMaxes)
+    public TabularMetadata testFile(final URL testFile, final List<DataType> expectedDatatypes,
+            final Range<?> minMaxes, final DataType expectedDataTypeForRangeTest)
             throws IOException {
         final TabularMetadata result = testGenerator.getMetadata(testFile);
         assertEquals("Got incorrect column types!", expectedDatatypes, getFirstElements(result.fieldTypes()));
-        assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes().get(2));
+        assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes().get(2).get(
+                expectedDataTypeForRangeTest));
         return result;
     }
 

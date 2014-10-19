@@ -3,32 +3,41 @@ package com.asoroka.sidora.tabularmetadata.spring;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.junit.Test;
+import org.slf4j.Logger;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
+import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 
 @ContextConfiguration("/spring-xml/operation-with-specified-header-strategy.xml")
 public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
 
     private static String testFileSimpleWithCrazyHeaders = "simple-with-crazy-headers.csv";
 
+    private static final Logger log = getLogger(OperationWithSpecifiedHeaderStrategyIT.class);
+
     @Test
     public void testWithSimpleData() throws MalformedURLException, IOException {
-        final TabularMetadata result = testSimpleFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange());
+        log.trace("testWithSimpleData()...");
+        final TabularMetadata result =
+                testFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange(), DataType.String);
         assertEquals("Found header names when we should not have!", asList(), result.headerNames());
+        log.trace("End testWithSimpleData().");
     }
 
     @Test
     public void testWithDataWithHeadersMatching() throws MalformedURLException, IOException {
+        log.trace("testWithDataWithHeadersMatching()...");
         final TabularMetadata result =
-                testSimpleFile(getTestFile(testFileSimpleWithCrazyHeaders), SIMPLE_TYPES, getIntRange());
-        assertEquals("Didn't find header names when we should have!", asList("NEVER MATCH1", "NEVER MATCH2",
-                "NEVER MATCH3"), result.headerNames());
+                testFile(getTestFile(testFileSimpleWithCrazyHeaders), SIMPLE_TYPES, getIntRange(), DataType.Integer);
+        assertEquals("Didn't find header names when we should have!", asList("MATCH1", "MATCH2", "MATCH3"), result
+                .headerNames());
+        log.trace("End testWithDataWithHeadersMatching().");
     }
-
 }

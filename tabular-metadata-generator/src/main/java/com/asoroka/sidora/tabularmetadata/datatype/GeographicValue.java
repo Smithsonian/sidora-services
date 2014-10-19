@@ -1,6 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.datatype;
 
+import java.io.Serializable;
 import java.util.List;
 
 import com.google.common.collect.Ordering;
@@ -10,7 +11,9 @@ import com.google.common.collect.Ordering;
  * 
  * @author ajs6f
  */
-public class GeographicValue implements Comparable<GeographicValue> {
+public class GeographicValue implements Comparable<GeographicValue>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public static final byte MAXIMUM_DIMENSION = 3;
 

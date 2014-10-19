@@ -25,7 +25,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
+import com.asoroka.sidora.tabularmetadata.test.TestUtilities.MockedHeuristic;
 import com.google.common.base.Function;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -35,7 +36,7 @@ public class TabularScannerTest {
     DataType mockDataType;
 
     @Mock
-    DataTypeHeuristic<?> mockStrategy;
+    MockedHeuristic mockStrategy;
 
     private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
 
@@ -54,11 +55,12 @@ public class TabularScannerTest {
         final TabularScanner testScanner;
         try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
             log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner = new TabularScanner(parser, cloneableMockStrategy(mockStrategy));
+            final MockedHeuristic cloneableMockStrategy = cloneableMockStrategy(mockStrategy);
+            testScanner = new TabularScanner(parser, cloneableMockStrategy, cloneableMockStrategy);
             testScanner.scan(0);
         }
         final List<DataType> guesses =
-                transform(testScanner.getStrategies(), getMostLikelyType);
+                transform(testScanner.getTypeStrategies(), getMostLikelyType);
         assertEquals("Failed to find the correct column types!", expectedResults, guesses);
     }
 
@@ -67,22 +69,23 @@ public class TabularScannerTest {
         final TabularScanner testScanner;
         try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
             log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner = new TabularScanner(parser, cloneableMockStrategy(mockStrategy));
+            final MockedHeuristic cloneableMockStrategy = cloneableMockStrategy(mockStrategy);
+            testScanner = new TabularScanner(parser, cloneableMockStrategy, cloneableMockStrategy);
             testScanner.scan(2);
         }
         final List<DataType> guesses =
-                transform(testScanner.getStrategies(), getMostLikelyType);
+                transform(testScanner.getTypeStrategies(), getMostLikelyType);
         assertEquals("Failed to find the correct column types!", expectedResults, guesses);
     }
 
     /**
-     * Extracts the most likely type selection from a {@link DataTypeHeuristic}
+     * Extracts the most likely type selection from a {@link ValueHeuristic}
      */
-    private static final Function<DataTypeHeuristic<?>, DataType> getMostLikelyType =
-            new Function<DataTypeHeuristic<?>, DataType>() {
+    private static final Function<TypeDeterminingHeuristic<?>, DataType> getMostLikelyType =
+            new Function<TypeDeterminingHeuristic<?>, DataType>() {
 
                 @Override
-                public DataType apply(final DataTypeHeuristic<?> heuristic) {
+                public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
                     return heuristic.mostLikelyType();
                 }
             };

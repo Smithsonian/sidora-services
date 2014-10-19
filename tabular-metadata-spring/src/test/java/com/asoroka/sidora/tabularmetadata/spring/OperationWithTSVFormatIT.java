@@ -7,6 +7,8 @@ import java.net.MalformedURLException;
 import org.junit.Test;
 import org.springframework.test.context.ContextConfiguration;
 
+import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+
 @ContextConfiguration("/spring-xml/operation-with-tsv-format.xml")
 public class OperationWithTSVFormatIT extends SpringITFramework {
 
@@ -14,6 +16,6 @@ public class OperationWithTSVFormatIT extends SpringITFramework {
 
     @Test
     public void testWithTSVFormat() throws MalformedURLException, IOException {
-        testSimpleFile(getTestFile(testTSVFile), SIMPLE_TYPES, getIntRange());
+        testFile(getTestFile(testTSVFile), SIMPLE_TYPES, getIntRange(), DataType.Integer);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Default components for Spring operation.
+ * DefaultHeaderHeuristic components for Spring operation.
  * 
  * @author ajs6f
  *

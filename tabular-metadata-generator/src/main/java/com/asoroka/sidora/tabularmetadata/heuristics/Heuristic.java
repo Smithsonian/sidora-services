@@ -1,0 +1,26 @@
+
+package com.asoroka.sidora.tabularmetadata.heuristics;
+
+import com.asoroka.sidora.tabularmetadata.CloneableProvider;
+
+/**
+ * The simple idea of a heuristic that accepts lexes and does some kind of work with them. See its subtypes for
+ * examples of use.
+ * 
+ * @author ajs6f
+ */
+public interface Heuristic<SelfType extends Heuristic<SelfType>> extends CloneableProvider<SelfType> {
+
+    /**
+     * Provide a value to this heuristic for consideration.
+     * 
+     * @param lex the value to consider
+     */
+    public void addValue(final String lex);
+
+    /**
+     * Resets this heuristic to discard all gathered information.
+     */
+    void reset();
+
+}

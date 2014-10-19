@@ -7,6 +7,8 @@ import java.net.MalformedURLException;
 import org.junit.Test;
 import org.springframework.test.context.ContextConfiguration;
 
+import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+
 @ContextConfiguration("/spring-xml/scan-limit-operation.xml")
 public class OperationWithScanLimitIT extends SpringITFramework {
 
@@ -21,7 +23,7 @@ public class OperationWithScanLimitIT extends SpringITFramework {
      */
     @Test
     public void testWithScanLimit() throws MalformedURLException, IOException {
-        testSimpleFile(getTestFile(testFileWithMarkerRow), SLIGHTLY_SIMPLE_TYPES, getFloatRange());
+        testFile(getTestFile(testFileWithMarkerRow), SLIGHTLY_SIMPLE_TYPES, getFloatRange(), DataType.Decimal);
     }
 
 }

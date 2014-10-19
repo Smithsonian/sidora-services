@@ -13,7 +13,6 @@ import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -24,6 +23,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,8 +38,8 @@ import org.mockito.stubbing.Answer;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
-import com.asoroka.sidora.tabularmetadata.heuristics.DataTypeHeuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.HeaderHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
+import com.asoroka.sidora.tabularmetadata.test.TestUtilities.MockedHeuristic;
 import com.google.common.collect.Range;
 
 /**
@@ -69,7 +69,7 @@ public class TabularMetadataGeneratorTest {
     private static final byte[] testTsv = (testTsvHeaders + "\n" + testTsvRow1).getBytes();
 
     @Mock
-    private DataTypeHeuristic<?> mockSimpleStrategy, mockStrategy;
+    private MockedHeuristic mockSimpleStrategy, mockStrategy;
 
     @Mock
     private HeaderHeuristic<?> mockHeaderHeuristic;
@@ -79,8 +79,8 @@ public class TabularMetadataGeneratorTest {
 
     private Returns mockDataTypeAnswer = new Returns(mockDataType);
 
-    static <MinMax extends Comparable<?>> Range<MinMax> testRange() {
-        return Range.all();
+    static Map<DataType, Range<?>> testRange() {
+        return Collections.emptyMap();
     }
 
     // private static final Logger log = getLogger(TabularMetadataGeneratorTest.class);
@@ -90,16 +90,17 @@ public class TabularMetadataGeneratorTest {
         initMocks(this);
         when(mockSimpleStrategy.mostLikelyType()).thenAnswer(mockDataTypeAnswer);
         final Returns range = new Returns(testRange());
-        when(mockSimpleStrategy.getRange()).thenAnswer(range);
+        when(mockSimpleStrategy.getRanges()).thenAnswer(range);
         mockStrategy = cloneableMockStrategy(mockSimpleStrategy);
     }
 
     @Test
     public void testOperationWithSetFormat() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(true);
+        when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testTsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
-        testParser.setStrategy(mockStrategy);
+        testParser.setTypeStrategy(mockStrategy);
+        testParser.setRangeStrategy(mockStrategy);
         testParser.setFormat(new TabularFormat.TabSeparated());
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
@@ -122,10 +123,11 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithHeaders() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(true);
+        when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
-        testParser.setStrategy(mockStrategy);
+        testParser.setTypeStrategy(mockStrategy);
+        testParser.setRangeStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
@@ -147,10 +149,11 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithoutHeaders() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
+        when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
-        testParser.setStrategy(mockStrategy);
+        testParser.setTypeStrategy(mockStrategy);
+        testParser.setRangeStrategy(mockStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
@@ -171,12 +174,13 @@ public class TabularMetadataGeneratorTest {
     }
 
     @Test
-    public <T extends DataTypeHeuristic<T>> void testOperationWithoutHeadersWithScanLimit() throws IOException {
-        when(mockHeaderHeuristic.apply(anyList())).thenReturn(false);
+    public void testOperationWithoutHeadersWithScanLimit() throws IOException {
+        when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsvWithMarker);
         final MarkingMockDataTypeHeuristic testStrategy = new MarkingMockDataTypeHeuristic(MARKER_VALUE);
         final TabularMetadataGenerator testParser = new TabularMetadataGenerator();
-        testParser.setStrategy(testStrategy);
+        testParser.setTypeStrategy(testStrategy);
+        testParser.setRangeStrategy(testStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         testParser.setScanLimit(2);
         testParser.getMetadata(mockURL);
@@ -207,10 +211,9 @@ public class TabularMetadataGeneratorTest {
                 return new ByteArrayInputStream(copyOf(bytes, bytes.length));
             }
         };
-
     }
 
-    private static class MarkingMockDataTypeHeuristic implements DataTypeHeuristic<MarkingMockDataTypeHeuristic> {
+    private static class MarkingMockDataTypeHeuristic implements MockedHeuristic {
 
         /**
          * @param marker
@@ -242,25 +245,25 @@ public class TabularMetadataGeneratorTest {
         }
 
         @Override
-        public <MinMax extends Comparable<MinMax>> Range<MinMax> getRange() {
-            return testRange();
-        }
-
-        @Override
         public MarkingMockDataTypeHeuristic get() {
             return this;
         }
 
         @Override
         public DataType mostLikelyType() {
-            // TODO Auto-generated method stub
+            // NO OP
             return null;
         }
 
         @Override
         public Map<DataType, Range<?>> getRanges() {
-            // TODO Auto-generated method stub
+            // NO OP
             return null;
+        }
+
+        @Override
+        public void reset() {
+            // NO OP
         }
     }
 }
