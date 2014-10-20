@@ -21,14 +21,14 @@ import com.google.common.collect.ImmutableMap;
 public abstract class EnumeratedValuesHeuristicTestFrame<TestHeuristic extends EnumeratedValuesHeuristic<TestHeuristic>>
         extends HeuristicTestFrame<TestHeuristic> {
 
+    // TODO clean up sample data and make it more understandable
+
     private static Map<DataType, List<String>> simpleData;
 
     /**
      * A map from types, to maps from correct answers, to simple test data.
      */
     private static Map<DataType, Map<Set<String>, List<String>>> simpleTestData = new HashMap<>();
-
-    private static Map<DataType, List<String>> realisticData;
 
     /**
      * A map from types, to maps from correct answers, to slightly more realistic test data.
