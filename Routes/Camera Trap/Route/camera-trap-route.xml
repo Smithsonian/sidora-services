@@ -6,6 +6,8 @@
     xsi:schemaLocation="
 http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
+    <bean id="pidAggregator" class="edu.smithsonian.services.fedorarepo.aggregators.PidAggregationStrategy" />
+    
     <!--
         TODO: Add Deployment Metadata backport
     -->
@@ -51,11 +53,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
             <!--
-                TODO: Collect all the resource PIDs and format into RDF
-                
-                TODO: Create XML document with resources and transformed manifest
-                
-                TODO: Change the following to insert manifest into Fedora
+                TODO: Insert manifest into Fedora
             -->
             <to uri="file://CameraTrapOutput?fileName=newManifest.xml" />
             <log message="Manifest translated" /> 
@@ -84,17 +82,18 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <setHeader headerName="FedoraParentConcept">
                 <simple>${header.CamelFedoraPid}</simple>
             </setHeader>
-            <split>
+            <split strategyRef="pidAggregator" >
                 <xpath>//ImageFileName/text()</xpath>
                 <to uri="reader:file" />
                 <to uri="fedora:ingest" />
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
                 <to uri="direct:transformImage" />
             </split> 
-            <!--
-                TODO: Aggergate Image process information (paths to files) and FITS output
-                      and insert into Fedora
-            --> 
+            <setHeader headerName="CamelFedoraPid">
+                <simple>${header.FedoraParentConcept}</simple>
+            </setHeader> 
+            <to uri="velocity:Input/templates/CameraTrapResourceTemplate.vsl" />
+            <to uri="fedora:datastream?name=RELS-EXT&amp;type=application/rdf+xml&amp;group=X" /> 
             <log message="Finished processing Images" />           
         </route>
         <route id="CameraTrapTransformImages">
