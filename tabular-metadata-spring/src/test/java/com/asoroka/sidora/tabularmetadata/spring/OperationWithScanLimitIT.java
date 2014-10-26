@@ -9,7 +9,7 @@ import org.springframework.test.context.ContextConfiguration;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 
-@ContextConfiguration("/spring-xml/scan-limit-operation.xml")
+@ContextConfiguration("/spring-xml/operation-with-scan-limit.xml")
 public class OperationWithScanLimitIT extends SpringITFramework {
 
     private static final String testFileWithMarkerRow = "simplewithmarkerrow.csv";
