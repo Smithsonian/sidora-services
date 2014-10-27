@@ -16,6 +16,7 @@ import java.util.Map;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ValueCountingHeuristic;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * A {@link Heuristic} that aggregates candidate type appearance information for its field.
@@ -25,6 +26,8 @@ import com.asoroka.sidora.tabularmetadata.heuristics.ValueCountingHeuristic;
  */
 public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatingHeuristic<SelfType>> extends
         ValueCountingHeuristic<SelfType> {
+
+    private static final ImmutableMap<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
 
     /**
      * In this {@link Map}, we aggregate counts of parseable values for each datatype.
@@ -38,7 +41,6 @@ public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatin
     public void reset() {
         super.reset();
         this.typeCounts = new EnumMap<>(DataType.class);
-        final Map<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
         this.typeCounts.putAll(zeroes);
     }
 
