@@ -24,12 +24,6 @@ public abstract class TestUtilities {
      */
     public static MockedHeuristic cloneableMockStrategy(final MockedHeuristic strategy) {
         final MockedHeuristic mocked = mock(MockedHeuristic.class);
-        final Returns type = new Returns(strategy.typesAsLikely());
-        when(mocked.typesAsLikely()).thenAnswer(type);
-        final Returns range = new Returns(strategy.getRanges());
-        when(mocked.getRanges()).thenAnswer(range);
-        final Returns enums = new Returns(strategy.getEnumeratedValues());
-        when(mocked.getEnumeratedValues()).thenAnswer(enums);
         final Returns cloner = new Returns(strategy);
         when(mocked.clone()).thenAnswer(cloner);
         return mocked;

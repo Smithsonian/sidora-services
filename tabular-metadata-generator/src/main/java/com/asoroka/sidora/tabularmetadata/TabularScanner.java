@@ -52,7 +52,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
         log.debug("Found {} columns in our data.", numColumns);
         // create a "row" of type strategy instances of the same length as the rows in our data
         this.rowOfTypeStrategies = newArrayListWithCapacity(numColumns);
-        int i = 0;
+        int i;
         for (i = 0; i < numColumns; i++) {
             rowOfTypeStrategies.add(typeStrategy.clone());
         }
@@ -83,9 +83,19 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
             log.trace("Operating on row: {}", nextRecord);
             for (final String lex : nextRecord) {
                 log.trace("Operating on lex: {}", lex);
-                rangeStrategies.next().addValue(lex);
-                typeStrategies.next().addValue(lex);
-                enumStrategies.next().addValue(lex);
+                final boolean rangeStrategiesShouldContinue = rangeStrategies.next().addValue(lex);
+                final boolean typeStrategiesShouldContinue = typeStrategies.next().addValue(lex);
+                final boolean enumStrategiesShouldContinue = enumStrategies.next().addValue(lex);
+                log.trace(
+                        "Continue flag received fron range strategy: {}, from type strategy: {}, from enum strategy: {}.",
+                        rangeStrategiesShouldContinue, typeStrategiesShouldContinue, enumStrategiesShouldContinue);
+                // if any heuristic is not done, we aren't done
+                final boolean shouldContinue =
+                        rangeStrategiesShouldContinue || typeStrategiesShouldContinue || enumStrategiesShouldContinue;
+                if (!shouldContinue) {
+                    log.trace("Short circuiting operation because all heuristics have finished.");
+                    return endOfData();
+                }
             }
             return nextRecord;
         }

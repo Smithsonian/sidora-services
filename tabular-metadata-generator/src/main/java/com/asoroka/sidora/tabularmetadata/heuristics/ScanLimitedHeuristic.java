@@ -1,6 +1,8 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
+import javax.inject.Inject;
+
 /**
  * Operates wrapped around an inner heuristic, but guards it by flagging (via the return value of
  * {@link #addValue(String)}) when lex evaluation should cease. This condition is reached when more lexes have been
@@ -20,6 +22,7 @@ public class ScanLimitedHeuristic<InnerHeuristicType extends Heuristic<InnerHeur
      * @param innerHeuristic
      * @param scanLimit
      */
+    @Inject
     public ScanLimitedHeuristic(final InnerHeuristicType innerHeuristic, final int scanLimit) {
         super();
         this.innerHeuristic = innerHeuristic;

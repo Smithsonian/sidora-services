@@ -81,18 +81,21 @@ public class TabularMetadataGenerator {
             format = hasHeaders ? format.withHeader() : format;
             headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders(firstLine.size());
         }
-        // scan values up to the limit
+
         final List<TypeDeterminingHeuristic<?>> typeStrategies;
         final List<RangeDeterminingHeuristic<?>> rangeStrategies;
         final List<EnumeratedValuesHeuristic<?>> enumStrategies;
 
+        // scan values up to the limit
+        final TabularScanner scanner;
         try (final CSVParser parser = parse(dataUrl, CHARACTER_ENCODING, format)) {
-            final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
+            scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
             scanner.scan(scanLimit);
-            typeStrategies = scanner.getTypeStrategies();
-            rangeStrategies = scanner.getRangeStrategies();
-            enumStrategies = scanner.getEnumStrategies();
         }
+        typeStrategies = scanner.getTypeStrategies();
+        rangeStrategies = scanner.getRangeStrategies();
+        enumStrategies = scanner.getEnumStrategies();
+
         // extract the results for each field
         final List<SortedSet<DataType>> columnTypes = transform(typeStrategies, extractType);
         final List<Map<DataType, Range<?>>> minMaxes = transform(rangeStrategies, extractMinMax);
@@ -137,7 +140,8 @@ public class TabularMetadataGenerator {
     }
 
     /**
-     * @param scanLimit A limit to the number of rows to scan. {@code 0} indicates no limit.
+     * @param scanLimit A limit to the number of rows to scan, including any header row that may be present. {@code 0}
+     *        indicates no limit.
      */
     public void setScanLimit(final Integer scanLimit) {
         this.scanLimit = scanLimit;

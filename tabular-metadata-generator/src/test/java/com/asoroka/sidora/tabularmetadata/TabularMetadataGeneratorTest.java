@@ -14,9 +14,11 @@ import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -35,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.internal.stubbing.answers.Returns;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
@@ -88,10 +91,14 @@ public class TabularMetadataGeneratorTest {
         return emptyMap();
     }
 
+    private static final Logger log = getLogger(TabularMetadataGeneratorTest.class);
+
     @Before
     public void setUp() {
         initMocks(this);
         when(mockSimpleStrategy.mostLikelyType()).thenAnswer(mockDataTypeAnswer);
+        final Returns trueReturn = new Returns(true);
+        when(mockSimpleStrategy.addValue(anyString())).thenAnswer(trueReturn);
         final Returns range = new Returns(testRanges());
         when(mockSimpleStrategy.getRanges()).thenAnswer(range);
         when(mockSimpleStrategy.getEnumeratedValues()).thenReturn(mockEnumeratedValues);
@@ -108,6 +115,7 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithSetFormat() throws IOException {
+        log.trace("Entering testOperationWithSetFormat()...");
         when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testTsv);
         final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
@@ -127,6 +135,7 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithHeaders() throws IOException {
+        log.trace("Entering testOperationWithHeaders()...");
         when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
@@ -149,6 +158,7 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithoutHeaders() throws IOException {
+        log.trace("Entering testOperationWithoutHeaders()...");
         when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsv);
         final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
@@ -170,6 +180,7 @@ public class TabularMetadataGeneratorTest {
 
     @Test
     public void testOperationWithoutHeadersWithScanLimit() throws IOException {
+        log.trace("Entering testOperationWithoutHeadersWithScanLimit()...");
         when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsvWithMarker);
         final MarkingMockDataTypeHeuristic testStrategy = new MarkingMockDataTypeHeuristic(MARKER_VALUE);
@@ -177,10 +188,15 @@ public class TabularMetadataGeneratorTest {
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         testParser.setScanLimit(2);
         testParser.getMetadata(mockURL);
-        assertFalse("Discovered a marker in a row we should not have been scanning!", testStrategy.failure);
+        assertFalse("Discovered the marker in a row we should not have been scanning!",
+                testStrategy.hasMarkerBeenSeen);
+        log.trace("Did not discover the marker in a row we should not have been scanning.");
         testParser.setScanLimit(3);
         testParser.getMetadata(mockURL);
-        assertTrue("Failed to discover a marker in a row we should have been scanning!", testStrategy.failure);
+        assertTrue("Failed to discover the marker in a row we should have been scanning!",
+                testStrategy.hasMarkerBeenSeen);
+        log.trace("Discovered the marker in a row we should have been scanning.");
+        log.trace("Done with testOperationWithoutHeadersWithScanLimit().");
     }
 
     private static URL mockURL(final byte[] data) throws IOException {
@@ -208,6 +224,8 @@ public class TabularMetadataGeneratorTest {
 
     private static class MarkingMockDataTypeHeuristic implements MockedHeuristic {
 
+        private static final Logger markLog = getLogger(MarkingMockDataTypeHeuristic.class);
+
         /**
          * @param marker
          */
@@ -217,7 +235,7 @@ public class TabularMetadataGeneratorTest {
 
         private String marker;
 
-        public boolean failure = false;
+        public boolean hasMarkerBeenSeen = false;
 
         @Override
         public SortedSet<DataType> typesAsLikely() {
@@ -230,9 +248,10 @@ public class TabularMetadataGeneratorTest {
         }
 
         @Override
-        public boolean addValue(final String value) {
-            if (value.equals(marker)) {
-                failure = true;
+        public boolean addValue(final String lex) {
+            markLog.trace("Checking lex {} for marker {}", lex, marker);
+            if (lex.equals(marker)) {
+                hasMarkerBeenSeen = true;
             }
             return true;
         }
