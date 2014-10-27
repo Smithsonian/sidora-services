@@ -1,6 +1,14 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
+/**
+ * Operates wrapped around an inner heuristic, but guards it by flagging (via the return value of
+ * {@link #addValue(String)}) when lex evaluation should cease. This condition is reached when more lexes have been
+ * seen than {@link #scanLimit} allows.
+ * 
+ * @author ajs6f
+ * @param <InnerHeuristicType>
+ */
 public class ScanLimitedHeuristic<InnerHeuristicType extends Heuristic<InnerHeuristicType>>
         extends ValueCountingHeuristic<ScanLimitedHeuristic<InnerHeuristicType>> {
 
@@ -25,14 +33,15 @@ public class ScanLimitedHeuristic<InnerHeuristicType extends Heuristic<InnerHeur
      */
     @Override
     public boolean addValue(final String lex) {
-        if (super.addValue(lex)) {
-            return totalNumValues() <= scanLimit;
+        if (super.addValue(lex) && totalNumValues() <= scanLimit) {
+            return innerHeuristic.addValue(lex);
         }
         return false;
     }
 
     @Override
     public void reset() {
+        super.reset();
         innerHeuristic.reset();
     }
 
