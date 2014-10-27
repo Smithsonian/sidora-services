@@ -49,19 +49,22 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     }
 
     @Override
-    public void addValue(final String value) {
-        super.addValue(value);
-        for (final DataType type : notParseableAs(value)) {
-            final float distanceToLastNonParseableOfThisType =
-                    totalNumValues() - locationsOfLastNonparseables.get(type);
-            if (distanceToLastNonParseableOfThisType < minimumDistance) {
-                // it's been too soon since the last nonparseable value of this type, knock it out of the running
-                candidateTypes.put(type, false);
-            } else {
-                // mark that we saw a nonparseable value for this type
-                locationsOfLastNonparseables.put(type, (float) totalNumValues());
+    public boolean addValue(final String value) {
+        if (super.addValue(value)) {
+            for (final DataType type : notParseableAs(value)) {
+                final float distanceToLastNonParseableOfThisType =
+                        totalNumValues() - locationsOfLastNonparseables.get(type);
+                if (distanceToLastNonParseableOfThisType < minimumDistance) {
+                    // it's been too soon since the last nonparseable value of this type, knock it out of the running
+                    candidateTypes.put(type, false);
+                } else {
+                    // mark that we saw a nonparseable value for this type
+                    locationsOfLastNonparseables.put(type, (float) totalNumValues());
+                }
             }
+            return true;
         }
+        return false;
     }
 
     @Override

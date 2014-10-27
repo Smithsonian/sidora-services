@@ -46,7 +46,7 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
     }
 
     @Override
-    public void addValue(final String value) {
+    public boolean addValue(final String value) {
         for (final DataType type : parseableAs(value)) {
             final Comparable<?> currentMin = minimums.get(type);
             final Comparable<?> currentMax = maximums.get(type);
@@ -60,6 +60,7 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
                 throw new AssertionError("Could not parse to a type that was passed as parsing!", e);
             }
         }
+        return true;
     }
 
     @Override

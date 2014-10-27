@@ -15,6 +15,7 @@ import java.util.Map;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ValueCountingHeuristic;
 
 /**
  * A {@link Heuristic} that aggregates candidate type appearance information for its field.
@@ -42,9 +43,12 @@ public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatin
     }
 
     @Override
-    public void addValue(final String value) {
-        super.addValue(value);
-        incrementCounts(parseableAs(value));
+    public boolean addValue(final String value) {
+        if (super.addValue(value)) {
+            incrementCounts(parseableAs(value));
+            return true;
+        }
+        return false;
     }
 
     private void incrementCounts(final Collection<DataType> types) {

@@ -29,10 +29,11 @@ public class InMemoryEnumeratedValuesHeuristic extends AbstractHeuristic<InMemor
     }
 
     @Override
-    public void addValue(final String lex) {
+    public boolean addValue(final String lex) {
         for (final DataType t : parseableAs(lex)) {
             valuesTakenOn.get(t).add(lex);
         }
+        return true;
     }
 
     @Override

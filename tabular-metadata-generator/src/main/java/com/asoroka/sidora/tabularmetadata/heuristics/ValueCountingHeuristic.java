@@ -1,12 +1,9 @@
 
-package com.asoroka.sidora.tabularmetadata.heuristics.types;
+package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
-
-import com.asoroka.sidora.tabularmetadata.heuristics.AbstractHeuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 
 /**
  * A {@link Heuristic} that counts the number of values received.
@@ -31,9 +28,10 @@ public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuri
     private static final Logger log = getLogger(ValueCountingHeuristic.class);
 
     @Override
-    public void addValue(final String value) {
+    public boolean addValue(final String value) {
         log.trace("Received new value: {}", value);
         totalNumValues++;
+        return true;
     }
 
     public int totalNumValues() {

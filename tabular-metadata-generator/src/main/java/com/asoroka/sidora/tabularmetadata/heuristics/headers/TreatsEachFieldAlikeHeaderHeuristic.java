@@ -36,8 +36,8 @@ public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends Treat
     protected abstract Predicate<? super String> fieldTest();
 
     @Override
-    public void addValue(final String value) {
-        inputRow.add(value);
+    public boolean addValue(final String value) {
+        return inputRow.add(value);
     }
 
     @Override

@@ -61,7 +61,7 @@ public abstract class SpringITFramework {
         return Range.closed(56F, 23423F);
     }
 
-    protected static Range<?> getStringRange() {
+    protected static Range<String> getStringRange() {
         return Range.closed("0056", "SERIAL NUMBER");
     }
 

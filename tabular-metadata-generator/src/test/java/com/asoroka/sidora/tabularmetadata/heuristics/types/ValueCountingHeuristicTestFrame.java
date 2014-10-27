@@ -5,6 +5,8 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import com.asoroka.sidora.tabularmetadata.heuristics.ValueCountingHeuristic;
+
 public abstract class ValueCountingHeuristicTestFrame<TestHeuristic extends ValueCountingHeuristic<TestHeuristic>>
         extends HeuristicTestFrame<TestHeuristic> {
 

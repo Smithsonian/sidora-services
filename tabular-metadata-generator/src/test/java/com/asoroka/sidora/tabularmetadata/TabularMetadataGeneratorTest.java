@@ -230,11 +230,11 @@ public class TabularMetadataGeneratorTest {
         }
 
         @Override
-        public void addValue(final String value) {
+        public boolean addValue(final String value) {
             if (value.equals(marker)) {
                 failure = true;
             }
-
+            return true;
         }
 
         @Override
