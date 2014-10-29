@@ -133,7 +133,7 @@ public class TabularMetadataGenerator {
 
     private static final List<String> emptyHeaders(final int numFields) {
         final List<String> headers = new ArrayList<>(numFields);
-        for (int i = 0; i <= numFields; i++) {
+        for (int i = 1; i <= numFields; i++) {
             headers.add("Variable " + i);
         }
         return headers;

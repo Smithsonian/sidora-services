@@ -3,15 +3,16 @@ package com.asoroka.sidora.tabularmetadata.web;
 
 import static com.google.common.collect.ImmutableList.builder;
 import static com.google.common.collect.Lists.transform;
+import static javax.xml.bind.annotation.XmlAccessType.PUBLIC_MEMBER;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
 
-import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlList;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.slf4j.Logger;
@@ -20,10 +21,14 @@ import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Range;
 
+/**
+ * A JAXB-supported class to serialize a precis of tabular data metadata.
+ * 
+ * @author ajs6f
+ */
 @XmlRootElement
-@XmlAccessorType(XmlAccessType.PUBLIC_MEMBER)
+@XmlAccessorType(PUBLIC_MEMBER)
 public class TabularMetadataPrecis {
 
     private TabularMetadata metadata;
@@ -45,29 +50,28 @@ public class TabularMetadataPrecis {
         this.metadata = m;
     }
 
-    @XmlList
-    public List<String> getHeaders() {
+    @XmlElementWrapper
+    @XmlElement(name = "mostLikelyHeader")
+    public List<String> getLikelyHeaders() {
         return metadata.headerNames;
     }
 
-    @XmlList
+    @XmlElementWrapper
+    @XmlElement(name = "mostLikelyType")
     public List<DataType> getMostLikelyTypes() {
         return getFirstElements(metadata.fieldTypes);
     }
 
-    @XmlList
-    public List<String> getMostLikelyRanges() {
-        final ImmutableList.Builder<String> b = builder();
+    @XmlElementWrapper
+    @XmlElement(name = "mostLikelyRange")
+    public List<XMLRange> getMostLikelyRanges() {
+        final ImmutableList.Builder<XMLRange> b = builder();
         for (int i = 0; i < metadata.minMaxes.size(); i++) {
             final DataType mostLikelyType = getMostLikelyTypes().get(i);
             log.trace("Found most likely type {} for field number {}", mostLikelyType, i);
-            b.add(rangeToString(metadata.minMaxes.get(i).get(mostLikelyType)));
+            b.add(new XMLRange(metadata.minMaxes.get(i).get(mostLikelyType)));
         }
         return b.build();
-    }
-
-    private static String rangeToString(final Range<?> r) {
-        return r.toString();
     }
 
     private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {

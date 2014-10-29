@@ -3,8 +3,8 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
     version="3.0"> 
-    <display-name>JAX-RS Simple Service</display-name>
-    <description>JAX-RS Simple Service</description>
+    <display-name>Tabular Metadata Web Service</display-name>
+    <description>Simple Web service to operate tabular metadata extraction</description>
     <context-param>
         <param-name>contextConfigLocation</param-name>
         <param-value>WEB-INF/beans.xml</param-value>

@@ -20,16 +20,15 @@
         <jaxrs:serviceBeans>
             <bean id="jaxrsResource" class="com.asoroka.sidora.tabularmetadata.web.Parser"/>
         </jaxrs:serviceBeans>
-        <!--
+
         <jaxrs:providers>
-            <bean class="com.asoroka.sidora.tabularmetadata.web.TabularMetadataPrecisWriter"/>
-        </jaxrs:providers> -->
+            <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+                <property name="marshallerProperties" ref="marshallerPropertiesMap"/>
+            </bean>
+        </jaxrs:providers>
     </jaxrs:server>
 
-    <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
-        <property name="marshallerProperties" ref="propertiesMap"/>
-    </bean>
-    <util:map id="propertiesMap">
+    <util:map id="marshallerPropertiesMap">
         <entry key="jaxb.formatted.output">
             <value type="java.lang.Boolean">true</value>
         </entry>
