@@ -17,7 +17,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.ByteArrayInputStream;
@@ -33,9 +32,11 @@ import java.util.SortedSet;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.internal.stubbing.answers.Returns;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 
@@ -51,6 +52,7 @@ import com.google.common.collect.Range;
  * 
  * @author ajs6f
  */
+@RunWith(MockitoJUnitRunner.class)
 public class TabularMetadataGeneratorTest {
 
     // TODO make test data more readable
@@ -95,7 +97,6 @@ public class TabularMetadataGeneratorTest {
 
     @Before
     public void setUp() {
-        initMocks(this);
         when(mockSimpleStrategy.mostLikelyType()).thenAnswer(mockDataTypeAnswer);
         final Returns trueReturn = new Returns(true);
         when(mockSimpleStrategy.addValue(anyString())).thenAnswer(trueReturn);
@@ -123,10 +124,10 @@ public class TabularMetadataGeneratorTest {
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
-        final List<String> headers = results.headerNames();
-        final List<Map<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<String> headers = results.headerNames;
+        final List<Map<DataType, Range<?>>> ranges = results.minMaxes;
         assertEquals(asList(testHeaders.split(",")), headers);
-        final List<SortedSet<DataType>> types = results.fieldTypes();
+        final List<SortedSet<DataType>> types = results.fieldTypes;
         assertTrue("Found a data type that didn't originate from our mocking!", all(concat(types),
                 equalTo(mockDataType)));
         final boolean rangeTest = all(ranges, equalTo(testRanges()));
@@ -142,15 +143,15 @@ public class TabularMetadataGeneratorTest {
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
-        final List<SortedSet<DataType>> types = results.fieldTypes();
+        final List<SortedSet<DataType>> types = results.fieldTypes;
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
-        final List<Map<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<Map<DataType, Range<?>>> ranges = results.minMaxes;
         assertTrue("Failed to find the right mock range results!", all(ranges, equalTo(testRanges())));
-        final List<String> headers = results.headerNames();
+        final List<String> headers = results.headerNames;
         assertEquals("Got a bad list of header names!", asList(testHeaders.split(",")), headers);
 
-        for (final Map<DataType, Set<String>> v : results.enumeratedValues()) {
+        for (final Map<DataType, Set<String>> v : results.enumeratedValues) {
             assertEquals("Got a bad value as part of the enumerated list!", mockEnumeratedValues, v);
         }
 
@@ -165,13 +166,13 @@ public class TabularMetadataGeneratorTest {
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
-        final List<SortedSet<DataType>> types = results.fieldTypes();
+        final List<SortedSet<DataType>> types = results.fieldTypes;
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
-        final List<Map<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<Map<DataType, Range<?>>> ranges = results.minMaxes;
         assertTrue("Got a range that wasn't the one we inserted!", all(ranges, equalTo(testRanges())));
 
-        final List<String> headers = results.headerNames();
+        final List<String> headers = results.headerNames;
         final int numHeaders = headers.size();
         for (int i = 0; i < numHeaders; i++) {
             assertEquals("Variable " + i, headers.get(i));

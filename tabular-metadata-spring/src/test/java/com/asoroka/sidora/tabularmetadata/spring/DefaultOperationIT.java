@@ -21,7 +21,7 @@ public class DefaultOperationIT extends SpringITFramework {
     public void testWithSimpleData() throws MalformedURLException, IOException {
         final TabularMetadata results =
                 testFile(getTestFile(testFileSimple), SIMPLE_TYPES, getIntRange(), DataType.Integer);
-        final Set<String> enumeratedValuesForFirstField = results.enumeratedValues().get(0).get(DataType.String);
+        final Set<String> enumeratedValuesForFirstField = results.enumeratedValues.get(0).get(DataType.String);
         assertEquals("Found wrong enumerated values in first field!", newHashSet("Kirk", "Chekov", "Scott", "Uhuru"),
                 enumeratedValuesForFirstField);
     }

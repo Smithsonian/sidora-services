@@ -1,1 +1,0 @@
-A set of simple utilities for parsing metadata from tabular data files.

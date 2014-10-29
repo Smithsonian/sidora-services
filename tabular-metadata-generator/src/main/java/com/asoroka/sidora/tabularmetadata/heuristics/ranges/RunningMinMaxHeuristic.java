@@ -8,9 +8,12 @@ package com.asoroka.sidora.tabularmetadata.heuristics.ranges;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.collect.Maps.asMap;
 import static com.google.common.collect.Ordering.natural;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.EnumMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.datatype.ParsingException;
@@ -36,6 +39,8 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
      */
     protected Map<DataType, Comparable<?>> maximums;
 
+    private static final Logger log = getLogger(RunningMinMaxHeuristic.class);
+
     /**
      * Initialize minimums and maximums.
      */
@@ -53,8 +58,14 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
             try {
                 final Comparable<?> v = type.parse(value);
                 // TODO avoid this repeated conditional
+                log.trace("Trying new value {} against current min {} and current max {} for type {}", v, currentMin,
+                        currentMax, type);
                 minimums.put(type, (currentMin == null) ? v : natural().min(currentMin, v));
                 maximums.put(type, (currentMax == null) ? v : natural().max(currentMax, v));
+                log.trace("Tried new value {} and got new min {} and new max {} for type {}", v, minimums.get(type),
+                        maximums
+                                .get(type), type);
+
             } catch (final ParsingException e) {
                 // we are only parsing for types that have already been checked
                 throw new AssertionError("Could not parse to a type that was passed as parsing!", e);

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.asoroka.sidora</groupId>
 	<artifactId>tabular-metadata</artifactId>
@@ -14,7 +13,9 @@
 		<module>tabular-metadata-generator</module>
 		<module>tabular-metadata-spring</module>
 		<module>tabular-metadata-camel</module>
-	</modules>
+
+	<module></module>  <module>tabular-metadata-webapp</module>
+  </modules>
 
 	<developers>
 		<developer>
@@ -42,6 +43,8 @@
 		<scmPublish.checkoutDirectory>${project.build.directory}/scmpublish</scmPublish.checkoutDirectory>
 		<github.repositoryOwner>ocymum</github.repositoryOwner>
 		<github.repositoryName>tabular-metadata</github.repositoryName>
+		
+		<spring.version>4.1.1.RELEASE</spring.version>
 	</properties>
 
 	<distributionManagement>
@@ -95,6 +98,11 @@
 				<artifactId>mockito-all</artifactId>
 				<version>1.10.5</version>
 				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>jcl-over-slf4j</artifactId>
+				<version>1.7.7</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -202,6 +210,12 @@
 							<groupId>org.apache.velocity</groupId>
 							<artifactId>velocity</artifactId>
 							<version>1.7</version>
+						</dependency>
+						<!-- use Markdown for doc pages -->
+						<dependency>
+							<groupId>org.apache.maven.doxia</groupId>
+							<artifactId>doxia-module-markdown</artifactId>
+							<version>1.6</version>
 						</dependency>
 					</dependencies>
 				</plugin>

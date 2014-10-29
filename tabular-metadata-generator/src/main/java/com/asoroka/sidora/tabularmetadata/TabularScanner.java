@@ -87,7 +87,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
                 final boolean typeStrategiesShouldContinue = typeStrategies.next().addValue(lex);
                 final boolean enumStrategiesShouldContinue = enumStrategies.next().addValue(lex);
                 log.trace(
-                        "Continue flag received fron range strategy: {}, from type strategy: {}, from enum strategy: {}.",
+                        "Continue flag received from range strategy: {}, from type strategy: {}, from enum strategy: {}.",
                         rangeStrategiesShouldContinue, typeStrategiesShouldContinue, enumStrategiesShouldContinue);
                 // if any heuristic is not done, we aren't done
                 final boolean shouldContinue =

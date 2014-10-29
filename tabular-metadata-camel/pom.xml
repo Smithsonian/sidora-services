@@ -74,7 +74,15 @@
 					</instructions>
 				</configuration>
 			</plugin>
-
+			
+			<plugin>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+				<configuration>
+					<merge>true</merge>
+					<path>${project.version}/${project.artifactId}</path>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

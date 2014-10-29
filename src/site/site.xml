@@ -13,7 +13,7 @@
             <highlightJs>true</highlightJs>
             <brand>
                 <name>Tabular Data Metadata Extraction</name>
-                <href>http://github.com/ocymum/csv-metadata</href>
+                <href>http://github.com/ocymum/tabular-metadatahttp://ocymum.github.io/tabular-metadata/0.0.1-SNAPSHOT/</href>
             </brand>
             <slogan position="bannerLeft">Data is good. Data with meta is better.</slogan>
             <titleTemplate>%2$s | %1$s</titleTemplate>
@@ -48,7 +48,7 @@
     <body>
         <head/>
         <menu name="Main" inherit="top" title="Main">
-            <item name="Dummy Item" href="nowhere.html"/>
+            <item name="Theory of Operation" href="theory-of-operation.html"/>
         </menu>
         <menu name="Maven documentation" title="Maven documentation" ref="reports" inherit="top"
             inheritAsRef="true"/>

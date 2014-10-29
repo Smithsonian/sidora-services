@@ -12,10 +12,6 @@
 
 	<description>Spring utilities for developing metadata from tabular data files.</description>
 
-	<properties>
-		<spring.version>4.1.1.RELEASE</spring.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>com.asoroka.sidora</groupId>
@@ -52,7 +48,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
-			<version>1.7.7</version>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>

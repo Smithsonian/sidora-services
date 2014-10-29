@@ -47,8 +47,8 @@ public abstract class SpringITFramework {
             final Range<?> minMaxes, final DataType expectedDataTypeForRangeTest)
             throws IOException {
         final TabularMetadata result = testGenerator.getMetadata(testFile);
-        assertEquals("Got incorrect column types!", expectedDatatypes, getFirstElements(result.fieldTypes()));
-        assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes().get(2).get(
+        assertEquals("Got incorrect column types!", expectedDatatypes, getFirstElements(result.fieldTypes));
+        assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes.get(2).get(
                 expectedDataTypeForRangeTest));
         return result;
     }
