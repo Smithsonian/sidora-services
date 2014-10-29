@@ -2,8 +2,10 @@
 package com.asoroka.sidora.tabularmetadata.web;
 
 import static com.google.common.collect.ImmutableList.builder;
+import static com.google.common.collect.Lists.transform;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
 
@@ -16,6 +18,7 @@ import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 
@@ -67,12 +70,18 @@ public class TabularMetadataPrecis {
         return r.toString();
     }
 
-    private static <T> List<T> getFirstElements(final Iterable<SortedSet<T>> inputs) {
-        final ImmutableList.Builder<T> b = builder();
-        for (final SortedSet<T> s : inputs) {
-            b.add(s.first());
-        }
-        return b.build();
+    private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
+        return transform(inputs, TabularMetadataPrecis.<T> firstOfIterable());
     }
 
+    private static final <T> Function<Iterable<T>, T> firstOfIterable() {
+        return new Function<Iterable<T>, T>() {
+
+            @Override
+            public T apply(final Iterable<T> s) {
+                final Iterator<T> iterator = s.iterator();
+                return iterator.hasNext() ? iterator.next() : null;
+            }
+        };
+    }
 }
