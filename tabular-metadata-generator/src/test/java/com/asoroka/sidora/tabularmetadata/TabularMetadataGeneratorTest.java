@@ -174,8 +174,8 @@ public class TabularMetadataGeneratorTest {
 
         final List<String> headers = results.headerNames;
         final int numHeaders = headers.size();
-        for (int i = 1; i <= numHeaders; i++) {
-            assertEquals("Variable " + i, headers.get(i));
+        for (int i = 0; i < numHeaders; i++) {
+            assertEquals("Variable " + (i + 1), headers.get(i));
         }
     }
 
