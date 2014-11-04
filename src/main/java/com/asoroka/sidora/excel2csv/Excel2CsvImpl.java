@@ -8,22 +8,18 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.file.Files;
-import java.util.Scanner;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
 import org.apache.poi.hssf.eventusermodel.MissingRecordAwareHSSFListener;
-import org.apache.poi.hssf.eventusermodel.examples.XLS2CSVmra;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.slf4j.Logger;
 
@@ -53,7 +49,7 @@ public class Excel2CsvImpl implements Excel2Csv {
     }
 
     @Override
-    public File apply(final URL inputUrl) {
+    public List<File> apply(final URL inputUrl) {
 
         final File tmpFile = createTempFile();
 
@@ -63,48 +59,25 @@ public class Excel2CsvImpl implements Excel2Csv {
 
             try (final PrintStream outputStream = new PrintStream(tmpFile)) {
 
-                final XLS2CSVmra poiTransformer = new XLS2CSVmra(poiFileSystem,
-                        outputStream, minColumns);
+                final SheetSplittingXLS2CSVmra poiTransformer =
+                        new SheetSplittingXLS2CSVmra(poiFileSystem, minColumns);
                 final MissingRecordAwareHSSFListener listener = new MissingRecordAwareHSSFListener(
                         poiTransformer);
                 final FormatTrackingHSSFListener ftListener = new FormatTrackingHSSFListener(
                         listener);
 
-                Field formatListener;
-                try {
-                    formatListener = XLS2CSVmra.class.getDeclaredField("formatListener");
-                    formatListener.setAccessible(true);
-                    formatListener.set(poiTransformer, ftListener);
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new AssertionError(e);
-                }
+                poiTransformer.setFormatListener(ftListener);
 
                 final HSSFRequest request = new HSSFRequest();
                 request.addListenerForAllRecords(ftListener);
                 final HSSFEventFactory factory = new HSSFEventFactory();
                 factory.processWorkbookEvents(request, poiFileSystem);
-
+                return poiTransformer.getOutputs();
             } catch (final FileNotFoundException e) {
                 log.error("Could not open self-created temp file!");
                 throw new AssertionError(e);
             }
 
-            final File outputFile = createTempFile();
-
-            try (InputStream tmpStream = tmpFile.toURI().toURL().openStream();
-                    OutputStream outStream = new FileOutputStream(outputFile);
-                    final Scanner lines = new Scanner(tmpStream)) {
-                while (lines.hasNextLine()) {
-                    final String line = lines.nextLine();
-                    if (!line.isEmpty()) {
-                        // don't accept sheet designators
-                        if (!sheetMarker.matcher(line).matches()) {
-                            outStream.write((line + "\n").getBytes());
-                        }
-                    }
-                }
-            }
-            return outputFile;
         } catch (final IOException e) {
             log.error("Could not read input URL: {}!", inputUrl);
             throw propagate(e);

@@ -3,6 +3,7 @@ package com.asoroka.sidora.excel2csv;
 
 import java.io.File;
 import java.net.URL;
+import java.util.List;
 
 import com.google.common.base.Function;
 
@@ -12,6 +13,6 @@ import com.google.common.base.Function;
  * 
  * @author ajs6f
  */
-public interface Excel2Csv extends Function<URL, File> {
+public interface Excel2Csv extends Function<URL, List<File>> {
 
 }

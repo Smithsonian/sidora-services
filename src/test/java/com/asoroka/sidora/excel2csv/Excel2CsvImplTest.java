@@ -16,20 +16,18 @@ import java.util.List;
 import org.junit.Test;
 import org.slf4j.Logger;
 
-import com.asoroka.sidora.excel2csv.Excel2Csv;
-import com.asoroka.sidora.excel2csv.Excel2CsvImpl;
 import com.google.common.io.Resources;
 
 public class Excel2CsvImplTest {
 
     private final Excel2Csv testExcel2Csv = new Excel2CsvImpl();
 
-    final private static Logger log = getLogger(Excel2CsvImplTest.class);
+    private static final Logger log = getLogger(Excel2CsvImplTest.class);
 
     @Test
     public void testSimple() throws IOException {
         final URL inputUrl = new File("src/test/resources/xls/small-test.xls").toURI().toURL();
-        final URL result = testExcel2Csv.apply(inputUrl).toURI().toURL();
+        final URL result = testExcel2Csv.apply(inputUrl).get(0).toURI().toURL();
         log.debug("Result:\n{}", Resources.toString(result, UTF_8));
         final URL checkFile = new File("src/test/resources/xls/small-test.csv").toURI().toURL();
         log.debug("Checkfile:\n{}", Resources.toString(checkFile, UTF_8));
