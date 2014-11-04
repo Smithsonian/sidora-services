@@ -1,6 +1,7 @@
 
 package com.asoroka.sidora.excel2csv;
 
+import static java.lang.Double.isNaN;
 import static java.util.UUID.randomUUID;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -17,7 +18,6 @@ import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.LastCellOfRowDummyRecord;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.MissingCellDummyRecord;
-import org.apache.poi.hssf.model.HSSFFormulaParser;
 import org.apache.poi.hssf.record.BOFRecord;
 import org.apache.poi.hssf.record.BlankRecord;
 import org.apache.poi.hssf.record.BoolErrRecord;
@@ -25,7 +25,6 @@ import org.apache.poi.hssf.record.BoundSheetRecord;
 import org.apache.poi.hssf.record.FormulaRecord;
 import org.apache.poi.hssf.record.LabelRecord;
 import org.apache.poi.hssf.record.LabelSSTRecord;
-import org.apache.poi.hssf.record.NoteRecord;
 import org.apache.poi.hssf.record.NumberRecord;
 import org.apache.poi.hssf.record.RKRecord;
 import org.apache.poi.hssf.record.Record;
@@ -36,11 +35,9 @@ import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.slf4j.Logger;
 
 /**
- * Copied mostly from {@link org.apache.poi.hssf.eventusermodel.examples.XLS2CSVmra }.<br/>
- * A XLS -> CSV processor, that uses the MissingRecordAware EventModel code to ensure it outputs all columns and rows.
- * Splits multi-sheet spreadsheets into multiple outputs.
+ * Inspired by {@link org.apache.poi.hssf.eventusermodel.examples.XLS2CSVmra }.<br/>
+ * Splits multi-sheet spreadsheets into multiple CSV outputs.
  * 
- * @author Nick Burch
  * @author ajs6f
  */
 public class XLS2CSVmra implements HSSFListener {
@@ -53,18 +50,11 @@ public class XLS2CSVmra implements HSSFListener {
         return outputs;
     }
 
-    protected int minColumns;
+    protected int minColumns, lastRowNumber, lastColumnNumber, nextRow, nextColumn;
 
     protected POIFSFileSystem fs;
 
-    protected PrintStream output;
-
-    protected int lastRowNumber;
-
-    protected int lastColumnNumber;
-
-    /** Should we output the formula, or the value it has? */
-    protected boolean outputFormulaValues = true;
+    protected PrintStream currentOutput;
 
     /** For parsing Formulas */
     protected SheetRecordCollectingListener workbookBuildingListener;
@@ -83,14 +73,7 @@ public class XLS2CSVmra implements HSSFListener {
     /** So we known which sheet we're on */
     protected int sheetIndex = -1;
 
-    protected BoundSheetRecord[] orderedBSRs;
-
     protected ArrayList<BoundSheetRecord> boundSheetRecords = new ArrayList<>();
-
-    // For handling formulas with string results
-    protected int nextRow;
-
-    protected int nextColumn;
 
     protected boolean outputNextStringRecord;
 
@@ -112,11 +95,12 @@ public class XLS2CSVmra implements HSSFListener {
         int thisColumn = -1;
         String thisStr = null;
 
-        switch (record.getSid())
-        {
+        switch (record.getSid()) {
+
         case BoundSheetRecord.sid:
             boundSheetRecords.add((BoundSheetRecord) record);
             break;
+
         case BOFRecord.sid:
             final BOFRecord br = (BOFRecord) record;
             if (br.getType() == BOFRecord.TYPE_WORKSHEET) {
@@ -124,22 +108,16 @@ public class XLS2CSVmra implements HSSFListener {
                 if (workbookBuildingListener != null && stubWorkbook == null) {
                     stubWorkbook = workbookBuildingListener.getStubHSSFWorkbook();
                 }
-
-                // Output the worksheet name
-                // Works by ordering the BSRs by the location of
-                // their BOFRecords, and then knowing that we
-                // process BOFRecords in byte offset order
+                // switch to a new sheet currentOutput
                 sheetIndex++;
-                if (orderedBSRs == null) {
-                    orderedBSRs = BoundSheetRecord.orderByBofPosition(boundSheetRecords);
+                final File nextSheet = createTempFile();
+                outputs.add(nextSheet);
+                // close the last sheet currentOutput
+                if (currentOutput != null) {
+                    currentOutput.close();
                 }
                 try {
-                    final File nextSheet = createTempFile();
-                    outputs.add(nextSheet);
-                    if (output != null) {
-                        output.close();
-                    }
-                    output = new PrintStream(outputs.get(sheetIndex));
+                    currentOutput = new PrintStream(outputs.get(sheetIndex));
                 } catch (final FileNotFoundException e) {
                     log.error("Could not open self-created temp file!");
                     throw new AssertionError(e);
@@ -153,14 +131,13 @@ public class XLS2CSVmra implements HSSFListener {
 
         case BlankRecord.sid:
             final BlankRecord brec = (BlankRecord) record;
-
             thisRow = brec.getRow();
             thisColumn = brec.getColumn();
             thisStr = "";
             break;
+
         case BoolErrRecord.sid:
             final BoolErrRecord berec = (BoolErrRecord) record;
-
             thisRow = berec.getRow();
             thisColumn = berec.getColumn();
             thisStr = "";
@@ -168,25 +145,20 @@ public class XLS2CSVmra implements HSSFListener {
 
         case FormulaRecord.sid:
             final FormulaRecord frec = (FormulaRecord) record;
-
             thisRow = frec.getRow();
             thisColumn = frec.getColumn();
 
-            if (outputFormulaValues) {
-                if (Double.isNaN(frec.getValue())) {
-                    // Formula result is a string
-                    // This is stored in the next record
-                    outputNextStringRecord = true;
-                    nextRow = frec.getRow();
-                    nextColumn = frec.getColumn();
-                } else {
-                    thisStr = formatListener.formatNumberDateCell(frec);
-                }
+            if (isNaN(frec.getValue())) {
+                // Formula result is a string
+                // This is stored in the next record
+                outputNextStringRecord = true;
+                nextRow = frec.getRow();
+                nextColumn = frec.getColumn();
             } else {
-                thisStr = '"' +
-                        HSSFFormulaParser.toFormulaString(stubWorkbook, frec.getParsedExpression()) + '"';
+                thisStr = formatListener.formatNumberDateCell(frec);
             }
             break;
+
         case StringRecord.sid:
             if (outputNextStringRecord) {
                 // String for formula
@@ -205,6 +177,7 @@ public class XLS2CSVmra implements HSSFListener {
             thisColumn = lrec.getColumn();
             thisStr = '"' + lrec.getValue() + '"';
             break;
+
         case LabelSSTRecord.sid:
             final LabelSSTRecord lsrec = (LabelSSTRecord) record;
 
@@ -216,14 +189,7 @@ public class XLS2CSVmra implements HSSFListener {
                 thisStr = '"' + sstRecord.getString(lsrec.getSSTIndex()).toString() + '"';
             }
             break;
-        case NoteRecord.sid:
-            final NoteRecord nrec = (NoteRecord) record;
 
-            thisRow = nrec.getRow();
-            thisColumn = nrec.getColumn();
-            // TODO: Find object to match nrec.getShapeId()
-            thisStr = '"' + "(TODO)" + '"';
-            break;
         case NumberRecord.sid:
             final NumberRecord numrec = (NumberRecord) record;
 
@@ -233,6 +199,7 @@ public class XLS2CSVmra implements HSSFListener {
             // Format
             thisStr = formatListener.formatNumberDateCell(numrec);
             break;
+
         case RKRecord.sid:
             final RKRecord rkrec = (RKRecord) record;
 
@@ -240,6 +207,7 @@ public class XLS2CSVmra implements HSSFListener {
             thisColumn = rkrec.getColumn();
             thisStr = '"' + "(TODO)" + '"';
             break;
+
         default:
             break;
         }
@@ -260,9 +228,9 @@ public class XLS2CSVmra implements HSSFListener {
         // If we got something to print out, do so
         if (thisStr != null) {
             if (thisColumn > 0) {
-                output.print(',');
+                currentOutput.print(',');
             }
-            output.print(thisStr);
+            currentOutput.print(thisStr);
         }
 
         // Update column and row count
@@ -280,7 +248,7 @@ public class XLS2CSVmra implements HSSFListener {
                     lastColumnNumber = 0;
                 }
                 for (int i = lastColumnNumber; i < (minColumns); i++) {
-                    output.print(',');
+                    currentOutput.print(',');
                 }
             }
 
@@ -288,7 +256,7 @@ public class XLS2CSVmra implements HSSFListener {
             lastColumnNumber = -1;
 
             // End the row
-            output.println();
+            currentOutput.println();
         }
     }
 
