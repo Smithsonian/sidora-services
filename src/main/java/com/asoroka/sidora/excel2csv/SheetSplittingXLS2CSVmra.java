@@ -86,6 +86,9 @@ public class SheetSplittingXLS2CSVmra extends XLS2CSVmra {
                 try {
                     final File nextSheet = createTempFile();
                     outputs.add(nextSheet);
+                    if (output != null) {
+                        output.close();
+                    }
                     output = new PrintStream(outputs.get(sheetIndex));
                 } catch (final FileNotFoundException e) {
                     log.error("Could not open self-created temp file!");
