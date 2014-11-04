@@ -3,7 +3,6 @@ package com.asoroka.sidora.excel2csv;
 
 import static com.google.common.base.Throwables.propagate;
 import static java.util.UUID.randomUUID;
-import static java.util.regex.Pattern.compile;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -14,7 +13,6 @@ import java.io.PrintStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
@@ -29,8 +27,6 @@ import org.slf4j.Logger;
 public class Excel2CsvImpl implements Excel2Csv {
 
     private final int minColumns;
-
-    private final static Pattern sheetMarker = compile("Sheet(\\d+) \\[(\\d+)\\]:");
 
     final private static Logger log = getLogger(Excel2CsvImpl.class);
 
@@ -59,8 +55,8 @@ public class Excel2CsvImpl implements Excel2Csv {
 
             try (final PrintStream outputStream = new PrintStream(tmpFile)) {
 
-                final SheetSplittingXLS2CSVmra poiTransformer =
-                        new SheetSplittingXLS2CSVmra(poiFileSystem, minColumns);
+                final XLS2CSVmra poiTransformer =
+                        new XLS2CSVmra(poiFileSystem, minColumns);
                 final MissingRecordAwareHSSFListener listener = new MissingRecordAwareHSSFListener(
                         poiTransformer);
                 final FormatTrackingHSSFListener ftListener = new FormatTrackingHSSFListener(

@@ -1,18 +1,20 @@
 
 package com.asoroka.sidora.excel2csv;
 
-import java.io.FileInputStream;
+import static java.util.UUID.randomUUID;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.poi.hssf.eventusermodel.EventWorkbookBuilder.SheetRecordCollectingListener;
 import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
-import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
-import org.apache.poi.hssf.eventusermodel.HSSFRequest;
-import org.apache.poi.hssf.eventusermodel.MissingRecordAwareHSSFListener;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.LastCellOfRowDummyRecord;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.MissingCellDummyRecord;
 import org.apache.poi.hssf.model.HSSFFormulaParser;
@@ -31,15 +33,25 @@ import org.apache.poi.hssf.record.SSTRecord;
 import org.apache.poi.hssf.record.StringRecord;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.slf4j.Logger;
 
 /**
- * Copied directly from {@link org.apache.poi.hssf.eventusermodel.examples.XLS2CSVmra } in order to make fields
- * accessible for overriding.<br/>
+ * Copied mostly from {@link org.apache.poi.hssf.eventusermodel.examples.XLS2CSVmra }.<br/>
  * A XLS -> CSV processor, that uses the MissingRecordAware EventModel code to ensure it outputs all columns and rows.
+ * Splits multi-sheet spreadsheets into multiple outputs.
  * 
  * @author Nick Burch
+ * @author ajs6f
  */
 public class XLS2CSVmra implements HSSFListener {
+
+    private List<File> outputs = new ArrayList<>();
+
+    private static final Logger log = getLogger(XLS2CSVmra.class);
+
+    public List<File> getOutputs() {
+        return outputs;
+    }
 
     protected int minColumns;
 
@@ -73,7 +85,7 @@ public class XLS2CSVmra implements HSSFListener {
 
     protected BoundSheetRecord[] orderedBSRs;
 
-    protected ArrayList boundSheetRecords = new ArrayList();
+    protected ArrayList<BoundSheetRecord> boundSheetRecords = new ArrayList<>();
 
     // For handling formulas with string results
     protected int nextRow;
@@ -83,50 +95,12 @@ public class XLS2CSVmra implements HSSFListener {
     protected boolean outputNextStringRecord;
 
     /**
-     * Creates a new XLS -> CSV converter
-     * 
-     * @param fs The POIFSFileSystem to process
-     * @param output The PrintStream to output the CSV to
-     * @param minColumns The minimum number of columns to output, or -1 for no minimum
+     * @param poiFileSystem
+     * @param minColumns
      */
-    public XLS2CSVmra(final POIFSFileSystem fs, final PrintStream output, final int minColumns) {
-        this.fs = fs;
-        this.output = output;
+    public XLS2CSVmra(final POIFSFileSystem poiFileSystem, final int minColumns) {
+        this.fs = poiFileSystem;
         this.minColumns = minColumns;
-    }
-
-    /**
-     * Creates a new XLS -> CSV converter
-     * 
-     * @param filename The file to process
-     * @param minColumns The minimum number of columns to output, or -1 for no minimum
-     * @throws IOException
-     * @throws FileNotFoundException
-     */
-    public XLS2CSVmra(final String filename, final int minColumns) throws IOException, FileNotFoundException {
-        this(
-                new POIFSFileSystem(new FileInputStream(filename)),
-                System.out, minColumns);
-    }
-
-    /**
-     * Initiates the processing of the XLS file to CSV
-     */
-    public void process() throws IOException {
-        final MissingRecordAwareHSSFListener listener = new MissingRecordAwareHSSFListener(this);
-        formatListener = new FormatTrackingHSSFListener(listener);
-
-        final HSSFEventFactory factory = new HSSFEventFactory();
-        final HSSFRequest request = new HSSFRequest();
-
-        if (outputFormulaValues) {
-            request.addListenerForAllRecords(formatListener);
-        } else {
-            workbookBuildingListener = new SheetRecordCollectingListener(formatListener);
-            request.addListenerForAllRecords(workbookBuildingListener);
-        }
-
-        factory.processWorkbookEvents(request, fs);
     }
 
     /**
@@ -141,7 +115,7 @@ public class XLS2CSVmra implements HSSFListener {
         switch (record.getSid())
         {
         case BoundSheetRecord.sid:
-            boundSheetRecords.add(record);
+            boundSheetRecords.add((BoundSheetRecord) record);
             break;
         case BOFRecord.sid:
             final BOFRecord br = (BOFRecord) record;
@@ -159,11 +133,17 @@ public class XLS2CSVmra implements HSSFListener {
                 if (orderedBSRs == null) {
                     orderedBSRs = BoundSheetRecord.orderByBofPosition(boundSheetRecords);
                 }
-                output.println();
-                output.println(
-                        orderedBSRs[sheetIndex].getSheetname() +
-                                " [" + (sheetIndex + 1) + "]:"
-                        );
+                try {
+                    final File nextSheet = createTempFile();
+                    outputs.add(nextSheet);
+                    if (output != null) {
+                        output.close();
+                    }
+                    output = new PrintStream(outputs.get(sheetIndex));
+                } catch (final FileNotFoundException e) {
+                    log.error("Could not open self-created temp file!");
+                    throw new AssertionError(e);
+                }
             }
             break;
 
@@ -312,19 +292,12 @@ public class XLS2CSVmra implements HSSFListener {
         }
     }
 
-    public static void main(final String[] args) throws Exception {
-        if (args.length < 1) {
-            System.err.println("Use:");
-            System.err.println("  XLS2CSVmra <xls file> [min columns]");
-            System.exit(1);
+    private static File createTempFile() {
+        try {
+            return Files.createTempFile(XLS2CSVmra.class.getName(), randomUUID().toString()).toFile();
+        } catch (final IOException e) {
+            log.error("Could not create temp file!");
+            throw new AssertionError(e);
         }
-
-        int minColumns = -1;
-        if (args.length >= 2) {
-            minColumns = Integer.parseInt(args[1]);
-        }
-
-        final XLS2CSVmra xls2csv = new XLS2CSVmra(args[0], minColumns);
-        xls2csv.process();
     }
 }

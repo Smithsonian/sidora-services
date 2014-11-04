@@ -55,7 +55,6 @@ public class Excel2CsvImplTest extends TestUtils {
                         return name.startsWith("three-sheet");
                     }
                 });
-        log.trace("Got {} checkfiles.", checkFiles.length);
         for (int i = 0; i < 3; i++) {
             log.debug("Using {} for checkfile.", checkFiles[i]);
             final URL checkFile = checkFiles[i].toURI().toURL();
