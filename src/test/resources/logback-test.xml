@@ -7,7 +7,7 @@
         </encoder>
     </appender>
     
-    <logger name="com.asoroka.sidora" additivity="false" level="DEBUG">
+    <logger name="com.asoroka.sidora" additivity="false" level="TRACE">
         <appender-ref ref="STDOUT"/>
     </logger>
     <root additivity="false" level="WARN">

@@ -6,8 +6,20 @@ import static java.lang.Math.min;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Some convenient utilities for tests.
+ * 
+ * @author ajs6f
+ */
 public class TestUtils {
 
+    /**
+     * A cheap and cheerful 2-tuple.
+     * 
+     * @author ajs6f
+     * @param <A>
+     * @param <B>
+     */
     protected static class Pair<A, B> {
 
         public A a;
@@ -24,14 +36,21 @@ public class TestUtils {
         }
     }
 
+    /**
+     * Zips two lists together into a list of {@link Pair}s that is as long as the shorter input.
+     * 
+     * @param listA
+     * @param listB
+     * @return a zipped list
+     */
     protected static <A, B> List<Pair<A, B>> zip(final List<A> listA, final List<B> listB) {
 
-        final List<Pair<A, B>> pairList = new LinkedList<>();
+        final List<Pair<A, B>> zipped = new LinkedList<>();
         final int smallerListSize = min(listA.size(), listB.size());
-        for (int index = 0; index < smallerListSize; index++) {
-            pairList.add(Pair.of(listA.get(index), listB.get(index)));
+        for (int i = 0; i < smallerListSize; i++) {
+            zipped.add(Pair.of(listA.get(i), listB.get(i)));
         }
-        return pairList;
+        return zipped;
     }
 
 }
