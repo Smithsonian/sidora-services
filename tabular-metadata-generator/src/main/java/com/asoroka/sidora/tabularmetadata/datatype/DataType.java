@@ -19,7 +19,13 @@ import static java.util.EnumSet.of;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
+import static org.joda.time.format.DateTimeFormat.forPattern;
+import static org.joda.time.format.DateTimeFormat.fullDateTime;
+import static org.joda.time.format.DateTimeFormat.mediumDateTime;
+import static org.joda.time.format.DateTimeFormat.shortDateTime;
+import static org.joda.time.format.ISODateTimeFormat.dateOptionalTimeParser;
 import static org.joda.time.format.ISODateTimeFormat.dateTimeParser;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,10 +36,13 @@ import java.util.SortedSet;
 import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 
 /**
  * This enumeration constructs
@@ -161,11 +170,16 @@ public enum DataType {
         @SuppressWarnings("unchecked")
         @Override
         public DateTime parse(final java.lang.String s) throws ParsingException {
-            try {
-                return dateTimeParser().parseDateTime(s);
-            } catch (final IllegalArgumentException e) {
-                throw new ParsingException("Could not parse as DataTime!", e);
+            for (final DateTimeFormatter format : dateTimeFormats) {
+                try {
+                    final org.joda.time.DateTime dateTime = format.parseDateTime(s);
+                    return dateTime;
+                }
+                catch (final IllegalArgumentException e) {
+                    // log.trace("Could not parse date '{}' in form {}.");
+                }
             }
+            throw new ParsingException("Could not parse as DataTime!");
         }
     };
 
@@ -290,4 +304,10 @@ public enum DataType {
             return parseFloat(seg);
         }
     };
+
+    static List<DateTimeFormatter> dateTimeFormats = ImmutableList.of(shortDateTime(), mediumDateTime(),
+            fullDateTime(), dateOptionalTimeParser(), dateTimeParser(), forPattern("yyyy-MM-dd HH:mm:ss"));
+
+    static final Logger log = getLogger(DataType.class);
+
 }

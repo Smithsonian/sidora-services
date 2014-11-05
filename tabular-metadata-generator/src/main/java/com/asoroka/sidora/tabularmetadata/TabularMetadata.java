@@ -1,12 +1,15 @@
 
 package com.asoroka.sidora.tabularmetadata;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Range;
 
 /**
@@ -58,5 +61,12 @@ public class TabularMetadata {
         this.fieldTypes = fieldTypes;
         this.minMaxes = minMaxes;
         this.enumeratedValues = enumeratedValues;
+    }
+
+    @Override
+    public String toString() {
+        final ToStringHelper toStringHelper = toStringHelper(this.getClass());
+        return toStringHelper.add("headerNames", headerNames).add("fieldTypes", fieldTypes).add("enumeratedValues",
+                enumeratedValues).add("minMaxes", minMaxes).toString();
     }
 }

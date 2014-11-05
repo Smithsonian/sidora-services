@@ -30,8 +30,9 @@ public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
                 testFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange(), DataType.String);
         final List<String> headerNames = result.headerNames;
         final int numHeaders = headerNames.size();
-        for (int i = 0; i < numHeaders; i++) {
-            assertEquals("Found wrong name for header!", "Variable " + i, headerNames.get(i));
+        for (int i = 1; i < numHeaders; i++) {
+            log.trace("Examining header #{}", i);
+            assertEquals("Found wrong name for header!", "Variable " + i, headerNames.get(i - 1));
 
         }
         log.trace("End testWithSimpleData().");

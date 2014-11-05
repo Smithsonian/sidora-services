@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.tabularmetadata;
 
-import static com.asoroka.sidora.tabularmetadata.test.TestUtilities.cloneableMockStrategy;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
@@ -25,12 +24,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
-import com.asoroka.sidora.tabularmetadata.test.TestUtilities.MockedHeuristic;
-import com.google.common.base.Function;
+import com.asoroka.sidora.tabularmetadata.test.TestUtilities;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TabularScannerTest {
+public class TabularScannerTest extends TestUtilities {
 
     @Mock
     DataType mockDataType;
@@ -79,16 +76,4 @@ public class TabularScannerTest {
                 transform(testScanner.getTypeStrategies(), getMostLikelyType);
         assertEquals("Failed to find the correct column types!", expectedResults, guesses);
     }
-
-    /**
-     * Extracts the most likely type selection from a {@link ValueHeuristic}
-     */
-    private static final Function<TypeDeterminingHeuristic<?>, DataType> getMostLikelyType =
-            new Function<TypeDeterminingHeuristic<?>, DataType>() {
-
-                @Override
-                public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
-                    return heuristic.mostLikelyType();
-                }
-            };
 }

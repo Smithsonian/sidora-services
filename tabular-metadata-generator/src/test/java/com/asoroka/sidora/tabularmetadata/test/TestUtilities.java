@@ -6,9 +6,11 @@ import static org.mockito.Mockito.when;
 
 import org.mockito.internal.stubbing.answers.Returns;
 
+import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
+import com.google.common.base.Function;
 
 /**
  * Utilities for testing.
@@ -16,6 +18,17 @@ import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuris
  * @author ajs6f
  */
 public abstract class TestUtilities {
+
+    /**
+     * Extracts the most likely type selection from a {@link ValueHeuristic}
+     */
+    protected static final Function<TypeDeterminingHeuristic<?>, DataType> getMostLikelyType = new Function<TypeDeterminingHeuristic<?>, DataType>() {
+    
+                    @Override
+                    public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
+                        return heuristic.mostLikelyType();
+                    }
+                };
 
     /**
      * The following peculiar locution arises from the need to provide "cloneability" while avoiding a recursive mock
