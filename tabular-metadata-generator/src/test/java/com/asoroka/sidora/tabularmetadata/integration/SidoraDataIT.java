@@ -22,7 +22,6 @@ import java.util.SortedSet;
 import java.util.regex.Pattern;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 
@@ -37,21 +36,27 @@ public class SidoraDataIT {
 
     private static final String ITEST_DATA_DIR = "src/test/resources/itest-data";
 
-    private URL testFile1, testFile2;
+    private URL testSIFile1, testSIFile2;
 
     private static final Logger log = getLogger(SidoraDataIT.class);
 
     @Before
     public void setUp() throws MalformedURLException {
         final File testFileDir = new File(ITEST_DATA_DIR);
-        testFile1 = new File(testFileDir, "Thompson-WMA-10B-researcher_observation.csv").toURI().toURL();
-        testFile2 = new File(testFileDir, "Thompson-WMA-16C-researcher_observation.csv").toURI().toURL();
+        testSIFile1 = new File(testFileDir, "Thompson-WMA-10B-researcher_observation.csv").toURI().toURL();
+        testSIFile2 = new File(testFileDir, "Thompson-WMA-16C-researcher_observation.csv").toURI().toURL();
     }
 
     @Test
-    public void testFirstFile() throws IOException {
+    public void testSIfiles() throws IOException {
+        for (final URL testFile : asList(testSIFile1, testSIFile2)) {
+            testFile(testFile);
+        }
+    }
+
+    private static void testFile(final URL testFile) throws IOException {
         final TabularMetadataGenerator testGenerator = new TabularMetadataGenerator();
-        final TabularMetadata result = testGenerator.getMetadata(testFile1);
+        final TabularMetadata result = testGenerator.getMetadata(testFile);
         log.debug("Got results: {}", result);
         assertTrue("Should have found all header names beginning with '" + DEFAULT_HEADER_NAME + "'!",
                 all(result.headerNames, contains(DEFAULT_HEADER_NAME)));
@@ -68,15 +73,6 @@ public class SidoraDataIT {
             log.debug("For most likely type {} got range: {}", mostLikelyType, result.minMaxes.get(i).get(
                     mostLikelyType));
         }
-    }
-
-    @Ignore
-    @Test
-    public void testSecondFile() throws IOException {
-        final TabularMetadataGenerator testGenerator = new TabularMetadataGenerator();
-        final TabularMetadata result = testGenerator.getMetadata(testFile2);
-        log.debug("Got results: {}", result);
-        log.debug("Got likely types: {}", getFirstElements(result.fieldTypes));
     }
 
     private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
