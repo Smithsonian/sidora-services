@@ -94,6 +94,17 @@ public class ThumbnailatorProducer extends DefaultProducer
 
             throw exception;
         }//end catch
+        finally
+        {
+
+            try
+            {
+                body.close();
+            }
+            catch (IOException iOException)
+            {
+            }
+        }
 
         if (log.isTraceEnabled())
         {
