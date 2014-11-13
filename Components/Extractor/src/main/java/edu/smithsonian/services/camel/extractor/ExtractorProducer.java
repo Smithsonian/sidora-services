@@ -59,7 +59,6 @@ public class ExtractorProducer extends DefaultProducer
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void process(Exchange exchange) throws Exception
     {
         Message in = exchange.getIn();
@@ -73,14 +72,19 @@ public class ExtractorProducer extends DefaultProducer
         }
         else
         {
-            org = (List<File>) Collections.EMPTY_LIST;
+            org = Collections.emptyList();
         }
         String[] split = inBody.getName().split("\\.");
         if (split.length < 2)
         {
+            LOG.error("Improperly formatted file not. No, file extention found for " + inBody.getName());
             throw new Exception();
         }
 
+        //FIXME: Change to stream extraction so that can get the name of compressed
+        //      folder. Right not determining the folder that is withing the archive
+        //      is a complete hack!!! It works and handles the edge cases but can
+        //      be more robust.
         Archiver archiver = getArchiver(split);
         archiver.extract(inBody, outFolder);
 
@@ -90,19 +94,27 @@ public class ExtractorProducer extends DefaultProducer
 
         File file = outFolder;
 
-        if (mod.size() == 1)
+        if (mod.isEmpty())
+        {
+            File temp = new File(outFolder, split[0]);
+            if (temp.exists())
+            {
+                file = temp;
+            }
+        }
+        else if (mod.size() == 1)
         {
             file = mod.get(0);
         }
 
         Map<String, Object> headers = in.getHeaders();
 
-        String parent = "";
+        String parent = null;
         if (file.getParentFile() != null)
         {
             parent = file.getParentFile().getName();
         }
-//      FIXME: Use Camel GenericFile to correctly populate these fields!!!
+
         headers.put("CamelFileLength", file.length());
         headers.put("CamelFileLastModified", file.lastModified());
         headers.put("CamelFileNameOnly", file.getName());

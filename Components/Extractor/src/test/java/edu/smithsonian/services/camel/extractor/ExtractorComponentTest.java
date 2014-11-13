@@ -1,11 +1,16 @@
 package edu.smithsonian.services.camel.extractor;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ExtractorComponentTest extends CamelTestSupport
@@ -15,25 +20,37 @@ public class ExtractorComponentTest extends CamelTestSupport
     @Test
     public void testTarballExtractor() throws Exception
     {
-        testExtractor("p1d246-test.tar.gz");
+        testExtractor("p1d246-test-targz.tar.gz");
     }
 
     @Test
     public void testTarExtractor() throws Exception
     {
-        testExtractor("p1d246-test.tar");
+        testExtractor("p1d246-test-tar.tar");
     }
 
     @Test
     public void testZipExtractor() throws Exception
     {
-        testExtractor("p1d246-test.zip");
+        testExtractor("p1d246-test-zip.zip");
+    }
+
+    @Test
+    public void testOverwrite() throws Exception
+    {
+        testExtractor("p1d246-test-targz.tar.gz", false);
+        testExtractor("p1d246-test-targz.tar.gz");
     }
 
     public void testExtractor(String archive) throws Exception
     {
+        this.testExtractor(archive, true);
+    }
+
+    public void testExtractor(String archive, boolean delete) throws Exception
+    {
         MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(1);
+        mock.expectedMinimumMessageCount(msgCount + 1);
 
         File file = new File(this.getClass().getResource("/" + archive).toURI());
 
@@ -41,7 +58,7 @@ public class ExtractorComponentTest extends CamelTestSupport
 
         assertMockEndpointsSatisfied();
 
-        Message msg = mock.getExchanges().get(0).getIn();
+        Message msg = mock.getExchanges().get(msgCount++).getIn();
         File body = msg.getBody(File.class);
 
         try
@@ -51,14 +68,18 @@ public class ExtractorComponentTest extends CamelTestSupport
             assertEquals("Parent directory should be 'TestData'", "TestData", body.getParentFile().getName());
             assertEquals("Directory should contain 4 elements", 4, body.list().length);
         }
+        catch (Exception ex)
+        {
+            delete = true;
+            throw ex;
+        }
         finally
         {
-            if (body != null && body.isDirectory())
+            if (delete && body != null && body.isDirectory())
             {
                 FileUtils.deleteDirectory(body);
             }
         }
-
     }
 
     @Override
@@ -66,6 +87,7 @@ public class ExtractorComponentTest extends CamelTestSupport
     {
         return new RouteBuilder()
         {
+            @Override
             public void configure()
             {
                 from("direct:start")
@@ -73,5 +95,26 @@ public class ExtractorComponentTest extends CamelTestSupport
                         .to("mock:result");
             }
         };
+    }
+
+    private int msgCount = 0;
+
+    @Before
+    public void beforeTest()
+    {
+        msgCount = 0;
+    }
+
+    @AfterClass
+    public static void afterClass()
+    {
+        try
+        {
+            FileUtils.deleteDirectory(new File("TestData"));
+        }
+        catch (IOException ex)
+        {
+            Logger.getLogger(ExtractorComponentTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }
