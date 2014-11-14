@@ -26,13 +26,14 @@
  */
 package edu.smithsonian.services.fedorarepo;
 
-import edu.smithsonian.services.fedorarepo.datastream.FedoraDatastreamEndpoint;
 import com.yourmediashelf.fedora.client.FedoraClient;
 import com.yourmediashelf.fedora.client.FedoraCredentials;
 import com.yourmediashelf.fedora.client.request.FedoraRequest;
+import edu.smithsonian.services.fedorarepo.datastream.FedoraDatastreamEndpoint;
 import edu.smithsonian.services.fedorarepo.ingest.FedoraIngestEnpoint;
 import edu.smithsonian.services.fedorarepo.pid.FedoraPidEndpoint;
 import java.util.Map;
+import java.util.logging.Logger;
 import org.apache.camel.Endpoint;
 import org.apache.camel.impl.DefaultComponent;
 
@@ -41,6 +42,9 @@ import org.apache.camel.impl.DefaultComponent;
  */
 public class FedoraComponent extends DefaultComponent
 {
+    private static final Logger LOG = Logger.getLogger(FedoraComponent.class.getName());
+
+    private FedoraSettings settings;
 
     //TODO: Use Spring to inject the FedoraClient
     private FedoraClient client;
@@ -51,21 +55,36 @@ public class FedoraComponent extends DefaultComponent
         //TODO: Remove this or at least make it configurable
         if (client == null)
         {
-            client = new FedoraClient(new FedoraCredentials("http://localhost:8080/fedora", "fedoraAdmin", "password"));
+            if (this.settings != null && this.settings.hasCredentials())
+            {
+                LOG.info(String.format("Settings found:: Host: %s Username: %s Password: %s", this.settings.getHost().toExternalForm(), this.settings.getUsername(), this.settings.getPassword()));
+                client = new FedoraClient(settings.getCredentials());
+            }
+            else
+            {
+                LOG.warning("No Fedora Settings found! Using defautls [Host: http://localhost:8080/fedora]");
+                client = new FedoraClient(new FedoraCredentials("http://localhost:8080/fedora", "fedoraAdmin", "password"));
+//                throw new UnsupportedOperationException("No Fedora Settings found!!!");
+            }
 
             FedoraRequest.setDefaultClient(client);
         }//end if
 
         Endpoint endpoint;
-        if (remaining.equalsIgnoreCase("nextpid"))
+        if ("nextpid".equalsIgnoreCase(remaining))
         {
             endpoint = new FedoraPidEndpoint(uri, this);
         }//end if
-        else if (remaining.equalsIgnoreCase("ingest"))
+        //TODO: Finish 'ingest' with params and options...
+//        else if ("ingest".equalsIgnoreCase(remaining))
+//        {
+//            endpoint = new FedoraIngestEnpoint(uri, this);
+//        }//end else if
+        else if ("create".equalsIgnoreCase(remaining))
         {
-            endpoint = new FedoraIngestEnpoint(uri, this);
-        }//end else if
-        else if (remaining.equalsIgnoreCase("datastream"))
+            endpoint = new FedoraIngestEnpoint(uri, this, true);
+        }
+        else if ("datastream".equalsIgnoreCase(remaining))
         {
             endpoint = new FedoraDatastreamEndpoint(uri, this);
         }
@@ -84,4 +103,13 @@ public class FedoraComponent extends DefaultComponent
         return client;
     }
 
+    public FedoraSettings getSettings()
+    {
+        return settings;
+    }
+
+    public void setSettings(FedoraSettings settings)
+    {
+        this.settings = settings;
+    }
 }

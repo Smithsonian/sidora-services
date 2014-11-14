@@ -10,6 +10,7 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.spi.UriParam;
 
 /**
  *
@@ -17,13 +18,30 @@ import org.apache.camel.impl.DefaultEndpoint;
  */
 public class FedoraDatastreamEndpoint extends DefaultEndpoint
 {
-    //TODO: Add owner...
-    //TODO: Create Fedora(Base|Default)Endpoint that has options like pid, owner, ...?...
-    private String pid;
-    private String name;
-    private String type;
-    private String group;
 
+    @UriParam
+    private String pid;
+    @UriParam
+    private String name;
+    @UriParam
+    private String type;
+    @UriParam
+    private String group;
+    @UriParam
+    private String label;
+    @UriParam
+    private String location;
+    @UriParam
+    private String state;
+    @UriParam
+    private String format;
+    @UriParam
+    private String log;
+    @UriParam
+    private boolean versionable;
+
+//    @UriParam private List<String> altIDs;
+    //TODO: Add checksum verification(?)
     public FedoraDatastreamEndpoint()
     {
     }
@@ -91,5 +109,63 @@ public class FedoraDatastreamEndpoint extends DefaultEndpoint
         this.group = group;
     }
 
+    public String getLabel()
+    {
+        return label;
+    }
 
+    public void setLabel(String label)
+    {
+        this.label = label;
+    }
+
+    public String getLocation()
+    {
+        return location;
+    }
+
+    public void setLocation(String location)
+    {
+        this.location = location;
+    }
+
+    public String getState()
+    {
+        return state;
+    }
+
+    public void setState(String state)
+    {
+        this.state = state;
+    }
+
+    public String getFormat()
+    {
+        return format;
+    }
+
+    public void setFormat(String format)
+    {
+        this.format = format;
+    }
+
+    public String getLog()
+    {
+        return log;
+    }
+
+    public void setLog(String log)
+    {
+        this.log = log;
+    }
+
+    public boolean isVersionable()
+    {
+        return versionable;
+    }
+
+    public void setVersionable(boolean versionable)
+    {
+        this.versionable = versionable;
+    }
 }

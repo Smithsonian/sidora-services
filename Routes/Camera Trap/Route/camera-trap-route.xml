@@ -12,32 +12,32 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         TODO: Add Deployment Metadata backport
     -->
     <camelContext xmlns="http://camel.apache.org/schema/blueprint" >
-        <route id="StartCameraTrapRoute">
+        <route id="CameraTrapStartProcessing">
             <from uri="file:Process?moveFailed=Error_CamelTrap&amp;delete=true"/>
             <log message="Starting Camera Trap Process" /> 
+            <!--If issue with large arcives can 'slow' down the route with delay below-->
+            <delay>
+                <constant>3000</constant>
+            </delay>
+            <log message="Starting Extraction" />
             <to uri="extractor:extract?location=CameraTrapData" />
+            <log message="Finished Extraction" />
             <transform>
                 <simple>deployment_manifest.xml</simple>
             </transform>
             <to uri="reader:file?type=text" />
             <to uri="direct:process" />
+            <log message="Finished Data processing!" />
         </route>
-        <route id="CameraTrapProcessManifest">
+        <route id="CameraTrapProcessData">
             <from uri="direct:process" />
             <log message="Starting Data processing... " /> 
             <!--
-                TODO: Get the required number of PIDs from Fedora    
-                
-                TODO: Determin 'owner' of data and ensure that it is 'set' when
+                TODO: Determine 'owner' of data and ensure that it is 'set' when
                       inserting data into Fedora
 
-                FIXME: Figure out best way to propogate the PIDs thru the system
-                ??? Store PIDs in manifest.xml as attributes ???
-                ??? Test to see if this doesn't mess up the xsl transforms ???
-                ~~~ or ~~~
-                ??? Add as Camel header if the above doesn't work ???
             -->
-            <to uri="fedora:ingest" />
+            <to uri="fedora:create" />
             <multicast>
                 <to uri="direct:manifest" />
                 <to uri="direct:researcher" />
@@ -53,9 +53,10 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
             <!--
-                TODO: Insert manifest into Fedora
+                NOTE: Double check to make sure over writing the original manifest
+                        with the modified one is correct
             -->
-            <to uri="file://CameraTrapOutput?fileName=newManifest.xml" />
+            <to uri="fedora:datastream?name=MANIFEST&amp;type=text/xml&amp;group=M" />
             <log message="Manifest translated" /> 
         </route>
         <route id="CameraTrapTransformResearcherData" >
@@ -85,26 +86,30 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <split strategyRef="pidAggregator" >
                 <xpath>//ImageFileName/text()</xpath>
                 <to uri="reader:file" />
-                <to uri="fedora:ingest" />
+                <to uri="fedora:create?pid=null" />
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
                 <to uri="direct:transformImage" />
-            </split> 
+            </split>
+            <!--
+                FIXME: Change template to use 'FedoreParentConcept' instead of 'CamelParentConcept'
+                      Pointless to store and unstore the parent PID
+            -->
             <setHeader headerName="CamelFedoraPid">
                 <simple>${header.FedoraParentConcept}</simple>
             </setHeader> 
-            <to uri="velocity:Input/templates/CameraTrapResourceTemplate.vsl" />
-            <to uri="fedora:datastream?name=RELS-EXT&amp;type=application/rdf+xml&amp;group=X" /> 
+            <to uri="velocity:file:Input/templates/CameraTrapResourceTemplate.vsl" />
+            <to uri="fedora:datastream?name=RELS-EXT" /> 
             <log message="Finished processing Images" />           
         </route>
         <route id="CameraTrapTransformImages">
             <from uri="direct:transformImage" />
-            <multicast>
+            <!--<multicast>-->
                 <to uri="direct:createThumbnail" />
                 <!--<to uri="direct:createResampled" />-->
                 <!--
                     TODO: Add FITS component to route
                 -->
-            </multicast>
+            <!--</multicast>-->
             <log message="Image processed" />
         </route>
         <route id="CameraTrapCreateThumbnailImage" >

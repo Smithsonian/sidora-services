@@ -8,11 +8,12 @@ package edu.smithsonian.services.fedorarepo.datastream;
 import com.yourmediashelf.fedora.client.FedoraClient;
 import com.yourmediashelf.fedora.client.request.AddDatastream;
 import com.yourmediashelf.fedora.client.response.AddDatastreamResponse;
+import edu.smithsonian.services.fedorarepo.Headers;
+import edu.smithsonian.services.fedorarepo.base.FedoraProducer;
 import java.io.InputStream;
 import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author jshingler
  */
-public class FedoraDatastreamProducer extends DefaultProducer
+public class FedoraDatastreamProducer extends FedoraProducer
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(FedoraDatastreamProducer.class);
@@ -35,8 +36,8 @@ public class FedoraDatastreamProducer extends DefaultProducer
     @Override
     public void process(Exchange exchange) throws Exception
     {
-        //TODO: Add owner!
         Message in = exchange.getIn();
+
         InputStream body = in.getBody(InputStream.class);
 
         if (body == null)
@@ -44,30 +45,26 @@ public class FedoraDatastreamProducer extends DefaultProducer
             throw new RuntimeException("fedora:datastream producer requires a body");
         }
 
-        String pid = this.endpoint.getPid();
-        String name = this.endpoint.getName();
-        String type = this.endpoint.getType();
-        String group = this.endpoint.getGroup();
+        String pid = this.getParam(this.endpoint.getPid(), in.getHeader(Headers.PID, String.class));
+        String name = this.getParam(this.endpoint.getName());
+        String type = this.getParam(this.endpoint.getType());
+        String group = this.getParam(this.endpoint.getGroup());
 
         if (pid == null)
         {
-            pid = exchange.getIn().getHeader("CamelFedoraPid", String.class);
-            if (pid == null)
-            {
-                throw new RuntimeException("fedora:datastream producer requires a parent PID");
-            }//end if
+            throw new RuntimeException("fedora:datastream producer requires a parent PID");
         }//end if
         else if (name == null)
         {
             throw new RuntimeException("fedora:datastream producer requires a Datastream name");
         }//end else if
-        else if (type == null)
+        else if (type == null && !"RELS-EXT".equalsIgnoreCase(name) && !"RELS-INT".equalsIgnoreCase(name))
         {
             //TODO: Needed if Body is string ... could default
             //TODO: Needed if Body is File... could type be determined? (Didn't work first time when testing... try again?)
             throw new RuntimeException("fedora:datastream producer requires a Datastream type");
         }//end else if
-        else if (group == null)
+        else if (group == null && !"RELS-EXT".equalsIgnoreCase(name) && !"RELS-INT".equalsIgnoreCase(name))
         {
             throw new RuntimeException("fedora:datastream producer requires a Datastream control group");
         }//end else if
@@ -77,7 +74,7 @@ public class FedoraDatastreamProducer extends DefaultProducer
         AddDatastreamResponse response = datastream.execute();
 
         Map<String, Object> headers = in.getHeaders();
-        headers.put("CamelFedoraStatus", response.getStatus());
+        headers.put(Headers.STATUS, response.getStatus());
 
         LOG.debug(String.format("Datastream: %s (%s) Status = %d [Mime Type = %s Control Group = %s]", name, pid, response.getStatus(), type, group));
 

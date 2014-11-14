@@ -13,6 +13,6 @@
         <module>Reader</module>
         <module>Extractor</module>
         <module>FedoraRepo</module>
-  </modules>    
+    </modules>    
     
 </project>

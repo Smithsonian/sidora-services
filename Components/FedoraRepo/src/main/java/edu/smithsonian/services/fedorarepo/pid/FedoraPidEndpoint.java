@@ -10,6 +10,7 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.spi.UriParam;
 
 /**
  *
@@ -17,6 +18,9 @@ import org.apache.camel.impl.DefaultEndpoint;
  */
 public class FedoraPidEndpoint extends DefaultEndpoint
 {
+
+    @UriParam
+    private String namespace = null;
 
     public FedoraPidEndpoint()
     {
@@ -43,5 +47,15 @@ public class FedoraPidEndpoint extends DefaultEndpoint
     public boolean isSingleton()
     {
         return true;
+    }
+
+    public String getNamespace()
+    {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace)
+    {
+        this.namespace = namespace;
     }
 }

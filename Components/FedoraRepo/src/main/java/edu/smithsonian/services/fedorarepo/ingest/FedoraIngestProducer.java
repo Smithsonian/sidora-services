@@ -8,10 +8,11 @@ package edu.smithsonian.services.fedorarepo.ingest;
 import com.yourmediashelf.fedora.client.FedoraClient;
 import com.yourmediashelf.fedora.client.request.Ingest;
 import com.yourmediashelf.fedora.client.response.IngestResponse;
+import edu.smithsonian.services.fedorarepo.Headers;
+import edu.smithsonian.services.fedorarepo.base.FedoraProducer;
 import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,16 +20,23 @@ import org.slf4j.LoggerFactory;
  *
  * @author jshingler
  */
-class FedoraIngestProducer extends DefaultProducer
+class FedoraIngestProducer extends FedoraProducer
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(FedoraIngestProducer.class);
     private final FedoraIngestEnpoint endpoint;
+    protected boolean createType;
 
     public FedoraIngestProducer(FedoraIngestEnpoint endpoint)
     {
+        this(endpoint, false);
+    }
+
+    FedoraIngestProducer(FedoraIngestEnpoint endpoint, boolean createType)
+    {
         super(endpoint);
         this.endpoint = endpoint;
+        this.createType = createType;
     }
 
     @Override
@@ -36,25 +44,50 @@ class FedoraIngestProducer extends DefaultProducer
     {
 
         Message in = exchange.getIn();
-        String pid = this.endpoint.getPid();
+
+        Map<String, Object> headers = in.getHeaders();
 
         Ingest ingest;
 
-        //??? Add the ability to get the PID from header also???
-        if (pid == null || pid.isEmpty())
+        String value = this.getParam(this.endpoint.getPid(), in.getHeader(Headers.PID, String.class));
+        if (value != null)
         {
-            ingest = FedoraClient.ingest();
+            ingest = FedoraClient.ingest(value);
         }
         else
         {
-            ingest = FedoraClient.ingest(pid);
+            ingest = FedoraClient.ingest();
         }//end else
+
+//        if (!endpoint.createType)
+//        {
+//
+//        }
+        value = this.getParam(this.endpoint.getLabel(), in.getHeader(Headers.LABEL, String.class));
+        if (value != null)
+        {
+            ingest.label(value);
+        }
+
+        value = this.getParam(this.endpoint.getOwner(), in.getHeader(Headers.OWNER, String.class));
+        if (value != null)
+        {
+            ingest.ownerId(value);
+        }
+
+        if (this.hasParam(endpoint.getNamespace()))
+        {
+            ingest.namespace(endpoint.getNamespace());
+        }
+        if (this.hasParam(endpoint.getLog()))
+        {
+            ingest.logMessage(endpoint.getLog());
+        }
 
         IngestResponse response = ingest.execute();
 
-        Map<String, Object> headers = in.getHeaders();
-        headers.put("CamelFedoraPid", response.getPid());
-        headers.put("CamelFedoraStatus", response.getStatus());
+        headers.put(Headers.PID, response.getPid());
+        headers.put(Headers.STATUS, response.getStatus());
 
         LOG.debug(String.format("Ingest: Pid = %s Status = %d", response.getPid(), response.getStatus()));
 

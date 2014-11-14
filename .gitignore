@@ -1,2 +1,5 @@
 /Components/Thumbnailator/nb-configuration.xml
 /Components/FedoraRepo/target/
+/Components/Thumbnailator/target/
+/Components/Reader/target/
+/Components/Extractor/target/

@@ -6,11 +6,13 @@
 package edu.smithsonian.services.fedorarepo.pid;
 
 import com.yourmediashelf.fedora.client.FedoraClient;
+import com.yourmediashelf.fedora.client.request.GetNextPID;
 import com.yourmediashelf.fedora.client.response.GetNextPIDResponse;
+import edu.smithsonian.services.fedorarepo.Headers;
+import edu.smithsonian.services.fedorarepo.base.FedoraProducer;
 import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +20,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author jshingler
  */
-class FedoraPidProducer extends DefaultProducer
+class FedoraPidProducer extends FedoraProducer
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(FedoraPidProducer.class);
@@ -33,29 +35,27 @@ class FedoraPidProducer extends DefaultProducer
     @Override
     public void process(Exchange exchange) throws Exception
     {
-        //TODO: Catch and rethrow exception?
-        GetNextPIDResponse pid = FedoraClient.getNextPID().execute();
+        GetNextPID request = FedoraClient.getNextPID();
 
-        if (pid == null || pid.getStatus() >= 300)
+        if (this.hasParam(this.endpoint.getNamespace()))
         {
-            //TODO: Throw exception
+            request.namespace(this.endpoint.getNamespace());
         }//end if
-        else
-        {
-            Message in = exchange.getIn();
-            Map<String, Object> headers = in.getHeaders();
 
-            //TODO: Make CamelFedoraPid a constant... where?
-            headers.put("CamelFedoraPid", pid.getPid());
+        GetNextPIDResponse pid = request.execute();
 
-            LOG.debug(String.format("Pid: %s Status = %d", pid.getPid(), pid.getStatus()));
+        Message in = exchange.getIn();
+        Map<String, Object> headers = in.getHeaders();
 
-            Message out = exchange.getOut();
+        headers.put(Headers.PID, pid.getPid());
+        headers.put(Headers.STATUS, pid.getStatus());
 
-            out.setBody(in.getBody());
-            out.setHeaders(headers);
+        LOG.debug(String.format("Pid: %s Status = %d", pid.getPid(), pid.getStatus()));
 
-        }//end else
+        Message out = exchange.getOut();
+
+        out.setBody(in.getBody());
+        out.setHeaders(headers);
     }
 
 }
