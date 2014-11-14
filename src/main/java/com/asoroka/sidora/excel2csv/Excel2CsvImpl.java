@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.excel2csv;
 
-import static com.google.common.base.Throwables.propagate;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -24,6 +23,10 @@ public class Excel2CsvImpl implements Excel2Csv {
 
     private final int minColumns;
 
+    private String delimiter = ",";
+
+    private String quoteChar = "\"";
+
     final private static Logger log = getLogger(Excel2CsvImpl.class);
 
     /**
@@ -43,12 +46,12 @@ public class Excel2CsvImpl implements Excel2Csv {
     @Override
     public List<File> apply(final URL inputUrl) {
 
-        final POIFSFileSystem poiFileSystem;
         try (final InputStream inputStream = inputUrl.openStream()) {
-            poiFileSystem = new POIFSFileSystem(inputStream);
+            final POIFSFileSystem poiFileSystem = new POIFSFileSystem(inputStream);
 
             final XLS2CSVmra poiTransformer =
-                    new XLS2CSVmra(poiFileSystem, minColumns);
+                    new XLS2CSVmra(poiFileSystem, minColumns).delimiter(delimiter).quoteChar(quoteChar);
+
             final MissingRecordAwareHSSFListener listener = new MissingRecordAwareHSSFListener(
                     poiTransformer);
             final FormatTrackingHSSFListener ftListener = new FormatTrackingHSSFListener(
@@ -63,8 +66,21 @@ public class Excel2CsvImpl implements Excel2Csv {
             return poiTransformer.getOutputs();
 
         } catch (final IOException e) {
-            log.error("Could not process input URL: {}!", inputUrl);
-            throw propagate(e);
+            throw new ExcelParsingException("Could not process input URL: " + inputUrl, e);
         }
+    }
+
+    /**
+     * @param delimiter the delimiter to use in output between cells
+     */
+    public void setDelimiter(final String delimiter) {
+        this.delimiter = delimiter;
+    }
+
+    /**
+     * @param quoteChar the quote string to use in output around strings. May be more than one character.
+     */
+    public void setQuoteChar(final String quoteChar) {
+        this.quoteChar = quoteChar;
     }
 }

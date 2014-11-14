@@ -3,6 +3,7 @@ package com.asoroka.sidora.excel2csv;
 
 import static java.lang.Double.isNaN;
 import static java.util.UUID.randomUUID;
+import static org.apache.poi.hssf.record.BOFRecord.TYPE_WORKSHEET;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -34,6 +35,8 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.slf4j.Logger;
 
+import com.google.common.base.Joiner;
+
 /**
  * Inspired by {@link org.apache.poi.hssf.eventusermodel.examples.XLS2CSVmra }.<br/>
  * Splits multi-sheet spreadsheets into multiple CSV outputs.
@@ -45,6 +48,10 @@ public class XLS2CSVmra implements HSSFListener {
     private List<File> outputs = new ArrayList<>();
 
     private static final Logger log = getLogger(XLS2CSVmra.class);
+
+    private String delimiter = ",";
+
+    private String quoteChar = "\"";
 
     public List<File> getOutputs() {
         return outputs;
@@ -70,7 +77,10 @@ public class XLS2CSVmra implements HSSFListener {
         this.formatListener = formatListener;
     }
 
-    /** So we known which sheet we're on */
+    /**
+     * Which sheet we're on, 0-indexed. We start with -1 because we increment the count at the beginning of operation
+     * over a sheet.
+     */
     protected int sheetIndex = -1;
 
     protected ArrayList<BoundSheetRecord> boundSheetRecords = new ArrayList<>();
@@ -103,24 +113,22 @@ public class XLS2CSVmra implements HSSFListener {
 
         case BOFRecord.sid:
             final BOFRecord br = (BOFRecord) record;
-            if (br.getType() == BOFRecord.TYPE_WORKSHEET) {
+            if (br.getType() == TYPE_WORKSHEET) {
                 // Create sub workbook if required
                 if (workbookBuildingListener != null && stubWorkbook == null) {
                     stubWorkbook = workbookBuildingListener.getStubHSSFWorkbook();
                 }
                 // switch to a new sheet currentOutput
                 sheetIndex++;
-                final File nextSheet = createTempFile();
-                outputs.add(nextSheet);
-                // close the last sheet currentOutput
+                outputs.add(createTempFile());
+                // close the last sheet's PrintStream
                 if (currentOutput != null) {
                     currentOutput.close();
                 }
                 try {
                     currentOutput = new PrintStream(outputs.get(sheetIndex));
                 } catch (final FileNotFoundException e) {
-                    log.error("Could not open self-created temp file!");
-                    throw new AssertionError(e);
+                    throw new AssertionError("Could not open self-created temp file!", e);
                 }
             }
             break;
@@ -133,14 +141,14 @@ public class XLS2CSVmra implements HSSFListener {
             final BlankRecord brec = (BlankRecord) record;
             thisRow = brec.getRow();
             thisColumn = brec.getColumn();
-            thisStr = "";
+            thisStr = quote();
             break;
 
         case BoolErrRecord.sid:
             final BoolErrRecord berec = (BoolErrRecord) record;
             thisRow = berec.getRow();
             thisColumn = berec.getColumn();
-            thisStr = "";
+            thisStr = quote();
             break;
 
         case FormulaRecord.sid:
@@ -175,7 +183,7 @@ public class XLS2CSVmra implements HSSFListener {
 
             thisRow = lrec.getRow();
             thisColumn = lrec.getColumn();
-            thisStr = '"' + lrec.getValue() + '"';
+            thisStr = quote(lrec.getValue());
             break;
 
         case LabelSSTRecord.sid:
@@ -184,9 +192,9 @@ public class XLS2CSVmra implements HSSFListener {
             thisRow = lsrec.getRow();
             thisColumn = lsrec.getColumn();
             if (sstRecord == null) {
-                thisStr = '"' + "(No SST Record, can't identify string)" + '"';
+                thisStr = quote("(No SST Record, can't identify string)");
             } else {
-                thisStr = '"' + sstRecord.getString(lsrec.getSSTIndex()).toString() + '"';
+                thisStr = quote(sstRecord.getString(lsrec.getSSTIndex()).toString());
             }
             break;
 
@@ -205,7 +213,7 @@ public class XLS2CSVmra implements HSSFListener {
 
             thisRow = rkrec.getRow();
             thisColumn = rkrec.getColumn();
-            thisStr = '"' + "(TODO)" + '"';
+            thisStr = Double.toString(rkrec.getRKNumber());
             break;
 
         default:
@@ -222,13 +230,13 @@ public class XLS2CSVmra implements HSSFListener {
             final MissingCellDummyRecord mc = (MissingCellDummyRecord) record;
             thisRow = mc.getRow();
             thisColumn = mc.getColumn();
-            thisStr = "";
+            thisStr = quote();
         }
 
         // If we got something to print out, do so
         if (thisStr != null) {
             if (thisColumn > 0) {
-                currentOutput.print(',');
+                currentOutput.print(delimiter);
             }
             currentOutput.print(thisStr);
         }
@@ -241,14 +249,14 @@ public class XLS2CSVmra implements HSSFListener {
 
         // Handle end of row
         if (record instanceof LastCellOfRowDummyRecord) {
-            // Print out any missing commas if needed
+            // Print out any missing delimiters if needed
             if (minColumns > 0) {
                 // Columns are 0 based
                 if (lastColumnNumber == -1) {
                     lastColumnNumber = 0;
                 }
                 for (int i = lastColumnNumber; i < (minColumns); i++) {
-                    currentOutput.print(',');
+                    currentOutput.print(delimiter);
                 }
             }
 
@@ -264,8 +272,27 @@ public class XLS2CSVmra implements HSSFListener {
         try {
             return Files.createTempFile(XLS2CSVmra.class.getName(), randomUUID().toString()).toFile();
         } catch (final IOException e) {
-            log.error("Could not create temp file!");
-            throw new AssertionError(e);
+            throw new AssertionError("Could not create temp file!", e);
         }
+    }
+
+    private String quote(final String... quotables) {
+        return quoteChar + Joiner.on("").join(quotables) + quoteChar;
+    }
+
+    /**
+     * @param delimiter the delimiter to use in output between cells
+     */
+    public XLS2CSVmra delimiter(final String d) {
+        this.delimiter = d;
+        return this;
+    }
+
+    /**
+     * @param quoteChar the quote string to use in output around strings. May be more than one character.
+     */
+    public XLS2CSVmra quoteChar(final String q) {
+        this.quoteChar = q;
+        return this;
     }
 }

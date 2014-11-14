@@ -13,7 +13,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-examples</artifactId>
+			<artifactId>poi-ooxml</artifactId>
 			<version>3.10.1</version>
 		</dependency>
 
