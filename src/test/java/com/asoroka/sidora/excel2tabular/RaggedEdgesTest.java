@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.excel2csv;
+package com.asoroka.sidora.excel2tabular;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -12,6 +12,8 @@ import java.util.List;
 import org.junit.Test;
 import org.slf4j.Logger;
 
+import com.asoroka.sidora.excel2tabular.ExcelToTabular;
+import com.asoroka.sidora.excel2tabular.ExcelToTabularImpl;
 import com.google.common.io.Resources;
 
 public class RaggedEdgesTest extends TestUtils {

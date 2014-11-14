@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.excel2csv;
+package com.asoroka.sidora.excel2tabular;
 
 /**
  * @author ajs6f

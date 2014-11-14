@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.excel2csv;
+package com.asoroka.sidora.excel2tabular;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.Math.min;

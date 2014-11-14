@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.excel2csv;
+package com.asoroka.sidora.excel2tabular;
 
 import static java.lang.Double.isNaN;
 import static java.util.UUID.randomUUID;
