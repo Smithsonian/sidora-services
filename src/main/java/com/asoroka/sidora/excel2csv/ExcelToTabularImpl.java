@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 /**
  * @author ajs6f
  */
-public class Excel2CsvImpl implements Excel2Csv {
+public class ExcelToTabularImpl implements ExcelToTabular {
 
     private final int minColumns;
 
@@ -27,19 +27,19 @@ public class Excel2CsvImpl implements Excel2Csv {
 
     private String quoteChar = "\"";
 
-    final private static Logger log = getLogger(Excel2CsvImpl.class);
+    final private static Logger log = getLogger(ExcelToTabularImpl.class);
 
     /**
      * Default constructor.
      */
-    public Excel2CsvImpl() {
+    public ExcelToTabularImpl() {
         this.minColumns = -1;
     }
 
     /**
      * @param minColumns
      */
-    public Excel2CsvImpl(final int minColumns) {
+    public ExcelToTabularImpl(final int minColumns) {
         this.minColumns = minColumns;
     }
 
@@ -49,8 +49,8 @@ public class Excel2CsvImpl implements Excel2Csv {
         try (final InputStream inputStream = inputUrl.openStream()) {
             final POIFSFileSystem poiFileSystem = new POIFSFileSystem(inputStream);
 
-            final XLS2CSVmra poiTransformer =
-                    new XLS2CSVmra(poiFileSystem, minColumns).delimiter(delimiter).quoteChar(quoteChar);
+            final XLS2CSV poiTransformer =
+                    new XLS2CSV(poiFileSystem, minColumns).delimiter(delimiter).quoteChar(quoteChar);
 
             final MissingRecordAwareHSSFListener listener = new MissingRecordAwareHSSFListener(
                     poiTransformer);

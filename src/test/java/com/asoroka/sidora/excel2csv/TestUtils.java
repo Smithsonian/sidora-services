@@ -1,10 +1,16 @@
 
 package com.asoroka.sidora.excel2csv;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.Math.min;
+import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.google.common.io.Resources;
 
 /**
  * Some convenient utilities for tests.
@@ -51,6 +57,16 @@ public class TestUtils {
             zipped.add(Pair.of(listA.get(i), listB.get(i)));
         }
         return zipped;
+    }
+
+    protected static List<String> readLines(final URL result) throws IOException {
+        return Resources.readLines(result, UTF_8);
+    }
+
+    protected static void compareLines(final List<String> resultLines, final List<String> checkLines) {
+        for (final Pair<String, String> line : zip(checkLines, resultLines)) {
+            assertEquals("Got bad line in results!", line.a, line.b);
+        }
     }
 
 }

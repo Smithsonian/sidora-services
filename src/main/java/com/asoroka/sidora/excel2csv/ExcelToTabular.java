@@ -13,6 +13,6 @@ import com.google.common.base.Function;
  * 
  * @author ajs6f
  */
-public interface Excel2Csv extends Function<URL, List<File>> {
+public interface ExcelToTabular extends Function<URL, List<File>> {
     // EMPTY
 }

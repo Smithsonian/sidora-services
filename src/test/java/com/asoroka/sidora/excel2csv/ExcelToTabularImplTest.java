@@ -2,8 +2,6 @@
 package com.asoroka.sidora.excel2csv;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.io.Resources.readLines;
-import static org.junit.Assert.assertEquals;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -17,11 +15,11 @@ import org.slf4j.Logger;
 
 import com.google.common.io.Resources;
 
-public class Excel2CsvImplTest extends TestUtils {
+public class ExcelToTabularImplTest extends TestUtils {
 
-    private final Excel2Csv testExcel2Csv = new Excel2CsvImpl();
+    private final ExcelToTabularImpl testExcel2Csv = new ExcelToTabularImpl();
 
-    private static final Logger log = getLogger(Excel2CsvImplTest.class);
+    private static final Logger log = getLogger(ExcelToTabularImplTest.class);
 
     @Test
     public void testOneSheetFile() throws IOException {
@@ -31,11 +29,25 @@ public class Excel2CsvImplTest extends TestUtils {
         final URL checkFile = new File("src/test/resources/tabular/small-test.csv").toURI().toURL();
         log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
 
-        final List<String> resultLines = readLines(result, UTF_8);
-        final List<String> checkLines = readLines(checkFile, UTF_8);
-        for (final Pair<String, String> line : zip(checkLines, resultLines)) {
-            assertEquals("Got bad line in results!", line.a, line.b);
-        }
+        final List<String> resultLines = readLines(result);
+        final List<String> checkLines = readLines(checkFile);
+        compareLines(checkLines, resultLines);
+    }
+
+    @Test
+    public void testOneSheetFileToTabbed() throws IOException {
+        final ExcelToTabularImpl testExcel2Tabbed = new ExcelToTabularImpl();
+        testExcel2Tabbed.setDelimiter("\t");
+
+        final URL inputUrl = new File("src/test/resources/xls/small-test.xls").toURI().toURL();
+        final URL result = testExcel2Tabbed.apply(inputUrl).get(0).toURI().toURL();
+        log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
+        final URL checkFile = new File("src/test/resources/tabular/small-test.tsv").toURI().toURL();
+        log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
+
+        final List<String> resultLines = readLines(result);
+        final List<String> checkLines = readLines(checkFile);
+        compareLines(checkLines, resultLines);
     }
 
     @Test
@@ -55,16 +67,14 @@ public class Excel2CsvImplTest extends TestUtils {
                         return name.startsWith("three-sheet");
                     }
                 });
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < checkFiles.length; i++) {
             log.debug("Using {} for checkfile.", checkFiles[i]);
             final URL checkFile = checkFiles[i].toURI().toURL();
             log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
 
-            final List<String> resultLines = readLines(results.get(i).toURI().toURL(), UTF_8);
-            final List<String> checkLines = readLines(checkFile, UTF_8);
-            for (final Pair<String, String> line : zip(checkLines, resultLines)) {
-                assertEquals("Got bad line in results!", line.a, line.b);
-            }
+            final List<String> resultLines = readLines(results.get(i).toURI().toURL());
+            final List<String> checkLines = readLines(checkFile);
+            compareLines(checkLines, resultLines);
         }
     }
 }
