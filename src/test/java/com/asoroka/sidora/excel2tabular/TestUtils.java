@@ -10,6 +10,8 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.google.common.io.Resources;
 
 /**
@@ -63,10 +65,21 @@ public class TestUtils {
         return Resources.readLines(result, UTF_8);
     }
 
-    protected static void compareLines(final List<String> resultLines, final List<String> checkLines) {
+    protected static void
+            compareLines(final List<String> resultLines, final List<String> checkLines, final Logger log) {
+        int lineNum = 0;
         for (final Pair<String, String> line : zip(checkLines, resultLines)) {
-            assertEquals("Got bad line in results!", line.a, line.b);
+            try {
+                assertEquals("Got bad line in results at line number " + ++lineNum + "!", line.a, line.b);
+            } catch (final AssertionError e) {
+                final boolean differByCommas = line.a.replace(",", "").equals(line.b.replace(",", ""));
+                if (differByCommas) {
+                    log.warn(e.getMessage());
+                }
+                else {
+                    throw e;
+                }
+            }
         }
     }
-
 }

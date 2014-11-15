@@ -1,21 +1,20 @@
 
 package com.asoroka.sidora.excel2tabular;
 
+import static com.asoroka.sidora.excel2tabular.Utilities.createTempFile;
 import static java.lang.Double.isNaN;
-import static java.util.UUID.randomUUID;
+import static java.util.Collections.emptyList;
 import static org.apache.poi.hssf.record.BOFRecord.TYPE_WORKSHEET;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.hssf.eventusermodel.AbortableHSSFListener;
 import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
-import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.LastCellOfRowDummyRecord;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.MissingCellDummyRecord;
 import org.apache.poi.hssf.record.BOFRecord;
@@ -31,8 +30,9 @@ import org.apache.poi.hssf.record.RKRecord;
 import org.apache.poi.hssf.record.Record;
 import org.apache.poi.hssf.record.SSTRecord;
 import org.apache.poi.hssf.record.StringRecord;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.slf4j.Logger;
+
+import com.google.common.collect.Range;
 
 /**
  * Inspired by {@link org.apache.poi.hssf.eventusermodel.XLS2CSV.XLS2CSVmra }.<br/>
@@ -40,13 +40,15 @@ import org.slf4j.Logger;
  * 
  * @author ajs6f
  */
-public class XLS2CSV implements HSSFListener {
+public class XLS2CSV extends AbortableHSSFListener {
 
     private static final String EMPTY_STRING = "";
 
     private List<File> outputs = new ArrayList<>();
 
     private static final Logger log = getLogger(XLS2CSV.class);
+
+    private static final short NO_MORE_SHEETS = 1;
 
     private String delimiter = ",";
 
@@ -56,9 +58,7 @@ public class XLS2CSV implements HSSFListener {
         return outputs;
     }
 
-    protected int minColumns, lastRowNumber, lastColumnNumber, nextRow, nextColumn;
-
-    protected POIFSFileSystem fs;
+    protected int lastRowNumber = -1, lastColumnNumber, nextRow, nextColumn;
 
     protected PrintStream currentOutput;
 
@@ -82,24 +82,14 @@ public class XLS2CSV implements HSSFListener {
 
     protected boolean outputNextStringRecord;
 
-    /**
-     * @param poiFileSystem
-     * @param minColumns
-     */
-    public XLS2CSV(final POIFSFileSystem poiFileSystem, final int minColumns) {
-        this.fs = poiFileSystem;
-        this.minColumns = minColumns;
-    }
+    private List<Range<Integer>> rangesPerSheet = emptyList();
 
     /**
      * Main HSSFListener method, processes events, and outputs the CSV as the file is processed.
      */
     @Override
-    public void processRecord(final Record record) {
-
-        final int previouslastColumnNumber = lastColumnNumber;
-
-        int thisRow = -1;
+    public short abortableProcessRecord(final Record record) {
+        int thisRow = lastRowNumber;
         int thisColumn = -1;
         String thisStr = null;
 
@@ -119,8 +109,12 @@ public class XLS2CSV implements HSSFListener {
             final BOFRecord br = (BOFRecord) record;
             if (br.getType() == TYPE_WORKSHEET) {
                 // switch to a new sheet for currentOutput
-                sheetIndex++;
-                outputs.add(createTempFile());
+                if (++sheetIndex == rangesPerSheet.size()) {
+                    // we are out of sheets
+                    currentOutput.close();
+                    return NO_MORE_SHEETS;
+                }
+                outputs.add(createTempFile(this));
                 // close the last sheet's PrintStream
                 if (currentOutput != null) {
                     currentOutput.close();
@@ -176,16 +170,21 @@ public class XLS2CSV implements HSSFListener {
 
         case LabelSSTRecord.sid:
             final LabelSSTRecord lsrec = (LabelSSTRecord) record;
+            final int sstIndex = lsrec.getSSTIndex();
             if (sstRecord == null) {
-                thisStr = quote("(No SST Record, can't identify string)");
+                final String errorMsg =
+                        "(Malformed spreadsheet with no SST Record, so can't find string at SST index " +
+                                sstIndex + "!)";
+                log.error(errorMsg);
+                thisStr = quote(errorMsg);
             } else {
-                thisStr = quote(sstRecord.getString(lsrec.getSSTIndex()).toString());
+                thisStr = quote(sstRecord.getString(sstIndex).toString());
             }
             break;
 
         case NumberRecord.sid:
             final NumberRecord numrec = (NumberRecord) record;
-            // Format
+            // format it
             thisStr = formatListener.formatNumberDateCell(numrec);
             break;
 
@@ -208,59 +207,45 @@ public class XLS2CSV implements HSSFListener {
 
         // Handle new row
         if (thisRow != -1 && thisRow != lastRowNumber) {
-            if (previouslastColumnNumber != lastColumnNumber) {
-                // we have an irregularity in the number of fields per row
-            }
             lastColumnNumber = -1;
         }
 
-        // If we got something to print out, do so
-        if (thisStr != null) {
-            if (thisColumn > 0) {
-                currentOutput.print(delimiter);
-            }
-            if (!thisStr.isEmpty()) {
-                currentOutput.print(thisStr);
+        // break out early if we are either before or after the range of rows with "real" data
+        final boolean inRangeOfData =
+                sheetIndex > -1 && !rangesPerSheet.isEmpty() &&
+                        rangesPerSheet.get(sheetIndex).contains(thisRow);
+        if (inRangeOfData) {
+            // If we got something to print out, do so
+            if (thisStr != null) {
+                if (thisColumn > 0) {
+                    currentOutput.print(delimiter);
+                }
+                if (!thisStr.isEmpty()) {
+                    currentOutput.print(thisStr);
+                }
             }
         }
 
         // Update column and row count
-        if (thisRow > -1)
-            lastRowNumber = thisRow;
+        lastRowNumber = thisRow;
         if (thisColumn > -1)
             lastColumnNumber = thisColumn;
 
         // Handle end of row
         if (record instanceof LastCellOfRowDummyRecord) {
-            // Print out any missing delimiters if needed
-            if (minColumns > 0) {
-                // Columns are 0 based
-                if (lastColumnNumber == -1) {
-                    lastColumnNumber = 0;
-                }
-                for (int i = lastColumnNumber; i < (minColumns); i++) {
-                    currentOutput.print(delimiter);
-                }
-            }
-
             // We're onto a new row
             lastColumnNumber = -1;
 
             // End the row
-            currentOutput.println();
+            if (inRangeOfData) {
+                currentOutput.println();
+            }
         }
-    }
-
-    private static File createTempFile() {
-        try {
-            return Files.createTempFile(XLS2CSV.class.getName(), randomUUID().toString()).toFile();
-        } catch (final IOException e) {
-            throw new AssertionError("Could not create temp file!", e);
-        }
+        return 0;
     }
 
     private String quote(final String quotable) {
-        return quoteChar + quotable + quoteChar;
+        return quoteChar + quotable.replace(quoteChar, quoteChar + quoteChar) + quoteChar;
     }
 
     /**
@@ -278,4 +263,13 @@ public class XLS2CSV implements HSSFListener {
         this.quoteChar = q;
         return this;
     }
+
+    /**
+     * @param quoteChar the quote string to use in output around strings. May be more than one character.
+     */
+    public XLS2CSV rangesPerSheet(final List<Range<Integer>> r) {
+        this.rangesPerSheet = r;
+        return this;
+    }
+
 }
