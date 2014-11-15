@@ -16,7 +16,7 @@ import com.google.common.io.Resources;
 
 public class IgnoreOutsideBoundariesTest extends TestUtils {
 
-    private final ExcelToTabularImpl testExcel2Csv = new ExcelToTabularImpl();
+    private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
 
     private static final Logger log = getLogger(IgnoreOutsideBoundariesTest.class);
 
@@ -24,13 +24,13 @@ public class IgnoreOutsideBoundariesTest extends TestUtils {
     public void testOneSheetFile() throws IOException {
         final URL inputUrl = new File("src/test/resources/xls/test-with-boundaries.xls").toURI().toURL();
         testExcel2Csv.setQuoteChar("");
-        final URL result = testExcel2Csv.apply(inputUrl).get(0).toURI().toURL();
+        final URL result = testExcel2Csv.process(inputUrl).get(0).toURI().toURL();
         log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
 
         final URL checkFile = new File("src/test/resources/tabular/test-with-boundaries.csv").toURI().toURL();
         log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        compareLines(resultLines, checkLines);
+        compareLines(resultLines, checkLines, log);
     }
 }

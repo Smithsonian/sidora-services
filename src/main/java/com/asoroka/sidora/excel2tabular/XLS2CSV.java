@@ -13,8 +13,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.hssf.eventusermodel.AbortableHSSFListener;
 import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
-import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.LastCellOfRowDummyRecord;
 import org.apache.poi.hssf.eventusermodel.dummyrecord.MissingCellDummyRecord;
 import org.apache.poi.hssf.record.BOFRecord;
@@ -40,13 +40,15 @@ import com.google.common.collect.Range;
  * 
  * @author ajs6f
  */
-public class XLS2CSV implements HSSFListener {
+public class XLS2CSV extends AbortableHSSFListener {
 
     private static final String EMPTY_STRING = "";
 
     private List<File> outputs = new ArrayList<>();
 
     private static final Logger log = getLogger(XLS2CSV.class);
+
+    private static final short NO_MORE_SHEETS = 1;
 
     private String delimiter = ",";
 
@@ -86,8 +88,7 @@ public class XLS2CSV implements HSSFListener {
      * Main HSSFListener method, processes events, and outputs the CSV as the file is processed.
      */
     @Override
-    public void processRecord(final Record record) {
-
+    public short abortableProcessRecord(final Record record) {
         int thisRow = lastRowNumber;
         int thisColumn = -1;
         String thisStr = null;
@@ -108,7 +109,11 @@ public class XLS2CSV implements HSSFListener {
             final BOFRecord br = (BOFRecord) record;
             if (br.getType() == TYPE_WORKSHEET) {
                 // switch to a new sheet for currentOutput
-                sheetIndex++;
+                if (++sheetIndex == rangesPerSheet.size()) {
+                    // we are out of sheets
+                    currentOutput.close();
+                    return NO_MORE_SHEETS;
+                }
                 outputs.add(createTempFile(this));
                 // close the last sheet's PrintStream
                 if (currentOutput != null) {
@@ -165,16 +170,21 @@ public class XLS2CSV implements HSSFListener {
 
         case LabelSSTRecord.sid:
             final LabelSSTRecord lsrec = (LabelSSTRecord) record;
+            final int sstIndex = lsrec.getSSTIndex();
             if (sstRecord == null) {
-                thisStr = quote("(No SST Record, can't identify string)");
+                final String errorMsg =
+                        "(Malformed spreadsheet with no SST Record, so can't find string at SST index " +
+                                sstIndex + "!)";
+                log.error(errorMsg);
+                thisStr = quote(errorMsg);
             } else {
-                thisStr = quote(sstRecord.getString(lsrec.getSSTIndex()).toString());
+                thisStr = quote(sstRecord.getString(sstIndex).toString());
             }
             break;
 
         case NumberRecord.sid:
             final NumberRecord numrec = (NumberRecord) record;
-            // Format
+            // format it
             thisStr = formatListener.formatNumberDateCell(numrec);
             break;
 
@@ -201,11 +211,9 @@ public class XLS2CSV implements HSSFListener {
         }
 
         // break out early if we are either before or after the range of rows with "real" data
-        log.trace("Checking whether row number {} is in range of data...", lastRowNumber);
         final boolean inRangeOfData =
                 sheetIndex > -1 && !rangesPerSheet.isEmpty() &&
                         rangesPerSheet.get(sheetIndex).contains(thisRow);
-        log.trace(inRangeOfData ? "Yes" : "No");
         if (inRangeOfData) {
             // If we got something to print out, do so
             if (thisStr != null) {
@@ -225,7 +233,6 @@ public class XLS2CSV implements HSSFListener {
 
         // Handle end of row
         if (record instanceof LastCellOfRowDummyRecord) {
-
             // We're onto a new row
             lastColumnNumber = -1;
 
@@ -234,10 +241,11 @@ public class XLS2CSV implements HSSFListener {
                 currentOutput.println();
             }
         }
+        return 0;
     }
 
     private String quote(final String quotable) {
-        return quoteChar + quotable + quoteChar;
+        return quoteChar + quotable.replace(quoteChar, quoteChar + quoteChar) + quoteChar;
     }
 
     /**
@@ -263,4 +271,5 @@ public class XLS2CSV implements HSSFListener {
         this.rangesPerSheet = r;
         return this;
     }
+
 }

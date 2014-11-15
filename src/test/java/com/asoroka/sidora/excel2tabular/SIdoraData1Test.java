@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.excel2tabular;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -12,22 +11,20 @@ import java.util.List;
 import org.junit.Test;
 import org.slf4j.Logger;
 
-import com.google.common.io.Resources;
-
-public class RaggedEdgesTest extends TestUtils {
+public class SIdoraData1Test extends TestUtils {
 
     private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
 
-    private static final Logger log = getLogger(RaggedEdgesTest.class);
+    private static final Logger log = getLogger(SIdoraData1Test.class);
 
     @Test
     public void testOneSheetFile() throws IOException {
-        final URL inputUrl = new File("src/test/resources/xls/ragged-edges-test.xls").toURI().toURL();
+        final URL inputUrl = new File("src/test/resources/xls/cjd-master-op.3-huesos.xls").toURI().toURL();
         final URL result = testExcel2Csv.process(inputUrl).get(0).toURI().toURL();
-        log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
+        // log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
 
-        final URL checkFile = new File("src/test/resources/tabular/ragged-edges-test.csv").toURI().toURL();
-        log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
+        final URL checkFile = new File("src/test/resources/tabular/cjd-master-op.3-huesos.csv").toURI().toURL();
+        // log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
         compareLines(resultLines, checkLines, log);
