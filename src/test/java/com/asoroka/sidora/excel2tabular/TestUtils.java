@@ -3,12 +3,15 @@ package com.asoroka.sidora.excel2tabular;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.Math.min;
+import static java.util.regex.Pattern.compile;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 
@@ -65,16 +68,35 @@ public class TestUtils {
         return Resources.readLines(result, UTF_8);
     }
 
+    private static final Pattern NO_TRAILING_COMMAS = compile("(.+?),*$");
+
     protected static void
             compareLines(final List<String> resultLines, final List<String> checkLines, final Logger log) {
         int lineNum = 0;
         for (final Pair<String, String> line : zip(checkLines, resultLines)) {
+            lineNum++;
             try {
-                assertEquals("Got bad line in results at line number " + ++lineNum + "!", line.a, line.b);
+                assertEquals("Got bad line in results!", line.a, line.b);
             } catch (final AssertionError e) {
-                final boolean differByCommas = line.a.replace(",", "").equals(line.b.replace(",", ""));
-                if (differByCommas) {
-                    log.warn(e.getMessage());
+                final Matcher lineAmatcher = NO_TRAILING_COMMAS.matcher(line.a);
+                String lineAwithoutTrailingCommas = null;
+                if (lineAmatcher.find()) {
+                    lineAwithoutTrailingCommas = lineAmatcher.group(1);
+                } else {
+                    log.error("Mismatch for expected value at line {}!", lineNum);
+                    throw e;
+                }
+                final Matcher lineBmatcher = NO_TRAILING_COMMAS.matcher(line.b);
+                String lineBwithoutTrailingCommas = null;
+                if (lineBmatcher.find()) {
+                    lineBwithoutTrailingCommas = lineBmatcher.group(1);
+                } else {
+                    log.error("Mismatch for actual value at line {}!", lineNum);
+                    throw e;
+                }
+                final boolean differByTrailingCommas = lineAwithoutTrailingCommas.equals(lineBwithoutTrailingCommas);
+                if (differByTrailingCommas) {
+                    log.warn("Found difference by trailing commas at line number {}", lineNum);
                 }
                 else {
                     throw e;
