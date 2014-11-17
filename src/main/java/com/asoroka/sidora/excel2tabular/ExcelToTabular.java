@@ -94,13 +94,16 @@ public class ExcelToTabular {
                     }
                     final Range<Integer> dataRange = Range.closed(++beginningOfDataRange, --endOfDataRange);
                     log.trace("Found data range: {}", dataRange);
-                    dataRows.add(dataRange);
+                    if (!dataRange.isEmpty()) {
+                        dataRows.add(dataRange);
+                    }
                 } else {
                     log.debug("Found no rows in sheet {}.", sheetIndex);
                 }
             }
             log.trace("Translating sheets with data.");
 
+            // we only need to operate over those sheets with rows in them
             for (int sheetIndex = 0; sheetIndex < dataRows.size(); sheetIndex++) {
                 final File tabularFile = createTempFile(this);
                 outputs.add(tabularFile);
@@ -115,8 +118,10 @@ public class ExcelToTabular {
                 }
             }
             return outputs;
-        } catch (IOException | InvalidFormatException e) {
-            throw new ExcelParsingException("Could not parse input spreadsheet: " + spreadsheet, e);
+        } catch (final InvalidFormatException e) {
+            throw new ExcelParsingException("Could not parse input spreadsheet: " + inputUrl, e);
+        } catch (final IOException e) {
+            throw new ExcelParsingException("Could not translate input spreadsheet: " + inputUrl, e);
         }
     }
 

@@ -1,6 +1,8 @@
 
 package com.asoroka.sidora.excel2tabular;
 
+import static com.asoroka.sidora.excel2tabular.TabularCell.defaultQuote;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,9 +15,11 @@ public class TabularRow {
 
     private final Row row;
 
-    private String quote;
+    private final String quote;
 
-    private String delimiter;
+    private static final String defaultDelimiter = ",";
+
+    private final Joiner joiner;
 
     /**
      * @param row
@@ -25,7 +29,15 @@ public class TabularRow {
     public TabularRow(final Row row, final String quote, final String delimiter) {
         this.row = row;
         this.quote = quote;
-        this.delimiter = delimiter;
+        this.joiner = Joiner.on(delimiter);
+    }
+
+    public TabularRow(final Row row, final String quote) {
+        this(row, quote, defaultDelimiter);
+    }
+
+    public TabularRow(final Row row) {
+        this(row, defaultQuote, defaultDelimiter);
     }
 
     @Override
@@ -35,10 +47,7 @@ public class TabularRow {
             final Cell cell = row.getCell(cellIndex);
             cells.add(new TabularCell(cell, quote).toString());
         }
-        return joinWithDelimiter().join(cells);
+        return joiner.join(cells);
     }
 
-    private Joiner joinWithDelimiter() {
-        return Joiner.on(delimiter);
-    }
 }

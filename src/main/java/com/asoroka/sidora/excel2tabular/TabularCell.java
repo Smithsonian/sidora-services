@@ -25,7 +25,9 @@ public class TabularCell {
 
     private final Cell cell;
 
-    private String quote = "\"";
+    public static final String defaultQuote = "\"";
+
+    private String quote = defaultQuote;
 
     private static final String EMPTY_STRING = "";
 
@@ -34,6 +36,10 @@ public class TabularCell {
     public TabularCell(final Cell c, final String q) {
         this.cell = c;
         this.quote = q;
+    }
+
+    public TabularCell(final Cell c) {
+        this(c, defaultQuote);
     }
 
     @Override
