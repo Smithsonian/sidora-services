@@ -8,19 +8,13 @@ import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BLANK;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
-import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
-import org.apache.poi.hssf.eventusermodel.HSSFRequest;
-import org.apache.poi.hssf.eventusermodel.HSSFUserException;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -45,9 +39,9 @@ public class ExcelToTabular {
 
     private String delimiter = ",";
 
-    private String quoteChar = "\"";
+    private String quote = "\"";
 
-    final private static Logger log = getLogger(ExcelToTabular.class);
+    private static final Logger log = getLogger(ExcelToTabular.class);
 
     public List<File> process(final URL inputUrl) {
 
@@ -61,21 +55,23 @@ public class ExcelToTabular {
             throw new ExcelParsingException("Could not retrieve input URL: " + inputUrl, e);
         }
 
-        try (final InputStream wbInputStream = new FileInputStream(spreadsheet)) {
+        try {
             final Workbook wb = WorkbookFactory.create(spreadsheet);
 
             final int numberOfSheets = wb.getNumberOfSheets();
+            final List<File> outputs = new ArrayList<>(numberOfSheets);
+
             // the row-coordinates of the "raw data" in each sheet
             final List<Range<Integer>> dataRows = new ArrayList<>(numberOfSheets);
 
-            for (int i = 0; i < numberOfSheets; i++) {
-                log.debug("Examining sheet number {} for data row-range...", i);
-                final Sheet sheet = wb.getSheetAt(i);
+            for (int sheetIndex = 0; sheetIndex < numberOfSheets; sheetIndex++) {
+                log.debug("Examining sheet number {} for data row-range...", sheetIndex);
+                final Sheet sheet = wb.getSheetAt(sheetIndex);
                 final int lastRowIndex = sheet.getLastRowNum();
                 // only examine and process a sheet if it has any rows
                 final int firstRowNum = sheet.getFirstRowNum();
                 if (firstRowNum != lastRowIndex) {
-                    log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowNum, i);
+                    log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowNum, sheetIndex);
                     final Row maximalRow = compareByRowLength.max(sheet);
                     final int maximalRowIndex = maximalRow.getRowNum();
 
@@ -100,30 +96,26 @@ public class ExcelToTabular {
                     log.trace("Found data range: {}", dataRange);
                     dataRows.add(dataRange);
                 } else {
-                    log.debug("Found no rows in sheet {}.", i);
+                    log.debug("Found no rows in sheet {}.", sheetIndex);
                 }
             }
             log.trace("Translating sheets with data.");
 
-            final XLS2CSV tabularTransformer = new XLS2CSV()
-                    .delimiter(delimiter)
-                    .quoteChar(quoteChar).
-                    rangesPerSheet(dataRows);
-            final AbortableMissingRecordAwareHSSFListener missingRecordListener =
-                    new AbortableMissingRecordAwareHSSFListener(tabularTransformer);
-            final FormatTrackingHSSFListener ftListener = new FormatTrackingHSSFListener(missingRecordListener);
-            tabularTransformer.setFormatListener(ftListener);
+            for (int sheetIndex = 0; sheetIndex < dataRows.size(); sheetIndex++) {
+                final File tabularFile = createTempFile(this);
+                outputs.add(tabularFile);
 
-            final HSSFRequest request = new HSSFRequest();
-            request.addListenerForAllRecords(ftListener);
-
-            request.addListenerForAllRecords(missingRecordListener);
-
-            final HSSFEventFactory factory = new HSSFEventFactory();
-            factory.abortableProcessWorkbookEvents(request, new POIFSFileSystem(wbInputStream));
-            return tabularTransformer.getOutputs();
-
-        } catch (IOException | InvalidFormatException | HSSFUserException e) {
+                final Sheet sheet = wb.getSheetAt(sheetIndex);
+                final Integer beginningOfDataRows = dataRows.get(sheetIndex).lowerEndpoint();
+                final Integer endOfDataRows = dataRows.get(sheetIndex).upperEndpoint();
+                try (PrintStream output = new PrintStream(tabularFile)) {
+                    for (int rowIndex = beginningOfDataRows; rowIndex <= endOfDataRows; rowIndex++) {
+                        output.println(new TabularRow(sheet.getRow(rowIndex), quote, delimiter));
+                    }
+                }
+            }
+            return outputs;
+        } catch (IOException | InvalidFormatException e) {
             throw new ExcelParsingException("Could not parse input spreadsheet: " + spreadsheet, e);
         }
     }
@@ -190,10 +182,9 @@ public class ExcelToTabular {
     }
 
     /**
-     * @param quoteChar the quote string to use in output around strings. May be more than one character.
+     * @param quote the quote string to use in output around strings. May be more than one character.
      */
     public void setQuoteChar(final String quoteChar) {
-        this.quoteChar = quoteChar;
+        this.quote = quoteChar;
     }
-
 }

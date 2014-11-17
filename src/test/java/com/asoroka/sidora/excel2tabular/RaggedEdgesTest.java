@@ -30,6 +30,6 @@ public class RaggedEdgesTest extends TestUtils {
         log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        compareLines(resultLines, checkLines, log);
+        compareLines(checkLines, resultLines, log);
     }
 }
