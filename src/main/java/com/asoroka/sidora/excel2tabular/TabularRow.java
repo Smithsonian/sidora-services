@@ -37,7 +37,7 @@ public class TabularRow {
     }
 
     public TabularRow(final Row row) {
-        this(row, defaultQuote, defaultDelimiter);
+        this(row, defaultQuote);
     }
 
     @Override
