@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.excel2tabular;
+package com.asoroka.sidora.excel2tabular.integration;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.util.regex.Pattern.compile;

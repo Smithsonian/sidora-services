@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.excel2tabular;
+package com.asoroka.sidora.excel2tabular.integration;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -13,13 +13,14 @@ import java.util.List;
 import org.junit.Test;
 import org.slf4j.Logger;
 
+import com.asoroka.sidora.excel2tabular.ExcelToTabular;
 import com.google.common.io.Resources;
 
-public class VerySimpleTest extends TestUtils {
+public class VerySimpleIT extends TestUtils {
 
     private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
 
-    private static final Logger log = getLogger(VerySimpleTest.class);
+    private static final Logger log = getLogger(VerySimpleIT.class);
 
     @Test
     public void testOneSheetFile() throws IOException {

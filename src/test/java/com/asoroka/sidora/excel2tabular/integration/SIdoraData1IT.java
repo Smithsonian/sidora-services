@@ -1,6 +1,7 @@
 
-package com.asoroka.sidora.excel2tabular;
+package com.asoroka.sidora.excel2tabular.integration;
 
+import static org.junit.Assert.assertEquals;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -11,15 +12,17 @@ import java.util.List;
 import org.junit.Test;
 import org.slf4j.Logger;
 
-public class SIdoraData2Test extends TestUtils {
+import com.asoroka.sidora.excel2tabular.ExcelToTabular;
+
+public class SIdoraData1IT extends TestUtils {
 
     private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
 
-    private static final Logger log = getLogger(SIdoraData2Test.class);
+    private static final Logger log = getLogger(SIdoraData1IT.class);
 
     @Test
     public void testOneSheetFile() throws IOException {
-        final URL inputUrl = new File("src/test/resources/xls/C14DATES.CJD.REVISION.3.13.xlsx").toURI().toURL();
+        final URL inputUrl = new File("src/test/resources/xls/cjd-master-op.3-huesos.xls").toURI().toURL();
         final URL result = testExcel2Csv.process(inputUrl).get(0).toURI().toURL();
         // log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
 
@@ -27,6 +30,7 @@ public class SIdoraData2Test extends TestUtils {
         // log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        // compareLines(resultLines, checkLines, log);
+        assertEquals(checkLines.size(), resultLines.size());
+        // compareLines(checkLines, resultLines, log);
     }
 }
