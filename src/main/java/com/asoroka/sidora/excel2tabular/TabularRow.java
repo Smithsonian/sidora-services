@@ -2,22 +2,23 @@
 package com.asoroka.sidora.excel2tabular;
 
 import static com.asoroka.sidora.excel2tabular.TabularCell.defaultQuote;
+import static com.google.common.base.Functions.toStringFunction;
+import static com.google.common.collect.Iterables.transform;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
 import com.google.common.base.Joiner;
 
-public class TabularRow {
+public class TabularRow implements Iterable<TabularCell> {
 
-    private final Row row;
+    final Row row;
 
-    private final String quote;
+    String quote = defaultQuote;
 
-    private static final String defaultDelimiter = ",";
+    public static final String defaultDelimiter = ",";
 
     private final Joiner joiner;
 
@@ -42,12 +43,33 @@ public class TabularRow {
 
     @Override
     public String toString() {
-        final List<String> cells = new ArrayList<>();
-        for (int cellIndex = 0; cellIndex < row.getLastCellNum(); cellIndex++) {
-            final Cell cell = row.getCell(cellIndex);
-            cells.add(new TabularCell(cell, quote).toString());
-        }
-        return joiner.join(cells);
+        return joiner.join(transform(this, toStringFunction()));
+    }
+
+    @Override
+    public Iterator<TabularCell> iterator() {
+        return new Iterator<TabularCell>() {
+
+            private int i = 0;
+
+            private int numCells = row.getLastCellNum();
+
+            @Override
+            public boolean hasNext() {
+                return i < numCells;
+            }
+
+            @Override
+            public TabularCell next() {
+                return new TabularCell(row.getCell(i++), quote);
+            }
+
+            @Override
+            public void remove() {
+                final Cell currentCell = row.getCell(i);
+                row.removeCell(currentCell);
+            }
+        };
     }
 
 }

@@ -24,7 +24,6 @@ public class IgnoreOutsideBoundariesIT extends TestUtils {
     @Test
     public void testOneSheetFile() throws IOException {
         final URL inputUrl = new File("src/test/resources/xls/test-with-boundaries.xls").toURI().toURL();
-        testExcel2Csv.setQuoteChar("");
         final URL result = testExcel2Csv.process(inputUrl).get(0).toURI().toURL();
         log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
 
@@ -32,6 +31,6 @@ public class IgnoreOutsideBoundariesIT extends TestUtils {
         log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        compareLines(resultLines, checkLines, log);
+        compareLines(checkLines, resultLines, log);
     }
 }

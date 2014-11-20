@@ -1,6 +1,8 @@
 
 package com.asoroka.sidora.excel2tabular;
 
+import static com.asoroka.sidora.excel2tabular.TabularCell.defaultQuote;
+import static com.asoroka.sidora.excel2tabular.TabularRow.defaultDelimiter;
 import static com.asoroka.sidora.excel2tabular.Utilities.createTempFile;
 import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Ordering.natural;
@@ -37,9 +39,9 @@ import com.google.common.io.Resources;
  */
 public class ExcelToTabular {
 
-    private String delimiter = ",";
+    private String delimiter = defaultDelimiter;
 
-    private String quote = "\"";
+    private String quote = defaultQuote;
 
     private static final Logger log = getLogger(ExcelToTabular.class);
 
