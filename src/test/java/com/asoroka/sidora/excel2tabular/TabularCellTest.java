@@ -23,10 +23,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class TabularCellTest {
 
-    private static final byte TEST_ERROR_VALUE = FormulaError.REF.getCode();
-
-    private static final String TEST_ERROR_PRINTED_VALUE = FormulaError.REF.getString();
-
     private static final boolean TEST_BOOLEAN_VALUE = true;
 
     private static final String TEST_BOOLEAN_PRINTED_VALUE = Boolean.toString(TEST_BOOLEAN_VALUE);
@@ -73,8 +69,6 @@ public class TabularCellTest {
         when(booleanCell.getBooleanCellValue()).thenReturn(TEST_BOOLEAN_VALUE);
         when(booleanCell.getCellType()).thenReturn(CELL_TYPE_BOOLEAN);
         when(funkyCell.getCellType()).thenReturn(Integer.MAX_VALUE);
-        when(errorCell.getErrorCellValue()).thenReturn(TEST_ERROR_VALUE);
-        when(errorCell.getCellType()).thenReturn(CELL_TYPE_ERROR);
         when(formulaCell.getCachedFormulaResultType()).thenReturn(CELL_TYPE_NUMERIC);
         when(formulaCell.getNumericCellValue()).thenReturn(TEST_INTEGER_VALUE);
         // TODO account for TabularCell's action of a changed cell type in a more robust manner
@@ -123,7 +117,11 @@ public class TabularCellTest {
 
     @Test
     public void testErrorValuedCell() {
-        assertEquals(TEST_ERROR_PRINTED_VALUE, new TabularCell(errorCell).toString());
+        for (final FormulaError error : FormulaError.values()) {
+            when(errorCell.getCellType()).thenReturn(CELL_TYPE_ERROR);
+            when(errorCell.getErrorCellValue()).thenReturn(error.getCode());
+            assertEquals(error.getString(), new TabularCell(errorCell).toString());
+        }
     }
 
     @Test

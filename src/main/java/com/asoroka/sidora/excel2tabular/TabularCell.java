@@ -47,7 +47,8 @@ public class TabularCell {
         if (cell == null) {
             return EMPTY_STRING;
         }
-        switch (cell.getCellType()) {
+        final int cellType = cell.getCellType();
+        switch (cellType) {
         case CELL_TYPE_NUMERIC: {
             if (isCellDateFormatted(cell)) {
                 log.trace("Found date-formatted cell: {}", cell);
@@ -85,8 +86,10 @@ public class TabularCell {
         case CELL_TYPE_ERROR:
             return FormulaError.forInt(cell.getErrorCellValue()).getString();
         default:
-            throw new ExcelParsingException("Unintelligible cell type: " + cell.getCellType() + " at " +
-                    new CellReference(cell.getRowIndex(), cell.getColumnIndex()).formatAsString() + "!");
+            final CellReference cellReference = new CellReference(cell.getRowIndex(), cell.getColumnIndex());
+            throw new ExcelParsingException("Unregistered cell type: " + cellType + " at " +
+                    cellReference.formatAsString() + "!",
+                    new IllegalArgumentException("Not a registered POI cell type: " + cellType));
         }
     }
 

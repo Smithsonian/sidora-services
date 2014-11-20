@@ -46,6 +46,12 @@ public class TabularRow implements Iterable<TabularCell> {
         return joiner.join(transform(this, toStringFunction()));
     }
 
+    /**
+     * We cannot use the iterator returned directly from the wrapped {@link Row} because it skips undefined cells, for
+     * which we want to print delimited blanks.
+     * 
+     * @see Row#iterator()
+     */
     @Override
     public Iterator<TabularCell> iterator() {
         return new Iterator<TabularCell>() {
@@ -66,10 +72,9 @@ public class TabularRow implements Iterable<TabularCell> {
 
             @Override
             public void remove() {
-                final Cell currentCell = row.getCell(i);
-                row.removeCell(currentCell);
+                final Cell lastCellReturnedByNext = row.getCell(i - 1);
+                row.removeCell(lastCellReturnedByNext);
             }
         };
     }
-
 }

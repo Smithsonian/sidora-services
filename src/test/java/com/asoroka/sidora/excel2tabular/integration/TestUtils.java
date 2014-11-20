@@ -55,7 +55,8 @@ public class TestUtils {
      */
     protected static <A, B> List<Pair<A, B>> zip(final List<A> listA, final List<B> listB) {
         if (listA.size() != listB.size()) {
-            throw new AssertionError("Results size doesn't match expected size!");
+            throw new AssertionError("Results size doesn't match expected size! Got " + listA.size() +
+                    " to match against " + listB.size());
         }
         final List<Pair<A, B>> zipped = new LinkedList<>();
         for (int i = 0; i < listA.size(); i++) {
