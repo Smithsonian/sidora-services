@@ -57,8 +57,17 @@ public class FedoraComponent extends DefaultComponent
         {
             if (this.settings != null && this.settings.hasCredentials())
             {
-                LOG.info(String.format("Settings found:: Host: %s Username: %s Password: %s", this.settings.getHost().toExternalForm(), this.settings.getUsername(), this.settings.getPassword()));
+                LOG.info(String.format("Settings found:: Host: %s Username: %s", this.settings.getHost().toExternalForm(), this.settings.getUsername()));
                 client = new FedoraClient(settings.getCredentials());
+            }
+            else if (System.getProperty("si.fedora.user") != null && System.getProperty("si.fedora.password") != null)
+            {
+                String host = System.getProperty("si.fedora.host", "http://localhost:8080/fedora");
+                String user = System.getProperty("si.fedora.user");
+                String password = System.getProperty("si.fedora.password");
+
+                LOG.info(String.format("Settings found:: Host: %s Username: %s", host, user));
+                client = new FedoraClient(new FedoraCredentials(host, user, password));
             }
             else
             {
