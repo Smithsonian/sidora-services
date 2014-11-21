@@ -36,7 +36,9 @@ public class FilteredSheetTest {
     }
 
     @Test
-    public void testSheetWithASingleRow() {
+    // TODO this test should fail-- the filtered sheet should be empty
+            public
+            void testSheetWithABlankRow() {
         when(blankRow.iterator()).thenReturn(Collections.<Cell> emptyIterator());
         when(blankRow.getRowNum()).thenReturn(0);
         when(blankRow.getLastCellNum()).thenReturn((short) 0);
