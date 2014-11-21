@@ -4,7 +4,10 @@ package com.asoroka.sidora.excel2tabular;
 import static com.asoroka.sidora.excel2tabular.TabularCell.defaultQuote;
 import static com.asoroka.sidora.excel2tabular.TabularRow.defaultDelimiter;
 import static com.asoroka.sidora.excel2tabular.Utilities.createTempFile;
-import static com.google.common.collect.Iterables.isEmpty;
+import static com.google.common.collect.Iterables.size;
+import static com.google.common.io.Files.asByteSink;
+import static com.google.common.io.Resources.asByteSource;
+import static org.apache.poi.ss.usermodel.WorkbookFactory.create;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -16,14 +19,10 @@ import java.util.List;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.slf4j.Logger;
 
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
 
 /**
  * @author ajs6f
@@ -40,8 +39,8 @@ public class ExcelToTabular {
 
         final File spreadsheet = createTempFile(this);
 
-        final ByteSource source = Resources.asByteSource(inputUrl);
-        final ByteSink sink = Files.asByteSink(spreadsheet);
+        final ByteSource source = asByteSource(inputUrl);
+        final ByteSink sink = asByteSink(spreadsheet);
         try {
             source.copyTo(sink);
         } catch (final IOException e) {
@@ -49,25 +48,19 @@ public class ExcelToTabular {
         }
 
         try {
-            final Workbook wb = WorkbookFactory.create(spreadsheet);
-
-            final int numberOfSheets = wb.getNumberOfSheets();
-            final List<File> outputs = new ArrayList<>(numberOfSheets);
+            final Worksheets worksheets = new Worksheets(create(spreadsheet));
+            final List<File> outputs = new ArrayList<>(size(worksheets));
 
             log.trace("Translating sheets with data.");
 
-            for (int sheetIndex = 0; sheetIndex < numberOfSheets; sheetIndex++) {
-                final FilteredSheet filteredSheet = new FilteredSheet(wb.getSheetAt(sheetIndex));
-
+            for (final FilteredSheet sheet : worksheets) {
                 // we only need to operate over those sheets with rows in them
-                if (!isEmpty(filteredSheet)) {
-                    final File tabularFile = createTempFile(this);
-                    outputs.add(tabularFile);
+                final File tabularFile = createTempFile(this);
+                outputs.add(tabularFile);
 
-                    try (PrintStream output = new PrintStream(tabularFile)) {
-                        for (final Row row : filteredSheet) {
-                            output.println(new TabularRow(row, quote, delimiter));
-                        }
+                try (PrintStream output = new PrintStream(tabularFile)) {
+                    for (final Row row : sheet) {
+                        output.println(new TabularRow(row, quote, delimiter));
                     }
                 }
             }
