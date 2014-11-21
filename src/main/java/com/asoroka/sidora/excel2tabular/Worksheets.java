@@ -18,11 +18,14 @@ public class Worksheets implements Iterable<FilteredSheet> {
 
     final Workbook workbook;
 
+    final int numberOfSheets;
+
     /**
-     * @param workbook that provides the sheets over which to iterate
+     * @param workbook provides the sheets over which to iterate
      */
-    public Worksheets(final Workbook workbook) {
-        this.workbook = workbook;
+    public Worksheets(final Workbook wb) {
+        this.workbook = wb;
+        this.numberOfSheets = workbook.getNumberOfSheets();
     }
 
     @Override
@@ -33,7 +36,7 @@ public class Worksheets implements Iterable<FilteredSheet> {
 
             @Override
             protected FilteredSheet computeNext() {
-                if (sheetIndex >= workbook.getNumberOfSheets()) {
+                if (sheetIndex >= numberOfSheets) {
                     return endOfData();
                 }
                 final Sheet currentSheet = workbook.getSheetAt(sheetIndex++);

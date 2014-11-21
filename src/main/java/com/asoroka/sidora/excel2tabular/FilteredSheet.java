@@ -1,14 +1,16 @@
 
 package com.asoroka.sidora.excel2tabular;
 
+import static com.asoroka.sidora.excel2tabular.IsBlankRow.isBlankRow;
+import static com.google.common.base.Predicates.or;
 import static com.google.common.collect.FluentIterable.from;
-import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Ordering.natural;
 import static com.google.common.collect.Range.closed;
-import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BLANK;
+import static java.util.Collections.emptyIterator;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import org.apache.poi.ss.usermodel.Cell;
+import java.util.Iterator;
+
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -26,22 +28,24 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
     final Sheet sheet;
 
+    private final int lastRowIndex, firstRowIndex;
+
     Range<Integer> dataRange;
 
     final RangeSet<Integer> rowsWithMergedRegions = TreeRangeSet.create();
 
-    private static final Range<Integer> EMPTY_RANGE = Range.closed(0, 0);
+    private static final Range<Integer> EMPTY_RANGE = closed(0, 0);
 
     static final Logger log = getLogger(FilteredSheet.class);
 
     public FilteredSheet(final Sheet s) {
         this.sheet = s;
+        this.lastRowIndex = sheet.getLastRowNum();
+        this.firstRowIndex = sheet.getFirstRowNum();
 
-        final int lastRowIndex = sheet.getLastRowNum();
-        final int firstRowIndex = sheet.getFirstRowNum();
         log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowIndex, sheet.getSheetName());
 
-        // only examine and process a sheet if it has any rows
+        // only examine and process a sheet for data rows if it has any rows
         if (firstRowIndex == lastRowIndex) {
             log.debug("Found no rows in sheet {}.", sheet.getSheetName());
             dataRange = EMPTY_RANGE;
@@ -49,34 +53,33 @@ public class FilteredSheet extends ReversableIterable<Row> {
         else {
             // begin by assuming that all rows may be data rows
             dataRange = closed(firstRowIndex, lastRowIndex);
-            initialize();
+            findDataRows();
         }
     }
 
-    private void initialize() {
+    private void findDataRows() {
 
+        // record any merged regions to exclude rows that intersect them
         final int numMergedRegions = sheet.getNumMergedRegions();
-        for (int j = 0; j < numMergedRegions; j++) {
-            final CellRangeAddress mergedRegion = sheet.getMergedRegion(j);
+        for (int mergedRegionIndex = 0; mergedRegionIndex < numMergedRegions; mergedRegionIndex++) {
+            final CellRangeAddress mergedRegion = sheet.getMergedRegion(mergedRegionIndex);
             final Range<Integer> mergedRegionRows =
                     closed(mergedRegion.getFirstRow(), mergedRegion.getLastRow());
             rowsWithMergedRegions.add(mergedRegionRows);
         }
 
-        final int lastRowIndex = sheet.getLastRowNum();
-        final int firstRowIndex = sheet.getFirstRowNum();
         final Row maximalRow = compareByRowLength.max(this);
         final int maximalRowIndex = maximalRow.getRowNum();
-        log.trace("Found index of maximally long row at: {} with length: {}", maximalRowIndex, maximalRow
-                .getLastCellNum());
+        log.trace("Found index of maximally long row at: {} with length: {}",
+                maximalRowIndex, maximalRow.getLastCellNum());
 
-        // search only after the maximal row
+        // search for ignorable rows forwards only after the maximal row
         dataRange = closed(maximalRowIndex, lastRowIndex);
         final int nextIgnorableRowIndex =
                 from(this).firstMatch(isRowIgnored).transform(extractRowIndex).or(lastRowIndex + 1);
         final int lastDataRowIndex = nextIgnorableRowIndex - 1;
 
-        // search only before the maximal row
+        // search for ignorable rows backwards only before the maximal row
         dataRange = closed(firstRowIndex, maximalRowIndex);
         final int previousIgnorableRowIndex =
                 from(reversed(this)).firstMatch(isRowIgnored).transform(extractRowIndex).or(firstRowIndex - 1);
@@ -87,43 +90,19 @@ public class FilteredSheet extends ReversableIterable<Row> {
     }
 
     /**
-     * Ignore a row if it is empty or blank or contains any part of a merged region.
+     * Ignore a row if it is blank or contains any part of a merged region.
      * 
      * @param row
      * @return
      */
-    private Predicate<Row> isRowIgnored = new Predicate<Row>() {
+    private Predicate<Row> isRowIgnored = or(isBlankRow,
+            new Predicate<Row>() {
 
-        @Override
-        public boolean apply(final Row row) {
-            final int rowIndex = row.getRowNum();
-            log.trace("Found row at index {} with {} cells and {} physical cells.", rowIndex, row.getLastCellNum(),
-                    row.getPhysicalNumberOfCells());
-
-            if (row.getPhysicalNumberOfCells() == 0) {
-                return true;
-            }
-
-            if (rowsWithMergedRegions.contains(rowIndex)) {
-                log.debug("Ignoring row {} for containing merged region.", rowIndex);
-                return true;
-            }
-
-            if (all(row, isBlankCell)) {
-                log.trace("Found all blank cells in row number {}.", rowIndex);
-                return true;
-            }
-            return false;
-        }
-    };
-
-    static final Predicate<Cell> isBlankCell = new Predicate<Cell>() {
-
-        @Override
-        public boolean apply(final Cell cell) {
-            return cell.getCellType() == CELL_TYPE_BLANK;
-        }
-    };
+                @Override
+                public boolean apply(final Row row) {
+                    return rowsWithMergedRegions.contains(row.getRowNum());
+                }
+            });
 
     private static final Function<Row, Integer> extractRowIndex = new Function<Row, Integer>() {
 
@@ -144,25 +123,16 @@ public class FilteredSheet extends ReversableIterable<Row> {
         }
     });
 
-    private static final <E> AbstractIterator<E> EMPTY_ITERATOR() {
-        return new AbstractIterator<E>() {
-
-            @Override
-            protected E computeNext() {
-                return endOfData();
-            }
-        };
-    }
-
     /**
-     * Should never return null. A null {@link Row} in the underlying sheet is replaced with an empty row.
+     * Iterates through {@link Row}s from {@link #sheet} bounded by {@link #dataRange}.<br/>
+     * Should never return null. A null {@link Row} in the underlying sheet is returned as an empty row.
      * 
      * @see java.lang.Iterable#iterator()
      */
     @Override
-    public AbstractIterator<Row> iterator() {
+    public Iterator<Row> iterator() {
         if (dataRange.isEmpty()) {
-            return EMPTY_ITERATOR();
+            return emptyIterator();
         }
         return new AbstractIterator<Row>() {
 
@@ -179,21 +149,23 @@ public class FilteredSheet extends ReversableIterable<Row> {
                     log.trace("Returning empty row with index {}", currentRowIndex);
                     return sheet.createRow(currentRowIndex);
                 }
-                log.trace("Returning row with index {}", currentRowIndex);
+                log.trace("Returning extant row with index {}", currentRowIndex);
                 return nextRow;
             }
         };
     }
 
     /**
-     * Should never return null. A null {@link Row} in the underlying sheet is replaced with an empty row.
+     * Iterates through {@link Row}s from {@link #sheet} bounded by {@link #dataRange}, from
+     * {@link Range#upperEndpoint()} through {@link Range#lowerEndpoint()} .<br/>
+     * Should never return null. A null {@link Row} in the underlying sheet is returned as an empty row.
      * 
      * @see ReversableIterable#reversed()
      */
     @Override
-    public AbstractIterator<Row> reversed() {
+    public Iterator<Row> reversed() {
         if (dataRange.isEmpty()) {
-            return EMPTY_ITERATOR();
+            return emptyIterator();
         }
         return new AbstractIterator<Row>() {
 
@@ -210,7 +182,7 @@ public class FilteredSheet extends ReversableIterable<Row> {
                     log.trace("Returning empty row with index {}", currentRowIndex);
                     return sheet.createRow(currentRowIndex);
                 }
-                log.trace("Returning row with index {}", currentRowIndex);
+                log.trace("Returning extant row with index {}", currentRowIndex);
                 return nextRow;
             }
         };
