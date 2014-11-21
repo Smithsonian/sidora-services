@@ -4,11 +4,7 @@ package com.asoroka.sidora.excel2tabular;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BLANK;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_STRING;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -60,13 +56,13 @@ public class TabularRowTest {
     }
 
     @Test
-    public void testRemoveCell() {
-        when(mockRow.getLastCellNum()).thenReturn((short) 1);
+    public void testTwoStringCells() {
+        when(stringCell.getStringCellValue()).thenReturn(TEST_STRING_VALUE);
+        when(stringCell.getCellType()).thenReturn(CELL_TYPE_STRING);
+        when(mockRow.getLastCellNum()).thenReturn((short) 2);
         when(mockRow.getCell(0)).thenReturn(stringCell);
-        final Iterator<TabularCell> cellIterator = new TabularRow(mockRow).iterator();
-        assertTrue(cellIterator.hasNext());
-        cellIterator.next();
-        cellIterator.remove();
-        verify(mockRow).removeCell(stringCell);
+        when(mockRow.getCell(1)).thenReturn(stringCell);
+        final String testValue = TEST_STRING_PRINTED_VALUE + "," + TEST_STRING_PRINTED_VALUE;
+        assertEquals(testValue, new TabularRow(mockRow).toString());
     }
 }

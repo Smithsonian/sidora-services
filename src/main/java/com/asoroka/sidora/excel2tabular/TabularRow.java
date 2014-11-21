@@ -7,14 +7,16 @@ import static com.google.common.collect.Iterables.transform;
 
 import java.util.Iterator;
 
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.AbstractIterator;
 
 public class TabularRow implements Iterable<TabularCell> {
 
     final Row row;
+
+    final int numCells;
 
     String quote = defaultQuote;
 
@@ -29,6 +31,7 @@ public class TabularRow implements Iterable<TabularCell> {
      */
     public TabularRow(final Row row, final String quote, final String delimiter) {
         this.row = row;
+        this.numCells = row.getLastCellNum();
         this.quote = quote;
         this.joiner = Joiner.on(delimiter);
     }
@@ -48,32 +51,22 @@ public class TabularRow implements Iterable<TabularCell> {
 
     /**
      * We cannot use the iterator returned directly from the wrapped {@link Row} because it skips undefined cells, for
-     * which we want to print delimited blanks.
+     * which we want to return blank cells instead.
      * 
      * @see Row#iterator()
      */
     @Override
     public Iterator<TabularCell> iterator() {
-        return new Iterator<TabularCell>() {
+        return new AbstractIterator<TabularCell>() {
 
             private int i = 0;
 
-            private int numCells = row.getLastCellNum();
-
             @Override
-            public boolean hasNext() {
-                return i < numCells;
-            }
-
-            @Override
-            public TabularCell next() {
+            protected TabularCell computeNext() {
+                if (i >= numCells) {
+                    return endOfData();
+                }
                 return new TabularCell(row.getCell(i++), quote);
-            }
-
-            @Override
-            public void remove() {
-                final Cell lastCellReturnedByNext = row.getCell(i - 1);
-                row.removeCell(lastCellReturnedByNext);
             }
         };
     }
