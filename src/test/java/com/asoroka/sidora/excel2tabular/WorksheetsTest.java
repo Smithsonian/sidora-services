@@ -19,7 +19,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class WorksheetsTest {
 
     @Mock
-    private Sheet mockSheet1;
+    private Sheet mockSheet1, mockSheet2, mockSheet3;
 
     @Mock
     private Workbook mockWorkbook;
@@ -35,6 +35,16 @@ public class WorksheetsTest {
         when(mockSheet1.iterator()).thenReturn(Collections.<Row> emptyIterator());
         when(mockWorkbook.getNumberOfSheets()).thenReturn(1);
         when(mockWorkbook.getSheetAt(0)).thenReturn(mockSheet1);
+        assertTrue(isEmpty(new Worksheets(mockWorkbook)));
+    }
+
+    @Test
+    public void testWorkbookWithThreeEmptySheets() {
+        when(mockSheet1.iterator()).thenReturn(Collections.<Row> emptyIterator());
+        when(mockWorkbook.getNumberOfSheets()).thenReturn(3);
+        when(mockWorkbook.getSheetAt(0)).thenReturn(mockSheet1);
+        when(mockWorkbook.getSheetAt(1)).thenReturn(mockSheet1);
+        when(mockWorkbook.getSheetAt(2)).thenReturn(mockSheet1);
         assertTrue(isEmpty(new Worksheets(mockWorkbook)));
     }
 }

@@ -39,6 +39,11 @@ public class FilteredSheet extends ReversableIterable<Row> {
     final RangeSet<Integer> rowsWithMergedRegions = TreeRangeSet.create();
 
     /**
+     * For lazy initialization.
+     */
+    boolean initialized = false, initializing = false;
+
+    /**
      * @see Range#isEmpty()
      */
     private static final Range<Integer> EMPTY_RANGE = openClosed(0, 0);
@@ -49,23 +54,20 @@ public class FilteredSheet extends ReversableIterable<Row> {
         this.sheet = s;
         this.lastRowIndex = sheet.getLastRowNum();
         this.firstRowIndex = sheet.getFirstRowNum();
-
-        log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowIndex, sheet.getSheetName());
+        // begin by assuming that all rows may be data rows
+        dataRange = closed(firstRowIndex, lastRowIndex);
+        log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowIndex + 1, sheet.getSheetName());
 
         // only examine and process a sheet for data rows if it has any rows
         if (isEmpty(sheet)) {
             log.debug("Found no rows in sheet {}.", sheet.getSheetName());
             dataRange = EMPTY_RANGE;
-        }
-        else {
-            // begin by assuming that all rows may be data rows
-            dataRange = closed(firstRowIndex, lastRowIndex);
-            findDataRows();
+            initialized = true;
         }
     }
 
     private void findDataRows() {
-
+        initializing = true;
         // record any merged regions to exclude rows that intersect them
         final int numMergedRegions = sheet.getNumMergedRegions();
         for (int mergedRegionIndex = 0; mergedRegionIndex < numMergedRegions; mergedRegionIndex++) {
@@ -74,12 +76,16 @@ public class FilteredSheet extends ReversableIterable<Row> {
                     closed(mergedRegion.getFirstRow(), mergedRegion.getLastRow());
             rowsWithMergedRegions.add(mergedRegionRows);
         }
-
+        // find maximal row on which to center search
         final Row maximalRow = compareByRowLength.max(this);
+        if (isRowIgnored.apply(maximalRow)) {
+            // no data rows were found
+            dataRange = EMPTY_RANGE;
+            return;
+        }
         final int maximalRowIndex = maximalRow.getRowNum();
         log.trace("Found index of maximally long row at: {} with length: {}",
                 maximalRowIndex, maximalRow.getLastCellNum());
-
         // search for ignorable rows forwards only after the maximal row
         dataRange = closed(maximalRowIndex, lastRowIndex);
         final int nextIgnorableRowIndex =
@@ -94,6 +100,7 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
         dataRange = closed(firstDataRowIndex, lastDataRowIndex);
         log.trace("Found data range: {}", dataRange);
+        initialized = true;
     }
 
     /**
@@ -138,6 +145,9 @@ public class FilteredSheet extends ReversableIterable<Row> {
      */
     @Override
     public Iterator<Row> iterator() {
+        if (!initialized && !initializing) {
+            findDataRows();
+        }
         if (dataRange.isEmpty()) {
             return emptyIterator();
         }
@@ -171,6 +181,9 @@ public class FilteredSheet extends ReversableIterable<Row> {
      */
     @Override
     public Iterator<Row> reversed() {
+        if (!initialized && !initializing) {
+            findDataRows();
+        }
         if (dataRange.isEmpty()) {
             return emptyIterator();
         }
