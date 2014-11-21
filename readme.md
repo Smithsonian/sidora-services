@@ -11,7 +11,7 @@
   1. GH_DIR/Routes/Camera Trap/Input/ --> SM_HOME/
 4. Files to copy/move (and over write when required)
   1. GH_DIR/Binaries/deploy/* --> SM_HOME/deploy/
-  2. GH_DIR/Routes/Camera Trap/Route/camera-trap-route.xml --> SM_HOME/deploy/
+  2. GH_DIR/Routes/Camera Trap/Route/camera-trap-route --> SM_HOME/deploy/
   3. GH_DIR/Configurations/etc/* to SM_HOME/etc/
 5. Edit SM_HOME/etc/system.properties for Fedora instance
   1. si.fedora.host = URL of the Fedora repository
@@ -27,7 +27,7 @@
 - ServiceMix command `route-list` should have 9 _CameraTrap*_ routes that have the status _'Started'_
 
 ## Camera Trap Execution
-To process Camera Trap data copy the data archive (e.g. p1d246.tar.gz) into the `SM_HOME/Process` folder. That is it! To monitor the execution process at the ServiceMix command prompt enter _log:tail_ and watch the log output.
+To process Camera Trap data copy the data archive (e.g. p1d246.tar.gz) into the `SM_HOME/Process` folder. That is it! To monitor the execution process at the ServiceMix command prompt enter `log:tail` and watch the log output.
 
 #### Helpful ServiceMix Commands
 - `log:display` -- To display the log file
