@@ -4,8 +4,12 @@ package com.asoroka.sidora.excel2tabular;
 import static com.asoroka.sidora.excel2tabular.IsBlankRow.isBlankRow;
 import static com.google.common.base.Predicates.or;
 import static com.google.common.collect.FluentIterable.from;
+import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Ordering.natural;
 import static com.google.common.collect.Range.closed;
+import static com.google.common.collect.Range.openClosed;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.util.Collections.emptyIterator;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -34,7 +38,10 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
     final RangeSet<Integer> rowsWithMergedRegions = TreeRangeSet.create();
 
-    private static final Range<Integer> EMPTY_RANGE = closed(0, 0);
+    /**
+     * @see Range#isEmpty()
+     */
+    private static final Range<Integer> EMPTY_RANGE = openClosed(0, 0);
 
     static final Logger log = getLogger(FilteredSheet.class);
 
@@ -46,7 +53,7 @@ public class FilteredSheet extends ReversableIterable<Row> {
         log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowIndex, sheet.getSheetName());
 
         // only examine and process a sheet for data rows if it has any rows
-        if (firstRowIndex == lastRowIndex) {
+        if (isEmpty(sheet)) {
             log.debug("Found no rows in sheet {}.", sheet.getSheetName());
             dataRange = EMPTY_RANGE;
         }
@@ -77,13 +84,13 @@ public class FilteredSheet extends ReversableIterable<Row> {
         dataRange = closed(maximalRowIndex, lastRowIndex);
         final int nextIgnorableRowIndex =
                 from(this).firstMatch(isRowIgnored).transform(extractRowIndex).or(lastRowIndex + 1);
-        final int lastDataRowIndex = nextIgnorableRowIndex - 1;
+        final int lastDataRowIndex = max(nextIgnorableRowIndex - 1, firstRowIndex);
 
         // search for ignorable rows backwards only before the maximal row
         dataRange = closed(firstRowIndex, maximalRowIndex);
         final int previousIgnorableRowIndex =
                 from(reversed(this)).firstMatch(isRowIgnored).transform(extractRowIndex).or(firstRowIndex - 1);
-        final int firstDataRowIndex = previousIgnorableRowIndex + 1;
+        final int firstDataRowIndex = min(previousIgnorableRowIndex + 1, lastRowIndex);
 
         dataRange = closed(firstDataRowIndex, lastDataRowIndex);
         log.trace("Found data range: {}", dataRange);

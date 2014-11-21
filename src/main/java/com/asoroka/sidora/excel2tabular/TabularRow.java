@@ -7,6 +7,7 @@ import static com.google.common.collect.Iterables.transform;
 
 import java.util.Iterator;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
 import com.google.common.base.Joiner;
@@ -66,7 +67,8 @@ public class TabularRow implements Iterable<TabularCell> {
                 if (i >= numCells) {
                     return endOfData();
                 }
-                return new TabularCell(row.getCell(i++), quote);
+                final Cell nextCell = row.getCell(i++);
+                return new TabularCell(nextCell, quote);
             }
         };
     }
