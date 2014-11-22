@@ -2,7 +2,7 @@
 package com.asoroka.sidora.excel2tabular;
 
 import static com.asoroka.sidora.excel2tabular.IsBlankRow.isBlankRow;
-import static com.asoroka.sidora.excel2tabular.TestUtilities.iterate;
+import static com.asoroka.sidora.excel2tabular.TestUtilities.iterateOver;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BLANK;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_NUMERIC;
 import static org.junit.Assert.assertFalse;
@@ -31,9 +31,9 @@ public class IsBlankRowTest {
     @Before
     public void setUp() {
         when(dataCell.getCellType()).thenReturn(CELL_TYPE_NUMERIC);
-        when(rowWithDataCell.iterator()).thenAnswer(iterate(dataCell));
+        when(rowWithDataCell.iterator()).thenAnswer(iterateOver(dataCell));
         when(blankCell.getCellType()).thenReturn(CELL_TYPE_BLANK);
-        when(allBlankCellRow.iterator()).thenAnswer(iterate(blankCell));
+        when(allBlankCellRow.iterator()).thenAnswer(iterateOver(blankCell));
         when(emptyRow.iterator()).thenReturn(Collections.<Cell> emptyIterator());
     }
 

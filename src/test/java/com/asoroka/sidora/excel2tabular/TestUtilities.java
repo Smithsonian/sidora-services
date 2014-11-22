@@ -1,7 +1,8 @@
 
 package com.asoroka.sidora.excel2tabular;
 
-import java.util.Arrays;
+import static java.util.Arrays.asList;
+
 import java.util.Iterator;
 import java.util.List;
 
@@ -10,13 +11,14 @@ import org.mockito.stubbing.Answer;
 
 public class TestUtilities {
 
-    public static <E> Answer<Iterator<E>> iterate(final E... es) {
+    @SafeVarargs
+    public static <E> Answer<Iterator<E>> iterateOver(final E... es) {
         return new Answer<Iterator<E>>() {
 
-            private List<E> elements = Arrays.asList(es);
+            private List<E> elements = asList(es);
 
             @Override
-            public Iterator<E> answer(final InvocationOnMock invocation) throws Throwable {
+            public Iterator<E> answer(final InvocationOnMock invocation) {
                 return elements.iterator();
             }
         };

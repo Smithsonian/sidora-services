@@ -71,19 +71,19 @@ public class FilteredSheet extends ReversableIterable<Row> {
         }
         log.trace("Found index of maximally long data row at: {} with length: {}",
                 maximalRowIndex, maximalRow.getLastCellNum());
-        // search for ignorable rows forwards only after the maximal row
+        // search for blank rows forwards only after the maximal row
         dataRange = closed(maximalRowIndex, lastRowIndex);
-        final int nextIgnorableRowIndex =
+        final int nextBlankRowIndex =
                 from(this).firstMatch(isBlankRow).transform(extractRowIndex).or(lastRowIndex + 1);
-        log.trace("Found next ignorable row at index: {}", nextIgnorableRowIndex);
-        final int lastDataRowIndex = nextIgnorableRowIndex - 1;
+        log.trace("Found next ignorable row at index: {}", nextBlankRowIndex);
+        final int lastDataRowIndex = nextBlankRowIndex - 1;
 
-        // search for ignorable rows backwards only before the maximal row
+        // search for blank rows backwards only before the maximal row
         dataRange = closed(firstRowIndex, maximalRowIndex);
-        final int previousIgnorableRowIndex =
+        final int previousBlankRowIndex =
                 from(reversed(this)).firstMatch(isBlankRow).transform(extractRowIndex).or(firstRowIndex - 1);
-        log.trace("Found previous ignorable row at index: {}", nextIgnorableRowIndex);
-        final int firstDataRowIndex = previousIgnorableRowIndex + 1;
+        log.trace("Found previous ignorable row at index: {}", nextBlankRowIndex);
+        final int firstDataRowIndex = previousBlankRowIndex + 1;
 
         dataRange = closed(firstDataRowIndex, lastDataRowIndex);
         log.trace("Found data range: {}", dataRange);
