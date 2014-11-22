@@ -54,7 +54,6 @@ public class ExcelToTabular {
             log.trace("Translating sheets with data.");
 
             for (final FilteredSheet sheet : worksheets) {
-                // we only need to operate over those sheets with rows in them
                 final File tabularFile = createTempFile(this);
                 outputs.add(tabularFile);
 

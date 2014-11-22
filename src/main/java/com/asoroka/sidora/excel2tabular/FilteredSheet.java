@@ -2,14 +2,11 @@
 package com.asoroka.sidora.excel2tabular;
 
 import static com.asoroka.sidora.excel2tabular.IsBlankRow.isBlankRow;
-import static com.google.common.base.Predicates.or;
 import static com.google.common.collect.FluentIterable.from;
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Ordering.natural;
 import static com.google.common.collect.Range.closed;
 import static com.google.common.collect.Range.openClosed;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.Collections.emptyIterator;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -17,16 +14,12 @@ import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
 
 public class FilteredSheet extends ReversableIterable<Row> {
 
@@ -35,8 +28,6 @@ public class FilteredSheet extends ReversableIterable<Row> {
     private final int lastRowIndex, firstRowIndex;
 
     Range<Integer> dataRange;
-
-    final RangeSet<Integer> rowsWithMergedRegions = TreeRangeSet.create();
 
     /**
      * For lazy initialization.
@@ -68,55 +59,37 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
     private void findDataRows() {
         initializing = true;
-        // record any merged regions to exclude rows that intersect them
-        final int numMergedRegions = sheet.getNumMergedRegions();
-        for (int mergedRegionIndex = 0; mergedRegionIndex < numMergedRegions; mergedRegionIndex++) {
-            final CellRangeAddress mergedRegion = sheet.getMergedRegion(mergedRegionIndex);
-            final Range<Integer> mergedRegionRows =
-                    closed(mergedRegion.getFirstRow(), mergedRegion.getLastRow());
-            rowsWithMergedRegions.add(mergedRegionRows);
-        }
         // find maximal row on which to center search
         final Row maximalRow = compareByRowLength.max(this);
-        if (isRowIgnored.apply(maximalRow)) {
-            // no data rows were found
+        final int maximalRowIndex = maximalRow.getRowNum();
+
+        log.trace("Found index of maximally long row at: {} with length: {}",
+                maximalRowIndex, maximalRow.getLastCellNum());
+        if (isBlankRow.apply(maximalRow)) {
             dataRange = EMPTY_RANGE;
             return;
         }
-        final int maximalRowIndex = maximalRow.getRowNum();
-        log.trace("Found index of maximally long row at: {} with length: {}",
+        log.trace("Found index of maximally long data row at: {} with length: {}",
                 maximalRowIndex, maximalRow.getLastCellNum());
         // search for ignorable rows forwards only after the maximal row
         dataRange = closed(maximalRowIndex, lastRowIndex);
         final int nextIgnorableRowIndex =
-                from(this).firstMatch(isRowIgnored).transform(extractRowIndex).or(lastRowIndex + 1);
-        final int lastDataRowIndex = max(nextIgnorableRowIndex - 1, firstRowIndex);
+                from(this).firstMatch(isBlankRow).transform(extractRowIndex).or(lastRowIndex + 1);
+        log.trace("Found next ignorable row at index: {}", nextIgnorableRowIndex);
+        final int lastDataRowIndex = nextIgnorableRowIndex - 1;
 
         // search for ignorable rows backwards only before the maximal row
         dataRange = closed(firstRowIndex, maximalRowIndex);
         final int previousIgnorableRowIndex =
-                from(reversed(this)).firstMatch(isRowIgnored).transform(extractRowIndex).or(firstRowIndex - 1);
-        final int firstDataRowIndex = min(previousIgnorableRowIndex + 1, lastRowIndex);
+                from(reversed(this)).firstMatch(isBlankRow).transform(extractRowIndex).or(firstRowIndex - 1);
+        log.trace("Found previous ignorable row at index: {}", nextIgnorableRowIndex);
+        final int firstDataRowIndex = previousIgnorableRowIndex + 1;
 
         dataRange = closed(firstDataRowIndex, lastDataRowIndex);
         log.trace("Found data range: {}", dataRange);
+        initializing = false;
         initialized = true;
     }
-
-    /**
-     * Ignore a row if it is blank or contains any part of a merged region.
-     * 
-     * @param row
-     * @return
-     */
-    private Predicate<Row> isRowIgnored = or(isBlankRow,
-            new Predicate<Row>() {
-
-                @Override
-                public boolean apply(final Row row) {
-                    return rowsWithMergedRegions.contains(row.getRowNum());
-                }
-            });
 
     private static final Function<Row, Integer> extractRowIndex = new Function<Row, Integer>() {
 
@@ -145,7 +118,7 @@ public class FilteredSheet extends ReversableIterable<Row> {
      */
     @Override
     public Iterator<Row> iterator() {
-        if (!initialized && !initializing) {
+        if (unready()) {
             findDataRows();
         }
         if (dataRange.isEmpty()) {
@@ -157,7 +130,7 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
             @Override
             protected Row computeNext() {
-                if (forwardRowIndex > dataRange.upperEndpoint()) {
+                if (!dataRange.contains(forwardRowIndex)) {
                     return endOfData();
                 }
                 final Row nextRow = sheet.getRow(forwardRowIndex++);
@@ -181,7 +154,7 @@ public class FilteredSheet extends ReversableIterable<Row> {
      */
     @Override
     public Iterator<Row> reversed() {
-        if (!initialized && !initializing) {
+        if (unready()) {
             findDataRows();
         }
         if (dataRange.isEmpty()) {
@@ -193,7 +166,7 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
             @Override
             protected Row computeNext() {
-                if (reverseRowIndex < dataRange.lowerEndpoint()) {
+                if (!dataRange.contains(reverseRowIndex)) {
                     return endOfData();
                 }
                 final Row nextRow = sheet.getRow(reverseRowIndex--);
@@ -206,5 +179,9 @@ public class FilteredSheet extends ReversableIterable<Row> {
                 return nextRow;
             }
         };
+    }
+
+    private boolean unready() {
+        return !(initialized || initializing);
     }
 }
