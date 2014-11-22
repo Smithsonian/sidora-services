@@ -39,17 +39,17 @@ public class IsBlankRowTest {
 
     @Test
     public void testAllBlankCellRow() {
-        assertTrue(isBlankRow.apply(allBlankCellRow));
+        assertTrue(isBlankRow(allBlankCellRow));
     }
 
     @Test
     public void testEmptyRow() {
-        assertTrue(isBlankRow.apply(emptyRow));
+        assertTrue(isBlankRow(emptyRow));
     }
 
     @Test
     public void testDataRow() {
-        assertFalse(isBlankRow.apply(rowWithDataCell));
+        assertFalse(isBlankRow(rowWithDataCell));
     }
 
 }

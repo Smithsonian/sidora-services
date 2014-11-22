@@ -2,6 +2,7 @@
 package com.asoroka.sidora.excel2tabular;
 
 import static com.asoroka.sidora.excel2tabular.IsBlankRow.isBlankRow;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Ordering.natural;
 import static com.google.common.collect.Range.closed;
@@ -22,7 +23,7 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 
-public class FilteredSheet extends ReversableIterable<Row> {
+public class FilteredSheet implements Iterable<Row> {
 
     final Sheet sheet;
 
@@ -63,23 +64,24 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
         // begin by assuming that all rows may be data rows
         dataRange = closed(firstRowIndex, lastRowIndex);
-        // find maximal row on which to center search and record any blank rows
-        final Row maximalRow = compareByRowLength.max(this);
+
+        // Because the rows in a sheet are not ordered by length, we will have to traverse all of them to find a row
+        // of maximum length. This gives us an opportunity to record any blank rows at the same time.
+        final Row maximalRow = compareByLengthAndRecordBlankRows.max(this);
         final int maximalRowIndex = maximalRow.getRowNum();
 
-        log.trace("Found index of maximally long row at: {} with length: {}",
-                maximalRowIndex, maximalRow.getLastCellNum());
-        if (isBlankRow.apply(maximalRow)) {
+        if (isBlankRow(maximalRow)) {
+            log.trace("The maximal row was empty, so this sheet has no data.");
             dataRange = EMPTY_RANGE;
             return;
         }
         log.trace("Found index of maximally long data row at: {} with length: {}",
                 maximalRowIndex, maximalRow.getLastCellNum());
-        // search for blank rows forwards after the maximal row
+        // search for nearest blank row after the maximal row
         final Integer nextBlankRowIndex = blankRows.higher(maximalRowIndex);
         final int lastDataRowIndex = nextBlankRowIndex == null ? lastRowIndex : nextBlankRowIndex - 1;
 
-        // search for blank rows backwards before the maximal row
+        // search for nearest blank row before the maximal row
         final Integer previousBlankRowIndex = blankRows.lower(maximalRowIndex);
         final int firstDataRowIndex = previousBlankRowIndex == null ? firstRowIndex : previousBlankRowIndex + 1;
         dataRange = closed(firstDataRowIndex, lastDataRowIndex);
@@ -89,13 +91,15 @@ public class FilteredSheet extends ReversableIterable<Row> {
     }
 
     /**
-     * An {@link Ordering} that compares two {@link Row}s on the basis of their length.
+     * An {@link Ordering} that compares {@link Row}s on the basis of their length and incidentally records whether a
+     * row is blank .
      */
-    private final Ordering<Row> compareByRowLength = natural().onResultOf(new Function<Row, Short>() {
+    private final Ordering<Row> compareByLengthAndRecordBlankRows = natural().onResultOf(new Function<Row, Short>() {
 
         @Override
         public Short apply(final Row r) {
-            if (isBlankRow.apply(r)) {
+            checkNotNull(r);
+            if (isBlankRow(r)) {
                 blankRows.add(r.getRowNum());
             }
             return r.getLastCellNum();
@@ -118,57 +122,21 @@ public class FilteredSheet extends ReversableIterable<Row> {
         }
         return new AbstractIterator<Row>() {
 
-            private int forwardRowIndex = dataRange.lowerEndpoint();
+            private int rowIndex = dataRange.lowerEndpoint();
 
             @Override
             protected Row computeNext() {
-                if (!dataRange.contains(forwardRowIndex)) {
+                if (!dataRange.contains(rowIndex)) {
                     return endOfData();
                 }
-                final Row nextRow = sheet.getRow(forwardRowIndex++);
-                final int currentRowIndex = forwardRowIndex - 1;
-                if (nextRow == null) {
+                final int currentRowIndex = rowIndex;
+                final Row currentRow = sheet.getRow(rowIndex++);
+                if (currentRow == null) {
                     log.trace("Returning empty row with index {}", currentRowIndex);
                     return sheet.createRow(currentRowIndex);
                 }
                 log.trace("Returning extant row with index {}", currentRowIndex);
-                return nextRow;
-            }
-        };
-    }
-
-    /**
-     * Iterates through {@link Row}s from {@link #sheet} bounded by {@link #dataRange}, from
-     * {@link Range#upperEndpoint()} through {@link Range#lowerEndpoint()} .<br/>
-     * Should never return null. A null {@link Row} in the underlying sheet is returned as an empty row.
-     * 
-     * @see ReversableIterable#reversed()
-     */
-    @Override
-    public Iterator<Row> reversed() {
-        if (unready()) {
-            findDataRows();
-        }
-        if (dataRange.isEmpty()) {
-            return emptyIterator();
-        }
-        return new AbstractIterator<Row>() {
-
-            private int reverseRowIndex = dataRange.upperEndpoint();
-
-            @Override
-            protected Row computeNext() {
-                if (!dataRange.contains(reverseRowIndex)) {
-                    return endOfData();
-                }
-                final Row nextRow = sheet.getRow(reverseRowIndex--);
-                final int currentRowIndex = reverseRowIndex + 1;
-                if (nextRow == null) {
-                    log.trace("Returning empty row with index {}", currentRowIndex);
-                    return sheet.createRow(currentRowIndex);
-                }
-                log.trace("Returning extant row with index {}", currentRowIndex);
-                return nextRow;
+                return currentRow;
             }
         };
     }

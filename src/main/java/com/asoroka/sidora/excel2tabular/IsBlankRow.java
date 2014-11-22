@@ -19,6 +19,10 @@ public class IsBlankRow implements Predicate<Row> {
 
     public static final IsBlankRow isBlankRow = new IsBlankRow();
 
+    public static final boolean isBlankRow(final Row row) {
+        return isBlankRow.apply(row);
+    }
+
     private IsBlankRow() {
     }
 

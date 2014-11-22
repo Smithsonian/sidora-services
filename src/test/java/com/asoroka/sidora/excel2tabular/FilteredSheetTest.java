@@ -5,13 +5,10 @@ import static com.asoroka.sidora.excel2tabular.TestUtilities.iterateOver;
 import static com.google.common.collect.Iterables.elementsEqual;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Iterables.isEmpty;
-import static com.google.common.collect.Iterators.elementsEqual;
-import static com.google.common.collect.Iterators.forArray;
 import static java.util.Arrays.asList;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BLANK;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_NUMERIC;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -21,7 +18,6 @@ import java.util.Collections;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,10 +36,6 @@ public class FilteredSheetTest {
 
     @Mock
     private Cell blankCell, dataCell;
-
-    private CellRangeAddress mockMergedRegion = new CellRangeAddress(0, 0, 0, 0) {/**/};
-
-    private CellRangeAddress mockMergedRegion2 = new CellRangeAddress(1, 1, 0, 0) {/**/};
 
     private static final Logger log = getLogger(FilteredSheetTest.class);
 
@@ -181,27 +173,5 @@ public class FilteredSheetTest {
         assertTrue(elementsEqual(
                 asList(rowWithDataCell, rowWithDataCell1, rowWithDataCell2),
                 new FilteredSheet(mockSheet)));
-    }
-
-    @Test
-    public void testSheetWithThreeRowsOfDataCellsReverse() {
-        when(rowWithDataCell.getRowNum()).thenReturn(0);
-        when(rowWithDataCell1.getRowNum()).thenReturn(1);
-        when(rowWithDataCell2.getRowNum()).thenReturn(2);
-        when(mockSheet.getFirstRowNum()).thenReturn(0);
-        when(mockSheet.getLastRowNum()).thenReturn(2);
-        when(mockSheet.iterator()).thenAnswer(iterateOver(rowWithDataCell, rowWithDataCell1, rowWithDataCell2));
-        when(mockSheet.getRow(0)).thenReturn(rowWithDataCell);
-        when(mockSheet.getRow(1)).thenReturn(rowWithDataCell1);
-        when(mockSheet.getRow(2)).thenReturn(rowWithDataCell2);
-        assertTrue(elementsEqual(
-                forArray(rowWithDataCell2, rowWithDataCell1, rowWithDataCell),
-                new FilteredSheet(mockSheet).reversed()));
-    }
-
-    @Test
-    public void testEmptySheetReverse() {
-        when(mockSheet.iterator()).thenReturn(Collections.<Row> emptyIterator());
-        assertFalse(new FilteredSheet(mockSheet).reversed().hasNext());
     }
 }
