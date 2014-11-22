@@ -2,7 +2,6 @@
 package com.asoroka.sidora.excel2tabular;
 
 import static com.asoroka.sidora.excel2tabular.IsBlankRow.isBlankRow;
-import static com.google.common.collect.FluentIterable.from;
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Ordering.natural;
 import static com.google.common.collect.Range.closed;
@@ -11,6 +10,8 @@ import static java.util.Collections.emptyIterator;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Iterator;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -29,6 +30,8 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
     Range<Integer> dataRange;
 
+    NavigableSet<Integer> blankRows = new TreeSet<>();
+
     /**
      * For lazy initialization.
      */
@@ -45,8 +48,6 @@ public class FilteredSheet extends ReversableIterable<Row> {
         this.sheet = s;
         this.lastRowIndex = sheet.getLastRowNum();
         this.firstRowIndex = sheet.getFirstRowNum();
-        // begin by assuming that all rows may be data rows
-        dataRange = closed(firstRowIndex, lastRowIndex);
         log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowIndex + 1, sheet.getSheetName());
 
         // only examine and process a sheet for data rows if it has any rows
@@ -59,7 +60,10 @@ public class FilteredSheet extends ReversableIterable<Row> {
 
     private void findDataRows() {
         initializing = true;
-        // find maximal row on which to center search
+
+        // begin by assuming that all rows may be data rows
+        dataRange = closed(firstRowIndex, lastRowIndex);
+        // find maximal row on which to center search and record any blank rows
         final Row maximalRow = compareByRowLength.max(this);
         final int maximalRowIndex = maximalRow.getRowNum();
 
@@ -71,41 +75,29 @@ public class FilteredSheet extends ReversableIterable<Row> {
         }
         log.trace("Found index of maximally long data row at: {} with length: {}",
                 maximalRowIndex, maximalRow.getLastCellNum());
-        // search for blank rows forwards only after the maximal row
-        dataRange = closed(maximalRowIndex, lastRowIndex);
-        final int nextBlankRowIndex =
-                from(this).firstMatch(isBlankRow).transform(extractRowIndex).or(lastRowIndex + 1);
-        log.trace("Found next ignorable row at index: {}", nextBlankRowIndex);
-        final int lastDataRowIndex = nextBlankRowIndex - 1;
+        // search for blank rows forwards after the maximal row
+        final Integer nextBlankRowIndex = blankRows.higher(maximalRowIndex);
+        final int lastDataRowIndex = nextBlankRowIndex == null ? lastRowIndex : nextBlankRowIndex - 1;
 
-        // search for blank rows backwards only before the maximal row
-        dataRange = closed(firstRowIndex, maximalRowIndex);
-        final int previousBlankRowIndex =
-                from(reversed(this)).firstMatch(isBlankRow).transform(extractRowIndex).or(firstRowIndex - 1);
-        log.trace("Found previous ignorable row at index: {}", nextBlankRowIndex);
-        final int firstDataRowIndex = previousBlankRowIndex + 1;
-
+        // search for blank rows backwards before the maximal row
+        final Integer previousBlankRowIndex = blankRows.lower(maximalRowIndex);
+        final int firstDataRowIndex = previousBlankRowIndex == null ? firstRowIndex : previousBlankRowIndex + 1;
         dataRange = closed(firstDataRowIndex, lastDataRowIndex);
         log.trace("Found data range: {}", dataRange);
         initializing = false;
         initialized = true;
     }
 
-    private static final Function<Row, Integer> extractRowIndex = new Function<Row, Integer>() {
-
-        @Override
-        public Integer apply(final Row r) {
-            return r.getRowNum();
-        }
-    };
-
     /**
      * An {@link Ordering} that compares two {@link Row}s on the basis of their length.
      */
-    private static final Ordering<Row> compareByRowLength = natural().onResultOf(new Function<Row, Short>() {
+    private final Ordering<Row> compareByRowLength = natural().onResultOf(new Function<Row, Short>() {
 
         @Override
         public Short apply(final Row r) {
+            if (isBlankRow.apply(r)) {
+                blankRows.add(r.getRowNum());
+            }
             return r.getLastCellNum();
         }
     });
