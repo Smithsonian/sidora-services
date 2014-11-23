@@ -12,9 +12,13 @@
 
 	<description>Spring utilities for developing metadata from tabular data files.</description>
 
+	<properties>
+		<spring.version>4.1.1.RELEASE</spring.version>
+	</properties>
+
 	<dependencies>
 		<dependency>
-			<groupId>com.asoroka.sidora</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>tabular-metadata-generator</artifactId>
 			<version>${project.version}</version>
 		</dependency>

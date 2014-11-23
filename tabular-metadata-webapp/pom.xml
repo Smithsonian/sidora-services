@@ -13,11 +13,12 @@
 
 	<properties>
 		<cxf.version>3.0.2</cxf.version>
+		<spring.version>4.1.1.RELEASE</spring.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
-			<groupId>com.asoroka.sidora</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>tabular-metadata-spring</artifactId>
 			<version>${project.version}</version>
 		</dependency>
