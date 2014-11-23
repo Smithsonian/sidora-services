@@ -21,13 +21,10 @@ public class SIdoraData2IT extends TestUtils {
     private static final Logger log = getLogger(SIdoraData2IT.class);
 
     @Test
-    public void testOneSheetFile() throws IOException {
+    public void test() throws IOException {
         final URL inputUrl = new File("src/test/resources/xls/C14DATES.CJD.REVISION.3.13.xlsx").toURI().toURL();
         final URL result = testExcel2Csv.process(inputUrl).get(0).toURI().toURL();
-        // log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
-
         final URL checkFile = new File("src/test/resources/tabular/C14DATES.CJD.REVISION.3.13.csv").toURI().toURL();
-        // log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
         assertEquals(checkLines.size(), resultLines.size());
