@@ -10,7 +10,7 @@
     <logger name="com.asoroka.sidora" additivity="false" level="TRACE">
         <appender-ref ref="STDOUT"/>
     </logger>
-    <root additivity="false" level="DEBUG">
+    <root additivity="false" level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
