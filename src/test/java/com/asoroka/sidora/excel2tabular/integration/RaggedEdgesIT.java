@@ -1,6 +1,8 @@
 
 package com.asoroka.sidora.excel2tabular.integration;
 
+import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.compareLines;
+import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.readLines;
 import static com.google.common.base.Charsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -15,7 +17,7 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
 import com.google.common.io.Resources;
 
-public class RaggedEdgesIT extends TestUtils {
+public class RaggedEdgesIT {
 
     private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
 

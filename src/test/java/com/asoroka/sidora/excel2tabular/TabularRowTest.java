@@ -1,6 +1,7 @@
 
 package com.asoroka.sidora.excel2tabular;
 
+import static com.asoroka.sidora.excel2tabular.UnitTestUtilities.iterateOver;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BLANK;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_STRING;
 import static org.junit.Assert.assertEquals;
@@ -29,6 +30,12 @@ public class TabularRowTest {
     @Test
     public void testEmptyRow() {
         when(mockRow.getLastCellNum()).thenReturn((short) 0);
+        assertEquals("", new TabularRow(mockRow).toString());
+    }
+
+    @Test
+    public void testOtherKindOfEmptyRow() {
+        when(mockRow.iterator()).thenAnswer(iterateOver());
         assertEquals("", new TabularRow(mockRow).toString());
     }
 

@@ -9,7 +9,7 @@ import java.util.List;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-public class TestUtilities {
+public class UnitTestUtilities {
 
     @SafeVarargs
     public static <E> Answer<Iterator<E>> iterateOver(final E... es) {

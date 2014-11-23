@@ -17,11 +17,11 @@ import org.slf4j.Logger;
 import com.google.common.io.Resources;
 
 /**
- * Some convenient utilities for tests.
+ * Some convenient utilities for integration tests.
  * 
  * @author ajs6f
  */
-public class TestUtils {
+public class IntegrationTestUtilities {
 
     /**
      * A cheap and cheerful 2-tuple.

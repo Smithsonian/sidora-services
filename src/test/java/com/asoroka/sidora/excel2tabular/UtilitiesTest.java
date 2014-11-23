@@ -34,7 +34,7 @@ public class UtilitiesTest {
             assertEquals(TEST_DATA, firstLine);
         } catch (final IOException e) {
             log.error(e.getLocalizedMessage());
-            fail("Failed to read from to temp file!");
+            fail("Failed to read from temp file!");
         }
     }
 }

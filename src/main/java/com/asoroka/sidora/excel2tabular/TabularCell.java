@@ -49,7 +49,6 @@ public class TabularCell {
         switch (cellType) {
         case CELL_TYPE_NUMERIC: {
             if (isCellDateFormatted(cell)) {
-                log.trace("Found date-formatted cell: {}", cell);
                 final Date date = getJavaDate(cell.getNumericCellValue());
                 final String dateFmt = cell.getCellStyle().getDataFormatString();
                 return new CellDateFormatter(dateFmt).format(date);

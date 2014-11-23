@@ -1,6 +1,8 @@
 
 package com.asoroka.sidora.excel2tabular.integration;
 
+import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.compareLines;
+import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.readLines;
 import static com.google.common.base.Charsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -20,11 +22,11 @@ import com.asoroka.sidora.excel2tabular.Utilities;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-public class VerySimpleCasesIT extends TestUtils {
+public class BasicCasesIT {
 
     private final ExcelToTabular testExcel2Tabular = new ExcelToTabular();
 
-    private static final Logger log = getLogger(VerySimpleCasesIT.class);
+    private static final Logger log = getLogger(BasicCasesIT.class);
 
     @Test
     public void testOneSheetFile() throws IOException {

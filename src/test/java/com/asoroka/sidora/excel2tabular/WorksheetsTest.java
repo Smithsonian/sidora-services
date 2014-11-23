@@ -1,7 +1,7 @@
 
 package com.asoroka.sidora.excel2tabular;
 
-import static com.asoroka.sidora.excel2tabular.TestUtilities.iterateOver;
+import static com.asoroka.sidora.excel2tabular.UnitTestUtilities.iterateOver;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Iterables.size;
@@ -9,8 +9,6 @@ import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_NUMERIC;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
-
-import java.util.Collections;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -53,7 +51,7 @@ public class WorksheetsTest {
 
     @Test
     public void testWorkbookWithOneEmptySheet() {
-        when(mockSheet1.iterator()).thenReturn(Collections.<Row> emptyIterator());
+        when(mockSheet1.iterator()).thenAnswer(iterateOver());
         when(mockWorkbook.getNumberOfSheets()).thenReturn(1);
         when(mockWorkbook.getSheetAt(0)).thenReturn(mockSheet1);
         assertTrue(isEmpty(new Worksheets(mockWorkbook)));
@@ -61,7 +59,7 @@ public class WorksheetsTest {
 
     @Test
     public void testWorkbookWithThreeEmptySheets() {
-        when(mockSheet1.iterator()).thenReturn(Collections.<Row> emptyIterator());
+        when(mockSheet1.iterator()).thenAnswer(iterateOver());
         when(mockWorkbook.getNumberOfSheets()).thenReturn(3);
         when(mockWorkbook.getSheetAt(0)).thenReturn(mockSheet1);
         when(mockWorkbook.getSheetAt(1)).thenReturn(mockSheet1);

@@ -1,7 +1,7 @@
 
 package com.asoroka.sidora.excel2tabular;
 
-import static com.asoroka.sidora.excel2tabular.TestUtilities.iterateOver;
+import static com.asoroka.sidora.excel2tabular.UnitTestUtilities.iterateOver;
 import static com.google.common.collect.Iterables.elementsEqual;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Iterables.isEmpty;
@@ -12,8 +12,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
-
-import java.util.Collections;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -41,8 +39,8 @@ public class FilteredSheetTest {
 
     @Before
     public void setUp() {
-        when(emptyRow.iterator()).thenReturn(Collections.<Cell> emptyIterator());
-        when(nullRow.iterator()).thenReturn(Collections.<Cell> emptyIterator());
+        when(emptyRow.iterator()).thenAnswer(iterateOver());
+        when(nullRow.iterator()).thenAnswer(iterateOver());
         when(blankCell.getCellType()).thenReturn(CELL_TYPE_BLANK);
         when(blankRow.iterator()).thenAnswer(iterateOver(blankCell, blankCell, blankCell));
         when(blankRow2.iterator()).thenAnswer(iterateOver(blankCell, blankCell, blankCell));
@@ -57,7 +55,7 @@ public class FilteredSheetTest {
 
     @Test
     public void testEmptySheet() {
-        when(mockSheet.iterator()).thenReturn(Collections.<Row> emptyIterator());
+        when(mockSheet.iterator()).thenAnswer(iterateOver());
         assertTrue(isEmpty(new FilteredSheet(mockSheet)));
     }
 

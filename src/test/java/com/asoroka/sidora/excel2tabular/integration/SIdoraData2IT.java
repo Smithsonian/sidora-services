@@ -1,6 +1,8 @@
 
 package com.asoroka.sidora.excel2tabular.integration;
 
+import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.compareLines;
+import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.readLines;
 import static org.junit.Assert.assertEquals;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -14,7 +16,7 @@ import org.slf4j.Logger;
 
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
 
-public class SIdoraData2IT extends TestUtils {
+public class SIdoraData2IT {
 
     private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
 
