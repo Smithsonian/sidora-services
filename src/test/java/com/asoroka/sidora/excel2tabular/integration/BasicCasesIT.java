@@ -4,6 +4,7 @@ package com.asoroka.sidora.excel2tabular.integration;
 import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.compareLines;
 import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.readLines;
 import static com.google.common.base.Charsets.UTF_8;
+import static org.junit.Assert.assertTrue;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -42,6 +43,13 @@ public class BasicCasesIT {
     }
 
     @Test
+    public void testBlankFile() throws IOException {
+        final URL inputUrl = new File("src/test/resources/xls/blank.xls").toURI().toURL();
+        final List<File> results = testExcel2Tabular.process(inputUrl);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
     public void testOneSheetFileToTabbed() throws IOException {
         final ExcelToTabular testExcel2Tabbed = new ExcelToTabular();
         testExcel2Tabbed.setDelimiter("\t");
@@ -50,6 +58,22 @@ public class BasicCasesIT {
         final URL result = testExcel2Tabbed.process(inputUrl).get(0).toURI().toURL();
         log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
         final URL checkFile = new File("src/test/resources/tabular/small-test.tsv").toURI().toURL();
+        log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
+
+        final List<String> resultLines = readLines(result);
+        final List<String> checkLines = readLines(checkFile);
+        compareLines(checkLines, resultLines, log);
+    }
+
+    @Test
+    public void testOneSheetFileToSingleQuoted() throws IOException {
+        final ExcelToTabular testExcel2SingleQuoted = new ExcelToTabular();
+        testExcel2SingleQuoted.setQuoteChar("'");
+
+        final URL inputUrl = new File("src/test/resources/xls/small-test.xls").toURI().toURL();
+        final URL result = testExcel2SingleQuoted.process(inputUrl).get(0).toURI().toURL();
+        log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
+        final URL checkFile = new File("src/test/resources/tabular/small-test-single-quoted.csv").toURI().toURL();
         log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
 
         final List<String> resultLines = readLines(result);

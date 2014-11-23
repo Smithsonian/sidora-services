@@ -33,6 +33,12 @@ public class ExcelToTabularTest {
         new ExcelToTabular().process(testFile.toURI().toURL());
     }
 
+    @Test(expected = ExcelParsingException.class)
+    public void testBadFormatSheet() throws IOException {
+        final File testFile = new File("src/test/resources/xls/bad-format-spreadsheet.xlsx");
+        new ExcelToTabular().process(testFile.toURI().toURL());
+    }
+
     @Test
     public void testOneLineSheet() throws IOException {
         final File testFile = new File("src/test/resources/xls/one-line.xls");
