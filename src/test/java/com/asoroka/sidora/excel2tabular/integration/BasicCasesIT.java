@@ -122,4 +122,10 @@ public class BasicCasesIT {
         Files.write("THIS IS NOT A SPREADSHEET", unreadableSheetFile, UTF_8);
         testExcel2Tabular.process(unreadableSheetFile.toURI().toURL());
     }
+
+    @Test(expected = ExcelParsingException.class)
+    public void testBadFormatSheet() throws IOException {
+        final File testFile = new File("src/test/resources/xls/bad-format-spreadsheet.xlsx");
+        new ExcelToTabular().process(testFile.toURI().toURL());
+    }
 }
