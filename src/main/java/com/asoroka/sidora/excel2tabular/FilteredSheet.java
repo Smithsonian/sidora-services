@@ -49,8 +49,6 @@ public class FilteredSheet implements Iterable<Row> {
         this.sheet = s;
         this.lastRowIndex = sheet.getLastRowNum();
         this.firstRowIndex = sheet.getFirstRowNum();
-        log.debug("Found {} rows in sheet {}.", lastRowIndex - firstRowIndex + 1, sheet.getSheetName());
-
         // only examine and process a sheet for data rows if it has any rows
         if (isEmpty(sheet)) {
             log.debug("Found no rows in sheet {}.", sheet.getSheetName());

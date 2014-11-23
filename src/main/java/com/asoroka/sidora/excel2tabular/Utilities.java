@@ -16,9 +16,4 @@ public final class Utilities {
             throw new AssertionError("Could not create temp file!", e);
         }
     }
-
-    private Utilities() {
-        throw new AssertionError("Helper class with static methods only!");
-    }
-
 }

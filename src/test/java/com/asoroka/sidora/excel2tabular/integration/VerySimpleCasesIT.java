@@ -7,25 +7,29 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
 import org.junit.Test;
 import org.slf4j.Logger;
 
+import com.asoroka.sidora.excel2tabular.ExcelParsingException;
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
+import com.asoroka.sidora.excel2tabular.Utilities;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-public class VerySimpleIT extends TestUtils {
+public class VerySimpleCasesIT extends TestUtils {
 
-    private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
+    private final ExcelToTabular testExcel2Tabular = new ExcelToTabular();
 
-    private static final Logger log = getLogger(VerySimpleIT.class);
+    private static final Logger log = getLogger(VerySimpleCasesIT.class);
 
     @Test
     public void testOneSheetFile() throws IOException {
         final URL inputUrl = new File("src/test/resources/xls/small-test.xls").toURI().toURL();
-        final URL result = testExcel2Csv.process(inputUrl).get(0).toURI().toURL();
+        final URL result = testExcel2Tabular.process(inputUrl).get(0).toURI().toURL();
         log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
         final URL checkFile = new File("src/test/resources/tabular/small-test.csv").toURI().toURL();
         log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
@@ -54,7 +58,7 @@ public class VerySimpleIT extends TestUtils {
     @Test
     public void testThreeSheetFile() throws IOException {
         final URL inputUrl = new File("src/test/resources/xls/three-sheet.xls").toURI().toURL();
-        final List<File> results = testExcel2Csv.process(inputUrl);
+        final List<File> results = testExcel2Tabular.process(inputUrl);
         log.debug("Results of extraction:\n");
         for (final File result : results) {
             log.debug("\n{}", Resources.toString(result.toURI().toURL(), UTF_8));
@@ -77,5 +81,19 @@ public class VerySimpleIT extends TestUtils {
             final List<String> checkLines = readLines(checkFile);
             compareLines(checkLines, resultLines, log);
         }
+    }
+
+    @Test(expected = ExcelParsingException.class)
+    public void testBadInputUrl() throws MalformedURLException {
+        final File intentionallyMissingFile = Utilities.createTempFile(this);
+        intentionallyMissingFile.delete();
+        testExcel2Tabular.process(intentionallyMissingFile.toURI().toURL());
+    }
+
+    @Test(expected = ExcelParsingException.class)
+    public void testBadInputData() throws IOException {
+        final File unreadableSheetFile = Utilities.createTempFile(this);
+        Files.write("THIS IS NOT A SPREADSHEET", unreadableSheetFile, UTF_8);
+        testExcel2Tabular.process(unreadableSheetFile.toURI().toURL());
     }
 }

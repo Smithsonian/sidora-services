@@ -39,17 +39,9 @@ public class TabularCellTest {
 
     private static final String TEST_STRING_PRINTED_VALUE = "\"" + TEST_STRING_VALUE + "\"";
 
-    private static final String TEST_INTEGER_STRING_VALUE = "945";
-
-    private static final String TEST_INTEGER_STRING_PRINTED_VALUE = "945";
-
-    private static final String TEST_DECIMAL_STRING_VALUE = "3456.23";
-
-    private static final String TEST_DECIMAL_STRING_PRINTED_VALUE = "3456.23";
-
     @Mock
     private Cell stringCell, integerCell, decimalCell, emptyCell, booleanCell, funkyCell, errorCell, formulaCell,
-            integerStringCell, decimalStringCell;
+            integerStringCell, decimalStringCell, stringCellWithJavaNumericalLiteral;
 
     private final Cell nullCell = null;
 
@@ -57,10 +49,6 @@ public class TabularCellTest {
     public void setUp() {
         when(stringCell.getStringCellValue()).thenReturn(TEST_STRING_VALUE);
         when(stringCell.getCellType()).thenReturn(CELL_TYPE_STRING);
-        when(integerStringCell.getStringCellValue()).thenReturn(TEST_INTEGER_STRING_VALUE);
-        when(integerStringCell.getCellType()).thenReturn(CELL_TYPE_STRING);
-        when(decimalStringCell.getStringCellValue()).thenReturn(TEST_DECIMAL_STRING_VALUE);
-        when(decimalStringCell.getCellType()).thenReturn(CELL_TYPE_STRING);
         when(decimalCell.getNumericCellValue()).thenReturn(TEST_DECIMAL_VALUE);
         when(decimalCell.getCellType()).thenReturn(CELL_TYPE_NUMERIC);
         when(integerCell.getNumericCellValue()).thenReturn(TEST_INTEGER_VALUE);
@@ -78,16 +66,6 @@ public class TabularCellTest {
     @Test
     public void testStringValuedCell() {
         assertEquals(TEST_STRING_PRINTED_VALUE, new TabularCell(stringCell).toString());
-    }
-
-    @Test
-    public void testIntegerStringValuedCell() {
-        assertEquals(TEST_INTEGER_STRING_PRINTED_VALUE, new TabularCell(integerStringCell).toString());
-    }
-
-    @Test
-    public void testDecimalStringValuedCell() {
-        assertEquals(TEST_DECIMAL_STRING_PRINTED_VALUE, new TabularCell(decimalStringCell).toString());
     }
 
     @Test

@@ -65,7 +65,9 @@ public class ExcelToTabular {
             }
             return outputs;
         } catch (final InvalidFormatException e) {
-            throw new ExcelParsingException("Could not parse input spreadsheet: " + inputUrl, e);
+            throw new ExcelParsingException(
+                    "Could not parse input spreadsheet because it is not in a format registered to Apache POI: " +
+                            inputUrl, e);
         } catch (final IOException e) {
             throw new ExcelParsingException("Could not translate input spreadsheet: " + inputUrl, e);
         }

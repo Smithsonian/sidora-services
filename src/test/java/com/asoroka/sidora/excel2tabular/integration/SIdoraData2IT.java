@@ -1,6 +1,7 @@
 
 package com.asoroka.sidora.excel2tabular.integration;
 
+import static org.junit.Assert.assertEquals;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
@@ -25,10 +26,11 @@ public class SIdoraData2IT extends TestUtils {
         final URL result = testExcel2Csv.process(inputUrl).get(0).toURI().toURL();
         // log.debug("Result of extraction:\n{}", Resources.toString(result, UTF_8));
 
-        final URL checkFile = new File("src/test/resources/tabular/cjd-master-op.3-huesos.csv").toURI().toURL();
+        final URL checkFile = new File("src/test/resources/tabular/C14DATES.CJD.REVISION.3.13.csv").toURI().toURL();
         // log.debug("File against which we're going to check:\n{}", Resources.toString(checkFile, UTF_8));
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        // compareLines(resultLines, checkLines, log);
+        assertEquals(checkLines.size(), resultLines.size());
+        compareLines(checkLines, resultLines, log);
     }
 }

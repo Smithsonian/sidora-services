@@ -2,8 +2,6 @@
 package com.asoroka.sidora.excel2tabular;
 
 import static com.google.common.math.DoubleMath.isMathematicalInteger;
-import static java.lang.Double.parseDouble;
-import static java.lang.Integer.parseInt;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BLANK;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_BOOLEAN;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_ERROR;
@@ -74,15 +72,7 @@ public class TabularCell {
         }
         case CELL_TYPE_STRING:
             final String stringCellValue = cell.getStringCellValue();
-            try {
-                return Integer.toString(parseInt(stringCellValue));
-            } catch (final NumberFormatException e) {
-                try {
-                    return Double.toString(parseDouble(stringCellValue));
-                } catch (final NumberFormatException e1) {
-                    return quote(stringCellValue);
-                }
-            }
+            return quote(stringCellValue);
         case CELL_TYPE_ERROR:
             return FormulaError.forInt(cell.getErrorCellValue()).getString();
         default:

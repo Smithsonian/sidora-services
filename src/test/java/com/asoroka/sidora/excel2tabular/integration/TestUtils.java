@@ -85,7 +85,7 @@ public class TestUtils {
                     lineAwithoutTrailingCommas = lineAmatcher.group(1);
                 } else {
                     log.error("Mismatch for expected value at line {}!", lineNum);
-                    throw e;
+                    log.error(e.getLocalizedMessage());
                 }
                 final Matcher lineBmatcher = NO_TRAILING_COMMAS.matcher(line.b);
                 String lineBwithoutTrailingCommas = null;
@@ -102,9 +102,16 @@ public class TestUtils {
                     log.warn("Actual: {}", line.b);
                 }
                 else {
-                    log.error("Error matching at line: {}", lineNum);
-                    log.error(e.getLocalizedMessage());
-                    throw e;
+                    if (lineAwithoutTrailingCommas.replace("\"", "").equals(
+                            lineBwithoutTrailingCommas.replace("\"", ""))) {
+                        log.warn("Found difference by quotation characters at line number {}", lineNum);
+                        log.warn("Expected: {}", line.a);
+                        log.warn("Actual: {}", line.b);
+                    } else {
+                        log.error("Error matching at line: {}", lineNum);
+                        log.error(e.getLocalizedMessage());
+                        throw e;
+                    }
                 }
             }
         }
