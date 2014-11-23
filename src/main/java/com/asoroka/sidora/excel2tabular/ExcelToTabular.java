@@ -56,13 +56,13 @@ public class ExcelToTabular {
             for (final FilteredSheet sheet : worksheets) {
                 final File tabularFile = createTempFile(this);
                 outputs.add(tabularFile);
-
                 try (PrintStream output = new PrintStream(tabularFile)) {
                     for (final Row row : sheet) {
                         output.println(new TabularRow(row, quote, delimiter));
                     }
                 }
             }
+            spreadsheet.delete();
             return outputs;
         } catch (final InvalidFormatException e) {
             throw new ExcelParsingException(
