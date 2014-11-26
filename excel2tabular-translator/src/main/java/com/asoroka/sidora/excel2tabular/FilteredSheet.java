@@ -26,40 +26,41 @@ public class FilteredSheet implements Iterable<Row> {
 
     final Sheet sheet;
 
-    private final int lastRowIndex, firstRowIndex;
-
-    Range<Integer> dataRange;
+    private Range<Integer> dataRange;
 
     NavigableSet<Integer> blankRows = new TreeSet<>();
 
     /**
      * For lazy initialization.
      */
-    boolean initialized = false, initializing = false;
+    private boolean initialized = false, initializing = false;
 
     /**
      * @see Range#isEmpty()
      */
     private static final Range<Integer> EMPTY_RANGE = openClosed(0, 0);
 
-    static final Logger log = getLogger(FilteredSheet.class);
+    private static final Logger log = getLogger(FilteredSheet.class);
 
     public FilteredSheet(final Sheet s) {
         this.sheet = s;
-        this.lastRowIndex = sheet.getLastRowNum();
-        this.firstRowIndex = sheet.getFirstRowNum();
-        // only examine and process a sheet for data rows if it has any rows
         if (isEmpty(sheet)) {
             log.debug("Found no rows in sheet {}.", sheet.getSheetName());
             dataRange = EMPTY_RANGE;
+            // don't bother processing further
             initialized = true;
         }
     }
 
+    /**
+     * Examine a sheet for data rows and record the results.
+     */
     private void findDataRows() {
         initializing = true;
 
-        // begin by assuming that all rows may be data rows
+        // begin by assuming that all rows might be data rows
+        final int lastRowIndex = sheet.getLastRowNum();
+        final int firstRowIndex = sheet.getFirstRowNum();
         dataRange = closed(firstRowIndex, lastRowIndex);
 
         // Because the rows in a sheet are not ordered by length, we will have to traverse all of them to find a row
@@ -95,8 +96,7 @@ public class FilteredSheet implements Iterable<Row> {
 
         @Override
         public Short apply(final Row r) {
-            checkNotNull(r);
-            if (isBlankRow(r)) {
+            if (isBlankRow(checkNotNull(r))) {
                 blankRows.add(r.getRowNum());
             }
             return r.getLastCellNum();
@@ -111,13 +111,17 @@ public class FilteredSheet implements Iterable<Row> {
      */
     @Override
     public Iterator<Row> iterator() {
-        if (unready()) {
+        // lazy initialization
+        if (!(initialized || initializing)) {
             findDataRows();
         }
         if (dataRange.isEmpty()) {
             return emptyIterator();
         }
-        return new AbstractIndexedIterator<Row>(dataRange.lowerEndpoint(), dataRange.upperEndpoint() + 1) {
+        // rows are 0-indexed in a sheet
+        final int numberOfRows = dataRange.upperEndpoint() + 1;
+        final Integer start = dataRange.lowerEndpoint();
+        return new AbstractIndexedIterator<Row>(start, numberOfRows) {
 
             @Override
             protected Row get(final int position) {
@@ -125,9 +129,5 @@ public class FilteredSheet implements Iterable<Row> {
                 return currentRow == null ? sheet.createRow(position) : currentRow;
             }
         };
-    }
-
-    private boolean unready() {
-        return !(initialized || initializing);
     }
 }

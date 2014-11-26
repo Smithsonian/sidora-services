@@ -11,7 +11,6 @@ import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_NUMERIC;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -21,7 +20,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.slf4j.Logger;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FilteredSheetTest {
@@ -34,8 +32,6 @@ public class FilteredSheetTest {
 
     @Mock
     private Cell blankCell, dataCell;
-
-    private static final Logger log = getLogger(FilteredSheetTest.class);
 
     @Before
     public void setUp() {

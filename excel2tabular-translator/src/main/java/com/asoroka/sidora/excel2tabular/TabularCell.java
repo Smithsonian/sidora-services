@@ -9,7 +9,6 @@ import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_NUMERIC;
 import static org.apache.poi.ss.usermodel.Cell.CELL_TYPE_STRING;
 import static org.apache.poi.ss.usermodel.DateUtil.getJavaDate;
 import static org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Date;
 
@@ -17,7 +16,6 @@ import org.apache.poi.ss.format.CellDateFormatter;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FormulaError;
 import org.apache.poi.ss.util.CellReference;
-import org.slf4j.Logger;
 
 public class TabularCell {
 
@@ -28,8 +26,6 @@ public class TabularCell {
     private String quote = defaultQuote;
 
     private static final String EMPTY_STRING = "";
-
-    private static final Logger log = getLogger(TabularCell.class);
 
     public TabularCell(final Cell c, final String q) {
         this.cell = c;

@@ -4,15 +4,19 @@ package com.asoroka.sidora.excel2tabular;
 import com.google.common.collect.AbstractIterator;
 
 /**
- * An {@link Iterator} over an indexed data structure.
+ * An {@link Iterator} over an integer-indexed data structure.
  * 
  * @author ajs6f
  * @param <E>
  */
 public abstract class AbstractIndexedIterator<E> extends AbstractIterator<E> {
 
-    private int index = 0, size;
+    private int index, size;
 
+    /**
+     * @param position
+     * @return an element of the indexed data structure
+     */
     protected abstract E get(int position);
 
     protected AbstractIndexedIterator(final int size) {
