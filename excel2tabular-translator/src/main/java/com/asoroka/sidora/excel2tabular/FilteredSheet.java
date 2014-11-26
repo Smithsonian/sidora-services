@@ -19,7 +19,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.slf4j.Logger;
 
 import com.google.common.base.Function;
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 
@@ -118,23 +117,12 @@ public class FilteredSheet implements Iterable<Row> {
         if (dataRange.isEmpty()) {
             return emptyIterator();
         }
-        return new AbstractIterator<Row>() {
-
-            private int rowIndex = dataRange.lowerEndpoint();
+        return new AbstractIndexedIterator<Row>(dataRange.lowerEndpoint(), dataRange.upperEndpoint() + 1) {
 
             @Override
-            protected Row computeNext() {
-                if (!dataRange.contains(rowIndex)) {
-                    return endOfData();
-                }
-                final int currentRowIndex = rowIndex;
-                final Row currentRow = sheet.getRow(rowIndex++);
-                if (currentRow == null) {
-                    log.trace("Returning empty row with index {}", currentRowIndex);
-                    return sheet.createRow(currentRowIndex);
-                }
-                log.trace("Returning extant row with index {}", currentRowIndex);
-                return currentRow;
+            protected Row get(final int position) {
+                final Row currentRow = sheet.getRow(position);
+                return currentRow == null ? sheet.createRow(position) : currentRow;
             }
         };
     }
