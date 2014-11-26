@@ -43,7 +43,7 @@ public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
     }
 
     @Override
-    public FractionHeuristic clone() {
+    public FractionHeuristic newInstance() {
         return new FractionHeuristic(fractionOfAllowedNonparseables);
     }
 

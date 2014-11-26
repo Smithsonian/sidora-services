@@ -32,7 +32,8 @@ public class DefaultHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<
     }
 
     @Override
-    public DefaultHeaderHeuristic clone() {
+    public DefaultHeaderHeuristic newInstance() {
         return new DefaultHeaderHeuristic();
     }
+
 }

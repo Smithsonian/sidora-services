@@ -46,5 +46,5 @@ public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends Treat
     }
 
     @Override
-    public abstract SelfType clone();
+    public abstract SelfType newInstance();
 }

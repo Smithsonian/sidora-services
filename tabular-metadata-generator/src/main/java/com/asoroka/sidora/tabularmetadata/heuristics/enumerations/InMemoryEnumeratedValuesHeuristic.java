@@ -47,7 +47,7 @@ public class InMemoryEnumeratedValuesHeuristic extends AbstractHeuristic<InMemor
     }
 
     @Override
-    public InMemoryEnumeratedValuesHeuristic clone() {
+    public InMemoryEnumeratedValuesHeuristic newInstance() {
         return new InMemoryEnumeratedValuesHeuristic();
     }
 

@@ -68,7 +68,7 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     }
 
     @Override
-    public MinimumDistanceBetweenNonparseablesHeuristic clone() {
+    public MinimumDistanceBetweenNonparseablesHeuristic newInstance() {
         return new MinimumDistanceBetweenNonparseablesHeuristic(minimumDistance);
     }
 

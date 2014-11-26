@@ -42,7 +42,7 @@ public class RegexpHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<R
     }
 
     @Override
-    public RegexpHeaderHeuristic clone() {
+    public RegexpHeaderHeuristic newInstance() {
         return new RegexpHeaderHeuristic(regexp.pattern());
     }
 }

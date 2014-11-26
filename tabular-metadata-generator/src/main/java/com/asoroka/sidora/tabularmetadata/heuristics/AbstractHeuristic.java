@@ -11,6 +11,6 @@ public abstract class AbstractHeuristic<SelfType extends AbstractHeuristic<SelfT
     }
 
     @Override
-    public abstract SelfType clone();
+    public abstract SelfType newInstance();
 
 }

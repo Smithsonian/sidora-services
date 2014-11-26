@@ -60,5 +60,5 @@ public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfTyp
     protected abstract boolean candidacy(final DataType type);
 
     @Override
-    public abstract SelfType clone();
+    public abstract SelfType newInstance();
 }

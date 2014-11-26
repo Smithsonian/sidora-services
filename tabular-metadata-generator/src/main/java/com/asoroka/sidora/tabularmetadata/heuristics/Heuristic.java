@@ -1,7 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
-import com.asoroka.sidora.tabularmetadata.CloneableProvider;
+import com.asoroka.sidora.tabularmetadata.SelfTypeInstanceGenerator;
 
 /**
  * The simple idea of a heuristic that accepts lexes and does some kind of work with them. See its subtypes for
@@ -9,7 +9,7 @@ import com.asoroka.sidora.tabularmetadata.CloneableProvider;
  * 
  * @author ajs6f
  */
-public interface Heuristic<SelfType extends Heuristic<SelfType>> extends CloneableProvider<SelfType> {
+public interface Heuristic<SelfType extends Heuristic<SelfType>> extends SelfTypeInstanceGenerator<SelfType> {
 
     /**
      * Provide a value to this heuristic for consideration.

@@ -244,7 +244,7 @@ public class TabularMetadataGeneratorTest {
         }
 
         @Override
-        public MarkingMockDataTypeHeuristic clone() {
+        public MarkingMockDataTypeHeuristic newInstance() {
             return this;
         }
 

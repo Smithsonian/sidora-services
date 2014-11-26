@@ -22,13 +22,14 @@ public abstract class TestUtilities {
     /**
      * Extracts the most likely type selection from a {@link ValueHeuristic}
      */
-    protected static final Function<TypeDeterminingHeuristic<?>, DataType> getMostLikelyType = new Function<TypeDeterminingHeuristic<?>, DataType>() {
-    
-                    @Override
-                    public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
-                        return heuristic.mostLikelyType();
-                    }
-                };
+    protected static final Function<TypeDeterminingHeuristic<?>, DataType> getMostLikelyType =
+            new Function<TypeDeterminingHeuristic<?>, DataType>() {
+
+                @Override
+                public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
+                    return heuristic.mostLikelyType();
+                }
+            };
 
     /**
      * The following peculiar locution arises from the need to provide "cloneability" while avoiding a recursive mock
@@ -38,7 +39,7 @@ public abstract class TestUtilities {
     public static MockedHeuristic cloneableMockStrategy(final MockedHeuristic strategy) {
         final MockedHeuristic mocked = mock(MockedHeuristic.class);
         final Returns cloner = new Returns(strategy);
-        when(mocked.clone()).thenAnswer(cloner);
+        when(mocked.newInstance()).thenAnswer(cloner);
         return mocked;
     }
 

@@ -54,8 +54,8 @@ public class ScanLimitedHeuristic<InnerHeuristicType extends Heuristic<InnerHeur
     }
 
     @Override
-    public ScanLimitedHeuristic<InnerHeuristicType> clone() {
-        return new ScanLimitedHeuristic<>(innerHeuristic.clone(), scanLimit);
+    public ScanLimitedHeuristic<InnerHeuristicType> newInstance() {
+        return new ScanLimitedHeuristic<>(innerHeuristic.newInstance(), scanLimit);
     }
 
 }

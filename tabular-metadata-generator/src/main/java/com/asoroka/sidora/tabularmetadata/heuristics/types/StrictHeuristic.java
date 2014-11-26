@@ -25,7 +25,7 @@ public class StrictHeuristic extends PerTypeHeuristic<StrictHeuristic> {
     }
 
     @Override
-    public StrictHeuristic clone() {
+    public StrictHeuristic newInstance() {
         return new StrictHeuristic();
     }
 

@@ -14,7 +14,7 @@ public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeu
     @Test
     public void testClone() {
         final TestHeuristic testHeuristic = newTestHeuristic();
-        assertTrue(testHeuristic.getClass().isInstance(testHeuristic.clone()));
+        assertTrue(testHeuristic.getClass().isInstance(testHeuristic.newInstance()));
     }
 
     @Test

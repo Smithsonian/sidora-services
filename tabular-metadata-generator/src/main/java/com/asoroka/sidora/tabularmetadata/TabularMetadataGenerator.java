@@ -36,7 +36,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Range;
 
 /**
- * Master entry point for the workflow. This is the class from which all parsing should initiate, via
+ * Master entry point for this API. This is the class from which all parsing should initiate, via
  * {@link #getMetadata(URL)}.
  * 
  * @author ajs6f
@@ -48,7 +48,7 @@ public class TabularMetadataGenerator {
     private CSVFormat format = DEFAULT;
 
     /**
-     * DefaultHeaderHeuristic value of {@code 0} indicates no limit. See {@link TabularScanner.scan(final int limit)}.
+     * Default value of {@code 0} indicates no limit. See {@link TabularScanner.scan(final int limit)}.
      */
     private Integer scanLimit = 0;
 

@@ -96,7 +96,7 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
     }
 
     @Override
-    public RunningMinMaxHeuristic clone() {
+    public RunningMinMaxHeuristic newInstance() {
         return new RunningMinMaxHeuristic();
     }
 
