@@ -114,6 +114,13 @@ public class TabularMetadataGeneratorTest {
         return generator;
     }
 
+    @Test(expected = EmptyDataFileException.class)
+    public void testEmptyDataFile() throws IOException {
+        final URL mockURL = mockURL("".getBytes());
+        final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
+        testParser.getMetadata(mockURL);
+    }
+
     @Test
     public void testOperationWithSetFormat() throws IOException {
         log.trace("Entering testOperationWithSetFormat()...");

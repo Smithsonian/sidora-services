@@ -20,11 +20,11 @@ public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
     private static final Logger log = getLogger(FractionHeuristic.class);
 
     /**
-     * @param d The fraction of nonparsing values to permit
+     * @param nonParsingFraction The fraction of nonparsing values to permit
      */
-    public FractionHeuristic(final float d) {
+    public FractionHeuristic(final float nonParsingFraction) {
         super();
-        this.fractionOfAllowedNonparseables = d;
+        this.fractionOfAllowedNonparseables = nonParsingFraction;
     }
 
     @Override

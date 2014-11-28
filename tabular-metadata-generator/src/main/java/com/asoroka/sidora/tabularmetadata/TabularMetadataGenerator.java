@@ -2,6 +2,7 @@
 package com.asoroka.sidora.tabularmetadata;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.collect.Iterators.peekingIterator;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
@@ -13,6 +14,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -33,6 +35,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RunningMinMaxHeurist
 import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import com.google.common.base.Function;
+import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
 
 /**
@@ -68,40 +71,41 @@ public class TabularMetadataGenerator {
      * @throws IOException
      */
     public TabularMetadata getMetadata(final URL dataUrl) throws IOException {
-        // attempt to extract header names
-        // TODO allow a HeaderHeuristic to use more information than the first line of data
-        final List<String> headerNames;
-        try (final CSVParser headerParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
-            final CSVRecord firstLine = headerParser.iterator().next();
+
+        try (CSVParser csvParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
+            final PeekingIterator<CSVRecord> parser = peekingIterator(csvParser.iterator());
+            // TODO allow a HeaderHeuristic to use more information than the first line of data
+            final CSVRecord firstLine = parser.peek();
             for (final String field : firstLine) {
                 headerStrategy.addValue(field);
             }
             final boolean hasHeaders = headerStrategy.isHeader();
             headerStrategy.reset();
-            format = hasHeaders ? format.withHeader() : format;
-            headerNames = hasHeaders ? newArrayList(firstLine) : emptyHeaders(firstLine.size());
-        }
-
-        final List<TypeDeterminingHeuristic<?>> typeStrategies;
-        final List<RangeDeterminingHeuristic<?>> rangeStrategies;
-        final List<EnumeratedValuesHeuristic<?>> enumStrategies;
-
-        // scan values up to the limit
-        final TabularScanner scanner;
-        try (final CSVParser parser = parse(dataUrl, CHARACTER_ENCODING, format)) {
-            scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
+            final List<String> headerNames;
+            if (hasHeaders) {
+                headerNames = newArrayList(firstLine);
+                parser.next();
+            }
+            else {
+                headerNames = emptyHeaders(firstLine.size());
+            }
+            // scan values up to the limit
+            final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
             scanner.scan(scanLimit);
+
+            final List<TypeDeterminingHeuristic<?>> typeStrategies = scanner.getTypeStrategies();
+            final List<RangeDeterminingHeuristic<?>> rangeStrategies = scanner.getRangeStrategies();
+            final List<EnumeratedValuesHeuristic<?>> enumStrategies = scanner.getEnumStrategies();
+
+            // extract the results for each field
+            final List<SortedSet<DataType>> columnTypes = transform(typeStrategies, extractType);
+            final List<Map<DataType, Range<?>>> minMaxes = transform(rangeStrategies, extractMinMax);
+            final List<Map<DataType, Set<String>>> enumValues = transform(enumStrategies, extractEnumValues);
+
+            return new TabularMetadata(headerNames, columnTypes, minMaxes, enumValues);
+        } catch (final NoSuchElementException e) {
+            throw new EmptyDataFileException(dataUrl + " has no data in it!");
         }
-        typeStrategies = scanner.getTypeStrategies();
-        rangeStrategies = scanner.getRangeStrategies();
-        enumStrategies = scanner.getEnumStrategies();
-
-        // extract the results for each field
-        final List<SortedSet<DataType>> columnTypes = transform(typeStrategies, extractType);
-        final List<Map<DataType, Range<?>>> minMaxes = transform(rangeStrategies, extractMinMax);
-        final List<Map<DataType, Set<String>>> enumValues = transform(enumStrategies, extractEnumValues);
-
-        return new TabularMetadata(headerNames, columnTypes, minMaxes, enumValues);
     }
 
     private static final Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>> extractType =

@@ -54,7 +54,8 @@ public class TabularScannerTest extends TestUtilities {
             log.debug("Found header map: {}", parser.getHeaderMap());
             final MockedHeuristic cloneableMockStrategy = cloneableMockStrategy(mockStrategy);
             testScanner =
-                    new TabularScanner(parser, cloneableMockStrategy, cloneableMockStrategy, cloneableMockStrategy);
+                    new TabularScanner(parser.iterator(), cloneableMockStrategy, cloneableMockStrategy,
+                            cloneableMockStrategy);
             testScanner.scan(0);
         }
         final List<DataType> guesses =
@@ -69,7 +70,8 @@ public class TabularScannerTest extends TestUtilities {
             log.debug("Found header map: {}", parser.getHeaderMap());
             final MockedHeuristic cloneableMockStrategy = cloneableMockStrategy(mockStrategy);
             testScanner =
-                    new TabularScanner(parser, cloneableMockStrategy, cloneableMockStrategy, cloneableMockStrategy);
+                    new TabularScanner(parser.iterator(), cloneableMockStrategy, cloneableMockStrategy,
+                            cloneableMockStrategy);
             testScanner.scan(2);
         }
         final List<DataType> guesses =
