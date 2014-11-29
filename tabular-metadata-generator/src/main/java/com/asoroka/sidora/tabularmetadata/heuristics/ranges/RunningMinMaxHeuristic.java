@@ -59,13 +59,11 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
             final Comparable<?> currentMax = maximums.get(type);
             try {
                 final Comparable<?> v = type.parse(value);
-                // TODO avoid this repeated conditional
                 log.trace("Trying new value {} against current min {} and current max {} for type {}", v, currentMin,
                         currentMax, type);
+                // TODO avoid this repeated conditional
                 minimums.put(type, (currentMin == null) ? v : natural().min(currentMin, v));
                 maximums.put(type, (currentMax == null) ? v : natural().max(currentMax, v));
-                assert (maximums.get(type) != null);
-                assert (minimums.get(type) != null);
                 log.trace("Tried new value {} and got new min {} and new max {} for type {}", v, minimums.get(type),
                         maximums.get(type), type);
 
