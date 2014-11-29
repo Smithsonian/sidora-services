@@ -1,17 +1,26 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.types;
 
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
+import static com.asoroka.sidora.tabularmetadata.test.TestUtilities.addValues;
+import static java.util.UUID.randomUUID;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.assumeThat;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import org.junit.Test;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 
-import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
+import com.asoroka.sidora.tabularmetadata.test.RowsOfRandomValuesForAllTypes;
+import com.asoroka.sidora.tabularmetadata.test.TestUtilities.RandomValuesForAType;
 
-public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<StrictHeuristic> {
+@RunWith(Theories.class)
+public class StrictHeuristicTest extends PerTypeHeuristicTestFrame<StrictHeuristic> {
 
     private static final Logger log = getLogger(StrictHeuristicTest.class);
 
@@ -20,30 +29,24 @@ public class StrictHeuristicTest extends CountAggregatingHeuristicTestFrame<Stri
         return new StrictHeuristic();
     }
 
-    @Test
-    public void testActionWithParsingValues() {
-        log.trace("testActionWithParsingValues()...");
-        for (final DataType testType : DataType.values()) {
-            log.debug("Testing type: {}", testType);
-            final StrictHeuristic testHeuristic = newTestHeuristic();
-            for (final String testValue : parseableValues.get(testType)) {
-                testHeuristic.addValue(testValue);
-            }
-            assertEquals("Didn't get the correct type for datatype " + testType + "!", testType, testHeuristic
-                    .mostLikelyType());
-        }
+    @Theory
+    public void inputsWithOneUnparseableValueShouldNotBeRecognizedAsTheirTrueType(
+            @RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
+        // nothing cannot be recognized as a String
+        assumeThat(values.type, not(is(String)));
+        // but a UUID could only be recognized as a String
+        values.add(randomUUID());
+        final StrictHeuristic testHeuristic = newTestHeuristic();
+        addValues(testHeuristic, values);
+        assertNotEquals(values.type, testHeuristic.mostLikelyType());
     }
 
-    @Test
-    public void testActionWithOneNonparsingValue() {
-        log.trace("testActionWithOneNonparsingValue()...");
-        for (final DataType testType : oneNonparseableValue.keySet()) {
-            final StrictHeuristic testHeuristic = newTestHeuristic();
-            for (final String testValue : oneNonparseableValue.get(testType)) {
-                testHeuristic.addValue(testValue);
-            }
-            assertFalse("Got the most commonly occuring type for datatype " + testType + " but shoudn't have!",
-                    testHeuristic.typesAsLikely().equals(testType));
-        }
+    @Theory
+    public void inputsWithNoUnparseableValuesShouldBeRecognizedAsTheirTrueType(
+            @RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
+        log.trace("StrictHeuristicTest chacking {}", values.type);
+        final StrictHeuristic testHeuristic = newTestHeuristic();
+        addValues(testHeuristic, values);
+        assertEquals(values.type, testHeuristic.mostLikelyType());
     }
 }

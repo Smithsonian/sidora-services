@@ -14,9 +14,8 @@ public abstract class ValueCountingHeuristicTestFrame<TestHeuristic extends Valu
     public void testCountingValues() {
         final TestHeuristic testHeuristic = newTestHeuristic();
         for (byte i = 1; i <= 100; i++) {
-            testHeuristic.addValue(String.valueOf(i));
+            testHeuristic.addValue("VALUE");
         }
         assertEquals(100, testHeuristic.totalNumValues());
     }
-
 }

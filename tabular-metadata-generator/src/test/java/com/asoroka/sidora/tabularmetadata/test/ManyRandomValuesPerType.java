@@ -4,6 +4,7 @@ package com.asoroka.sidora.tabularmetadata.test;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
+import java.util.Map;
 
 import org.junit.experimental.theories.ParametersSuppliedBy;
 
@@ -15,17 +16,17 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
  * @author ajs6f
  */
 @Retention(RUNTIME)
-@ParametersSuppliedBy(RandomValuesSupplier.class)
-public @interface RandomValues {
+@ParametersSuppliedBy(ManyRandomValuesPerTypeSupplier.class)
+public @interface ManyRandomValuesPerType {
 
     /**
-     * Type of values to supply.
+     * Number of "rows" of test data to supply. A "row" is a {@link Map}s from {@link DataType}s to
+     * {@link #valuesPerType()} random values for that type.
      */
-    DataType type();
+    short numRuns();
 
     /**
-     * Number of values to supply.
+     * Number of values to supply per {@link DataType}.
      */
-    short numValues();
-
+    short valuesPerType();
 }

@@ -15,17 +15,21 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
  * @author ajs6f
  */
 @Retention(RUNTIME)
-@ParametersSuppliedBy(RandomValuesSupplier.class)
-public @interface RandomValues {
+@ParametersSuppliedBy(RowsOfRandomValuesForATypeSupplier.class)
+public @interface RowsOfRandomValuesForAType {
 
     /**
-     * Type of values to supply.
+     * Number of "rows" of test data to supply.
+     */
+    short numRows();
+
+    /**
+     * {@link DataType} of values to supply.
      */
     DataType type();
 
     /**
-     * Number of values to supply.
+     * Number of of test values to supply per "row".
      */
-    short numValues();
-
+    short valuesPerType();
 }

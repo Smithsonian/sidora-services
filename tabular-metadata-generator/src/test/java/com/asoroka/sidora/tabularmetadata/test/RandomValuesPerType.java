@@ -7,24 +7,17 @@ import java.lang.annotation.Retention;
 
 import org.junit.experimental.theories.ParametersSuppliedBy;
 
-import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-
 /**
  * Machinery for generating random test values.
  * 
  * @author ajs6f
  */
 @Retention(RUNTIME)
-@ParametersSuppliedBy(RandomValuesSupplier.class)
-public @interface RandomValues {
+@ParametersSuppliedBy(RandomValuesPerTypeSupplier.class)
+public @interface RandomValuesPerType {
 
     /**
-     * Type of values to supply.
-     */
-    DataType type();
-
-    /**
-     * Number of values to supply.
+     * Number of values to supply per type.
      */
     short numValues();
 
