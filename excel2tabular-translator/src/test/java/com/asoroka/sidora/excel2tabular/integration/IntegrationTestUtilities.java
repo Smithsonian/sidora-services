@@ -54,26 +54,12 @@ public class IntegrationTestUtilities {
         };
     }
 
-    private static Block<Lines> logMatchUpToTrailingCommas(final Logger log, final int lineNum) {
+    private static Block<Lines> logMatch(final Logger log, final String message) {
         return new Block<Lines>() {
 
             @Override
             protected void execute(final Lines lines) {
-                log.warn("Found difference by trailing commas at line number {}", lineNum);
-                log.warn("Expected: {}", lines.first());
-                log.warn("Actual: {}", lines.second());
-            }
-        };
-    }
-
-    private static Block<Lines> logMatchUpToQuotationCharacters(final Logger log, final int lineNum) {
-        return new Block<Lines>() {
-
-            @Override
-            protected void execute(final Lines lines) {
-                log.warn("Found difference by quotation characters at line number {}", lineNum);
-                log.warn("Expected: {}", lines.first());
-                log.warn("Actual: {}", lines.second());
+                log.warn(new ComparisonFailure(message, lines.first(), lines.second()).getLocalizedMessage());
             }
         };
     }
@@ -88,9 +74,8 @@ public class IntegrationTestUtilities {
 
         @Override
         public boolean matches(final Lines lines) {
-            final String a = withoutTrailingCommas(lines.first());
-            final String b = withoutTrailingCommas(lines.second());
-            return a.equals(b);
+            return withoutTrailingCommas(lines.first())
+                    .equals(withoutTrailingCommas(lines.second()));
         }
     };
 
@@ -112,8 +97,8 @@ public class IntegrationTestUtilities {
             lineNum++;
             Rules.<Lines, Void> rules()
                     .addLast(equalTo(), doNothing)
-                    .addLast(matchesUpToTrailingCommas, logMatchUpToTrailingCommas(log, lineNum))
-                    .addLast(matchesUpToQuotationCharacters, logMatchUpToQuotationCharacters(log, lineNum))
+                    .addLast(matchesUpToTrailingCommas, logMatch(log, "Different trailing commas: line " + lineNum))
+                    .addLast(matchesUpToQuotationCharacters, logMatch(log, "Different quote chars: line " + lineNum))
                     .addLast(always(), throwComparisonFailure(lineNum))
                     .apply(lines);
         }
