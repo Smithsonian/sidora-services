@@ -8,6 +8,8 @@ package com.asoroka.sidora.tabularmetadata.heuristics.ranges;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.collect.Maps.asMap;
 import static com.google.common.collect.Ordering.natural;
+import static com.google.common.collect.Range.atLeast;
+import static com.google.common.collect.Range.atMost;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.EnumMap;
@@ -57,14 +59,13 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
             final Comparable<?> currentMax = maximums.get(type);
             try {
                 final Comparable<?> v = type.parse(value);
-                // TODO avoid this repeated conditional
                 log.trace("Trying new value {} against current min {} and current max {} for type {}", v, currentMin,
                         currentMax, type);
+                // TODO avoid this repeated conditional
                 minimums.put(type, (currentMin == null) ? v : natural().min(currentMin, v));
                 maximums.put(type, (currentMax == null) ? v : natural().max(currentMax, v));
                 log.trace("Tried new value {} and got new min {} and new max {} for type {}", v, minimums.get(type),
-                        maximums
-                                .get(type), type);
+                        maximums.get(type), type);
 
             } catch (final ParsingException e) {
                 // we are only parsing for types that have already been checked
@@ -84,11 +85,18 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
 
             @Override
             public Range<?> apply(final DataType type) {
-                // this test may look odd or loose, but inspection of the algorithm above will convince the examiner
-                // that it is not possible for a min to exist without a max, or vice versa. So we can test for the
-                // presence of either at whim.
-                if (minimums.containsKey(type)) {
-                    return Range.closed(minimums.get(type), maximums.get(type));
+                final boolean hasMin = minimums.containsKey(type);
+                final boolean hasMax = maximums.containsKey(type);
+                final Comparable<?> min = minimums.get(type);
+                final Comparable<?> max = maximums.get(type);
+                if (hasMin) {
+                    if (hasMax) {
+                        return Range.closed(min, max);
+                    }
+                    return atLeast(min);
+                }
+                if (hasMax) {
+                    return atMost(max);
                 }
                 return Range.all();
             }

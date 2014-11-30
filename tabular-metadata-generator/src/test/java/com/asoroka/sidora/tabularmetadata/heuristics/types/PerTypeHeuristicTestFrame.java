@@ -1,9 +1,12 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.types;
 
-import com.asoroka.sidora.tabularmetadata.heuristics.types.PerTypeHeuristic;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import org.slf4j.Logger;
 
 public abstract class PerTypeHeuristicTestFrame<TestHeuristic extends PerTypeHeuristic<TestHeuristic>> extends
-        ValueCountingHeuristicTestFrame<TestHeuristic> {
-    // placeholder for future tests
+        CountAggregatingHeuristicTestFrame<TestHeuristic> {
+
+    private static final Logger log = getLogger(PerTypeHeuristicTestFrame.class);
 }

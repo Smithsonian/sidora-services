@@ -1,6 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.headers;
 
+import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.addValues;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -25,14 +26,9 @@ public class RegexpHeaderHeuristicTest extends HeaderHeuristicTestFrame<RegexpHe
     @Test
     public void test() {
         final TreatsEachFieldAlikeHeaderHeuristic<RegexpHeaderHeuristic> testHeuristic = newTestHeuristic();
-        for (final String field : headerRow1) {
-            testHeuristic.addValue(field);
-        }
+        addValues(testHeuristic, headerRow1);
         assertTrue("Failed to pass a row that should have passed!", testHeuristic.isHeader());
-        for (final String field : headerRow2) {
-            testHeuristic.addValue(field);
-        }
+        addValues(testHeuristic, headerRow2);
         assertFalse("Passed a row that shouldn't have passed!", testHeuristic.isHeader());
     }
-
 }

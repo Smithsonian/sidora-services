@@ -156,10 +156,10 @@ public enum DataType {
         @SuppressWarnings("unchecked")
         @Override
         public Boolean parse(final java.lang.String s) throws ParsingException {
-            if (BOOLEAN_TRUE.matcher(s).matches()) {
+            if (BOOLEAN_TRUE_REGEXP.matcher(s).matches()) {
                 return true;
             }
-            if (BOOLEAN_FALSE.matcher(s).matches()) {
+            if (BOOLEAN_FALSE_REGEXP.matcher(s).matches()) {
                 return false;
             }
             throw new ParsingException("Could not parse as Boolean!");
@@ -172,8 +172,7 @@ public enum DataType {
         public DateTime parse(final java.lang.String s) throws ParsingException {
             for (final DateTimeFormatter format : dateTimeFormats) {
                 try {
-                    final org.joda.time.DateTime dateTime = format.parseDateTime(s);
-                    return dateTime;
+                    return format.parseDateTime(s);
                 }
                 catch (final IllegalArgumentException e) {
                     // log.trace("Could not parse date '{}' in form {}.");
@@ -284,12 +283,12 @@ public enum DataType {
     /**
      * How to recognize a Boolean lex for true.
      */
-    public static final Pattern BOOLEAN_TRUE = compile("^true|t$", CASE_INSENSITIVE);
+    public static final Pattern BOOLEAN_TRUE_REGEXP = compile("^true|t$", CASE_INSENSITIVE);
 
     /**
      * How to recognize a Boolean lex for false.
      */
-    public static final Pattern BOOLEAN_FALSE = compile("^false|f$", CASE_INSENSITIVE);
+    public static final Pattern BOOLEAN_FALSE_REGEXP = compile("^false|f$", CASE_INSENSITIVE);
 
     /**
      * We use the well-known regex from <a href="http://tools.ietf.org/html/rfc3986#appendix-B">the standard</a> but

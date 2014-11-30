@@ -24,7 +24,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.test.TestUtilities;
+import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TabularScannerTest extends TestUtilities {

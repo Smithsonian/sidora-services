@@ -1,9 +1,13 @@
 
 package com.asoroka.sidora.tabularmetadata.datatype;
 
+import static com.google.common.base.Joiner.on;
+import static com.google.common.collect.Iterables.elementsEqual;
+
 import java.io.Serializable;
 import java.util.List;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Ordering;
 
 /**
@@ -12,6 +16,8 @@ import com.google.common.collect.Ordering;
  * @author ajs6f
  */
 public class GeographicValue implements Comparable<GeographicValue>, Serializable {
+
+    private static final Joiner TO_STRING_HELPER = on(',');
 
     private static final long serialVersionUID = 1L;
 
@@ -45,5 +51,24 @@ public class GeographicValue implements Comparable<GeographicValue>, Serializabl
     @Override
     public int compareTo(final GeographicValue o) {
         return ordering.compare(this.coordinates, o.coordinates);
+    }
+
+    @Override
+    public String toString() {
+        return TO_STRING_HELPER.join(coordinates);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o instanceof GeographicValue) {
+            final GeographicValue other = (GeographicValue) o;
+            return elementsEqual(coordinates, other.coordinates);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return coordinates.hashCode();
     }
 }

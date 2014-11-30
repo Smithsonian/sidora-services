@@ -1,6 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.headers;
 
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static java.util.Collections.singleton;
 
@@ -22,7 +23,7 @@ public class DefaultHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<
 
         @Override
         public boolean apply(final String value) {
-            return parseableAs(value).equals(singleton(DataType.String));
+            return parseableAs(value).equals(singleton(String));
         }
     };
 

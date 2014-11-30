@@ -1,36 +1,44 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.headers;
 
-import static com.google.common.collect.Lists.newArrayList;
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
+import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.addValues;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
-import java.util.List;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 
-import org.junit.Test;
+import com.asoroka.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
+import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 
+@RunWith(Theories.class)
 public class DefaultHeaderHeuristicTest extends HeaderHeuristicTestFrame<DefaultHeaderHeuristic> {
-
-    private static final List<String> goodData = newArrayList("NAME", "RANK", "SERIAL NUMBER");
-
-    private static final List<String> badData = newArrayList("Kirk", "Captain", "00034");
 
     @Override
     protected DefaultHeaderHeuristic newTestHeuristic() {
         return new DefaultHeaderHeuristic();
     }
 
-    @Test
-    public void testDefault() {
+    @Theory
+    public void testShouldAcceptStringOnlyHeaders(
+            @RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 5) final RandomValuesForAType values) {
+        assumeThat(values.type, is(String));
         final DefaultHeaderHeuristic testHeuristic = newTestHeuristic();
-        for (final String field : goodData) {
-            testHeuristic.addValue(field);
-        }
+        addValues(testHeuristic, values);
         assertTrue(testHeuristic.isHeader());
-        for (final String field : badData) {
-            testHeuristic.addValue(field);
-        }
-        assertFalse(testHeuristic.isHeader());
     }
 
+    @Theory
+    public void testShouldNotAcceptNonStringHeaders(
+            @RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 5) final RandomValuesForAType values) {
+        assumeThat(values.type, not(is(String)));
+        final DefaultHeaderHeuristic testHeuristic = newTestHeuristic();
+        addValues(testHeuristic, values);
+        assertFalse(testHeuristic.isHeader());
+    }
 }
