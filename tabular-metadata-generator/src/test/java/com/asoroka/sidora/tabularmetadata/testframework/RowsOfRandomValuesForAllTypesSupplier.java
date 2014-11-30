@@ -27,9 +27,20 @@ public class RowsOfRandomValuesForAllTypesSupplier extends ParameterSupplier {
         final short valuesPerType = metadata.valuesPerType();
         final short numRowsPerType = metadata.numRowsPerType();
 
-        return sequence(DataType.values()).flatMap(rowsOfRandomValuesPerType(numRowsPerType, valuesPerType)).map(
-                toPotentialAssignment()).toList();
+        return sequence(DataType.values()).flatMap(rowsOfRandomValuesPerType(numRowsPerType, valuesPerType))
+                .map(toPotentialAssignment()).toList();
 
+    }
+
+    private static Callable1<DataType, Sequence<RandomValuesForAType>> rowsOfRandomValuesPerType(
+            final short numRowsPerType, final short valuesPerType) {
+        return new Callable1<DataType, Sequence<RandomValuesForAType>>() {
+
+            @Override
+            public Sequence<RandomValuesForAType> call(final DataType type) {
+                return forwardOnly(range(0, numRowsPerType)).map(randomValuesForAType(valuesPerType, type));
+            }
+        };
     }
 
     static Callable1<Number, RandomValuesForAType> randomValuesForAType(
@@ -41,18 +52,5 @@ public class RowsOfRandomValuesForAllTypesSupplier extends ParameterSupplier {
                 return randomValues(type, valuesPerType);
             }
         };
-    }
-
-    private static Callable1<DataType, Sequence<RandomValuesForAType>> rowsOfRandomValuesPerType(
-            final short numRowsPerType, final short valuesPerType) {
-        return new Callable1<DataType, Sequence<RandomValuesForAType>>() {
-
-            @Override
-            public Sequence<RandomValuesForAType> call(final DataType type) {
-                return forwardOnly(range(0, numRowsPerType)).map(
-                        randomValuesForAType(valuesPerType, type));
-            }
-        };
-
     }
 }

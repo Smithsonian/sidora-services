@@ -39,6 +39,7 @@
 			<groupId>com.googlecode.totallylazy</groupId>
 			<artifactId>totallylazy</artifactId>
 			<version>1.55</version>
+			<scope>test</scope>
 		</dependency>
 
 		<!-- dependency injection -->
