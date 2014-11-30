@@ -2,7 +2,7 @@
 package com.asoroka.sidora.tabularmetadata.heuristics.types;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
-import static com.asoroka.sidora.tabularmetadata.test.TestUtilities.addValues;
+import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.addValues;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNot.not;
@@ -16,8 +16,8 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 
-import com.asoroka.sidora.tabularmetadata.test.RowsOfRandomValuesForAllTypes;
-import com.asoroka.sidora.tabularmetadata.test.TestUtilities.RandomValuesForAType;
+import com.asoroka.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
+import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 
 @RunWith(Theories.class)
 public class StrictHeuristicTest extends PerTypeHeuristicTestFrame<StrictHeuristic> {

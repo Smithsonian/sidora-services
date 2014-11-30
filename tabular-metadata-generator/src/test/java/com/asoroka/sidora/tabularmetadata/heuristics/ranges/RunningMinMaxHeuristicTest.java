@@ -1,7 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.ranges;
 
-import static com.asoroka.sidora.tabularmetadata.test.TestUtilities.addValues;
+import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.addValues;
 import static com.google.common.collect.Ordering.natural;
 import static org.junit.Assert.assertEquals;
 
@@ -12,8 +12,8 @@ import org.junit.runner.RunWith;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.HeuristicTestFrame;
-import com.asoroka.sidora.tabularmetadata.test.RowsOfRandomValuesForAllTypes;
-import com.asoroka.sidora.tabularmetadata.test.TestUtilities.RandomValuesForAType;
+import com.asoroka.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
+import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 import com.google.common.collect.Range;
 
 /**

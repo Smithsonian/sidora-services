@@ -3,7 +3,7 @@ package com.asoroka.sidora.tabularmetadata;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Geographic;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
-import static com.asoroka.sidora.tabularmetadata.test.TestUtilities.cloneableMockStrategy;
+import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.cloneableMockStrategy;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Iterables.concat;
@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
-import com.asoroka.sidora.tabularmetadata.test.TestUtilities.MockedHeuristic;
+import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.MockedHeuristic;
 import com.google.common.collect.Range;
 
 /**

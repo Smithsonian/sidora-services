@@ -66,4 +66,9 @@ public class GeographicValue implements Comparable<GeographicValue>, Serializabl
         }
         return false;
     }
+
+    @Override
+    public int hashCode() {
+        return coordinates.hashCode();
+    }
 }

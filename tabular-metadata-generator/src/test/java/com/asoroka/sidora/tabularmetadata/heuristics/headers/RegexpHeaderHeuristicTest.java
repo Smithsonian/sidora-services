@@ -1,7 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.headers;
 
-import static com.asoroka.sidora.tabularmetadata.test.TestUtilities.addValues;
+import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.addValues;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.tabularmetadata.test;
+package com.asoroka.sidora.tabularmetadata.testframework;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Boolean;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Decimal;
@@ -159,7 +159,7 @@ public abstract class TestUtilities {
 
     static RandomValuesForAType randomValues(final DataType type, final short numValues) {
         final RandomValuesForAType values = new RandomValuesForAType(numValues).withType(type);
-        for (short valueIndex = 1; valueIndex < numValues; valueIndex++) {
+        for (short valueIndex = 0; valueIndex < numValues; valueIndex++) {
             values.add(generateRandomValue(type));
         }
         return values;
