@@ -18,6 +18,13 @@
 		<powermock.version>1.5.6</powermock.version>
 	</properties>
 
+	<repositories>
+		<repository>
+			<id>repo.bodar.com</id>
+			<url>http://repo.bodar.com</url>
+		</repository>
+	</repositories>
+	
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -53,6 +60,12 @@
 			<groupId>org.powermock</groupId>
 			<artifactId>powermock-api-mockito</artifactId>
 			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.googlecode.totallylazy</groupId>
+			<artifactId>totallylazy</artifactId>
+			<version>1.55</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
