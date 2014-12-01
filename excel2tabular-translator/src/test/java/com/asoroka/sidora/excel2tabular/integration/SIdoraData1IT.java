@@ -4,7 +4,6 @@ package com.asoroka.sidora.excel2tabular.integration;
 import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.compareLines;
 import static com.asoroka.sidora.excel2tabular.integration.IntegrationTestUtilities.readLines;
 import static org.junit.Assert.assertEquals;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,15 +11,12 @@ import java.net.URL;
 import java.util.List;
 
 import org.junit.Test;
-import org.slf4j.Logger;
 
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
 
 public class SIdoraData1IT {
 
     private final ExcelToTabular testExcel2Csv = new ExcelToTabular();
-
-    private static final Logger log = getLogger(SIdoraData1IT.class);
 
     @Test
     public void test() throws IOException {

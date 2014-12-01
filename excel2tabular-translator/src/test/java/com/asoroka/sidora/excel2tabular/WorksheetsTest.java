@@ -80,7 +80,7 @@ public class WorksheetsTest {
     }
 
     @Test
-    public void testWorkbookWithThreeDataSheet() {
+    public void testWorkbookWithThreeDataSheets() {
         when(mockSheet1.iterator()).thenAnswer(iterateOver(mockRow));
         when(mockSheet1.getRow(0)).thenReturn(mockRow);
         when(mockSheet1.getFirstRowNum()).thenReturn(0);

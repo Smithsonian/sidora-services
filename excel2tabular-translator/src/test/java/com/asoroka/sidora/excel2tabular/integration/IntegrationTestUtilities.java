@@ -34,10 +34,10 @@ public class IntegrationTestUtilities {
         return Resources.readLines(result, UTF_8);
     }
 
-    protected static final Pattern NO_TRAILING_COMMAS = compile("(.+?),*$");
+    private static final Pattern REMOVE_TRAILING_COMMAS = compile("(.+?),*$");
 
     protected static String withoutTrailingCommas(final String input) {
-        final java.util.regex.Matcher matcher = NO_TRAILING_COMMAS.matcher(input);
+        final java.util.regex.Matcher matcher = REMOVE_TRAILING_COMMAS.matcher(input);
         matcher.find();
         return matcher.group(1);
     }
@@ -52,7 +52,7 @@ public class IntegrationTestUtilities {
 
         @Override
         public void describeTo(final Description d) {
-            d.appendText("are equal up to trailing commas");
+            d.appendText("are equal modulo trailing commas");
         }
     };
 
@@ -67,11 +67,11 @@ public class IntegrationTestUtilities {
 
         @Override
         public void describeTo(final Description d) {
-            d.appendText("are equal up to trailing commas and quotation chars");
+            d.appendText("are equal modulo trailing commas and quotation chars");
         }
     };
 
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings("unchecked")
     protected static void compareLines(final Iterable<String> checkLines, final Iterable<String> resultLines) {
         int lineNum = 0;
         for (final Pair<String, String> pair : zip(checkLines, resultLines)) {
