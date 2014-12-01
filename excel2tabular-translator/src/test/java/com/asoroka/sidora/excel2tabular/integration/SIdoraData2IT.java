@@ -30,6 +30,6 @@ public class SIdoraData2IT {
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
         assertEquals(checkLines.size(), resultLines.size());
-        compareLines(checkLines, resultLines, log);
+        compareLines(checkLines, resultLines);
     }
 }

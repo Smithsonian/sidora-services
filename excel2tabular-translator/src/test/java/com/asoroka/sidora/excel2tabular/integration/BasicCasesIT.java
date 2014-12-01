@@ -39,7 +39,7 @@ public class BasicCasesIT {
 
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        compareLines(checkLines, resultLines, log);
+        compareLines(checkLines, resultLines);
     }
 
     @Test
@@ -62,7 +62,7 @@ public class BasicCasesIT {
 
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        compareLines(checkLines, resultLines, log);
+        compareLines(checkLines, resultLines);
     }
 
     @Test
@@ -78,7 +78,7 @@ public class BasicCasesIT {
 
         final List<String> resultLines = readLines(result);
         final List<String> checkLines = readLines(checkFile);
-        compareLines(checkLines, resultLines, log);
+        compareLines(checkLines, resultLines);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class BasicCasesIT {
 
             final List<String> resultLines = readLines(results.get(i).toURI().toURL());
             final List<String> checkLines = readLines(checkFile);
-            compareLines(checkLines, resultLines, log);
+            compareLines(checkLines, resultLines);
         }
     }
 
