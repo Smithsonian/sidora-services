@@ -1,5 +1,16 @@
 # SI - Service Execution Environment (SI-See)
 
+## Building 
+- Install Apache Maven version 3.X (http://maven.apache.org/)
+- Open a command line terminal
+- Navigate to the root directory of source code file
+- Run the command `mvn install`
+    - Note: Some Integration Test look for Fedora Repository Host at localhost with the default username and password
+- Or run the command `mvn install -DskipTests` to build without running Unit and Integration Tests    
+
+##### Notes: 
+SI-See is built with Maven 3 (although Maven 2 should work [untested])
+
 ## Installation of ServiceMix
 
 ### Steps:
