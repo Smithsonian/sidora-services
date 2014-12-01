@@ -2,19 +2,26 @@
 package com.asoroka.sidora.excel2tabular.integration;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.googlecode.totallylazy.Functions.returns;
+import static com.googlecode.totallylazy.Predicates.equalTo;
+import static com.googlecode.totallylazy.Sequences.zip;
+import static com.googlecode.totallylazy.matchers.Matchers.matcher;
 import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.not;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.ComparisonFailure;
 
 import com.google.common.io.Resources;
+import com.googlecode.totallylazy.Pair;
 
 /**
  * Some convenient utilities for integration tests.
@@ -23,97 +30,67 @@ import com.google.common.io.Resources;
  */
 public class IntegrationTestUtilities {
 
-    /**
-     * A cheap and cheerful 2-tuple.
-     * 
-     * @author ajs6f
-     * @param <A>
-     * @param <B>
-     */
-    protected static class Pair<A, B> {
-
-        public A a;
-
-        public B b;
-
-        private Pair(final A a2, final B b2) {
-            this.a = a2;
-            this.b = b2;
-        }
-
-        public static <A, B> Pair<A, B> of(final A a, final B b) {
-            return new Pair<>(a, b);
-        }
-    }
-
-    /**
-     * Zips two lists together into a list of {@link Pair}s that is as long as the shorter input.
-     * 
-     * @param listA
-     * @param listB
-     * @return a zipped list
-     */
-    protected static <A, B> List<Pair<A, B>> zip(final List<A> listA, final List<B> listB) {
-        if (listA.size() != listB.size()) {
-            throw new AssertionError("Results size doesn't match expected size! Got " + listA.size() +
-                    " to match against " + listB.size());
-        }
-        final List<Pair<A, B>> zipped = new LinkedList<>();
-        for (int i = 0; i < listA.size(); i++) {
-            zipped.add(Pair.of(listA.get(i), listB.get(i)));
-        }
-        return zipped;
-    }
-
     protected static List<String> readLines(final URL result) throws IOException {
         return Resources.readLines(result, UTF_8);
     }
 
-    private static final Pattern NO_TRAILING_COMMAS = compile("(.+?),*$");
+    private static final Pattern REMOVE_TRAILING_COMMAS = compile("(.+?),*$");
 
-    protected static void
-            compareLines(final List<String> checkLines, final List<String> resultLines, final Logger log) {
+    protected static String withoutTrailingCommas(final String input) {
+        final java.util.regex.Matcher matcher = REMOVE_TRAILING_COMMAS.matcher(input);
+        matcher.find();
+        return matcher.group(1);
+    }
+
+    private static Matcher<LinePair> matchesUpToTrailingCommas = new TypeSafeMatcher<LinePair>() {
+
+        @Override
+        public boolean matchesSafely(final LinePair lines) {
+            return withoutTrailingCommas(lines.first())
+                    .equals(withoutTrailingCommas(lines.second()));
+        }
+
+        @Override
+        public void describeTo(final Description d) {
+            d.appendText("are equal modulo trailing commas");
+        }
+    };
+
+    private static Matcher<LinePair> matchesUpToQuotationCharacters = new TypeSafeMatcher<LinePair>() {
+
+        @Override
+        public boolean matchesSafely(final LinePair lines) {
+            final String a = withoutTrailingCommas(lines.first()).replace("\"", "");
+            final String b = withoutTrailingCommas(lines.second()).replace("\"", "");
+            return a.equals(b);
+        }
+
+        @Override
+        public void describeTo(final Description d) {
+            d.appendText("are equal modulo trailing commas and quotation chars");
+        }
+    };
+
+    @SuppressWarnings("unchecked")
+    protected static void compareLines(final Iterable<String> checkLines, final Iterable<String> resultLines) {
         int lineNum = 0;
-        for (final Pair<String, String> line : zip(checkLines, resultLines)) {
+        for (final Pair<String, String> pair : zip(checkLines, resultLines)) {
+            final LinePair lines = new LinePair(pair);
             lineNum++;
-            try {
-                assertEquals("Got bad line in results!", line.a, line.b);
-            } catch (final AssertionError e) {
-                final Matcher lineAmatcher = NO_TRAILING_COMMAS.matcher(line.a);
-                String lineAwithoutTrailingCommas = null;
-                if (lineAmatcher.find()) {
-                    lineAwithoutTrailingCommas = lineAmatcher.group(1);
-                } else {
-                    log.error("Mismatch for expected value at line {}!", lineNum);
-                    log.error(e.getLocalizedMessage());
-                }
-                final Matcher lineBmatcher = NO_TRAILING_COMMAS.matcher(line.b);
-                String lineBwithoutTrailingCommas = null;
-                if (lineBmatcher.find()) {
-                    lineBwithoutTrailingCommas = lineBmatcher.group(1);
-                } else {
-                    log.error("Mismatch for actual value at line {}!", lineNum);
-                    throw e;
-                }
-                final boolean differByTrailingCommas = lineAwithoutTrailingCommas.equals(lineBwithoutTrailingCommas);
-                if (differByTrailingCommas) {
-                    log.warn("Found difference by trailing commas at line number {}", lineNum);
-                    log.warn("Expected: {}", line.a);
-                    log.warn("Actual: {}", line.b);
-                }
-                else {
-                    if (lineAwithoutTrailingCommas.replace("\"", "").equals(
-                            lineBwithoutTrailingCommas.replace("\"", ""))) {
-                        log.warn("Found difference by quotation characters at line number {}", lineNum);
-                        log.warn("Expected: {}", line.a);
-                        log.warn("Actual: {}", line.b);
-                    } else {
-                        log.error("Error matching at line: {}", lineNum);
-                        log.error(e.getLocalizedMessage());
-                        throw e;
-                    }
-                }
+            if (not(anyOf(
+                    matcher(equalTo()),
+                    matchesUpToTrailingCommas,
+                    matchesUpToQuotationCharacters))
+                    .matches(lines)) {
+                throw new ComparisonFailure("Mismatch at line: " + lineNum, lines.first(), lines.second());
             }
+        }
+    }
+
+    private static class LinePair extends Pair<String, String> {
+
+        protected LinePair(final Pair<String, String> lines) {
+            super(returns(lines.first()), returns(lines.second()));
         }
     }
 }

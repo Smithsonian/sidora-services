@@ -54,7 +54,7 @@ public class SIdoraData3IT {
 
             assertEquals("Got mismatched number of lines for sheet number: " + sheetNumber, checkLines.size(),
                     resultLines.size());
-            compareLines(checkLines, resultLines, log);
+            compareLines(checkLines, resultLines);
         }
     }
 }
