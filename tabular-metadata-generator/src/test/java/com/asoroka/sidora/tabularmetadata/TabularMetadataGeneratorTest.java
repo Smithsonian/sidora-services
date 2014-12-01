@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.tabularmetadata;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Geographic;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.cloneableMockStrategy;
 import static com.google.common.base.Predicates.equalTo;
@@ -10,7 +9,6 @@ import static com.google.common.collect.Iterables.concat;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -28,6 +26,7 @@ import java.net.URLStreamHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 
 import org.junit.Before;
@@ -48,7 +47,7 @@ import com.google.common.collect.Range;
 
 /**
  * This relatively complicated test is so because we are trying to mock everything that can be mocked, as a means of
- * assurance that the basic workflow (instantiated in TabularMetadataParser) is as correct as we can test it to be.
+ * assurance that the master workflow is as correct as we can test it to be.
  * 
  * @author ajs6f
  */
@@ -132,7 +131,7 @@ public class TabularMetadataGeneratorTest {
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
         final List<String> headers = results.headerNames;
-        final List<Map<DataType, Range<?>>> ranges = results.minMaxes;
+        final List<SortedMap<DataType, Range<?>>> ranges = results.minMaxes;
         assertEquals(asList(testHeaders.split(",")), headers);
         final List<SortedSet<DataType>> types = results.fieldTypes;
         assertTrue("Found a data type that didn't originate from our mocking!", all(concat(types),
@@ -153,7 +152,7 @@ public class TabularMetadataGeneratorTest {
         final List<SortedSet<DataType>> types = results.fieldTypes;
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
-        final List<Map<DataType, Range<?>>> ranges = results.minMaxes;
+        final List<SortedMap<DataType, Range<?>>> ranges = results.minMaxes;
         assertTrue("Failed to find the right mock range results!", all(ranges, equalTo(testRanges())));
         final List<String> headers = results.headerNames;
         assertEquals("Got a bad list of header names!", asList(testHeaders.split(",")), headers);
@@ -176,7 +175,7 @@ public class TabularMetadataGeneratorTest {
         final List<SortedSet<DataType>> types = results.fieldTypes;
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
-        final List<Map<DataType, Range<?>>> ranges = results.minMaxes;
+        final List<SortedMap<DataType, Range<?>>> ranges = results.minMaxes;
         assertTrue("Got a range that wasn't the one we inserted!", all(ranges, equalTo(testRanges())));
 
         final List<String> headers = results.headerNames;
@@ -247,7 +246,7 @@ public class TabularMetadataGeneratorTest {
 
         @Override
         public SortedSet<DataType> typesAsLikely() {
-            return sortByHierarchy(singleton(Geographic));
+            return sortByHierarchy(DataType.valuesSet());
         }
 
         @Override
@@ -271,14 +270,12 @@ public class TabularMetadataGeneratorTest {
 
         @Override
         public DataType mostLikelyType() {
-            // NO OP
-            return null;
+            return DataType.String;
         }
 
         @Override
         public Map<DataType, Range<?>> getRanges() {
-            // NO OP
-            return null;
+            return testRanges();
         }
 
         @Override

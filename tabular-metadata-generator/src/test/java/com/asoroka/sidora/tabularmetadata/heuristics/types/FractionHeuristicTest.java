@@ -12,13 +12,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
@@ -29,8 +27,6 @@ public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeu
 
     @DataPoints
     public static DataType[] datatypes = DataType.values();
-
-    private static final Logger log = getLogger(FractionHeuristicTest.class);
 
     @Override
     protected FractionHeuristic newTestHeuristic() {

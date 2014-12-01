@@ -7,6 +7,7 @@ import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
 import static com.google.common.collect.ImmutableList.builder;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.util.SortedSet;
 import javax.inject.Inject;
 
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
@@ -33,6 +35,8 @@ import com.google.common.collect.Range;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 public abstract class SpringITFramework {
+
+    private static final Logger log = getLogger(SpringITFramework.class);
 
     protected static final File testDataDir = new File("src/test/resources/test-data");
 

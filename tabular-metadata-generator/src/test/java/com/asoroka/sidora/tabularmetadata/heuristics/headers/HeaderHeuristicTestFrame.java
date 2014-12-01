@@ -5,5 +5,5 @@ import com.asoroka.sidora.tabularmetadata.heuristics.types.HeuristicTestFrame;
 
 public abstract class HeaderHeuristicTestFrame<TestHeuristic extends HeaderHeuristic<TestHeuristic>> extends
         HeuristicTestFrame<TestHeuristic> {
-    // TODO expands into some header strategy-specific tests
+    // TODO expand into some header strategy-specific tests
 }

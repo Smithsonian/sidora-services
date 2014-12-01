@@ -270,7 +270,11 @@ public enum DataType {
 
         @Override
         public int compare(final DataType left, final DataType right) {
-            return right.supertypes().size() - left.supertypes().size();
+            final int hierarchicalDifference = right.supertypes().size() - left.supertypes().size();
+            if (hierarchicalDifference != 0) {
+                return hierarchicalDifference;
+            }
+            return left.compareTo(right);
         }
     };
 

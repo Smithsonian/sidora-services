@@ -1,16 +1,26 @@
 
 package com.asoroka.sidora.tabularmetadata;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.collect.Iterables.getFirst;
+import static com.googlecode.totallylazy.Sequences.sequence;
+import static org.slf4j.LoggerFactory.getLogger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
+
+import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Range;
+import com.googlecode.totallylazy.Callable1;
+import com.googlecode.totallylazy.Group;
 
 /**
  * A container for the results of metadata extraction on a single data file.
@@ -18,6 +28,9 @@ import com.google.common.collect.Range;
  * @author ajs6f
  */
 public class TabularMetadata {
+
+    static final Map<DataType, Range<?>> EMPTY_MINMAX_MAP = Collections
+            .<DataType, Range<?>> emptyMap();
 
     /**
      * A list of header names.
@@ -41,7 +54,7 @@ public class TabularMetadata {
      * 
      * @see com.google.common.collect.Range<?>
      */
-    public final List<Map<DataType, Range<?>>> minMaxes;
+    public final List<SortedMap<DataType, Range<?>>> minMaxes;
 
     /**
      * A list (one element for each field in the input file) of maps from each possible datatype to an set of the
@@ -59,14 +72,47 @@ public class TabularMetadata {
             final List<Map<DataType, Range<?>>> minMaxes, final List<Map<DataType, Set<String>>> enumeratedValues) {
         this.headerNames = headerNames;
         this.fieldTypes = fieldTypes;
-        this.minMaxes = minMaxes;
+        this.minMaxes = sequence(minMaxes).groupBy(indexByPosition()).map(sortByLikelihood).toList();
         this.enumeratedValues = enumeratedValues;
+    }
+
+    static <T> Callable1<T, Integer> indexByPosition() {
+        return new Callable1<T, Integer>() {
+
+            private int i = 0;
+
+            @Override
+            public Integer call(final T element) {
+                return i++;
+            }
+        };
+    }
+
+    private Callable1<Group<Integer, Map<DataType, Range<?>>>, SortedMap<DataType, Range<?>>> sortByLikelihood =
+            new Callable1<Group<Integer, Map<DataType, Range<?>>>, SortedMap<DataType, Range<?>>>() {
+
+                @Override
+                public SortedMap<DataType, Range<?>> call(
+                        final Group<Integer, Map<DataType, Range<?>>> minMaxMapWithIndex) {
+
+                    final TreeMap<DataType, Range<?>> sortedByLikelihood =
+                            new TreeMap<>(fieldTypes.get(minMaxMapWithIndex.key()).comparator());
+                    final Map<DataType, Range<?>> unsortedMinMaxMap = getFirst(minMaxMapWithIndex, EMPTY_MINMAX_MAP);
+                    sortedByLikelihood.putAll(unsortedMinMaxMap);
+                    return sortedByLikelihood;
+                }
+            };
+
+    private static final ToStringHelper toStringHelper() {
+        return MoreObjects.toStringHelper(TabularMetadata.class);
     }
 
     @Override
     public String toString() {
-        final ToStringHelper toStringHelper = toStringHelper(this.getClass());
-        return toStringHelper.add("headerNames", headerNames).add("fieldTypes", fieldTypes).add("enumeratedValues",
+        return toStringHelper().add("headerNames", headerNames).add("fieldTypes", fieldTypes).add("enumeratedValues",
                 enumeratedValues).add("minMaxes", minMaxes).toString();
     }
+
+    private static final Logger log = getLogger(TabularMetadata.class);
+
 }
