@@ -83,8 +83,7 @@ public class TabularMetadataGeneratorTest {
     @Mock
     private DataType mockDataType;
 
-    @Mock
-    private Map<DataType, Set<String>> mockEnumeratedValues;
+    private Map<DataType, Set<String>> mockEnumeratedValues = emptyMap();
 
     private Returns mockDataTypeAnswer = new Returns(mockDataType);
 
@@ -285,8 +284,7 @@ public class TabularMetadataGeneratorTest {
 
         @Override
         public Map<DataType, Set<String>> getEnumeratedValues() {
-            // NO OP
-            return null;
+            return emptyMap();
         }
     }
 }

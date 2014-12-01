@@ -5,7 +5,7 @@ import static com.asoroka.sidora.tabularmetadata.datatype.DataType.DateTime;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.google.common.base.Predicates.contains;
 import static com.google.common.collect.Iterables.all;
-import static com.google.common.collect.Lists.transform;
+import static com.googlecode.totallylazy.Sequences.sequence;
 import static java.util.Arrays.asList;
 import static java.util.regex.Pattern.compile;
 import static org.junit.Assert.assertEquals;
@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.google.common.base.Function;
+import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities;
 
 public class SidoraDataIT {
 
@@ -81,16 +81,6 @@ public class SidoraDataIT {
     }
 
     private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
-        return transform(inputs, SidoraDataIT.<T> firstOfIterable());
-    }
-
-    private static final <T> Function<SortedSet<T>, T> firstOfIterable() {
-        return new Function<SortedSet<T>, T>() {
-
-            @Override
-            public T apply(final SortedSet<T> s) {
-                return s.first();
-            }
-        };
+        return sequence(inputs).map(TestUtilities.<T> first()).toList();
     }
 }

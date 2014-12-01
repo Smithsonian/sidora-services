@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
 
 import org.junit.experimental.theories.PotentialAssignment;
 import org.mockito.internal.stubbing.answers.Returns;
@@ -170,5 +171,15 @@ public abstract class TestUtilities {
             final List<T> list = (List<T>) this;
             return list;
         }
+    }
+
+    public static final <T> Callable1<SortedSet<T>, T> first() {
+        return new Callable1<SortedSet<T>, T>() {
+
+            @Override
+            public T call(final SortedSet<T> s) {
+                return s.first();
+            }
+        };
     }
 }

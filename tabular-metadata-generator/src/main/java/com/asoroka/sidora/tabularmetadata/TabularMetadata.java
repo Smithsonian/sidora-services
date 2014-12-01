@@ -29,8 +29,9 @@ import com.googlecode.totallylazy.Group;
  */
 public class TabularMetadata {
 
-    static final Map<DataType, Range<?>> EMPTY_MINMAX_MAP = Collections
-            .<DataType, Range<?>> emptyMap();
+    static final <T> Map<DataType, T> EMPTY_DATATYPE_MAP() {
+        return Collections.<DataType, T> emptyMap();
+    }
 
     /**
      * A list of header names.
@@ -60,7 +61,7 @@ public class TabularMetadata {
      * A list (one element for each field in the input file) of maps from each possible datatype to an set of the
      * lexes found in that field that were parseable into that data type.
      */
-    public final List<Map<DataType, Set<String>>> enumeratedValues;
+    public final List<SortedMap<DataType, Set<String>>> enumeratedValues;
 
     /**
      * @param headerNames
@@ -72,8 +73,12 @@ public class TabularMetadata {
             final List<Map<DataType, Range<?>>> minMaxes, final List<Map<DataType, Set<String>>> enumeratedValues) {
         this.headerNames = headerNames;
         this.fieldTypes = fieldTypes;
-        this.minMaxes = sequence(minMaxes).groupBy(indexByPosition()).map(sortByLikelihood).toList();
-        this.enumeratedValues = enumeratedValues;
+        // sort range and enumerated values reporting by most likely type
+        this.minMaxes =
+                sequence(minMaxes).groupBy(indexByPosition()).map(this.<Range<?>> sortByLikelihood()).toList();
+        this.enumeratedValues =
+                sequence(enumeratedValues).groupBy(indexByPosition()).map(this.<Set<String>> sortByLikelihood())
+                        .toList();
     }
 
     static <T> Callable1<T, Integer> indexByPosition() {
@@ -88,20 +93,24 @@ public class TabularMetadata {
         };
     }
 
-    private Callable1<Group<Integer, Map<DataType, Range<?>>>, SortedMap<DataType, Range<?>>> sortByLikelihood =
-            new Callable1<Group<Integer, Map<DataType, Range<?>>>, SortedMap<DataType, Range<?>>>() {
+    /**
+     * WARNING: Must not be called before setting {@link #fieldTypes}!
+     */
+    private <T> Callable1<Group<Integer, Map<DataType, T>>, SortedMap<DataType, T>> sortByLikelihood() {
+        return new Callable1<Group<Integer, Map<DataType, T>>, SortedMap<DataType, T>>() {
 
-                @Override
-                public SortedMap<DataType, Range<?>> call(
-                        final Group<Integer, Map<DataType, Range<?>>> minMaxMapWithIndex) {
-
-                    final TreeMap<DataType, Range<?>> sortedByLikelihood =
-                            new TreeMap<>(fieldTypes.get(minMaxMapWithIndex.key()).comparator());
-                    final Map<DataType, Range<?>> unsortedMinMaxMap = getFirst(minMaxMapWithIndex, EMPTY_MINMAX_MAP);
-                    sortedByLikelihood.putAll(unsortedMinMaxMap);
-                    return sortedByLikelihood;
-                }
-            };
+            @Override
+            public SortedMap<DataType, T> call(
+                    final Group<Integer, Map<DataType, T>> minMaxMapWithIndex) {
+                final TreeMap<DataType, T> sortedByLikelihood =
+                        new TreeMap<>(fieldTypes.get(minMaxMapWithIndex.key()).comparator());
+                final Map<DataType, T> unsortedMinMaxMap =
+                        getFirst(minMaxMapWithIndex, TabularMetadata.<T> EMPTY_DATATYPE_MAP());
+                sortedByLikelihood.putAll(unsortedMinMaxMap);
+                return sortedByLikelihood;
+            }
+        };
+    }
 
     private static final ToStringHelper toStringHelper() {
         return MoreObjects.toStringHelper(TabularMetadata.class);
