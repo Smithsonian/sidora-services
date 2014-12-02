@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<tabularMetadataPrecis>
+    <likelyHeaders>
+        <mostLikelyHeader>NAME</mostLikelyHeader>
+        <mostLikelyHeader>RANK</mostLikelyHeader>
+        <mostLikelyHeader>SERIAL NUMBER</mostLikelyHeader>
+    </likelyHeaders>
+    <mostLikelyRanges>
+        <mostLikelyRange/>
+        <mostLikelyRange/>
+        <mostLikelyRange>
+            <max>567</max>
+            <min>2</min>
+        </mostLikelyRange>
+    </mostLikelyRanges>
+    <mostLikelyTypes>
+        <mostLikelyType>String</mostLikelyType>
+        <mostLikelyType>String</mostLikelyType>
+        <mostLikelyType>PositiveInteger</mostLikelyType>
+    </mostLikelyTypes>
+</tabularMetadataPrecis>
+
