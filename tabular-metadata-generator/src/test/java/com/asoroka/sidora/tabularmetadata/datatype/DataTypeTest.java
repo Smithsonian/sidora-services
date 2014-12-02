@@ -18,6 +18,8 @@ import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.google.common.collect.ImmutableMap.builder;
 import static com.google.common.collect.Sets.newHashSet;
+import static com.googlecode.totallylazy.Predicates.contains;
+import static com.googlecode.totallylazy.Sequences.sequence;
 import static java.util.Arrays.asList;
 import static java.util.EnumSet.of;
 import static org.junit.Assert.assertEquals;
@@ -30,20 +32,27 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 
+import com.asoroka.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
+import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 import com.google.common.collect.ImmutableMap;
+import com.googlecode.totallylazy.Function1;
 
+@RunWith(Theories.class)
 public class DataTypeTest {
 
     // private static final Logger log = getLogger(DataTypeTest.class);
 
-    private static Map<DataType, Set<DataType>> expectedParseableTypes;
+    private static final Map<DataType, Set<DataType>> expectedParseableTypes;
 
-    private static Map<DataType, Set<DataType>> expectedSuperTypes;
+    private static final Map<DataType, Set<DataType>> expectedSuperTypes;
 
-    private static Map<DataType, Set<String>> sampleValues;
+    private static final Map<DataType, Set<String>> sampleValues;
 
-    private static Map<String, DataType> dataTypeNames;
+    private static final Map<String, DataType> dataTypeNames;
 
     static {
         final ImmutableMap.Builder<DataType, Set<DataType>> b = builder();
@@ -90,10 +99,9 @@ public class DataTypeTest {
 
         final ImmutableMap.Builder<String, DataType> b4 = builder();
 
-        b4.putAll(ImmutableMap.of("PositiveInteger", PositiveInteger, "NonNegativeInteger", NonNegativeInteger,
-                "Integer", Integer));
+        b4.putAll(ImmutableMap.of("PositiveInteger", PositiveInteger, "NonNegativeInteger", NonNegativeInteger));
         b4.putAll(ImmutableMap.of("Decimal", Decimal, "Geographic", Geographic, "Boolean", Boolean));
-        b4.putAll(ImmutableMap.of("DateTime", DateTime, "String", String, "URI", URI));
+        b4.putAll(ImmutableMap.of("DateTime", DateTime, "String", String, "URI", URI, "Integer", Integer));
 
         dataTypeNames = b4.build();
     }
@@ -103,11 +111,16 @@ public class DataTypeTest {
         for (final DataType testType : DataType.values()) {
             for (final String testValue : sampleValues.get(testType)) {
                 final Set<DataType> result = parseableAs(testValue);
-                assertEquals("Did not find the appropriate datatypes suggested as parseable for a " + testType + "!",
-                        expectedParseableTypes
-                                .get(testType), result);
+                assertEquals("Did not find the appropriate datatypes suggested as parseable for a " + testType + "!", expectedParseableTypes
+                        .get(testType), result);
             }
         }
+    }
+
+    @Theory
+    public void testSampleValues(
+            @RowsOfRandomValuesForAllTypes(numRowsPerType = 10, valuesPerType = 10) final RandomValuesForAType values) {
+        assertTrue(sequence(values).map(parseableAs).forAll(contains(values.type)));
     }
 
     @Test
@@ -167,32 +180,28 @@ public class DataTypeTest {
     @Test
     public void testBadIntegerPartDecimal() {
         final String testValue = "fhglf.7087";
-        assertFalse("Accepted a \"number\" with non-integral integer part as a legitimate Decimal!", parseableAs(
-                testValue)
+        assertFalse("Accepted a \"number\" with non-integral integer part as a legitimate Decimal!", parseableAs(testValue)
                 .contains(Decimal));
     }
 
     @Test
     public void testBadDecimalPartDecimal() {
         final String testValue = "34235.dfgsdfg";
-        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(
-                testValue)
+        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(testValue)
                 .contains(Decimal));
     }
 
     @Test
     public void testBadBothPartsDecimal() {
         final String testValue = "sgsg.dfgsdfg";
-        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(
-                testValue)
+        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(testValue)
                 .contains(Decimal));
     }
 
     @Test
     public void testCompletelyBadDecimal() {
         final String testValue = "s24fgsdfg";
-        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(
-                testValue)
+        assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(testValue)
                 .contains(Decimal));
     }
 
@@ -213,4 +222,12 @@ public class DataTypeTest {
         }
     }
 
+    private static final Function1<Comparable<?>, Set<DataType>> parseableAs =
+            new Function1<Comparable<?>, Set<DataType>>() {
+
+                @Override
+                public Set<DataType> call(final Comparable<?> value) {
+                    return parseableAs(value.toString());
+                }
+            };
 }

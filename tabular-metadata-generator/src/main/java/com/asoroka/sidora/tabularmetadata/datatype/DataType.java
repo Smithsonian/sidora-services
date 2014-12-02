@@ -185,14 +185,14 @@ public enum DataType {
     }
 
     private DataType(final String uri, final DataType supertype) {
-        this.xsdType = uri == null ? null : java.net.URI.create(uri);
+        this.uri = uri == null ? null : java.net.URI.create(uri);
         this.supertype = supertype;
     }
 
     /**
-     * The XSD type, if any, with which this DataType is associated
+     * An URI, if any, with which this DataType is associated
      */
-    public final URI xsdType;
+    public final URI uri;
 
     /**
      * This DataType, recorded because Java doesn't handle lexical "this" as we might like.

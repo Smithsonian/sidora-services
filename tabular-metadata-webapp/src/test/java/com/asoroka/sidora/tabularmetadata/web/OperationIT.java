@@ -9,7 +9,6 @@ import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.junit.Assert.assertEquals;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +21,6 @@ import javax.ws.rs.core.Response;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.xml.sax.SAXException;
@@ -37,7 +35,8 @@ public class OperationIT {
     static {
         try {
             properResponse =
-                    Resources.toString(new File("src/test/resources/OperationITData").toURI().toURL(), UTF_8);
+                    Resources.toString(new File("src/test/resources/OperationITData")
+                            .toURI().toURL(), UTF_8);
         } catch (final IOException e) {
             throw new AssertionError(e);
         }
@@ -46,11 +45,9 @@ public class OperationIT {
     @Inject
     private WebClient client;
 
-    private static final Logger log = getLogger(OperationIT.class);
-
     @Test
     public void testUrlOperation() throws IOException, SAXException {
-        final Path dataFileLocation = createTempFile("testUrlOperation-", randomUUID().toString());
+        final Path dataFileLocation = createTempFile("testUrlOperation", "-" + randomUUID());
         final List<String> lines = asList("NAME,RANK,SERIAL NUMBER", "Kirk,Admiral,002", "McCoy,Doctor,567");
         write(dataFileLocation, lines, UTF_8);
         final Response r = client.query("url", "file://" + dataFileLocation.toAbsolutePath()).get();
