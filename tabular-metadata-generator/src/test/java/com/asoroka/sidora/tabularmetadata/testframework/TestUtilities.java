@@ -19,9 +19,9 @@ import static org.mockito.Mockito.when;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
 
 import org.junit.experimental.theories.PotentialAssignment;
-import org.junit.experimental.theories.PotentialAssignment.CouldNotGenerateValueException;
 import org.mockito.internal.stubbing.answers.Returns;
 
 import com.asoroka.sidora.tabularmetadata.SelfTypeInstanceGenerator;
@@ -89,20 +89,6 @@ public abstract class TestUtilities {
             @Override
             public PotentialAssignment call(final From from) {
                 return PotentialAssignment.forValue(null, from);
-            }
-        };
-    }
-
-    final static <To> Callable1<PotentialAssignment, To> fromPotentialAssignment() {
-        return new Callable1<PotentialAssignment, To>() {
-
-            @Override
-            public To call(final PotentialAssignment from) {
-                try {
-                    return (To) from.getValue();
-                } catch (final CouldNotGenerateValueException e) {
-                    throw new AssertionError();
-                }
             }
         };
     }
@@ -185,5 +171,15 @@ public abstract class TestUtilities {
             final List<T> list = (List<T>) this;
             return list;
         }
+    }
+
+    public static final <T> Callable1<SortedSet<T>, T> first() {
+        return new Callable1<SortedSet<T>, T>() {
+
+            @Override
+            public T call(final SortedSet<T> s) {
+                return s.first();
+            }
+        };
     }
 }

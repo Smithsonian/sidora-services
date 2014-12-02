@@ -8,12 +8,12 @@ package com.asoroka.sidora.tabularmetadata.datatype;
 import static com.google.common.base.Suppliers.memoize;
 import static com.google.common.collect.FluentIterable.from;
 import static com.google.common.collect.Lists.transform;
+import static com.google.common.collect.Ordering.natural;
 import static com.google.common.collect.Sets.filter;
 import static java.lang.Float.parseFloat;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static java.util.EnumSet.allOf;
-import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.copyOf;
 import static java.util.EnumSet.of;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
@@ -25,7 +25,6 @@ import static org.joda.time.format.DateTimeFormat.mediumDateTime;
 import static org.joda.time.format.DateTimeFormat.shortDateTime;
 import static org.joda.time.format.ISODateTimeFormat.dateOptionalTimeParser;
 import static org.joda.time.format.ISODateTimeFormat.dateTimeParser;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,7 +36,6 @@ import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
-import org.slf4j.Logger;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -187,14 +185,14 @@ public enum DataType {
     }
 
     private DataType(final String uri, final DataType supertype) {
-        this.xsdType = uri == null ? null : java.net.URI.create(uri);
+        this.uri = uri == null ? null : java.net.URI.create(uri);
         this.supertype = supertype;
     }
 
     /**
-     * The XSD type, if any, with which this DataType is associated
+     * An URI, if any, with which this DataType is associated
      */
-    public final URI xsdType;
+    public final URI uri;
 
     /**
      * This DataType, recorded because Java doesn't handle lexical "this" as we might like.
@@ -254,25 +252,20 @@ public enum DataType {
         }));
     }
 
-    /**
-     * @param value
-     * @return an {@link EnumSet} of those DataTypes into which s cannot be parsed
-     */
-    public static EnumSet<DataType> notParseableAs(final String value) {
-        return complementOf(parseableAs(value));
-    }
+    private static Function<DataType, Integer> numSuperTypes = new Function<DataType, Integer>() {
+
+        @Override
+        public Integer apply(final DataType type) {
+            return type.supertypes().size();
+        }
+    };
 
     /**
      * A simple ordering by hierarchy. Those types with more supertypes are considered "smaller" than those with
-     * fewer.
+     * fewer. In case of a tie, natural enum order prevails.
      */
-    public static final Comparator<DataType> orderingByHierarchy = new Comparator<DataType>() {
-
-        @Override
-        public int compare(final DataType left, final DataType right) {
-            return right.supertypes().size() - left.supertypes().size();
-        }
-    };
+    private static final Comparator<DataType> orderingByHierarchy = natural().reverse()
+            .onResultOf(numSuperTypes).compound(natural());
 
     public static SortedSet<DataType> sortByHierarchy(final Iterable<DataType> types) {
         return from(types).toSortedSet(orderingByHierarchy);
@@ -306,7 +299,5 @@ public enum DataType {
 
     static List<DateTimeFormatter> dateTimeFormats = ImmutableList.of(shortDateTime(), mediumDateTime(),
             fullDateTime(), dateOptionalTimeParser(), dateTimeParser(), forPattern("yyyy-MM-dd HH:mm:ss"));
-
-    static final Logger log = getLogger(DataType.class);
 
 }

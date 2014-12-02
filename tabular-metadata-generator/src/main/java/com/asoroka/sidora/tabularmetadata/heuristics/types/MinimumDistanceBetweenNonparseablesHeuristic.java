@@ -1,12 +1,14 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics.types;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.notParseableAs;
+import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.google.common.base.Functions.constant;
 import static com.google.common.collect.Maps.toMap;
 import static java.lang.Float.NEGATIVE_INFINITY;
+import static java.util.EnumSet.complementOf;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
@@ -65,6 +67,14 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
             return true;
         }
         return false;
+    }
+
+    /**
+     * @param value
+     * @return an {@link EnumSet} of those DataTypes into which s cannot be parsed
+     */
+    private static EnumSet<DataType> notParseableAs(final String value) {
+        return complementOf(parseableAs(value));
     }
 
     @Override

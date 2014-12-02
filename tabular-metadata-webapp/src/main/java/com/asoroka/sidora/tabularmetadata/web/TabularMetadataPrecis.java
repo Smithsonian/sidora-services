@@ -1,13 +1,12 @@
 
 package com.asoroka.sidora.tabularmetadata.web;
 
-import static com.google.common.collect.ImmutableList.builder;
 import static com.google.common.collect.Lists.transform;
 import static javax.xml.bind.annotation.XmlAccessType.PUBLIC_MEMBER;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.Iterator;
 import java.util.List;
+import java.util.SortedMap;
 import java.util.SortedSet;
 
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -20,7 +19,7 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
 
 /**
  * A JAXB-supported class to serialize a precis of tabular data metadata.
@@ -53,39 +52,63 @@ public class TabularMetadataPrecis {
     @XmlElementWrapper
     @XmlElement(name = "mostLikelyHeader")
     public List<String> getLikelyHeaders() {
-        return metadata.headerNames;
+        return metadata.headerNames();
     }
 
     @XmlElementWrapper
     @XmlElement(name = "mostLikelyType")
     public List<DataType> getMostLikelyTypes() {
-        return getFirstElements(metadata.fieldTypes);
+        return transform(metadata.fieldTypes(), TabularMetadataPrecis.<DataType> first());
     }
 
     @XmlElementWrapper
     @XmlElement(name = "mostLikelyRange")
     public List<XMLRange> getMostLikelyRanges() {
-        final ImmutableList.Builder<XMLRange> b = builder();
-        for (int i = 0; i < metadata.minMaxes.size(); i++) {
-            final DataType mostLikelyType = getMostLikelyTypes().get(i);
-            log.trace("Found most likely type {} for field number {}", mostLikelyType, i);
-            b.add(new XMLRange(metadata.minMaxes.get(i).get(mostLikelyType)));
-        }
-        return b.build();
+        return transform(metadata.minMaxes(), toXMLRange);
     }
 
-    private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
-        return transform(inputs, TabularMetadataPrecis.<T> firstOfIterable());
-    }
-
-    private static final <T> Function<Iterable<T>, T> firstOfIterable() {
-        return new Function<Iterable<T>, T>() {
+    private static final <T> Function<SortedSet<T>, T> first() {
+        return new Function<SortedSet<T>, T>() {
 
             @Override
-            public T apply(final Iterable<T> s) {
-                final Iterator<T> iterator = s.iterator();
-                return iterator.hasNext() ? iterator.next() : null;
+            public T apply(final SortedSet<T> s) {
+                return s.first();
             }
         };
+    }
+
+    private static final Function<SortedMap<DataType, Range<?>>, XMLRange> toXMLRange =
+            new Function<SortedMap<DataType, Range<?>>, XMLRange>() {
+
+                @Override
+                public XMLRange apply(final SortedMap<DataType, Range<?>> minMaxForField) {
+                    final Range<?> minMax = minMaxForField.get(minMaxForField.firstKey());
+                    return new XMLRange().range(minMax);
+                }
+            };
+
+    @XmlRootElement
+    @XmlAccessorType(PUBLIC_MEMBER)
+    private static class XMLRange {
+
+        private Range<?> range;
+
+        public XMLRange() {
+        }
+
+        public XMLRange range(final Range<?> r) {
+            this.range = r;
+            return this;
+        }
+
+        @XmlElement
+        public String getMin() {
+            return range.hasLowerBound() ? range.lowerEndpoint().toString() : null;
+        }
+
+        @XmlElement
+        public String getMax() {
+            return range.hasUpperBound() ? range.upperEndpoint().toString() : null;
+        }
     }
 }

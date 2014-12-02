@@ -28,7 +28,9 @@ import javax.xml.namespace.QName;
 @Provider
 public class TabularMetadataPrecisWriter implements MessageBodyWriter<TabularMetadataPrecis> {
 
-    private static JAXBContext context;
+    private static final QName XML_NAME = new QName("tabular-metadata");
+
+    private static final JAXBContext context;
 
     static {
         try {
@@ -40,16 +42,15 @@ public class TabularMetadataPrecisWriter implements MessageBodyWriter<TabularMet
 
     @Override
     public void writeTo(final TabularMetadataPrecis t, final Class<?> type, final Type genericType,
-            final Annotation[] annotations,
-            final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
-            final OutputStream entityStream)
+            final Annotation[] annotations, final MediaType mediaType,
+            final MultivaluedMap<String, Object> httpHeaders, final OutputStream entityStream)
             throws WebApplicationException {
 
         try {
             final Marshaller m = context.createMarshaller();
             m.setProperty(JAXB_FORMATTED_OUTPUT, true);
             final JAXBElement<TabularMetadataPrecis> jaxb =
-                    new JAXBElement<>(new QName("foo"), TabularMetadataPrecis.class, t);
+                    new JAXBElement<>(XML_NAME, TabularMetadataPrecis.class, t);
             m.marshal(jaxb, entityStream);
         } catch (final JAXBException e) {
             throw new WebApplicationException(e);
@@ -64,8 +65,7 @@ public class TabularMetadataPrecisWriter implements MessageBodyWriter<TabularMet
 
     @Override
     public long getSize(final TabularMetadataPrecis t, final Class<?> type, final Type genericType,
-            final Annotation[] annotations,
-            final MediaType mediaType) {
+            final Annotation[] annotations, final MediaType mediaType) {
         return -1;
     }
 }

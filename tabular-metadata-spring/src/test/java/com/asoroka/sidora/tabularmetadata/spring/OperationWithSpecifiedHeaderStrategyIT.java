@@ -28,7 +28,7 @@ public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
         log.trace("testWithSimpleData()...");
         final TabularMetadata result =
                 testFile(getTestFile(testFileSimple), STRING_TYPES, getStringRange(), DataType.String);
-        final List<String> headerNames = result.headerNames;
+        final List<String> headerNames = result.headerNames();
         final int numHeaders = headerNames.size();
         for (int i = 1; i < numHeaders; i++) {
             log.trace("Examining header #{}", i);
@@ -44,7 +44,7 @@ public class OperationWithSpecifiedHeaderStrategyIT extends SpringITFramework {
         final TabularMetadata result =
                 testFile(getTestFile(testFileSimpleWithCrazyHeaders), SIMPLE_TYPES, getIntRange(), DataType.Integer);
         assertEquals("Didn't find header names when we should have!", asList("MATCH1", "MATCH2", "MATCH3"), result
-                .headerNames);
+                .headerNames());
         log.trace("End testWithDataWithHeadersMatching().");
     }
 }

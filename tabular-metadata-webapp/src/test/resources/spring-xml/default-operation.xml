@@ -23,16 +23,16 @@
 
         <jaxrs:providers>
             <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
-                <property name="marshallerProperties" ref="marshallerPropertiesMap"/>
+                <property name="marshallerProperties">
+                    <util:map id="marshallerPropertiesMap">
+                        <entry key="jaxb.formatted.output">
+                            <value type="java.lang.Boolean">true</value>
+                        </entry>
+                    </util:map>
+                </property>
             </bean>
         </jaxrs:providers>
     </jaxrs:server>
-
-    <util:map id="marshallerPropertiesMap">
-        <entry key="jaxb.formatted.output">
-            <value type="java.lang.Boolean">true</value>
-        </entry>
-    </util:map>
 
     <jaxrs-client:client id="webClient" address="local://tabular"
         serviceClass="org.apache.cxf.jaxrs.client.WebClient"/>

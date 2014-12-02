@@ -13,6 +13,6 @@ public interface SelfTypeInstanceGenerator<SelfType extends SelfTypeInstanceGene
     /**
      * @return A new instance of this type of object.
      */
-    public SelfType newInstance();
+    SelfType newInstance();
 
 }
