@@ -96,13 +96,13 @@ public class TabularMetadata {
 
     /**
      * @return A list of maps from {@link DataType}s to {@link Range}s, with each data type mapped to the minimum and
-     *         maximum for each field, <i>if</i> that field is treated as correctly of that type. The values of the
-     *         endpoints of the ranges, if they exist, are in the Java type value-space associated to the datatype
-     *         considered most likely for that field. The idea here is that when a given field is finally determined
-     *         to be of a given type (by user action after automatic action), the appropriate range can be looked up
-     *         at that time. This is to ensure that in a situation where the type determination strategy employed gave
-     *         a wrong answer, the correct answer for range can still be found after the type determination has been
-     *         corrected.
+     *         maximum for each field, <i>if</i> that field is treated as of that type. The maps are sorted in the
+     *         same manner as is {@link #fieldTypes()}. The values of the endpoints of the ranges, if they exist, are
+     *         in the Java type value-space associated to the datatype considered most likely for that field. The idea
+     *         here is that when a given field is finally determined to be of a given type (by user action after
+     *         automatic action), the appropriate range can be looked up at that time. This is to ensure that in a
+     *         situation where the type determination strategy employed gave a wrong answer, the correct answer for
+     *         range can still be found after the type determination has been corrected.
      * @see com.google.common.collect.Range<?>
      */
     public List<SortedMap<DataType, Range<?>>> minMaxes() {
@@ -112,7 +112,7 @@ public class TabularMetadata {
     /**
      * @return A list (one element for each field in the input file) of maps from each possible datatype to an set of
      *         the lexes found in that field that were parseable into that data type. The maps are sorted in the same
-     *         manner as is
+     *         manner as is {@link #fieldTypes()}.
      */
     public List<SortedMap<DataType, Set<String>>> enumeratedValues() {
         return enumeratedValues;
