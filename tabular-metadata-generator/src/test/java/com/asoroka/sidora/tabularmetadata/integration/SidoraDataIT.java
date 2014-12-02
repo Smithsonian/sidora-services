@@ -68,14 +68,14 @@ public class SidoraDataIT {
         final TabularMetadata result = testGenerator.getMetadata(testFile);
         log.debug("Got results: {}", result);
         assertTrue("Should have found all header names matching against '" + DEFAULT_HEADER_NAME + "'!",
-                all(result.headerNames, contains(DEFAULT_HEADER_NAME)));
+                all(result.headerNames(), contains(DEFAULT_HEADER_NAME)));
 
-        final List<DataType> mostLikelyTypes = getFirstElements(result.fieldTypes);
+        final List<DataType> mostLikelyTypes = getFirstElements(result.fieldTypes());
         assertEquals("Didn't get the expected type determinations!", expectedTypes, mostLikelyTypes);
 
-        for (int i = 0; i < result.minMaxes.size(); i++) {
+        for (int i = 0; i < result.minMaxes().size(); i++) {
             final DataType mostLikelyType = mostLikelyTypes.get(i);
-            log.debug("For most likely type {} got range: {}", mostLikelyType, result.minMaxes.get(i).get(
+            log.debug("For most likely type {} got range: {}", mostLikelyType, result.minMaxes().get(i).get(
                     mostLikelyType));
         }
     }

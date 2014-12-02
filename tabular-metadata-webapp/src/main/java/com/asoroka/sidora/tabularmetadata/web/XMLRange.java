@@ -24,12 +24,13 @@ public class XMLRange {
 
     @XmlElement
     public String getMin() {
-        return r.lowerEndpoint().toString();
+        return r.hasLowerBound() ? r.lowerEndpoint().toString() : null;
+
     }
 
     @XmlElement
     public String getMax() {
-        return r.upperEndpoint().toString();
+        return r.hasUpperBound() ? r.upperEndpoint().toString() : null;
     }
 
 }
