@@ -1,7 +1,6 @@
 
 package com.asoroka.sidora.tabularmetadata;
 
-import static com.google.common.collect.Iterables.getFirst;
 import static com.googlecode.totallylazy.Sequences.sequence;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -20,7 +19,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Callable1;
-import com.googlecode.totallylazy.Group;
+import com.googlecode.totallylazy.Pair;
 
 /**
  * A container for the results of metadata extraction on a single data file.
@@ -75,37 +74,24 @@ public class TabularMetadata {
         this.fieldTypes = fieldTypes;
         // sort range and enumerated values reporting by most likely type
         this.minMaxes =
-                sequence(minMaxes).groupBy(indexByPosition()).map(this.<Range<?>> sortByLikelihood()).toList();
+                sequence(minMaxes).zipWithIndex().map(this.<Range<?>> sortByLikelihood()).toList();
         this.enumeratedValues =
-                sequence(enumeratedValues).groupBy(indexByPosition()).map(this.<Set<String>> sortByLikelihood())
+                sequence(enumeratedValues).zipWithIndex().map(this.<Set<String>> sortByLikelihood())
                         .toList();
-    }
-
-    static <T> Callable1<T, Integer> indexByPosition() {
-        return new Callable1<T, Integer>() {
-
-            private int i = 0;
-
-            @Override
-            public Integer call(final T element) {
-                return i++;
-            }
-        };
     }
 
     /**
      * WARNING: Must not be called before setting {@link #fieldTypes}!
      */
-    private <T> Callable1<Group<Integer, Map<DataType, T>>, SortedMap<DataType, T>> sortByLikelihood() {
-        return new Callable1<Group<Integer, Map<DataType, T>>, SortedMap<DataType, T>>() {
+    private <T> Callable1<Pair<Number, Map<DataType, T>>, SortedMap<DataType, T>> sortByLikelihood() {
+        return new Callable1<Pair<Number, Map<DataType, T>>, SortedMap<DataType, T>>() {
 
             @Override
             public SortedMap<DataType, T> call(
-                    final Group<Integer, Map<DataType, T>> minMaxMapWithIndex) {
+                    final Pair<Number, Map<DataType, T>> minMaxMapWithIndex) {
                 final TreeMap<DataType, T> sortedByLikelihood =
-                        new TreeMap<>(fieldTypes.get(minMaxMapWithIndex.key()).comparator());
-                final Map<DataType, T> unsortedMinMaxMap =
-                        getFirst(minMaxMapWithIndex, TabularMetadata.<T> EMPTY_DATATYPE_MAP());
+                        new TreeMap<>(fieldTypes.get((int) minMaxMapWithIndex.getKey()).comparator());
+                final Map<DataType, T> unsortedMinMaxMap = minMaxMapWithIndex.getValue();
                 sortedByLikelihood.putAll(unsortedMinMaxMap);
                 return sortedByLikelihood;
             }

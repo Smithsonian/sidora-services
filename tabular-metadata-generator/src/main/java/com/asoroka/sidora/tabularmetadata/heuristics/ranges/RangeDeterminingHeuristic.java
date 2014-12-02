@@ -18,5 +18,5 @@ public interface RangeDeterminingHeuristic<SelfType extends RangeDeterminingHeur
     /**
      * @return The ranges taken on by all values in the Java value space associated to each type.
      */
-    public Map<DataType, Range<?>> getRanges();
+    Map<DataType, Range<?>> getRanges();
 }

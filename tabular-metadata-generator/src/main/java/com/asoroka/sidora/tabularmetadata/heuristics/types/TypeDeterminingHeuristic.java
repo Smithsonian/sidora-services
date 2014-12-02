@@ -17,12 +17,12 @@ public interface TypeDeterminingHeuristic<SelfType extends TypeDeterminingHeuris
     /**
      * @return Types for the proffered values in order of their likelihood according to this heuristic.
      */
-    public SortedSet<DataType> typesAsLikely();
+    SortedSet<DataType> typesAsLikely();
 
     /**
      * @return The single most likely type for the proffered values according to this heuristic. Under any normal
      *         regime, this should be equal to {@code typesAsLikely().first()}.
      */
-    public DataType mostLikelyType();
+    DataType mostLikelyType();
 
 }
