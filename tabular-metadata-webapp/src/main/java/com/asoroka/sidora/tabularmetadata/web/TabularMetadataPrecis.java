@@ -82,7 +82,33 @@ public class TabularMetadataPrecis {
 
                 @Override
                 public XMLRange apply(final SortedMap<DataType, Range<?>> minMaxForField) {
-                    return new XMLRange(minMaxForField.get(minMaxForField.firstKey()));
+                    final Range<?> minMax = minMaxForField.get(minMaxForField.firstKey());
+                    return new XMLRange().range(minMax);
                 }
             };
+
+    @XmlRootElement
+    @XmlAccessorType(PUBLIC_MEMBER)
+    private static class XMLRange {
+
+        private Range<?> range;
+
+        public XMLRange() {
+        }
+
+        public XMLRange range(final Range<?> r) {
+            this.range = r;
+            return this;
+        }
+
+        @XmlElement
+        public String getMin() {
+            return range.hasLowerBound() ? range.lowerEndpoint().toString() : null;
+        }
+
+        @XmlElement
+        public String getMax() {
+            return range.hasUpperBound() ? range.upperEndpoint().toString() : null;
+        }
+    }
 }
