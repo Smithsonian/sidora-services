@@ -38,11 +38,6 @@ public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfTyp
         return sortedCandidates;
     }
 
-    @Override
-    public DataType mostLikelyType() {
-        return typesAsLikely().first();
-    }
-
     private Predicate<DataType> candidacyPredicate = new Predicate<DataType>() {
 
         @Override

@@ -55,7 +55,7 @@ public abstract class TestUtilities {
 
                 @Override
                 public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
-                    return heuristic.mostLikelyType();
+                    return heuristic.typesAsLikely().first();
                 }
             };
 

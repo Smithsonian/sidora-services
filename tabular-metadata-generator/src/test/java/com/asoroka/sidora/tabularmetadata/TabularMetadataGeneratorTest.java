@@ -6,6 +6,7 @@ import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.clo
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Sets.newTreeSet;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
 import static java.util.Collections.emptyMap;
@@ -85,8 +86,6 @@ public class TabularMetadataGeneratorTest {
 
     private Map<DataType, Set<String>> mockEnumeratedValues = emptyMap();
 
-    private Returns mockDataTypeAnswer = new Returns(mockDataType);
-
     static Map<DataType, Range<?>> testRanges() {
         return emptyMap();
     }
@@ -95,7 +94,7 @@ public class TabularMetadataGeneratorTest {
 
     @Before
     public void setUp() {
-        when(mockSimpleStrategy.mostLikelyType()).thenAnswer(mockDataTypeAnswer);
+        when(mockSimpleStrategy.typesAsLikely()).thenAnswer(new Returns(newTreeSet(asList(mockDataType))));
         final Returns trueReturn = new Returns(true);
         when(mockSimpleStrategy.addValue(anyString())).thenAnswer(trueReturn);
         final Returns range = new Returns(testRanges());
@@ -265,11 +264,6 @@ public class TabularMetadataGeneratorTest {
         @Override
         public MarkingMockDataTypeHeuristic get() {
             return this;
-        }
-
-        @Override
-        public DataType mostLikelyType() {
-            return DataType.String;
         }
 
         @Override

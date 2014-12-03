@@ -4,6 +4,8 @@ package com.asoroka.sidora.tabularmetadata;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
+import static com.google.common.collect.Sets.newTreeSet;
+import static java.util.Arrays.asList;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 import static org.junit.Assert.assertEquals;
@@ -20,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.internal.stubbing.answers.Returns;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
@@ -30,21 +33,21 @@ import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities;
 public class TabularScannerTest extends TestUtilities {
 
     @Mock
-    DataType mockDataType;
+    private DataType mockDataType;
 
     @Mock
-    MockedHeuristic mockStrategy;
+    private MockedHeuristic mockStrategy;
 
     private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
 
-    private ArrayList<DataType> expectedResults;
+    private static ArrayList<DataType> expectedResults;
 
     private static final Logger log = getLogger(TabularScannerTest.class);
 
     @Before
     public void setUp() {
         expectedResults = newArrayList(mockDataType, mockDataType, mockDataType, mockDataType);
-        when(mockStrategy.mostLikelyType()).thenReturn(mockDataType);
+        when(mockStrategy.typesAsLikely()).thenAnswer(new Returns(newTreeSet(asList(mockDataType))));
     }
 
     @Test
