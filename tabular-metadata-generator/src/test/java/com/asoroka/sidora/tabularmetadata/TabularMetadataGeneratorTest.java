@@ -25,8 +25,8 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
 
 import org.junit.Before;
@@ -130,7 +130,7 @@ public class TabularMetadataGeneratorTest {
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
         final List<String> headers = results.headerNames();
-        final List<SortedMap<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
         assertEquals(asList(testHeaders.split(",")), headers);
         final List<SortedSet<DataType>> types = results.fieldTypes();
         assertTrue("Found a data type that didn't originate from our mocking!", all(concat(types),
@@ -151,7 +151,7 @@ public class TabularMetadataGeneratorTest {
         final List<SortedSet<DataType>> types = results.fieldTypes();
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
-        final List<SortedMap<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
         assertTrue("Failed to find the right mock range results!", all(ranges, equalTo(testRanges())));
         final List<String> headers = results.headerNames();
         assertEquals("Got a bad list of header names!", asList(testHeaders.split(",")), headers);
@@ -174,7 +174,7 @@ public class TabularMetadataGeneratorTest {
         final List<SortedSet<DataType>> types = results.fieldTypes();
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
-        final List<SortedMap<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
         assertTrue("Got a range that wasn't the one we inserted!", all(ranges, equalTo(testRanges())));
 
         final List<String> headers = results.headerNames();

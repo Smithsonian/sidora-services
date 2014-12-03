@@ -2,18 +2,14 @@
 package com.asoroka.sidora.tabularmetadata;
 
 import static com.googlecode.totallylazy.Sequences.sequence;
-import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
-
-import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.base.MoreObjects;
@@ -23,23 +19,20 @@ import com.googlecode.totallylazy.Function1;
 import com.googlecode.totallylazy.Pair;
 
 /**
- * A container for the results of metadata extraction on a single data file.
+ * A container for the results of metadata extraction on a single data file, with machinery to present those results
+ * in appropriate orders.
  * 
  * @author ajs6f
  */
 public class TabularMetadata {
 
-    static final <T> Map<DataType, T> EMPTY_DATATYPE_MAP() {
-        return Collections.<DataType, T> emptyMap();
-    }
-
     private final List<String> headerNames;
 
     private final List<SortedSet<DataType>> fieldTypes;
 
-    private final List<SortedMap<DataType, Range<?>>> minMaxes;
+    private final List<Map<DataType, Range<?>>> minMaxes;
 
-    private final List<SortedMap<DataType, Set<String>>> enumeratedValues;
+    private final List<Map<DataType, Set<String>>> enumeratedValues;
 
     /**
      * @param headerNames
@@ -51,26 +44,21 @@ public class TabularMetadata {
             final List<Map<DataType, Range<?>>> minMaxes, final List<Map<DataType, Set<String>>> enumeratedValues) {
         this.headerNames = headerNames;
         this.fieldTypes = fieldTypes;
-        // sort range and enumerated-values reporting by most likely datatype
-        this.minMaxes =
-                sequence(minMaxes).zipWithIndex().map(this.<Range<?>> sortByLikelihood()).toList();
-        this.enumeratedValues =
-                sequence(enumeratedValues).zipWithIndex().map(this.<Set<String>> sortByLikelihood())
-                        .toList();
+        this.minMaxes = minMaxes;
+        this.enumeratedValues = enumeratedValues;
     }
 
     /**
-     * Sorts a {@link Map<DataType,T>} in the same way that the corresponding field in {@link #fieldTypes} is sorted.
-     * WARNING: Must not be called before setting {@link #fieldTypes}!
+     * Sorts a {@link Map<DataType,T>} in the same way that the corresponding field in {@link #fieldTypes()} is
+     * sorted. WARNING: Must not be used before setting {@link #fieldTypes}!
      */
-    private <T> Function1<Pair<Number, Map<DataType, T>>, SortedMap<DataType, T>> sortByLikelihood() {
-        return new Function1<Pair<Number, Map<DataType, T>>, SortedMap<DataType, T>>() {
+    private <T> Function1<Pair<Number, Map<DataType, T>>, NavigableMap<DataType, T>> sortByLikelihood() {
+        return new Function1<Pair<Number, Map<DataType, T>>, NavigableMap<DataType, T>>() {
 
             @Override
-            public SortedMap<DataType, T> call(
-                    final Pair<Number, Map<DataType, T>> minMaxMapWithIndex) {
+            public NavigableMap<DataType, T> call(final Pair<Number, Map<DataType, T>> minMaxMapWithIndex) {
                 final Comparator<? super DataType> sortByLikelihood =
-                        fieldTypes.get((int) minMaxMapWithIndex.getKey()).comparator();
+                        fieldTypes().get(minMaxMapWithIndex.getKey().intValue()).comparator();
                 final TreeMap<DataType, T> sortedByLikelihood = new TreeMap<>(sortByLikelihood);
                 sortedByLikelihood.putAll(minMaxMapWithIndex.getValue());
                 return sortedByLikelihood;
@@ -105,8 +93,8 @@ public class TabularMetadata {
      *         range can still be found after the type determination has been corrected.
      * @see com.google.common.collect.Range<?>
      */
-    public List<SortedMap<DataType, Range<?>>> minMaxes() {
-        return minMaxes;
+    public List<NavigableMap<DataType, Range<?>>> minMaxes() {
+        return sequence(minMaxes).zipWithIndex().map(this.<Range<?>> sortByLikelihood()).toList();
     }
 
     /**
@@ -114,8 +102,8 @@ public class TabularMetadata {
      *         the lexes found in that field that were parseable into that data type. The maps are sorted in the same
      *         manner as is {@link #fieldTypes()}.
      */
-    public List<SortedMap<DataType, Set<String>>> enumeratedValues() {
-        return enumeratedValues;
+    public List<NavigableMap<DataType, Set<String>>> enumeratedValues() {
+        return sequence(enumeratedValues).zipWithIndex().map(this.<Set<String>> sortByLikelihood()).toList();
     }
 
     private static final ToStringHelper toStringHelper() {
@@ -124,10 +112,7 @@ public class TabularMetadata {
 
     @Override
     public String toString() {
-        return toStringHelper().add("headerNames", headerNames).add("fieldTypes", fieldTypes).add("enumeratedValues",
-                enumeratedValues).add("minMaxes", minMaxes).toString();
+        return toStringHelper().add("headerNames", headerNames()).add("fieldTypes", fieldTypes())
+                .add("enumeratedValues", enumeratedValues()).add("minMaxes", minMaxes()).toString();
     }
-
-    private static final Logger log = getLogger(TabularMetadata.class);
-
 }
