@@ -120,6 +120,14 @@
 				<artifactId>jetty-maven-plugin</artifactId>
 				<version>9.2.3.v20140905</version>
 			</plugin>
+			<plugin>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+				<configuration>
+					<merge>true</merge>
+					<path>${project.version}/${project.artifactId}</path>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>
