@@ -13,23 +13,15 @@ import static java.lang.Math.round;
 import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static org.joda.time.DateTime.now;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
 
 import org.junit.experimental.theories.PotentialAssignment;
-import org.mockito.internal.stubbing.answers.Returns;
 
-import com.asoroka.sidora.tabularmetadata.SelfTypeInstanceGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.datatype.GeographicValue;
 import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import com.google.common.base.Function;
 import com.googlecode.totallylazy.Callable1;
@@ -58,30 +50,6 @@ public abstract class TestUtilities {
                     return heuristic.typesAsLikely().first();
                 }
             };
-
-    /**
-     * The following peculiar locution arises from the need to provide the action of
-     * {@link SelfTypeInstanceGenerator#newInstance()} while avoiding a recursive mock
-     * 
-     * @return a mock strategy
-     */
-    public static MockedHeuristic cloneableMockStrategy(final MockedHeuristic strategy) {
-        final MockedHeuristic mocked = mock(MockedHeuristic.class);
-        final Returns cloner = new Returns(strategy);
-        when(mocked.newInstance()).thenAnswer(cloner);
-        return mocked;
-    }
-
-    /**
-     * Exists purely to help simplify mocking for tests.
-     * 
-     * @author ajs6f
-     */
-    public static interface MockedHeuristic extends TypeDeterminingHeuristic<MockedHeuristic>,
-            RangeDeterminingHeuristic<MockedHeuristic>,
-            EnumeratedValuesHeuristic<MockedHeuristic> {
-        // NO CONTENT
-    }
 
     final static <From> Callable1<From, PotentialAssignment> toPotentialAssignment() {
         return new Callable1<From, PotentialAssignment>() {
@@ -165,21 +133,5 @@ public abstract class TestUtilities {
             this.type = t;
             return this;
         }
-
-        public <T> List<T> as() {
-            @SuppressWarnings("unchecked")
-            final List<T> list = (List<T>) this;
-            return list;
-        }
-    }
-
-    public static final <T> Callable1<SortedSet<T>, T> first() {
-        return new Callable1<SortedSet<T>, T>() {
-
-            @Override
-            public T call(final SortedSet<T> s) {
-                return s.first();
-            }
-        };
     }
 }

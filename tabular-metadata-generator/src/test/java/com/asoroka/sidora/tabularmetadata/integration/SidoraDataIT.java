@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities;
+import com.googlecode.totallylazy.Function1;
 
 public class SidoraDataIT {
 
@@ -81,6 +81,16 @@ public class SidoraDataIT {
     }
 
     private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
-        return sequence(inputs).map(TestUtilities.<T> first()).toList();
+        return sequence(inputs).map(SidoraDataIT.<T> first()).toList();
+    }
+
+    private static final <T> Function1<SortedSet<T>, T> first() {
+        return new Function1<SortedSet<T>, T>() {
+
+            @Override
+            public T call(final SortedSet<T> s) {
+                return s.first();
+            }
+        };
     }
 }

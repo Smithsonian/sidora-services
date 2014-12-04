@@ -22,11 +22,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.internal.stubbing.answers.Returns;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -35,8 +37,17 @@ public class TabularScannerTest extends TestUtilities {
     @Mock
     private DataType mockDataType;
 
+    @SuppressWarnings("rawtypes")
     @Mock
-    private MockedHeuristic mockStrategy;
+    private RangeDeterminingHeuristic mockRangeStrategy;
+
+    @SuppressWarnings("rawtypes")
+    @Mock
+    private TypeDeterminingHeuristic mockTypeStrategy;
+
+    @SuppressWarnings("rawtypes")
+    @Mock
+    private EnumeratedValuesHeuristic mockEnumStrategy;
 
     private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
 
@@ -47,7 +58,10 @@ public class TabularScannerTest extends TestUtilities {
     @Before
     public void setUp() {
         expectedResults = newArrayList(mockDataType, mockDataType, mockDataType, mockDataType);
-        when(mockStrategy.typesAsLikely()).thenAnswer(new Returns(newTreeSet(asList(mockDataType))));
+        when(mockTypeStrategy.typesAsLikely()).thenReturn(newTreeSet(asList(mockDataType)));
+        when(mockTypeStrategy.newInstance()).thenReturn(mockTypeStrategy);
+        when(mockEnumStrategy.newInstance()).thenReturn(mockEnumStrategy);
+        when(mockRangeStrategy.newInstance()).thenReturn(mockRangeStrategy);
     }
 
     @Test
@@ -55,10 +69,8 @@ public class TabularScannerTest extends TestUtilities {
         final TabularScanner testScanner;
         try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
             log.debug("Found header map: {}", parser.getHeaderMap());
-            final MockedHeuristic cloneableMockStrategy = cloneableMockStrategy(mockStrategy);
             testScanner =
-                    new TabularScanner(parser.iterator(), cloneableMockStrategy, cloneableMockStrategy,
-                            cloneableMockStrategy);
+                    new TabularScanner(parser.iterator(), mockTypeStrategy, mockRangeStrategy, mockEnumStrategy);
             testScanner.scan(0);
         }
         final List<DataType> guesses =
@@ -71,10 +83,8 @@ public class TabularScannerTest extends TestUtilities {
         final TabularScanner testScanner;
         try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
             log.debug("Found header map: {}", parser.getHeaderMap());
-            final MockedHeuristic cloneableMockStrategy = cloneableMockStrategy(mockStrategy);
             testScanner =
-                    new TabularScanner(parser.iterator(), cloneableMockStrategy, cloneableMockStrategy,
-                            cloneableMockStrategy);
+                    new TabularScanner(parser.iterator(), mockTypeStrategy, mockRangeStrategy, mockEnumStrategy);
             testScanner.scan(2);
         }
         final List<DataType> guesses =

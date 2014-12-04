@@ -2,7 +2,6 @@
 package com.asoroka.sidora.tabularmetadata;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
-import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.cloneableMockStrategy;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Iterables.concat;
@@ -42,8 +41,10 @@ import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
-import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.MockedHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import com.google.common.collect.Range;
 
 /**
@@ -75,11 +76,21 @@ public class TabularMetadataGeneratorTest {
 
     private static final byte[] testTsv = (testTsvHeaders + "\n" + testTsvRow1).getBytes();
 
+    @SuppressWarnings("rawtypes")
     @Mock
-    private MockedHeuristic mockSimpleStrategy, mockStrategy;
+    private RangeDeterminingHeuristic mockRangeStrategy;
 
+    @SuppressWarnings("rawtypes")
     @Mock
-    private HeaderHeuristic<?> mockHeaderHeuristic;
+    private TypeDeterminingHeuristic mockTypeStrategy;
+
+    @SuppressWarnings("rawtypes")
+    @Mock
+    private EnumeratedValuesHeuristic mockEnumStrategy;
+
+    @SuppressWarnings("rawtypes")
+    @Mock
+    private HeaderHeuristic mockHeaderHeuristic;
 
     @Mock
     private DataType mockDataType;
@@ -94,27 +105,33 @@ public class TabularMetadataGeneratorTest {
 
     @Before
     public void setUp() {
-        when(mockSimpleStrategy.typesAsLikely()).thenAnswer(new Returns(newTreeSet(asList(mockDataType))));
-        final Returns trueReturn = new Returns(true);
-        when(mockSimpleStrategy.addValue(anyString())).thenAnswer(trueReturn);
+        when(mockTypeStrategy.typesAsLikely()).thenReturn(newTreeSet(asList(mockDataType)));
+        when(mockTypeStrategy.addValue(anyString())).thenReturn(true);
+        when(mockEnumStrategy.addValue(anyString())).thenReturn(true);
+        when(mockRangeStrategy.addValue(anyString())).thenReturn(true);
+
         final Returns range = new Returns(testRanges());
-        when(mockSimpleStrategy.getRanges()).thenAnswer(range);
-        when(mockSimpleStrategy.getEnumeratedValues()).thenReturn(mockEnumeratedValues);
-        mockStrategy = cloneableMockStrategy(mockSimpleStrategy);
+        when(mockRangeStrategy.getRanges()).thenAnswer(range);
+        when(mockEnumStrategy.getEnumeratedValues()).thenReturn(mockEnumeratedValues);
+        when(mockTypeStrategy.newInstance()).thenReturn(mockTypeStrategy);
+        when(mockEnumStrategy.newInstance()).thenReturn(mockEnumStrategy);
+        when(mockRangeStrategy.newInstance()).thenReturn(mockRangeStrategy);
     }
 
-    private static TabularMetadataGenerator newGenerator(final MockedHeuristic strategy) {
+    private static TabularMetadataGenerator newGenerator(final RangeDeterminingHeuristic<?> rangeStrategy,
+            final EnumeratedValuesHeuristic<?> enumStrategy, final TypeDeterminingHeuristic<?> typeStrategy) {
         final TabularMetadataGenerator generator = new TabularMetadataGenerator();
-        generator.setEnumStrategy(strategy);
-        generator.setRangeStrategy(strategy);
-        generator.setTypeStrategy(strategy);
+        generator.setEnumStrategy(enumStrategy);
+        generator.setRangeStrategy(rangeStrategy);
+        generator.setTypeStrategy(typeStrategy);
         return generator;
     }
 
     @Test(expected = EmptyDataFileException.class)
     public void testEmptyDataFile() throws IOException {
         final URL mockURL = mockURL("".getBytes());
-        final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
+        final TabularMetadataGenerator testParser =
+                newGenerator(mockRangeStrategy, mockEnumStrategy, mockTypeStrategy);
         testParser.getMetadata(mockURL);
     }
 
@@ -123,7 +140,8 @@ public class TabularMetadataGeneratorTest {
         log.trace("Entering testOperationWithSetFormat()...");
         when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testTsv);
-        final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
+        final TabularMetadataGenerator testParser =
+                newGenerator(mockRangeStrategy, mockEnumStrategy, mockTypeStrategy);
         testParser.setFormat(new TabularFormat.TabSeparated());
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
@@ -143,7 +161,8 @@ public class TabularMetadataGeneratorTest {
         log.trace("Entering testOperationWithHeaders()...");
         when(mockHeaderHeuristic.isHeader()).thenReturn(true);
         final URL mockURL = mockURL(testCsv);
-        final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
+        final TabularMetadataGenerator testParser =
+                newGenerator(mockRangeStrategy, mockEnumStrategy, mockTypeStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
@@ -166,7 +185,8 @@ public class TabularMetadataGeneratorTest {
         log.trace("Entering testOperationWithoutHeaders()...");
         when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsv);
-        final TabularMetadataGenerator testParser = newGenerator(mockStrategy);
+        final TabularMetadataGenerator testParser =
+                newGenerator(mockRangeStrategy, mockEnumStrategy, mockTypeStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
@@ -189,7 +209,8 @@ public class TabularMetadataGeneratorTest {
         when(mockHeaderHeuristic.isHeader()).thenReturn(false);
         final URL mockURL = mockURL(testCsvWithMarker);
         final MarkingMockDataTypeHeuristic testStrategy = new MarkingMockDataTypeHeuristic(MARKER_VALUE);
-        final TabularMetadataGenerator testParser = newGenerator(testStrategy);
+        final TabularMetadataGenerator testParser =
+                newGenerator(mockRangeStrategy, mockEnumStrategy, testStrategy);
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         testParser.setScanLimit(2);
         testParser.getMetadata(mockURL);
@@ -227,7 +248,8 @@ public class TabularMetadataGeneratorTest {
         };
     }
 
-    private static class MarkingMockDataTypeHeuristic implements MockedHeuristic {
+    private static class MarkingMockDataTypeHeuristic implements
+            TypeDeterminingHeuristic<MarkingMockDataTypeHeuristic> {
 
         private static final Logger markLog = getLogger(MarkingMockDataTypeHeuristic.class);
 
@@ -267,18 +289,8 @@ public class TabularMetadataGeneratorTest {
         }
 
         @Override
-        public Map<DataType, Range<?>> getRanges() {
-            return testRanges();
-        }
-
-        @Override
         public void reset() {
             // NO OP
-        }
-
-        @Override
-        public Map<DataType, Set<String>> getEnumeratedValues() {
-            return emptyMap();
         }
     }
 }
