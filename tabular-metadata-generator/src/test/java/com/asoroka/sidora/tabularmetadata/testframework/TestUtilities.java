@@ -33,7 +33,7 @@ import com.googlecode.totallylazy.Callable1;
  */
 public abstract class TestUtilities {
 
-    public static void addValues(final Heuristic<?> strategy, final Iterable<?> values) {
+    public static void addValues(final Heuristic<?, ?> strategy, final Iterable<?> values) {
         for (final Object value : values) {
             strategy.addValue(value.toString());
         }
@@ -47,7 +47,7 @@ public abstract class TestUtilities {
 
                 @Override
                 public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
-                    return heuristic.typesAsLikely().first();
+                    return heuristic.results().first();
                 }
             };
 

@@ -22,13 +22,13 @@ import com.google.common.base.Predicate;
  * @param <SelfType>
  */
 public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfType> & TypeDeterminingHeuristic<SelfType>>
-        extends CountAggregatingHeuristic<SelfType>
-        implements TypeDeterminingHeuristic<SelfType> {
+        extends CountAggregatingHeuristic<SelfType, SortedSet<DataType>> implements
+        TypeDeterminingHeuristic<SelfType> {
 
     private static final Logger log = getLogger(PerTypeHeuristic.class);
 
     @Override
-    public SortedSet<DataType> typesAsLikely() {
+    public SortedSet<DataType> results() {
         // develop a set of candidate types in a manner specific to the subclass
         final Set<DataType> possibleTypes = filter(DataType.valuesSet(), candidacyPredicate);
         // order by hierarchy

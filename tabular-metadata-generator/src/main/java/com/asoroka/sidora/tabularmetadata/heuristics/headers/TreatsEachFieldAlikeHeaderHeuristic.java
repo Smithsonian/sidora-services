@@ -21,14 +21,14 @@ import com.google.common.base.Predicate;
  * @param <SelfType>
  */
 public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends TreatsEachFieldAlikeHeaderHeuristic<SelfType>>
-        extends AbstractHeuristic<SelfType> implements HeaderHeuristic<SelfType> {
+        extends AbstractHeuristic<SelfType, Boolean> implements HeaderHeuristic<SelfType> {
 
     private static final Logger log = getLogger(TreatsEachFieldAlikeHeaderHeuristic.class);
 
     private List<String> inputRow;
 
     @Override
-    public boolean isHeader() {
+    public Boolean results() {
         log.trace("Checking input row: {}", inputRow);
         return all(inputRow, fieldTest());
     }

@@ -28,8 +28,8 @@ import com.google.common.collect.Range;
  * 
  * @author ajs6f
  */
-public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuristic> implements
-        RangeDeterminingHeuristic<RunningMinMaxHeuristic> {
+public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuristic, Map<DataType, Range<?>>>
+        implements RangeDeterminingHeuristic<RunningMinMaxHeuristic> {
 
     /**
      * A {@link Map} from data types to the minimum value from all presented values that were parseable in that type.
@@ -76,7 +76,7 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
     }
 
     @Override
-    public Map<DataType, Range<?>> getRanges() {
+    public Map<DataType, Range<?>> results() {
         return asMap(DataType.valuesSet(), getRangeForType());
     }
 

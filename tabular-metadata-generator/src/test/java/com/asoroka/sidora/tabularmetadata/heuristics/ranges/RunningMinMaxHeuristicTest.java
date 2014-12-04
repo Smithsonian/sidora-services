@@ -5,13 +5,15 @@ import static com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.add
 import static com.google.common.collect.Ordering.natural;
 import static org.junit.Assert.assertEquals;
 
+import java.util.Map;
+
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.types.HeuristicTestFrame;
+import com.asoroka.sidora.tabularmetadata.heuristics.HeuristicTestFrame;
 import com.asoroka.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
 import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 import com.google.common.collect.Range;
@@ -20,7 +22,7 @@ import com.google.common.collect.Range;
  * @author ajs6f
  */
 @RunWith(Theories.class)
-public class RunningMinMaxHeuristicTest extends HeuristicTestFrame<RunningMinMaxHeuristic> {
+public class RunningMinMaxHeuristicTest extends HeuristicTestFrame<RunningMinMaxHeuristic, Map<DataType, Range<?>>> {
 
     @DataPoints
     public static DataType[] datatypes = DataType.values();
@@ -36,7 +38,7 @@ public class RunningMinMaxHeuristicTest extends HeuristicTestFrame<RunningMinMax
     @Theory
     public void testMissingLimits(final DataType type) {
         final RunningMinMaxHeuristic testStrategy = newTestHeuristic();
-        final Range<?> range = testStrategy.getRanges().get(type);
+        final Range<?> range = testStrategy.results().get(type);
         assertEquals("Found a defined range where we should not have!", Range.all(), range);
     }
 
@@ -53,7 +55,7 @@ public class RunningMinMaxHeuristicTest extends HeuristicTestFrame<RunningMinMax
         final Comparable<?> lowest = natural().min(values);
         final Comparable<?> highest = natural().max(values);
         addValues(testStrategy, values);
-        final Range<?> range = testStrategy.getRanges().get(values.type);
+        final Range<?> range = testStrategy.results().get(values.type);
         final Comparable<?> calculatedMaxForType = range.upperEndpoint();
         final Comparable<?> calculatedMinForType = range.lowerEndpoint();
         assertEquals("Calculated maximum should be the highest value submitted!", highest,

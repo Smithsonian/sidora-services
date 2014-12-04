@@ -12,11 +12,6 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
  * @author ajs6f
  */
 public interface TypeDeterminingHeuristic<SelfType extends TypeDeterminingHeuristic<SelfType>> extends
-        Heuristic<SelfType> {
-
-    /**
-     * @return Types for the proffered values in order of their likelihood according to this heuristic.
-     */
-    SortedSet<DataType> typesAsLikely();
-
+        Heuristic<SelfType, SortedSet<DataType>> {
+    // EMPTY
 }

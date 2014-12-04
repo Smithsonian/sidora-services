@@ -1,13 +1,11 @@
 
-package com.asoroka.sidora.tabularmetadata.heuristics.types;
+package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
-
-public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeuristic>> {
+public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeuristic, ResultType>, ResultType> {
 
     protected abstract TestHeuristic newTestHeuristic();
 

@@ -27,8 +27,8 @@ import com.google.common.collect.ImmutableMap;
  * @author ajs6f
  * @param <SelfType>
  */
-public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatingHeuristic<SelfType>> extends
-        ValueCountingHeuristic<SelfType> {
+public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatingHeuristic<SelfType, ResultType>, ResultType>
+        extends ValueCountingHeuristic<SelfType, ResultType> {
 
     private static final ImmutableMap<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
 

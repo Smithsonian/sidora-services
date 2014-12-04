@@ -15,11 +15,11 @@ import java.util.Set;
 import org.junit.Test;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.types.HeuristicTestFrame;
+import com.asoroka.sidora.tabularmetadata.heuristics.HeuristicTestFrame;
 import com.google.common.collect.ImmutableMap;
 
 public abstract class EnumeratedValuesHeuristicTestFrame<TestHeuristic extends EnumeratedValuesHeuristic<TestHeuristic>>
-        extends HeuristicTestFrame<TestHeuristic> {
+        extends HeuristicTestFrame<TestHeuristic, Map<DataType, Set<String>>> {
 
     // TODO clean up sample data and make it more understandable
 
@@ -86,7 +86,7 @@ public abstract class EnumeratedValuesHeuristicTestFrame<TestHeuristic extends E
                 for (final String lex : expectedDataToTestData.get(expectedResults)) {
                     testStrategy.addValue(lex);
                 }
-                final Set<String> results = testStrategy.getEnumeratedValues().get(type);
+                final Set<String> results = testStrategy.results().get(type);
                 assertEquals(expectedResults, results);
             }
         }

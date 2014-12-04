@@ -2,6 +2,7 @@
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
 import com.asoroka.sidora.tabularmetadata.SelfTypeInstanceGenerator;
+import com.googlecode.totallylazy.Function1;
 
 /**
  * The simple idea of a heuristic that accepts lexes and does some kind of work with them. See its subtypes for
@@ -9,7 +10,8 @@ import com.asoroka.sidora.tabularmetadata.SelfTypeInstanceGenerator;
  * 
  * @author ajs6f
  */
-public interface Heuristic<SelfType extends Heuristic<SelfType>> extends SelfTypeInstanceGenerator<SelfType> {
+public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, ResultType> extends
+        SelfTypeInstanceGenerator<SelfType> {
 
     /**
      * Provide a value to this heuristic for consideration.
@@ -24,4 +26,13 @@ public interface Heuristic<SelfType extends Heuristic<SelfType>> extends SelfTyp
      */
     void reset();
 
+    ResultType results();
+
+    public static class Extract<ResultType> extends Function1<Heuristic<?, ResultType>, ResultType> {
+
+        @Override
+        public ResultType call(final Heuristic<?, ResultType> strategy) {
+            return strategy.results();
+        }
+    }
 }

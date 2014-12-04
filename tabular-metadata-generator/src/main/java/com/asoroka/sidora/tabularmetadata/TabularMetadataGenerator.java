@@ -4,7 +4,7 @@ package com.asoroka.sidora.tabularmetadata;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterators.peekingIterator;
 import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Lists.transform;
+import static com.googlecode.totallylazy.Sequences.sequence;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 
@@ -26,6 +26,7 @@ import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
+import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic.Extract;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
@@ -34,7 +35,6 @@ import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeur
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RunningMinMaxHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
-import com.google.common.base.Function;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
 
@@ -72,14 +72,14 @@ public class TabularMetadataGenerator {
      */
     public TabularMetadata getMetadata(final URL dataUrl) throws IOException {
 
-        try (CSVParser csvParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
+        try (final CSVParser csvParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final PeekingIterator<CSVRecord> parser = peekingIterator(csvParser.iterator());
             // TODO allow a HeaderHeuristic to use more information than the first line of data
             final CSVRecord firstLine = parser.peek();
             for (final String field : firstLine) {
                 headerStrategy.addValue(field);
             }
-            final boolean hasHeaders = headerStrategy.isHeader();
+            final boolean hasHeaders = headerStrategy.results();
             headerStrategy.reset();
             final List<String> headerNames;
             if (hasHeaders) {
@@ -98,42 +98,18 @@ public class TabularMetadataGenerator {
             final List<EnumeratedValuesHeuristic<?>> enumStrategies = scanner.getEnumStrategies();
 
             // extract the results for each field
-            final List<SortedSet<DataType>> columnTypes = transform(typeStrategies, extractType);
-            final List<Map<DataType, Range<?>>> minMaxes = transform(rangeStrategies, extractMinMax);
-            final List<Map<DataType, Set<String>>> enumValues = transform(enumStrategies, extractEnumValues);
+            final List<SortedSet<DataType>> columnTypes =
+                    sequence(typeStrategies).map(new Extract<SortedSet<DataType>>()).toList();
+            final List<Map<DataType, Range<?>>> minMaxes =
+                    sequence(rangeStrategies).map(new Extract<Map<DataType, Range<?>>>()).toList();
+            final List<Map<DataType, Set<String>>> enumValues =
+                    sequence(enumStrategies).map(new Extract<Map<DataType, Set<String>>>()).toList();
 
             return new TabularMetadata(headerNames, columnTypes, minMaxes, enumValues);
         } catch (final NoSuchElementException e) {
             throw new EmptyDataFileException(dataUrl + " has no data in it!");
         }
     }
-
-    private static final Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>> extractType =
-            new Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>>() {
-
-                @Override
-                public SortedSet<DataType> apply(final TypeDeterminingHeuristic<?> strategy) {
-                    return strategy.typesAsLikely();
-                }
-            };
-
-    private static final Function<RangeDeterminingHeuristic<?>, Map<DataType, Range<?>>> extractMinMax =
-            new Function<RangeDeterminingHeuristic<?>, Map<DataType, Range<?>>>() {
-
-                @Override
-                public Map<DataType, Range<?>> apply(final RangeDeterminingHeuristic<?> strategy) {
-                    return strategy.getRanges();
-                }
-            };
-
-    private static final Function<EnumeratedValuesHeuristic<?>, Map<DataType, Set<String>>> extractEnumValues =
-            new Function<EnumeratedValuesHeuristic<?>, Map<DataType, Set<String>>>() {
-
-                @Override
-                public Map<DataType, Set<String>> apply(final EnumeratedValuesHeuristic<?> strategy) {
-                    return strategy.getEnumeratedValues();
-                }
-            };
 
     private static final List<String> emptyHeaders(final int numFields) {
         final List<String> headers = new ArrayList<>(numFields);
