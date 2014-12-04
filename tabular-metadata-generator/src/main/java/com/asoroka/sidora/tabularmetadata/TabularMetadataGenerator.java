@@ -4,7 +4,7 @@ package com.asoroka.sidora.tabularmetadata;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterators.peekingIterator;
 import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Lists.transform;
+import static com.googlecode.totallylazy.Sequences.sequence;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 
@@ -26,7 +26,7 @@ import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
-import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic.Extract;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
@@ -35,7 +35,6 @@ import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeur
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RunningMinMaxHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
-import com.google.common.base.Function;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
 
@@ -100,26 +99,16 @@ public class TabularMetadataGenerator {
 
             // extract the results for each field
             final List<SortedSet<DataType>> columnTypes =
-                    transform(typeStrategies, TabularMetadataGenerator.<SortedSet<DataType>> extractResults());
+                    sequence(typeStrategies).map(new Extract<SortedSet<DataType>>()).toList();
             final List<Map<DataType, Range<?>>> minMaxes =
-                    transform(rangeStrategies, TabularMetadataGenerator.<Map<DataType, Range<?>>> extractResults());
+                    sequence(rangeStrategies).map(new Extract<Map<DataType, Range<?>>>()).toList();
             final List<Map<DataType, Set<String>>> enumValues =
-                    transform(enumStrategies, TabularMetadataGenerator.<Map<DataType, Set<String>>> extractResults());
+                    sequence(enumStrategies).map(new Extract<Map<DataType, Set<String>>>()).toList();
 
             return new TabularMetadata(headerNames, columnTypes, minMaxes, enumValues);
         } catch (final NoSuchElementException e) {
             throw new EmptyDataFileException(dataUrl + " has no data in it!");
         }
-    }
-
-    private static <ResultType> Function<Heuristic<?, ResultType>, ResultType> extractResults() {
-        return new Function<Heuristic<?, ResultType>, ResultType>() {
-
-            @Override
-            public ResultType apply(final Heuristic<?, ResultType> strategy) {
-                return strategy.results();
-            }
-        };
     }
 
     private static final List<String> emptyHeaders(final int numFields) {
