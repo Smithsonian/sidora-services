@@ -13,5 +13,5 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
  */
 public interface TypeDeterminingHeuristic<SelfType extends TypeDeterminingHeuristic<SelfType>> extends
         Heuristic<SelfType, SortedSet<DataType>> {
-
+    // EMPTY
 }

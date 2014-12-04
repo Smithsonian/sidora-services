@@ -19,5 +19,5 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
  */
 public interface EnumeratedValuesHeuristic<SelfType extends EnumeratedValuesHeuristic<SelfType>> extends
         Heuristic<SelfType, Map<DataType, Set<String>>> {
-
+    // EMPTY
 }
