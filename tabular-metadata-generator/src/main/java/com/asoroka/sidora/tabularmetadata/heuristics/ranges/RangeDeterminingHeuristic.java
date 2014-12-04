@@ -13,10 +13,6 @@ import com.google.common.collect.Range;
  * @author ajs6f
  */
 public interface RangeDeterminingHeuristic<SelfType extends RangeDeterminingHeuristic<SelfType>> extends
-        Heuristic<SelfType> {
+        Heuristic<SelfType, Map<DataType, Range<?>>> {
 
-    /**
-     * @return The ranges taken on by all values in the Java value space associated to each type.
-     */
-    Map<DataType, Range<?>> getRanges();
 }

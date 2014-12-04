@@ -30,7 +30,7 @@ public class DefaultHeaderHeuristicTest extends HeaderHeuristicTestFrame<Default
         assumeThat(values.type, is(String));
         final DefaultHeaderHeuristic testHeuristic = newTestHeuristic();
         addValues(testHeuristic, values);
-        assertTrue(testHeuristic.isHeader());
+        assertTrue(testHeuristic.results());
     }
 
     @Theory
@@ -39,6 +39,6 @@ public class DefaultHeaderHeuristicTest extends HeaderHeuristicTestFrame<Default
         assumeThat(values.type, not(is(String)));
         final DefaultHeaderHeuristic testHeuristic = newTestHeuristic();
         addValues(testHeuristic, values);
-        assertFalse(testHeuristic.isHeader());
+        assertFalse(testHeuristic.results());
     }
 }

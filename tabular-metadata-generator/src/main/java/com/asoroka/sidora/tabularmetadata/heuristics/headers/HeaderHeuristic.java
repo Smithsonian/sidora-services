@@ -9,7 +9,6 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
  * 
  * @author ajs6f
  */
-public interface HeaderHeuristic<SelfType extends HeaderHeuristic<SelfType>> extends Heuristic<SelfType> {
+public interface HeaderHeuristic<SelfType extends HeaderHeuristic<SelfType>> extends Heuristic<SelfType, Boolean> {
 
-    boolean isHeader();
 }

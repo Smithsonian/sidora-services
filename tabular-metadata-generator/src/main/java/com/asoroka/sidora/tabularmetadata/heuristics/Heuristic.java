@@ -9,7 +9,8 @@ import com.asoroka.sidora.tabularmetadata.SelfTypeInstanceGenerator;
  * 
  * @author ajs6f
  */
-public interface Heuristic<SelfType extends Heuristic<SelfType>> extends SelfTypeInstanceGenerator<SelfType> {
+public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, ResultType> extends
+        SelfTypeInstanceGenerator<SelfType> {
 
     /**
      * Provide a value to this heuristic for consideration.
@@ -23,5 +24,7 @@ public interface Heuristic<SelfType extends Heuristic<SelfType>> extends SelfTyp
      * Resets this heuristic to discard all gathered information.
      */
     void reset();
+
+    ResultType results();
 
 }

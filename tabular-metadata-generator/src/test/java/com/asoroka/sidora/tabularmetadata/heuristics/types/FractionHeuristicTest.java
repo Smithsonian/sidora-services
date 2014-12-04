@@ -43,7 +43,7 @@ public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeu
             // NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
             assertTrue(type.equals(NonNegativeInteger) || type.equals(PositiveInteger));
         } else {
-            assertEquals(type, testHeuristic.typesAsLikely().first());
+            assertEquals(type, testHeuristic.results().first());
         }
     }
 
@@ -60,7 +60,7 @@ public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeu
             // NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
             assertTrue(type.equals(NonNegativeInteger) || type.equals(PositiveInteger));
         } else {
-            assertEquals(type, testHeuristic.typesAsLikely().first());
+            assertEquals(type, testHeuristic.results().first());
         }
     }
 
@@ -78,13 +78,13 @@ public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeu
             values.add(randomUUID());
         }
         addValues(testHeuristic, values);
-        assertNotEquals(values.type, testHeuristic.typesAsLikely().first());
+        assertNotEquals(values.type, testHeuristic.results().first());
 
     }
 
     @Theory
     public void testAcceptAllTypesInTheAbsenceOfData(final DataType type) {
         final FractionHeuristic testHeuristic = newTestHeuristic();
-        assertTrue(testHeuristic.typesAsLikely().contains(type));
+        assertTrue(testHeuristic.results().contains(type));
     }
 }

@@ -10,8 +10,8 @@ import org.slf4j.Logger;
  * 
  * @author ajs6f
  */
-public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuristic<SelfType>> extends
-        AbstractHeuristic<SelfType> {
+public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuristic<SelfType, ResultType>, ResultType>
+        extends AbstractHeuristic<SelfType, ResultType> {
 
     private int totalNumValues;
 

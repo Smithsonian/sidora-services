@@ -58,7 +58,7 @@ public class TabularScannerTest extends TestUtilities {
     @Before
     public void setUp() {
         expectedResults = newArrayList(mockDataType, mockDataType, mockDataType, mockDataType);
-        when(mockTypeStrategy.typesAsLikely()).thenReturn(newTreeSet(asList(mockDataType)));
+        when(mockTypeStrategy.results()).thenReturn(newTreeSet(asList(mockDataType)));
         when(mockTypeStrategy.newInstance()).thenReturn(mockTypeStrategy);
         when(mockEnumStrategy.newInstance()).thenReturn(mockEnumStrategy);
         when(mockRangeStrategy.newInstance()).thenReturn(mockRangeStrategy);

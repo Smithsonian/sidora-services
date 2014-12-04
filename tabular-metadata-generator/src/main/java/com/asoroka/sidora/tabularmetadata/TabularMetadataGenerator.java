@@ -26,6 +26,7 @@ import org.apache.commons.csv.CSVRecord;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
+import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
@@ -72,14 +73,14 @@ public class TabularMetadataGenerator {
      */
     public TabularMetadata getMetadata(final URL dataUrl) throws IOException {
 
-        try (CSVParser csvParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
+        try (final CSVParser csvParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
             final PeekingIterator<CSVRecord> parser = peekingIterator(csvParser.iterator());
             // TODO allow a HeaderHeuristic to use more information than the first line of data
             final CSVRecord firstLine = parser.peek();
             for (final String field : firstLine) {
                 headerStrategy.addValue(field);
             }
-            final boolean hasHeaders = headerStrategy.isHeader();
+            final boolean hasHeaders = headerStrategy.results();
             headerStrategy.reset();
             final List<String> headerNames;
             if (hasHeaders) {
@@ -98,9 +99,12 @@ public class TabularMetadataGenerator {
             final List<EnumeratedValuesHeuristic<?>> enumStrategies = scanner.getEnumStrategies();
 
             // extract the results for each field
-            final List<SortedSet<DataType>> columnTypes = transform(typeStrategies, extractType);
-            final List<Map<DataType, Range<?>>> minMaxes = transform(rangeStrategies, extractMinMax);
-            final List<Map<DataType, Set<String>>> enumValues = transform(enumStrategies, extractEnumValues);
+            final List<SortedSet<DataType>> columnTypes =
+                    transform(typeStrategies, TabularMetadataGenerator.<SortedSet<DataType>> extractResults());
+            final List<Map<DataType, Range<?>>> minMaxes =
+                    transform(rangeStrategies, TabularMetadataGenerator.<Map<DataType, Range<?>>> extractResults());
+            final List<Map<DataType, Set<String>>> enumValues =
+                    transform(enumStrategies, TabularMetadataGenerator.<Map<DataType, Set<String>>> extractResults());
 
             return new TabularMetadata(headerNames, columnTypes, minMaxes, enumValues);
         } catch (final NoSuchElementException e) {
@@ -108,32 +112,15 @@ public class TabularMetadataGenerator {
         }
     }
 
-    private static final Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>> extractType =
-            new Function<TypeDeterminingHeuristic<?>, SortedSet<DataType>>() {
+    private static <ResultType> Function<Heuristic<?, ResultType>, ResultType> extractResults() {
+        return new Function<Heuristic<?, ResultType>, ResultType>() {
 
-                @Override
-                public SortedSet<DataType> apply(final TypeDeterminingHeuristic<?> strategy) {
-                    return strategy.typesAsLikely();
-                }
-            };
-
-    private static final Function<RangeDeterminingHeuristic<?>, Map<DataType, Range<?>>> extractMinMax =
-            new Function<RangeDeterminingHeuristic<?>, Map<DataType, Range<?>>>() {
-
-                @Override
-                public Map<DataType, Range<?>> apply(final RangeDeterminingHeuristic<?> strategy) {
-                    return strategy.getRanges();
-                }
-            };
-
-    private static final Function<EnumeratedValuesHeuristic<?>, Map<DataType, Set<String>>> extractEnumValues =
-            new Function<EnumeratedValuesHeuristic<?>, Map<DataType, Set<String>>>() {
-
-                @Override
-                public Map<DataType, Set<String>> apply(final EnumeratedValuesHeuristic<?> strategy) {
-                    return strategy.getEnumeratedValues();
-                }
-            };
+            @Override
+            public ResultType apply(final Heuristic<?, ResultType> strategy) {
+                return strategy.results();
+            }
+        };
+    }
 
     private static final List<String> emptyHeaders(final int numFields) {
         final List<String> headers = new ArrayList<>(numFields);

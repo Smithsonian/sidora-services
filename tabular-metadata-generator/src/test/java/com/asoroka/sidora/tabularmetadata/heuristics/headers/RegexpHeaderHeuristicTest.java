@@ -27,8 +27,8 @@ public class RegexpHeaderHeuristicTest extends HeaderHeuristicTestFrame<RegexpHe
     public void test() {
         final TreatsEachFieldAlikeHeaderHeuristic<RegexpHeaderHeuristic> testHeuristic = newTestHeuristic();
         addValues(testHeuristic, headerRow1);
-        assertTrue("Failed to pass a row that should have passed!", testHeuristic.isHeader());
+        assertTrue("Failed to pass a row that should have passed!", testHeuristic.results());
         addValues(testHeuristic, headerRow2);
-        assertFalse("Passed a row that shouldn't have passed!", testHeuristic.isHeader());
+        assertFalse("Passed a row that shouldn't have passed!", testHeuristic.results());
     }
 }

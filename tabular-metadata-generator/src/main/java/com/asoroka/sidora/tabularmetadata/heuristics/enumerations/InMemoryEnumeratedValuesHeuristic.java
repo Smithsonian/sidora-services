@@ -16,7 +16,8 @@ import com.asoroka.sidora.tabularmetadata.heuristics.AbstractHeuristic;
  * 
  * @author ajs6f
  */
-public class InMemoryEnumeratedValuesHeuristic extends AbstractHeuristic<InMemoryEnumeratedValuesHeuristic> implements
+public class InMemoryEnumeratedValuesHeuristic extends
+        AbstractHeuristic<InMemoryEnumeratedValuesHeuristic, Map<DataType, Set<String>>> implements
         EnumeratedValuesHeuristic<InMemoryEnumeratedValuesHeuristic> {
 
     EnumMap<DataType, Set<String>> valuesTakenOn = new EnumMap<>(DataType.class);
@@ -42,7 +43,7 @@ public class InMemoryEnumeratedValuesHeuristic extends AbstractHeuristic<InMemor
     }
 
     @Override
-    public Map<DataType, Set<String>> getEnumeratedValues() {
+    public Map<DataType, Set<String>> results() {
         return valuesTakenOn;
     }
 
