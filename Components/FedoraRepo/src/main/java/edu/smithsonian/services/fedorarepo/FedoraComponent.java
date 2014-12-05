@@ -9,7 +9,7 @@
  * licensing, contact the Office of the Chief Information Officer, Smithsonian
  * Institution, 380 Herndon Parkway, MRC 1010, Herndon, VA. 20170, 202-633-5256.
  *  
- * This software and accompanying documentation is supplied â€œas isâ€� without
+ * This software and accompanying documentation is supplied "as is" without
  * warranty of any kind. The copyright holder and the Smithsonian Institution:
  * (1) expressly disclaim any warranties, express or implied, including but not
  * limited to any implied warranties of merchantability, fitness for a
@@ -32,6 +32,7 @@ import com.yourmediashelf.fedora.client.request.FedoraRequest;
 import edu.smithsonian.services.fedorarepo.datastream.FedoraDatastreamEndpoint;
 import edu.smithsonian.services.fedorarepo.ingest.FedoraIngestEnpoint;
 import edu.smithsonian.services.fedorarepo.pid.FedoraPidEndpoint;
+import edu.smithsonian.services.fedorarepo.search.FedoraSearchEndpoint;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.camel.Endpoint;
@@ -97,6 +98,11 @@ public class FedoraComponent extends DefaultComponent
         {
             endpoint = new FedoraDatastreamEndpoint(uri, this);
         }
+        else if ("search".equalsIgnoreCase(remaining))
+        {
+            endpoint = new FedoraSearchEndpoint(uri, this);
+        }
+//        else if ("find".equalsIgnoreCase(remaining))
         else
         {
             throw new UnsupportedOperationException("Could not create Fedora Endpoint for " + remaining);

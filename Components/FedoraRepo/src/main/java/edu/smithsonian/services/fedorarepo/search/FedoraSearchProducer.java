@@ -24,17 +24,54 @@
  * otherwise, even if any of the parties has been warned of the possibility of
  * such loss or damage.
  */
-package edu.smithsonian.services.fedorarepo;
+package edu.smithsonian.services.fedorarepo.search;
+
+import com.yourmediashelf.fedora.client.FedoraClient;
+import com.yourmediashelf.fedora.client.request.RiSearch;
+import com.yourmediashelf.fedora.client.response.RiSearchResponse;
+import edu.smithsonian.services.fedorarepo.base.FedoraProducer;
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
 
 /**
  *
  * @author jshingler
  */
-public interface Headers
+class FedoraSearchProducer extends FedoraProducer
 {
-    String STATUS = "CamelFedoraStatus";
+    private FedoraSearchEndpoint endpoint;
 
-    String PID = "CamelFedoraPid";
-    String OWNER = "CamelFedoraOwner";
-    String LABEL = "CamelFedoraLabel";
+    public FedoraSearchProducer(FedoraSearchEndpoint endpoint)
+    {
+        super(endpoint);
+        this.endpoint = endpoint;
+    }
+
+    @Override
+    public void process(Exchange exchange) throws Exception
+    {
+        String query = exchange.getIn().getBody(String.class);
+
+        //Call Fedora
+        RiSearch search = FedoraClient.riSearch(query);
+
+        if (this.hasParam(this.endpoint.getLang()))
+        {
+            search.lang(this.endpoint.getLang());
+        }
+
+        if (this.endpoint.getLimit() > 0)
+        {
+            search.limit(this.endpoint.getLimit());
+        }
+
+        RiSearchResponse searchResults = search.execute();
+
+        String results = searchResults.getEntity(String.class);
+
+        Message outputMsg = exchange.getOut();
+        outputMsg.setHeaders(exchange.getIn().getHeaders());
+        outputMsg.setBody(results);
+    }
+
 }

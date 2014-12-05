@@ -137,6 +137,8 @@
                         <Embed-Transitive>true</Embed-Transitive>
                         
                         <!--<DynamicImport-Package>com.fasterxml.jackson.*</DynamicImport-Package>-->
+                        <Export-Package>edu.smithsonian.services.fedorarepo,edu.smithsonian.services.fedorarepo.aggregators,edu.smithsonian.services.fedorarepo.datastream,edu.smithsonian.services.fedorarepo.ingest,edu.smithsonian.services.fedorarepo.pid,edu.smithsonian.services.fedorarepo.search</Export-Package>
+                        <Private-Package>edu.smithsonian.services.fedorarepo.*</Private-Package>
                     </instructions>
                 </configuration>
             </plugin>

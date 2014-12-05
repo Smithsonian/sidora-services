@@ -24,17 +24,76 @@
  * otherwise, even if any of the parties has been warned of the possibility of
  * such loss or damage.
  */
-package edu.smithsonian.services.fedorarepo;
+package edu.smithsonian.services.fedorarepo.search;
+
+import edu.smithsonian.services.fedorarepo.FedoraComponent;
+import org.apache.camel.Consumer;
+import org.apache.camel.Processor;
+import org.apache.camel.Producer;
+import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.spi.UriParam;
 
 /**
  *
  * @author jshingler
  */
-public interface Headers
+public class FedoraSearchEndpoint extends DefaultEndpoint
 {
-    String STATUS = "CamelFedoraStatus";
+    @UriParam
+    private String lang;
 
-    String PID = "CamelFedoraPid";
-    String OWNER = "CamelFedoraOwner";
-    String LABEL = "CamelFedoraLabel";
+    @UriParam
+    private int limit;
+
+    public FedoraSearchEndpoint(String uri, FedoraComponent component)
+    {
+        super(uri, component);
+    }
+
+    @Override
+    public Producer createProducer() throws Exception
+    {
+        return new FedoraSearchProducer(this);
+    }
+
+    @Override
+    public Consumer createConsumer(Processor processor) throws Exception
+    {
+        throw new UnsupportedOperationException("fedora:search cannot start a route");
+    }
+
+    @Override
+    public boolean isSingleton()
+    {
+        return true;
+    }
+
+    /**
+     * Should be one of the following: itql, spargl or spo.
+     *
+     * If not set, Fedora will default to sparql.
+     *
+     * @return language if set otherwise null
+     */
+    public String getLang()
+    {
+        return lang;
+    }
+
+    public void setLang(String lang)
+    {
+        this.lang = lang;
+    }
+
+    public int getLimit()
+    {
+        return limit;
+    }
+
+    public void setLimit(int limit)
+    {
+        this.limit = limit;
+    }
+
+
 }

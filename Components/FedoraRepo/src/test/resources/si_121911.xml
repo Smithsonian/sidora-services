@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<foxml:digitalObject VERSION="1.1" PID="si:121911"
+xmlns:foxml="info:fedora/fedora-system:def/foxml#"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="info:fedora/fedora-system:def/foxml# http://www.fedora.info/definitions/1/0/foxml1-1.xsd">
+<foxml:objectProperties>
+<foxml:property NAME="info:fedora/fedora-system:def/model#state" VALUE="Active"/>
+<foxml:property NAME="info:fedora/fedora-system:def/model#label" VALUE="Dumb Effect of consumptive and non-consumptive recreation on mid-Atlantic wildlife"/>
+<foxml:property NAME="info:fedora/fedora-system:def/model#ownerId" VALUE="HuaD"/>
+<foxml:property NAME="info:fedora/fedora-system:def/model#createdDate" VALUE="2014-03-11T18:24:19.879Z"/>
+<foxml:property NAME="info:fedora/fedora-system:def/view#lastModifiedDate" VALUE="2014-07-16T16:12:52.562Z"/>
+</foxml:objectProperties>
+<foxml:datastream ID="AUDIT" STATE="A" CONTROL_GROUP="X" VERSIONABLE="false">
+<foxml:datastreamVersion ID="AUDIT.0" LABEL="Audit Trail for this object" CREATED="2014-03-11T18:24:19.879Z" MIMETYPE="text/xml" FORMAT_URI="info:fedora/fedora-system:format/xml.fedora.audit">
+<foxml:xmlContent>
+<audit:auditTrail xmlns:audit="info:fedora/fedora-system:def/audit#">
+<audit:record ID="AUDREC1">
+<audit:process type="Fedora API-M"/>
+<audit:action>ingest</audit:action>
+<audit:componentID></audit:componentID>
+<audit:responsibility>HuaD</audit:responsibility>
+<audit:date>2014-03-11T18:24:19.879Z</audit:date>
+<audit:justification>Fedora Object Ingested</audit:justification>
+</audit:record>
+<audit:record ID="AUDREC2">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>HuaD</audit:responsibility>
+<audit:date>2014-03-11T18:24:20.139Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC3">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>HuaD</audit:responsibility>
+<audit:date>2014-03-11T18:24:20.352Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC4">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>HuaD</audit:responsibility>
+<audit:date>2014-03-11T18:24:20.514Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC5">
+<audit:process type="Fedora API-M"/>
+<audit:action>addDatastream</audit:action>
+<audit:componentID>COLLECTION_POLICY</audit:componentID>
+<audit:responsibility>HuaD</audit:responsibility>
+<audit:date>2014-03-11T18:24:20.616Z</audit:date>
+<audit:justification>Copied datastream from si:121911.</audit:justification>
+</audit:record>
+<audit:record ID="AUDREC6">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyObject</audit:action>
+<audit:componentID></audit:componentID>
+<audit:responsibility>HuaD</audit:responsibility>
+<audit:date>2014-03-11T23:26:08.140Z</audit:date>
+<audit:justification>Modified by Islandora API</audit:justification>
+</audit:record>
+<audit:record ID="AUDREC7">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>DC</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2014-07-16T16:12:19.010Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC8">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>DC</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2014-07-16T16:12:52.562Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+</audit:auditTrail>
+</foxml:xmlContent>
+</foxml:datastreamVersion>
+</foxml:datastream>
+<foxml:datastream ID="RELS-EXT" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+<foxml:datastreamVersion ID="RELS-EXT.0" LABEL="RDF Statements about this Object" CREATED="2014-03-11T18:24:19.887Z" MIMETYPE="application/rdf+xml" FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0" SIZE="667">
+<foxml:xmlContent>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:fedora-model="info:fedora/fedora-system:def/model#">
+          <rdf:Description rdf:about="info:fedora/si:121911">
+            <fedora:isMemberOfCollection rdf:resource="info:fedora/si:121910"></fedora:isMemberOfCollection>
+            <fedora-model:hasModel rdf:resource="info:fedora/si:projectCModel"></fedora-model:hasModel>
+          </rdf:Description>
+        </rdf:RDF>
+</foxml:xmlContent>
+</foxml:datastreamVersion>
+</foxml:datastream>
+<foxml:datastream ID="EAC-CPF" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+<foxml:datastreamVersion ID="EAC-CPF.0" LABEL="EAC-CPF Record" CREATED="2014-03-11T18:24:19.887Z" MIMETYPE="text/xml" SIZE="1582">
+<foxml:xmlContent>
+<eac-cpf xmlns="urn:isbn:1-931666-33-4" xmlns:eac="urn:isbn:1-931666-33-4" xmlns:xlink="http://www.w3.org/1999/xlink">
+          <control><recordId>default</recordId><maintenanceStatus>revised</maintenanceStatus><maintenanceAgency><agencyName></agencyName></maintenanceAgency><localControl localType="Publication Date"><date></date></localControl><maintenanceHistory><maintenanceEvent><eventType>created</eventType><eventDateTime></eventDateTime><agentType>human</agentType><agent></agent><eventDescription></eventDescription></maintenanceEvent></maintenanceHistory></control>
+          <cpfDescription><identity><entityType>corporateBody</entityType><nameEntry localType="primary"><part>Effect of consumptive and non-consumptive recreation on mid-Atlantic wildlife</part></nameEntry><nameEntry localType="abbreviation"><part>Effect of consumptive and non-consumptive recreation on mid-Atlantic wildlife</part></nameEntry></identity><description><existDates><dateRange><fromDate></fromDate><toDate></toDate></dateRange></existDates><place><placeEntry localType="address"></placeEntry><placeEntry localType="region"></placeEntry><placeEntry countryCode="US" longitude="0" latitude="0"></placeEntry></place><functions><function><term>Project Data Access and Use Constraints</term><descriptiveNote><p></p></descriptiveNote></function></functions></description><relations><cpfRelation><relationEntry></relationEntry><placeEntry localType="email address"></placeEntry><descriptiveNote><p>Project Owner</p></descriptiveNote></cpfRelation></relations></cpfDescription>
+        </eac-cpf>
+</foxml:xmlContent>
+</foxml:datastreamVersion>
+</foxml:datastream>
+<foxml:datastream ID="DC" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+<foxml:datastreamVersion ID="DC.2" LABEL="Dublin Core Record" CREATED="2014-07-16T16:12:52.562Z" MIMETYPE="text/xml" SIZE="462">
+<foxml:xmlContent>
+<oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+  <dc:title>Effect of consumptive and non-consumptive recreation on mid-Atlantic wildlife</dc:title>
+  <dc:description></dc:description>
+  <dc:relation></dc:relation>
+</oai_dc:dc>
+</foxml:xmlContent>
+</foxml:datastreamVersion>
+</foxml:datastream>
+<foxml:datastream ID="COLLECTION_POLICY" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+<foxml:datastreamVersion ID="COLLECTION_POLICY.0" LABEL="COLLECTION_POLICY" CREATED="2014-03-11T18:24:20.616Z" MIMETYPE="text/xml" SIZE="2579">
+<foxml:xmlContent>
+<collection_policy xmlns="http://www.islandora.ca" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="" xsi:schemaLocation="http://www.islandora.ca http://syn.lib.umanitoba.ca/collection_policy.xsd">
+  <content_models>
+    <content_model dsid="ISLANDORACM" name="Digitized text (pdf)" namespace="si:" pid="si:fieldbookCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Tabular datasets" namespace="si:" pid="si:datasetCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="General image" namespace="si:" pid="si:generalImageCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Codebook" namespace="si:" pid="si:codebookCModel"></content_model>
+  </content_models>
+  <concept_models>
+    <content_model dsid="ISLANDORACM" name="Project or sub-project" namespace="si:" pid="si:projectCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Natural history collection" namespace="si:" pid="si:ncdCollectionCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Research site, plot or area" namespace="si:" pid="si:ctPlotCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Person" namespace="si:" pid="si:peopleCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Organization, Institution or Expedition" namespace="si:" pid="si:organizationCModel"></content_model>
+    
+    <content_model dsid="ISLANDORACM" name="Instrument deployment" namespace="si:" pid="si:cameraTrapCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Animal or plant species or specimen" namespace="si:" pid="si:dwcCModel"></content_model>
+    <content_model dsid="ISLANDORACM" name="Cultural heritage entity or object" namespace="si:" pid="si:lidoCollectionCModel"></content_model>
+  </concept_models>
+  <search_terms>
+    <term field="dc.title">dc.title</term>
+    <term field="dc.creator">dc.creator</term>
+    <term default="true" field="dc.description">dc.description</term>
+    <term field="dc.date">dc.date</term>
+    <term field="dc.identifier">dc.identifier</term>
+    <term field="dc.language">dc.language</term>
+    <term field="dc.publisher">dc.publisher</term>
+    <term field="dc.rights">dc.rights</term>
+    <term field="dc.subject">dc.subject</term>
+    <term field="dc.relation">dc.relation</term>
+    <term field="dcterms.temporal">dcterms.temporal</term>
+    <term field="dcterms.spatial">dcterms.spatial</term>
+    <term field="fgs.DS.first.text">Full Text</term>
+  </search_terms>
+  <relationship>isMemberOfCollection</relationship>
+</collection_policy>
+</foxml:xmlContent>
+</foxml:datastreamVersion>
+</foxml:datastream>
+</foxml:digitalObject>
