@@ -37,8 +37,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                       inserting data into Fedora
 
             -->
-            <to uri="fedora:create" /> <!-- Level 4 -->
-            <!--Search and find/create parent concepts-->
+            <to uri="fedora:create" />
             <multicast>
                 <to uri="direct:manifest" />
                 <to uri="direct:researcher" />
@@ -88,8 +87,6 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <xpath>//ImageFileName/text()</xpath>
                 <to uri="reader:file" />
                 <to uri="fedora:create?pid=null" />
-                <!--Ingest image as is Raw image determine mime type from image-->
-                <!--If image is a jpeg do not add to the OBJ datastream-->
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
                 <to uri="direct:transformImage" />
             </split>
@@ -97,6 +94,9 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 FIXME: Change template to use 'FedoreParentConcept' instead of 'CamelParentConcept'
                       Pointless to store and unstore the parent PID
             -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>${header.FedoraParentConcept}</simple>
+            </setHeader> 
             <to uri="velocity:file:Input/templates/CameraTrapResourceTemplate.vsl" />
             <to uri="fedora:datastream?name=RELS-EXT" /> 
             <log message="Finished processing Images" />           
@@ -128,7 +128,6 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 FIXME: If 'normalized' image is needed and should be the same
                        size as the original, remove size requirement from route
             -->
-            <!--Create a JPEG2000 version of the Raw image no other changes-->
             <to uri="thumbnailator:image?quality=80%&amp;size=(2048,1536)"/>
             <to uri="file://CameraTrapOutput/resample" />
         </route>

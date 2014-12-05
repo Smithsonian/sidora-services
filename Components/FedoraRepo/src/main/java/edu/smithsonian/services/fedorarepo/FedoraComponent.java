@@ -32,7 +32,6 @@ import com.yourmediashelf.fedora.client.request.FedoraRequest;
 import edu.smithsonian.services.fedorarepo.datastream.FedoraDatastreamEndpoint;
 import edu.smithsonian.services.fedorarepo.ingest.FedoraIngestEnpoint;
 import edu.smithsonian.services.fedorarepo.pid.FedoraPidEndpoint;
-import edu.smithsonian.services.fedorarepo.search.FedoraSearchEndpoint;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.camel.Endpoint;
@@ -98,11 +97,6 @@ public class FedoraComponent extends DefaultComponent
         {
             endpoint = new FedoraDatastreamEndpoint(uri, this);
         }
-        else if ("search".equalsIgnoreCase(remaining))
-        {
-            endpoint = new FedoraSearchEndpoint(uri, this);
-        }
-//        else if ("find".equalsIgnoreCase(remaining))
         else
         {
             throw new UnsupportedOperationException("Could not create Fedora Endpoint for " + remaining);
