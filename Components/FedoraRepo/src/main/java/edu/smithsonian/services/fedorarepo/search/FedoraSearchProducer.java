@@ -24,80 +24,29 @@
  * otherwise, even if any of the parties has been warned of the possibility of
  * such loss or damage.
  */
-package edu.smithsonian.services.fedorarepo;
+package edu.smithsonian.services.fedorarepo.search;
 
-import com.yourmediashelf.fedora.client.FedoraCredentials;
-import java.net.MalformedURLException;
-import java.net.URL;
+import edu.smithsonian.services.fedorarepo.base.FedoraProducer;
+import org.apache.camel.Exchange;
 
 /**
  *
  * @author jshingler
  */
-public class FedoraSettings 
+class FedoraSearchProducer extends FedoraProducer
 {
+    private FedoraSearchEndpoint endpoint;
 
-    private FedoraCredentials credentials;
-
-    public FedoraSettings()
+    public FedoraSearchProducer(FedoraSearchEndpoint endpoint)
     {
-        this.credentials = null;
+        super(endpoint);
+        this.endpoint = endpoint;
     }
 
-    public FedoraSettings(String baseUrl, String username, String password)
+    @Override
+    public void process(Exchange exchange) throws Exception
     {
-        try
-        {
-            this.credentials = new FedoraCredentials(baseUrl, username, password);
-        }
-        catch (MalformedURLException ex)
-        {
-            this.credentials = null;
-        }
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public boolean hasCredentials()
-    {
-        return this.credentials != null;
-    }
-
-    public FedoraCredentials getCredentials()
-    {
-        return this.credentials;
-    }
-
-    public void setHost(String url) throws MalformedURLException
-    {
-        this.credentials.setBaseUrl(new URL(url));
-    }
-
-    public void setHost(URL baseUrl)
-    {
-        this.credentials.setBaseUrl(baseUrl);
-    }
-
-    public URL getHost()
-    {
-        return this.credentials.getBaseUrl();
-    }
-
-    public String getUsername()
-    {
-        return credentials.getUsername();
-    }
-
-    public void setUsername(String username)
-    {
-        credentials.setUsername(username);
-    }
-
-    public String getPassword()
-    {
-        return credentials.getPassword();
-    }
-
-    public void setPassword(String password)
-    {
-        credentials.setPassword(password);
-    }
 }

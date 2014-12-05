@@ -24,80 +24,42 @@
  * otherwise, even if any of the parties has been warned of the possibility of
  * such loss or damage.
  */
-package edu.smithsonian.services.fedorarepo;
+package edu.smithsonian.services.fedorarepo.search;
 
-import com.yourmediashelf.fedora.client.FedoraCredentials;
-import java.net.MalformedURLException;
-import java.net.URL;
+import edu.smithsonian.services.fedorarepo.FedoraComponent;
+import org.apache.camel.Consumer;
+import org.apache.camel.Processor;
+import org.apache.camel.Producer;
+import org.apache.camel.impl.DefaultEndpoint;
 
 /**
  *
  * @author jshingler
  */
-public class FedoraSettings 
+public class FedoraSearchEndpoint extends DefaultEndpoint
 {
 
-    private FedoraCredentials credentials;
-
-    public FedoraSettings()
+    public FedoraSearchEndpoint(String uri, FedoraComponent component)
     {
-        this.credentials = null;
+        super(uri, component);
     }
 
-    public FedoraSettings(String baseUrl, String username, String password)
+    @Override
+    public Producer createProducer() throws Exception
     {
-        try
-        {
-            this.credentials = new FedoraCredentials(baseUrl, username, password);
-        }
-        catch (MalformedURLException ex)
-        {
-            this.credentials = null;
-        }
+        return new FedoraSearchProducer(this);
     }
 
-    public boolean hasCredentials()
+    @Override
+    public Consumer createConsumer(Processor processor) throws Exception
     {
-        return this.credentials != null;
+        throw new UnsupportedOperationException("fedora:search cannot start a route");
     }
 
-    public FedoraCredentials getCredentials()
+    @Override
+    public boolean isSingleton()
     {
-        return this.credentials;
+        return true;
     }
 
-    public void setHost(String url) throws MalformedURLException
-    {
-        this.credentials.setBaseUrl(new URL(url));
-    }
-
-    public void setHost(URL baseUrl)
-    {
-        this.credentials.setBaseUrl(baseUrl);
-    }
-
-    public URL getHost()
-    {
-        return this.credentials.getBaseUrl();
-    }
-
-    public String getUsername()
-    {
-        return credentials.getUsername();
-    }
-
-    public void setUsername(String username)
-    {
-        credentials.setUsername(username);
-    }
-
-    public String getPassword()
-    {
-        return credentials.getPassword();
-    }
-
-    public void setPassword(String password)
-    {
-        credentials.setPassword(password);
-    }
 }
