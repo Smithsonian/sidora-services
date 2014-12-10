@@ -14,8 +14,8 @@
 	<description>A simple deployment of Excel To Tabular translations services for HTTP interaction.</description>
 
 	<properties>
-		<cxf.version>3.0.2</cxf.version>
-		<spring.version>4.1.1.RELEASE</spring.version>
+		<cxf.version>3.0.3</cxf.version>
+		<spring.version>4.1.3.RELEASE</spring.version>
 	</properties>
 
 	<dependencies>
