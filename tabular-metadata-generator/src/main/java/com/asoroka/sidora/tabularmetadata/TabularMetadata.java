@@ -1,9 +1,9 @@
 
 package com.asoroka.sidora.tabularmetadata;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.googlecode.totallylazy.Sequences.sequence;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -12,8 +12,6 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Function1;
 import com.googlecode.totallylazy.Pair;
@@ -57,10 +55,14 @@ public class TabularMetadata {
 
             @Override
             public NavigableMap<DataType, T> call(final Pair<Number, Map<DataType, T>> minMaxMapWithIndex) {
-                final Comparator<? super DataType> sortByLikelihood =
-                        fieldTypes().get(minMaxMapWithIndex.getKey().intValue()).comparator();
-                final TreeMap<DataType, T> sortedByLikelihood = new TreeMap<>(sortByLikelihood);
-                sortedByLikelihood.putAll(minMaxMapWithIndex.getValue());
+                final int fieldIndex = minMaxMapWithIndex.getKey().intValue();
+                final Map<DataType, T> minMaxMap = minMaxMapWithIndex.getValue();
+
+                final SortedSet<DataType> typesForThisField = fieldTypes().get(fieldIndex);
+                final TreeMap<DataType, T> sortedByLikelihood = new TreeMap<>(typesForThisField.comparator());
+                for (final DataType type : typesForThisField) {
+                    sortedByLikelihood.put(type, minMaxMap.get(type));
+                }
                 return sortedByLikelihood;
             }
         };
@@ -106,13 +108,9 @@ public class TabularMetadata {
         return sequence(enumeratedValues).zipWithIndex().map(this.<Set<String>> sortByLikelihood()).toList();
     }
 
-    private static final ToStringHelper toStringHelper() {
-        return MoreObjects.toStringHelper(TabularMetadata.class);
-    }
-
     @Override
     public String toString() {
-        return toStringHelper().add("headerNames", headerNames()).add("fieldTypes", fieldTypes())
+        return toStringHelper(this).add("headerNames", headerNames()).add("fieldTypes", fieldTypes())
                 .add("enumeratedValues", enumeratedValues()).add("minMaxes", minMaxes()).toString();
     }
 }

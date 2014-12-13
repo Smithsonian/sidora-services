@@ -10,6 +10,9 @@
     <logger name="com.asoroka" additivity="false" level="TRACE">
         <appender-ref ref="STDOUT"/>
     </logger>
+    <logger name="edu.si" additivity="false" level="TRACE">
+        <appender-ref ref="STDOUT"/>
+    </logger>
     <logger name="org.apache.cxf" additivity="false" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>

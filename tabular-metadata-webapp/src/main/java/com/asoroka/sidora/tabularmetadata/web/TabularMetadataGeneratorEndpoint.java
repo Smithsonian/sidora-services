@@ -16,18 +16,20 @@ import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 
+import edu.si.codebook.Codebook;
+
 @Path("/")
-public class Parser {
+public class TabularMetadataGeneratorEndpoint {
 
     @Inject
     private TabularMetadataGenerator generator;
 
-    private static final Logger log = getLogger(Parser.class);
+    private static final Logger log = getLogger(TabularMetadataGeneratorEndpoint.class);
 
     @GET
     @Path("/")
     @Produces("text/xml")
-    public TabularMetadataPrecis get(@QueryParam("url") final URL url) throws IOException {
-        return new TabularMetadataPrecis(generator.getMetadata(url));
+    public Codebook get(@QueryParam("url") final URL url) throws IOException {
+        return new Codebook().setMetadata(generator.getMetadata(url));
     }
 }

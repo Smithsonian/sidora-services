@@ -1,22 +1,35 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<tabularMetadataPrecis>
-    <likelyHeaders>
-        <mostLikelyHeader>NAME</mostLikelyHeader>
-        <mostLikelyHeader>RANK</mostLikelyHeader>
-        <mostLikelyHeader>SERIAL NUMBER</mostLikelyHeader>
-    </likelyHeaders>
-    <mostLikelyRanges>
-        <mostLikelyRange/>
-        <mostLikelyRange/>
-        <mostLikelyRange>
-            <max>567</max>
-            <min>2</min>
-        </mostLikelyRange>
-    </mostLikelyRanges>
-    <mostLikelyTypes>
-        <mostLikelyType>String</mostLikelyType>
-        <mostLikelyType>String</mostLikelyType>
-        <mostLikelyType>PositiveInteger</mostLikelyType>
-    </mostLikelyTypes>
-</tabularMetadataPrecis>
-
+<codebook xmlns="urn:si.edu/codebook#">
+    <variables>
+        <variable name="NAME" type="http://www.w3.org/2001/XMLSchema#string">
+            <range>
+                <min>Kirk</min>
+                <max>McCoy</max>
+            </range>
+            <enumeration>
+                <values>McCoy</values>
+                <values>Kirk</values>
+            </enumeration>
+        </variable>
+        <variable name="RANK" type="http://www.w3.org/2001/XMLSchema#string">
+            <range>
+                <min>Admiral</min>
+                <max>Doctor</max>
+            </range>
+            <enumeration>
+                <values>Admiral</values>
+                <values>Doctor</values>
+            </enumeration>
+        </variable>
+        <variable name="SERIAL NUMBER" type="http://www.w3.org/2001/XMLSchema#positiveInteger">
+            <range>
+                <min>2</min>
+                <max>567</max>
+            </range>
+            <enumeration>
+                <values>567</values>
+                <values>002</values>
+            </enumeration>
+        </variable>
+    </variables>
+</codebook>
