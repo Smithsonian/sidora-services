@@ -1,6 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.web;
 
+import static edu.si.codebook.Codebook.codebook;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
@@ -30,6 +31,6 @@ public class TabularMetadataGeneratorEndpoint {
     @Path("/")
     @Produces("text/xml")
     public Codebook get(@QueryParam("url") final URL url) throws IOException {
-        return new Codebook().setMetadata(generator.getMetadata(url));
+        return codebook(generator.getMetadata(url));
     }
 }

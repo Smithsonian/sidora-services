@@ -1,10 +1,6 @@
 
 package com.asoroka.sidora.tabularmetadata.testframework;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Boolean;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Decimal;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Integer;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.NonNegativeInteger;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
 import static java.lang.Math.abs;
@@ -40,7 +36,7 @@ public abstract class TestUtilities {
     }
 
     /**
-     * Extracts the most likely type selection from a {@link ValueHeuristic}
+     * Extracts the most likely type selection from a {@link TypeDeterminingHeuristic}
      */
     protected static final Function<TypeDeterminingHeuristic<?>, DataType> getMostLikelyType =
             new Function<TypeDeterminingHeuristic<?>, DataType>() {
@@ -76,32 +72,32 @@ public abstract class TestUtilities {
         case Geographic:
             if ((Boolean) generateRandomValue(DataType.Boolean)) {
                 return new GeographicValue(asList(
-                        (Float) generateRandomValue(Decimal),
-                        (Float) generateRandomValue(Decimal)));
+                        (Float) generateRandomValue(DataType.Decimal),
+                        (Float) generateRandomValue(DataType.Decimal)));
             }
             return new GeographicValue(asList(
-                    (Float) generateRandomValue(Decimal),
-                    (Float) generateRandomValue(Decimal),
-                    (Float) generateRandomValue(Decimal)));
+                    (Float) generateRandomValue(DataType.Decimal),
+                    (Float) generateRandomValue(DataType.Decimal),
+                    (Float) generateRandomValue(DataType.Decimal)));
         case Integer:
             if (random() < 0.1) {
-                if ((Boolean) generateRandomValue(Boolean)) {
+                if ((Boolean) generateRandomValue(DataType.Boolean)) {
                     return MAX_VALUE;
                 }
                 return MIN_VALUE;
             }
-            return round((Float) generateRandomValue(Decimal));
+            return round((Float) generateRandomValue(DataType.Decimal));
         case NonNegativeInteger:
             if (random() < 0.2) {
                 return 0;
             }
-            final Integer randInt = (Integer) generateRandomValue(Integer);
+            final Integer randInt = (Integer) generateRandomValue(DataType.Integer);
             if (randInt.equals(MAX_VALUE) || randInt.equals(MIN_VALUE)) {
                 return 0;
             }
             return abs(randInt);
         case PositiveInteger:
-            return (Integer) generateRandomValue(NonNegativeInteger) + 1;
+            return (Integer) generateRandomValue(DataType.NonNegativeInteger) + 1;
         case String:
             return randomUUID().toString();
         case URI:

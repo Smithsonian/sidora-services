@@ -128,6 +128,7 @@ public class TabularMetadataGeneratorTest {
     @Mock
     private NavigableMap<DataType, Range<?>> testRanges;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void setUpTestRanges() {
         when(testRanges.get(mockDataType)).thenReturn(TEST_RANGE);

@@ -1,12 +1,14 @@
 
 package edu.si.codebook;
 
+import static com.googlecode.totallylazy.Sequences.zip;
+import static edu.si.codebook.VariableType.variableType;
 import static javax.xml.bind.annotation.XmlAccessType.NONE;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.SortedSet;
 
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -16,11 +18,17 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
+import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
+import com.googlecode.totallylazy.Function1;
+import com.googlecode.totallylazy.Quadruple;
+import com.googlecode.totallylazy.Sequence;
 
 @XmlAccessorType(NONE)
 @XmlRootElement(name = "codebook")
-public class Codebook {
+public class Codebook
+        extends
+        Function1<Quadruple<String, SortedSet<DataType>, NavigableMap<DataType, Range<?>>, NavigableMap<DataType, Set<String>>>, VariableType> {
 
     private TabularMetadata metadata;
 
@@ -28,24 +36,24 @@ public class Codebook {
 
     @XmlElementWrapper
     @XmlElement(name = "variable")
-    public List<VariableType> getVariables() {
-        final int numVariables = metadata.headerNames().size();
-        final List<VariableType> variables = new ArrayList<>(numVariables);
-        for (int i = 0; i < numVariables; i++) {
-            final VariableType variable = new VariableType();
-            final String name = metadata.headerNames().get(i);
-            final String type = metadata.fieldTypes().get(i).first().uri.toString();
-            final Range<?> range = metadata.minMaxes().get(i).firstEntry().getValue();
-            final Set<String> enumeration = metadata.enumeratedValues().get(i).firstEntry().getValue();
-            variable.setName(name).setType(type).setRange(range).setEnumeration(enumeration);
-            variables.add(variable);
-        }
-        return variables;
+    public Sequence<VariableType> getVariables() {
+        return zip(metadata.headerNames(), metadata.fieldTypes(), metadata.minMaxes(), metadata.enumeratedValues())
+                .map(this);
     }
 
-    public Codebook setMetadata(final TabularMetadata m) {
-        this.metadata = m;
-        return this;
+    @Override
+    public VariableType call(
+            final Quadruple<String, SortedSet<DataType>, NavigableMap<DataType, Range<?>>, NavigableMap<DataType, Set<String>>> data) {
+        final String name = data.first();
+        final String type = data.second().first().uri.toString();
+        final Range<?> range = data.third().firstEntry().getValue();
+        final Set<String> enumeration = data.fourth().firstEntry().getValue();
+        return variableType(name, type, range, enumeration);
     }
 
+    public static Codebook codebook(final TabularMetadata m) {
+        final Codebook codebook = new Codebook();
+        codebook.metadata = m;
+        return codebook;
+    }
 }

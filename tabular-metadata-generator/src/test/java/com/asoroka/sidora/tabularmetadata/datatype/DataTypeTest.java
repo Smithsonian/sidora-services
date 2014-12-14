@@ -5,15 +5,6 @@
 
 package com.asoroka.sidora.tabularmetadata.datatype;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Boolean;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.DateTime;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Decimal;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Geographic;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Integer;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.NonNegativeInteger;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.URI;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.google.common.collect.ImmutableMap.builder;
@@ -57,51 +48,54 @@ public class DataTypeTest {
     static {
         final ImmutableMap.Builder<DataType, Set<DataType>> b = builder();
 
-        b.put(PositiveInteger, of(String, Decimal, Integer, NonNegativeInteger, PositiveInteger, DateTime));
-        b.put(NonNegativeInteger, of(String, Decimal, Integer, NonNegativeInteger, DateTime));
-        b.put(Integer, of(String, Decimal, Integer, DateTime));
-        b.put(Decimal, of(String, Decimal));
-        b.put(Geographic, of(Geographic, String));
-        b.put(Boolean, of(Boolean, String));
-        b.put(DateTime, of(DateTime, String));
-        b.put(String, of(String));
-        b.put(URI, of(URI, String));
+        b.put(DataType.PositiveInteger, of(DataType.String, DataType.Decimal, DataType.Integer, DataType.NonNegativeInteger, DataType.PositiveInteger, DataType.DateTime));
+        b.put(DataType.NonNegativeInteger, of(DataType.String, DataType.Decimal, DataType.Integer, DataType.NonNegativeInteger, DataType.DateTime));
+        b.put(DataType.Integer, of(DataType.String, DataType.Decimal, DataType.Integer, DataType.DateTime));
+        b.put(DataType.Decimal, of(DataType.String, DataType.Decimal));
+        b.put(DataType.Geographic, of(DataType.Geographic, DataType.String));
+        b.put(DataType.Boolean, of(DataType.Boolean, DataType.String));
+        b.put(DataType.DateTime, of(DataType.DateTime, DataType.String));
+        b.put(DataType.String, of(DataType.String));
+        b.put(DataType.URI, of(DataType.URI, DataType.String));
 
         expectedParseableTypes = b.build();
 
         final ImmutableMap.Builder<DataType, Set<DataType>> b2 = builder();
 
-        b2.put(PositiveInteger, of(String, Decimal, Integer, NonNegativeInteger, PositiveInteger));
-        b2.put(NonNegativeInteger, of(String, Decimal, Integer, NonNegativeInteger));
-        b2.put(Integer, of(String, Decimal, Integer));
-        b2.put(Decimal, of(String, Decimal));
-        b2.put(Geographic, of(String, Geographic));
-        b2.put(Boolean, of(String, Boolean));
-        b2.put(String, of(String));
-        b2.put(DateTime, of(String, DateTime));
-        b2.put(URI, of(String, URI));
+        b2.put(DataType.PositiveInteger, of(DataType.String, DataType.Decimal, DataType.Integer, DataType.NonNegativeInteger, DataType.PositiveInteger));
+        b2.put(DataType.NonNegativeInteger, of(DataType.String, DataType.Decimal, DataType.Integer, DataType.NonNegativeInteger));
+        b2.put(DataType.Integer, of(DataType.String, DataType.Decimal, DataType.Integer));
+        b2.put(DataType.Decimal, of(DataType.String, DataType.Decimal));
+        b2.put(DataType.Geographic, of(DataType.String, DataType.Geographic));
+        b2.put(DataType.Boolean, of(DataType.String, DataType.Boolean));
+        b2.put(DataType.String, of(DataType.String));
+        b2.put(DataType.DateTime, of(DataType.String, DataType.DateTime));
+        b2.put(DataType.URI, of(DataType.String, DataType.URI));
 
         expectedSuperTypes = b2.build();
 
         final ImmutableMap.Builder<DataType, Set<String>> b3 = builder();
 
-        b3.put(PositiveInteger, newHashSet("123", "9000"));
-        b3.put(NonNegativeInteger, newHashSet("0"));
-        b3.put(Integer, newHashSet("-1", "-9999"));
-        b3.put(Decimal, newHashSet("-5344543.4563453", "6734.999"));
-        b3.put(Geographic, newHashSet("38.03,-78.478889", "38.03,-78.478889, 0"));
-        b3.put(Boolean, newHashSet("truE", "falsE", "t", "F"));
-        b3.put(String, newHashSet(":::oobleck"));
-        b3.put(URI, newHashSet("http://example.com"));
-        b3.put(DateTime, newHashSet("1990-3-4"));
+        b3.put(DataType.PositiveInteger, newHashSet("123", "9000"));
+        b3.put(DataType.NonNegativeInteger, newHashSet("0"));
+        b3.put(DataType.Integer, newHashSet("-1", "-9999"));
+        b3.put(DataType.Decimal, newHashSet("-5344543.4563453", "6734.999"));
+        b3.put(DataType.Geographic, newHashSet("38.03,-78.478889", "38.03,-78.478889, 0"));
+        b3.put(DataType.Boolean, newHashSet("truE", "falsE", "t", "F"));
+        b3.put(DataType.String, newHashSet(":::oobleck"));
+        b3.put(DataType.URI, newHashSet("http://example.com"));
+        b3.put(DataType.DateTime, newHashSet("1990-3-4"));
 
         sampleValues = b3.build();
 
         final ImmutableMap.Builder<String, DataType> b4 = builder();
 
-        b4.putAll(ImmutableMap.of("PositiveInteger", PositiveInteger, "NonNegativeInteger", NonNegativeInteger));
-        b4.putAll(ImmutableMap.of("Decimal", Decimal, "Geographic", Geographic, "Boolean", Boolean));
-        b4.putAll(ImmutableMap.of("DateTime", DateTime, "String", String, "URI", URI, "Integer", Integer));
+        b4.putAll(ImmutableMap
+                .of("PositiveInteger", DataType.PositiveInteger, "NonNegativeInteger", DataType.NonNegativeInteger));
+        b4.putAll(ImmutableMap
+                .of("Decimal", DataType.Decimal, "Geographic", DataType.Geographic, "Boolean", DataType.Boolean));
+        b4.putAll(ImmutableMap
+                .of("DateTime", DataType.DateTime, "String", DataType.String, "URI", DataType.URI, "Integer", DataType.Integer));
 
         dataTypeNames = b4.build();
     }
@@ -134,28 +128,30 @@ public class DataTypeTest {
 
     @Test
     public void testOrderingByHierarchy() {
-        List<DataType> listToBeSorted = asList(Decimal, PositiveInteger, Integer, NonNegativeInteger, String);
-        List<DataType> listInCorrectSorting = asList(PositiveInteger, NonNegativeInteger, Integer, Decimal, String);
+        List<DataType> listToBeSorted =
+                asList(DataType.Decimal, DataType.PositiveInteger, DataType.Integer, DataType.NonNegativeInteger, DataType.String);
+        List<DataType> listInCorrectSorting =
+                asList(DataType.PositiveInteger, DataType.NonNegativeInteger, DataType.Integer, DataType.Decimal, DataType.String);
         List<DataType> sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
 
-        listToBeSorted = asList(String, Geographic);
-        listInCorrectSorting = asList(Geographic, String);
+        listToBeSorted = asList(DataType.String, DataType.Geographic);
+        listInCorrectSorting = asList(DataType.Geographic, DataType.String);
         sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
 
-        listToBeSorted = asList(String, DateTime);
-        listInCorrectSorting = asList(DateTime, String);
+        listToBeSorted = asList(DataType.String, DataType.DateTime);
+        listInCorrectSorting = asList(DataType.DateTime, DataType.String);
         sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
 
-        listToBeSorted = asList(String, Boolean);
-        listInCorrectSorting = asList(Boolean, String);
+        listToBeSorted = asList(DataType.String, DataType.Boolean);
+        listInCorrectSorting = asList(DataType.Boolean, DataType.String);
         sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
 
-        listToBeSorted = asList(String, URI);
-        listInCorrectSorting = asList(URI, String);
+        listToBeSorted = asList(DataType.String, DataType.URI);
+        listInCorrectSorting = asList(DataType.URI, DataType.String);
         sorted = new ArrayList<>(sortByHierarchy(listToBeSorted));
         assertEquals("Got wrong ordering by hierarchy of datatypes!", listInCorrectSorting, sorted);
     }
@@ -164,58 +160,57 @@ public class DataTypeTest {
     public void testBadGeographies() {
         String testValue = "23, 23, 23, 23";
         assertFalse("Accepted a four-valued tuple as geographic coordinates!", parseableAs(testValue)
-                .contains(Geographic));
+                .contains(DataType.Geographic));
         testValue = "23";
         assertFalse("Accepted a one-valued tuple as geographic coordinates!", parseableAs(testValue)
-                .contains(Geographic));
+                .contains(DataType.Geographic));
     }
 
     @Test
     public void testNoDecimalPointDecimal() {
         final String testValue = "7087";
         assertTrue("Failed to accept a no-decimal-point number as a legitimate Decimal!", parseableAs(testValue)
-                .contains(Decimal));
+                .contains(DataType.Decimal));
     }
 
     @Test
     public void testBadIntegerPartDecimal() {
         final String testValue = "fhglf.7087";
         assertFalse("Accepted a \"number\" with non-integral integer part as a legitimate Decimal!", parseableAs(testValue)
-                .contains(Decimal));
+                .contains(DataType.Decimal));
     }
 
     @Test
     public void testBadDecimalPartDecimal() {
         final String testValue = "34235.dfgsdfg";
         assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(testValue)
-                .contains(Decimal));
+                .contains(DataType.Decimal));
     }
 
     @Test
     public void testBadBothPartsDecimal() {
         final String testValue = "sgsg.dfgsdfg";
         assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(testValue)
-                .contains(Decimal));
+                .contains(DataType.Decimal));
     }
 
     @Test
     public void testCompletelyBadDecimal() {
         final String testValue = "s24fgsdfg";
         assertFalse("Accepted a \"number\" with non-integral decimal part as a legitimate Decimal!", parseableAs(testValue)
-                .contains(Decimal));
+                .contains(DataType.Decimal));
     }
 
     @Test
     public void testBadURI() {
         final String testValue = "38.03,-78.478889";
         assertFalse("Accepted a string that cannot be parsed as an URI as a legitimate URI!", parseableAs(testValue)
-                .contains(URI));
+                .contains(DataType.URI));
     }
 
     @Test
     public void testNames() {
-        assertEquals(
-                "Our test datatype names are fewer or greater in number than the number of actual DataTypes!",
+        assertEquals("Our test datatype names are fewer or greater in number than the number of actual DataTypes!",
                 DataType.values().length, dataTypeNames.size());
         for (final String name : dataTypeNames.keySet()) {
             assertEquals(dataTypeNames.get(name), DataType.valueOf(name));

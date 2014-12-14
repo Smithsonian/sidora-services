@@ -1,6 +1,8 @@
 
 package edu.si.codebook;
 
+import static edu.si.codebook.EnumerationType.enumerationType;
+import static edu.si.codebook.RangeType.rangeType;
 import static javax.xml.bind.annotation.XmlAccessType.NONE;
 
 import java.util.Set;
@@ -17,31 +19,27 @@ import com.google.common.collect.Range;
 @XmlType(propOrder = { "range", "enumeration", })
 public class VariableType {
 
-    protected Range<?> range;
+    private Range<?> range;
 
-    protected Set<String> enumeration;
+    private Set<String> enumeration;
 
-    @XmlAttribute(name = "name", required = true)
-    protected String name;
+    private String name;
 
-    @XmlAttribute(name = "type")
-    @XmlSchemaType(name = "anyURI")
-    protected String type;
+    private String type;
+
+    public static VariableType variableType(final String name, final String type, final Range<?> range,
+            final Set<String> enumeration) {
+        final VariableType variableType = new VariableType();
+        variableType.name = name;
+        variableType.type = type;
+        variableType.range = range;
+        variableType.enumeration = enumeration;
+        return variableType;
+    }
 
     @XmlElement
     public RangeType getRange() {
-        if (range == null) {
-            return null;
-        }
-        if (range.hasLowerBound() && range.hasLowerBound()) {
-            return new RangeType().setRange(range);
-        }
-        return null;
-    }
-
-    public VariableType setRange(final Range<?> r) {
-        this.range = r;
-        return this;
+        return range == null ? null : rangeType(range);
     }
 
     @XmlElement
@@ -49,32 +47,20 @@ public class VariableType {
         if (enumeration == null || enumeration.isEmpty()) {
             return null;
         }
-        return new EnumerationType().setValues(enumeration);
+        return enumerationType(enumeration);
     }
 
-    public VariableType setEnumeration(final Set<String> e) {
-        this.enumeration = e;
-        return this;
-    }
-
+    @XmlAttribute
     public String getName() {
         return name;
     }
 
-    public VariableType setName(final String n) {
-        this.name = n;
-        return this;
-    }
-
+    @XmlAttribute
+    @XmlSchemaType(name = "anyURI")
     public String getType() {
         if (type == null) {
             return "http://www.w3.org/2001/XMLSchema#string";
         }
         return type;
-    }
-
-    public VariableType setType(final String t) {
-        this.type = t;
-        return this;
     }
 }

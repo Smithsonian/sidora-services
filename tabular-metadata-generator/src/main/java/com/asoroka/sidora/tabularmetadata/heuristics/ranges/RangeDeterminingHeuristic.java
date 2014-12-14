@@ -8,7 +8,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 import com.google.common.collect.Range;
 
 /**
- * Determines ranges in different {@link DataTypes} for the supplied values.
+ * Determines ranges in different {@link DataType}s for the supplied values.
  * 
  * @author ajs6f
  */

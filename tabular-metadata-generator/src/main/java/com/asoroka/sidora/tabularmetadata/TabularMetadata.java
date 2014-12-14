@@ -93,7 +93,7 @@ public class TabularMetadata {
      *         automatic action), the appropriate range can be looked up at that time. This is to ensure that in a
      *         situation where the type determination strategy employed gave a wrong answer, the correct answer for
      *         range can still be found after the type determination has been corrected.
-     * @see com.google.common.collect.Range<?>
+     * @see com.google.common.collect.Range
      */
     public List<NavigableMap<DataType, Range<?>>> minMaxes() {
         return sequence(minMaxes).zipWithIndex().map(this.<Range<?>> sortByLikelihood()).toList();

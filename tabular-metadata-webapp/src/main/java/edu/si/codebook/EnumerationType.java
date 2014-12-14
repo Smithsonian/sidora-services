@@ -1,29 +1,26 @@
 
 package edu.si.codebook;
 
-import static java.util.Collections.emptySet;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static javax.xml.bind.annotation.XmlAccessType.FIELD;
 
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlType;
 
 @XmlAccessorType(FIELD)
-@XmlType(name = "enumerationType")
 public class EnumerationType {
 
-    protected Set<String> values;
+    private Set<String> values;
 
-    public Set<String> getValue() {
-        if (values == null) {
-            return emptySet();
-        }
-        return values;
+    public static EnumerationType enumerationType(final Set<String> vs) {
+        final EnumerationType enumerationType = new EnumerationType();
+        enumerationType.values = vs;
+        return enumerationType;
     }
 
-    public EnumerationType setValues(final Set<String> v) {
-        this.values = v;
-        return this;
+    public Set<String> getValue() {
+        checkNotNull(values);
+        return values;
     }
 }

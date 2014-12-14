@@ -9,6 +9,7 @@ import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.junit.Assert.assertEquals;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +22,7 @@ import javax.ws.rs.core.Response;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.xml.sax.SAXException;
@@ -30,6 +32,8 @@ import com.google.common.io.Resources;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("/spring-xml/default-operation.xml")
 public class OperationIT {
+
+    private static final Logger log = getLogger(OperationIT.class);
 
     private static final String properResponse;
     static {
@@ -53,6 +57,7 @@ public class OperationIT {
         final Response r = client.query("url", "file://" + dataFileLocation.toAbsolutePath()).get();
         assertEquals(OK.getStatusCode(), r.getStatus());
         final String text = r.readEntity(String.class);
+        log.trace("Got response: {}", text);
         assertXMLEqual(properResponse, text);
     }
 }

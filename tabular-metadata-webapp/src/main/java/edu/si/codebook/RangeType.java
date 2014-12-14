@@ -10,29 +10,23 @@ import com.google.common.collect.Range;
 @XmlAccessorType(FIELD)
 public class RangeType {
 
-    protected String min;
+    private String min;
 
-    protected String max;
+    private String max;
+
+    public static RangeType rangeType(final Range<?> r) {
+        final RangeType rangeType = new RangeType();
+        rangeType.min = r.hasLowerBound() ? r.lowerEndpoint().toString() : null;
+        rangeType.max = r.hasUpperBound() ? r.upperEndpoint().toString() : null;
+        return rangeType;
+    }
 
     public String getMin() {
         return min;
-    }
-
-    public RangeType setRange(final Range<?> r) {
-        this.min = r.hasLowerBound() ? r.lowerEndpoint().toString() : null;
-        this.max = r.hasUpperBound() ? r.upperEndpoint().toString() : null;
-        return this;
-    }
-
-    public void setMin(final String m) {
-        this.min = m;
     }
 
     public String getMax() {
         return max;
     }
 
-    public void setMax(final String m) {
-        this.max = m;
-    }
 }

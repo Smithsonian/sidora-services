@@ -14,6 +14,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 
+import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
@@ -21,8 +22,8 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 
 /**
- * Value scanning workflow. Handed a {@link CSVParser}, this class will scan through it and supply the values of
- * fields to a configured "row" of {@link ValueHeuristic} strategies cloned from the configured choice.
+ * Scanning workflow. Handed a {@link CSVParser}, this class will scan through it and supply the values of fields to
+ * "rows" of {@link Heuristic}s cloned from the configured choices.
  * 
  * @author ajs6f
  */
