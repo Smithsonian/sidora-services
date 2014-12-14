@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <codebook xmlns="urn:si.edu/codebook#">
     <variables>
         <variable name="NAME" type="http://www.w3.org/2001/XMLSchema#string">
@@ -7,8 +6,8 @@
                 <max>McCoy</max>
             </range>
             <enumeration>
-                <values>McCoy</values>
-                <values>Kirk</values>
+                <value>McCoy</value>
+                <value>Kirk</value>
             </enumeration>
         </variable>
         <variable name="RANK" type="http://www.w3.org/2001/XMLSchema#string">
@@ -17,8 +16,8 @@
                 <max>Doctor</max>
             </range>
             <enumeration>
-                <values>Admiral</values>
-                <values>Doctor</values>
+                <value>Admiral</value>
+                <value>Doctor</value>
             </enumeration>
         </variable>
         <variable name="SERIAL NUMBER" type="http://www.w3.org/2001/XMLSchema#positiveInteger">
@@ -27,8 +26,8 @@
                 <max>567</max>
             </range>
             <enumeration>
-                <values>567</values>
-                <values>002</values>
+                <value>567</value>
+                <value>002</value>
             </enumeration>
         </variable>
     </variables>

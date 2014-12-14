@@ -290,9 +290,6 @@
 		</pluginManagement>
 		<plugins>
 			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-			</plugin>
-			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
 			</plugin>
 			<plugin>
@@ -304,29 +301,6 @@
 				<artifactId>site-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
-		<extensions>
-			<extension>
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-scm</artifactId>
-				<version>2.7</version>
-			</extension>
-			<extension>
-				<groupId>org.apache.maven.scm</groupId>
-				<artifactId>maven-scm-manager-plexus</artifactId>
-				<version>1.9.2</version>
-			</extension>
-			<extension>
-				<groupId>org.apache.maven.scm</groupId>
-				<artifactId>maven-scm-provider-gitexe</artifactId>
-				<version>1.9.2</version>
-			</extension>
-			<extension>
-				<!-- add support for ssh/scp -->
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-ssh</artifactId>
-				<version>2.7</version>
-			</extension>
-		</extensions>
 	</build>
 
 	<reporting>
@@ -360,9 +334,6 @@
 					</reportsDirectories>
 				</configuration>
 			</plugin>
-			<!-- <plugin> <artifactId>maven-changelog-plugin</artifactId> <version>2.3</version> 
-				<configuration> <displayFileDetailUrl>http://github.com/ocymum/${project_name}/blob/master/%FILE% 
-				</displayFileDetailUrl> </configuration> </plugin> -->
 			<plugin>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
 				<version>2.7</version>

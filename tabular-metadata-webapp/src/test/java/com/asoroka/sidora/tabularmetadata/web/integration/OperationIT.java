@@ -1,5 +1,5 @@
 
-package com.asoroka.sidora.tabularmetadata.web;
+package com.asoroka.sidora.tabularmetadata.web.integration;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.nio.file.Files.createTempFile;
