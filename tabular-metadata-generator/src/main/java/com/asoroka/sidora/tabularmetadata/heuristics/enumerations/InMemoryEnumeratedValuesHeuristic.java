@@ -2,14 +2,17 @@
 package com.asoroka.sidora.tabularmetadata.heuristics.enumerations;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.parseableAs;
+import static com.google.common.base.Functions.constant;
+import static com.google.common.collect.Maps.asMap;
+import static com.google.common.collect.MultimapBuilder.enumKeys;
+import static com.google.common.collect.Multimaps.forMap;
 
-import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.heuristics.AbstractHeuristic;
+import com.google.common.collect.Multimap;
 
 /**
  * A {@link EnumeratedValuesHeuristic} that maintains an in-memory map of enumerated lexes.
@@ -20,31 +23,24 @@ public class InMemoryEnumeratedValuesHeuristic extends
         AbstractHeuristic<InMemoryEnumeratedValuesHeuristic, Map<DataType, Set<String>>> implements
         EnumeratedValuesHeuristic<InMemoryEnumeratedValuesHeuristic> {
 
-    EnumMap<DataType, Set<String>> valuesTakenOn = new EnumMap<>(DataType.class);
-
-    public InMemoryEnumeratedValuesHeuristic() {
-        super();
-        for (final DataType t : DataType.values()) {
-            valuesTakenOn.put(t, new HashSet<String>());
-        }
-    }
+    private Multimap<DataType, String> valuesSeen;
 
     @Override
     public boolean addValue(final String lex) {
-        for (final DataType t : parseableAs(lex)) {
-            valuesTakenOn.get(t).add(lex);
-        }
+        valuesSeen.putAll(forMap(asMap(parseableAs(lex), constant(lex))));
         return true;
     }
 
     @Override
     public void reset() {
-        valuesTakenOn = new EnumMap<>(DataType.class);
+        valuesSeen = enumKeys(DataType.class).hashSetValues().build();
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<DataType, Set<String>> results() {
-        return valuesTakenOn;
+        // See: https://code.google.com/p/google-collections/issues/detail?id=118#c2
+        return (Map<DataType, Set<String>>) (Map<?, ?>) valuesSeen.asMap();
     }
 
     @Override

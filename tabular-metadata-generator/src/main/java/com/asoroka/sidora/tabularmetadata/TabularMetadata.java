@@ -4,6 +4,7 @@ package com.asoroka.sidora.tabularmetadata;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.googlecode.totallylazy.Sequences.sequence;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -47,8 +48,8 @@ public class TabularMetadata {
     }
 
     /**
-     * Sorts a {@link Map<DataType,T>} in the same way that the corresponding field in {@link #fieldTypes()} is
-     * sorted. WARNING: Must not be used before setting {@link #fieldTypes}!
+     * Sorts an indexed {@link Map<DataType,T>} by the {@link Comparator} that is used for the correspondingly-indexed
+     * field in {@link #fieldTypes()}. WARNING: Must not be used before setting {@link #fieldTypes}!
      */
     private <T> Function1<Pair<Number, Map<DataType, T>>, NavigableMap<DataType, T>> sortByLikelihood() {
         return new Function1<Pair<Number, Map<DataType, T>>, NavigableMap<DataType, T>>() {
