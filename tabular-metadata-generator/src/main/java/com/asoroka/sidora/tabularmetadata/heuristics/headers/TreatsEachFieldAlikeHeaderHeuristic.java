@@ -44,7 +44,4 @@ public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends Treat
     public void reset() {
         inputRow = new ArrayList<>();
     }
-
-    @Override
-    public abstract SelfType newInstance();
 }

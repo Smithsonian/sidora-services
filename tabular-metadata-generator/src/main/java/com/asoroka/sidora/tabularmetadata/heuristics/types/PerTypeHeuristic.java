@@ -3,12 +3,8 @@ package com.asoroka.sidora.tabularmetadata.heuristics.types;
 
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.google.common.collect.Sets.filter;
-import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.Set;
 import java.util.SortedSet;
-
-import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.base.Predicate;
@@ -25,17 +21,9 @@ public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfTyp
         extends CountAggregatingHeuristic<SelfType, SortedSet<DataType>> implements
         TypeDeterminingHeuristic<SelfType> {
 
-    private static final Logger log = getLogger(PerTypeHeuristic.class);
-
     @Override
     public SortedSet<DataType> results() {
-        // develop a set of candidate types in a manner specific to the subclass
-        final Set<DataType> possibleTypes = filter(DataType.valuesSet(), candidacyPredicate);
-        // order by hierarchy
-        final SortedSet<DataType> sortedCandidates = sortByHierarchy(possibleTypes);
-        log.trace("Found candidate types: {}", sortedCandidates);
-
-        return sortedCandidates;
+        return sortByHierarchy(filter(DataType.valuesSet(), candidacyPredicate));
     }
 
     private Predicate<DataType> candidacyPredicate = new Predicate<DataType>() {
@@ -54,6 +42,4 @@ public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfTyp
      */
     protected abstract boolean candidacy(final DataType type);
 
-    @Override
-    public abstract SelfType newInstance();
 }
