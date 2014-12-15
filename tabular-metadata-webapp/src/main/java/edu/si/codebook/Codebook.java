@@ -6,7 +6,6 @@ import static edu.si.codebook.Codebook.VariableType.variableType;
 import static edu.si.codebook.Codebook.VariableType.RangeType.rangeType;
 import static javax.xml.bind.annotation.XmlAccessType.FIELD;
 import static javax.xml.bind.annotation.XmlAccessType.NONE;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.net.URI;
 import java.util.NavigableMap;
@@ -18,9 +17,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlType;
-
-import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
@@ -31,23 +27,28 @@ import com.googlecode.totallylazy.Sequence;
 
 import edu.si.codebook.Codebook.VariableType;
 
+/**
+ * Constructs an SI-schema XML serialization of a precis of metadata results.
+ * 
+ * @author ajs6f
+ */
 @XmlAccessorType(NONE)
-@XmlRootElement(name = "codebook")
-public class Codebook
-        extends
+@XmlRootElement
+public class Codebook extends
         Function1<Quadruple<String, SortedSet<DataType>, NavigableMap<DataType, Range<?>>, NavigableMap<DataType, Set<String>>>, VariableType> {
 
     private TabularMetadata metadata;
 
-    private static final Logger log = getLogger(Codebook.class);
-
     @XmlElementWrapper
     @XmlElement(name = "variable")
-    public Sequence<edu.si.codebook.Codebook.VariableType> getVariables() {
+    public Sequence<VariableType> getVariables() {
         return zip(metadata.headerNames(), metadata.fieldTypes(), metadata.minMaxes(), metadata.enumeratedValues())
                 .map(this);
     }
 
+    /**
+     * Constructs a single variable description.
+     */
     @Override
     public VariableType call(
             final Quadruple<String, SortedSet<DataType>, NavigableMap<DataType, Range<?>>, NavigableMap<DataType, Set<String>>> data) {
@@ -64,8 +65,12 @@ public class Codebook
         return codebook;
     }
 
-    @XmlAccessorType(NONE)
-    @XmlType(propOrder = { "range", "enumeration", })
+    /**
+     * Serializes a single variable description.
+     * 
+     * @author ajs6f
+     */
+    @javax.xml.bind.annotation.XmlAccessorType(NONE)
     public static class VariableType {
 
         private Range<?> range;
@@ -95,7 +100,12 @@ public class Codebook
             return range == null ? null : rangeType(range);
         }
 
-        @XmlAccessorType(FIELD)
+        /**
+         * Serializes the range of a single variable.
+         * 
+         * @author ajs6f
+         */
+        @javax.xml.bind.annotation.XmlAccessorType(FIELD)
         public static class RangeType {
 
             public String min, max;
