@@ -5,10 +5,10 @@ import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarc
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Sets.newHashSet;
 import static com.google.common.collect.Sets.newTreeSet;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
-import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +33,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.internal.stubbing.answers.Returns;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
@@ -45,16 +44,14 @@ import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValu
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Range;
 
-/**
- * This relatively complicated test is so because we are trying to mock everything that can be mocked, as a means of
- * assurance that the master workflow is as correct as we can test it to be.
- * 
- * @author ajs6f
- */
 @RunWith(MockitoJUnitRunner.class)
 public class TabularMetadataGeneratorTest {
+
+    @SuppressWarnings("rawtypes")
+    static final Range TEST_RANGE = Range.closed(0, 1);
 
     // TODO make test data more readable
 
@@ -92,31 +89,61 @@ public class TabularMetadataGeneratorTest {
     @Mock
     private HeaderHeuristic mockHeaderHeuristic;
 
-    @Mock
-    private DataType mockDataType;
-
-    private Map<DataType, Set<String>> mockEnumeratedValues = emptyMap();
-
-    static Map<DataType, Range<?>> testRanges() {
-        return emptyMap();
-    }
-
-    private static final Logger log = getLogger(TabularMetadataGeneratorTest.class);
-
     @Before
-    public void setUp() {
-        when(mockTypeStrategy.results()).thenReturn(newTreeSet(asList(mockDataType)));
+    public void setUpStrategies() {
+
         when(mockTypeStrategy.addValue(anyString())).thenReturn(true);
         when(mockEnumStrategy.addValue(anyString())).thenReturn(true);
         when(mockRangeStrategy.addValue(anyString())).thenReturn(true);
 
-        final Returns range = new Returns(testRanges());
-        when(mockRangeStrategy.results()).thenAnswer(range);
+        when(mockTypeStrategy.results()).thenReturn(newTreeSet(asList(mockDataType)));
+        when(mockRangeStrategy.results()).thenReturn(testRanges);
         when(mockEnumStrategy.results()).thenReturn(mockEnumeratedValues);
+
         when(mockTypeStrategy.newInstance()).thenReturn(mockTypeStrategy);
         when(mockEnumStrategy.newInstance()).thenReturn(mockEnumStrategy);
         when(mockRangeStrategy.newInstance()).thenReturn(mockRangeStrategy);
     }
+
+    @Mock
+    DataType mockDataType;
+
+    @Mock
+    private Map<DataType, Set<String>> mockEnumeratedValues;
+
+    @Before
+    public void setUpMockEnumeratedValues() {
+        when(mockEnumeratedValues.get(mockDataType)).thenReturn(newHashSet(MARKER_VALUE));
+    }
+
+    private Predicate<Map<DataType, Set<String>>> matchesMockEnumeratedValues =
+            new Predicate<Map<DataType, Set<String>>>() {
+
+                @Override
+                public boolean apply(final Map<DataType, Set<String>> map) {
+                    return map.get(mockDataType).equals(newHashSet(MARKER_VALUE));
+                }
+            };
+
+    @Mock
+    private NavigableMap<DataType, Range<?>> testRanges;
+
+    @SuppressWarnings("unchecked")
+    @Before
+    public void setUpTestRanges() {
+        when(testRanges.get(mockDataType)).thenReturn(TEST_RANGE);
+    }
+
+    private Predicate<NavigableMap<DataType, Range<?>>> matchesTestRanges =
+            new Predicate<NavigableMap<DataType, Range<?>>>() {
+
+                @Override
+                public boolean apply(final NavigableMap<DataType, Range<?>> map) {
+                    return map.get(mockDataType).equals(TEST_RANGE);
+                }
+            };
+
+    private static final Logger log = getLogger(TabularMetadataGeneratorTest.class);
 
     private static TabularMetadataGenerator newGenerator(final RangeDeterminingHeuristic<?> rangeStrategy,
             final EnumeratedValuesHeuristic<?> enumStrategy, final TypeDeterminingHeuristic<?> typeStrategy) {
@@ -150,10 +177,8 @@ public class TabularMetadataGeneratorTest {
         final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
         assertEquals(asList(testHeaders.split(",")), headers);
         final List<SortedSet<DataType>> types = results.fieldTypes();
-        assertTrue("Found a data type that didn't originate from our mocking!", all(concat(types),
-                equalTo(mockDataType)));
-        final boolean rangeTest = all(ranges, equalTo(testRanges()));
-        assertTrue(rangeTest);
+        assertTrue("Found a data type that didn't originate from our mocking!", all(concat(types), equalTo(mockDataType)));
+        assertTrue("Failed to find the right mock range results!", all(ranges, matchesTestRanges));
     }
 
     @Test
@@ -170,13 +195,10 @@ public class TabularMetadataGeneratorTest {
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
         final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
-        assertTrue("Failed to find the right mock range results!", all(ranges, equalTo(testRanges())));
+        assertTrue("Failed to find the right mock range results!", all(ranges, matchesTestRanges));
         final List<String> headers = results.headerNames();
         assertEquals("Got a bad list of header names!", asList(testHeaders.split(",")), headers);
-
-        for (final Map<DataType, Set<String>> v : results.enumeratedValues()) {
-            assertEquals("Got a bad value as part of the enumerated list!", mockEnumeratedValues, v);
-        }
+        assertTrue(all(results.enumeratedValues(), matchesMockEnumeratedValues));
 
     }
 
@@ -194,7 +216,7 @@ public class TabularMetadataGeneratorTest {
         assertTrue(all(concat(types), equalTo(mockDataType)));
 
         final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
-        assertTrue("Got a range that wasn't the one we inserted!", all(ranges, equalTo(testRanges())));
+        assertTrue("Got a range that wasn't the one we inserted!", all(ranges, matchesTestRanges));
 
         final List<String> headers = results.headerNames();
         final int numHeaders = headers.size();

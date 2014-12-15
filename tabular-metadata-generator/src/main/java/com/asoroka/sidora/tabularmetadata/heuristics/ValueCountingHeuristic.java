@@ -17,8 +17,6 @@ public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuri
 
     /**
      * Set the counter of values seen to zero.
-     * 
-     * @author ajs6f
      */
     @Override
     public void reset() {
