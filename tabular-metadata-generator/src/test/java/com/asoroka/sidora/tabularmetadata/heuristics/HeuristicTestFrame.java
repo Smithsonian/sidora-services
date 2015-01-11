@@ -12,13 +12,13 @@ public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeu
     @Test
     public void testClone() {
         final TestHeuristic testHeuristic = newTestHeuristic();
-        assertTrue(testHeuristic.getClass().isInstance(testHeuristic.newInstance()));
+        assertTrue(testHeuristic.getClass().isInstance(testHeuristic.get()));
     }
 
     @Test
     public void testGet() {
         final TestHeuristic testHeuristic = newTestHeuristic();
-        assertTrue(testHeuristic == testHeuristic.get());
+        assertTrue(testHeuristic.getClass() == testHeuristic.get().getClass());
     }
 
 }

@@ -4,8 +4,6 @@ package com.asoroka.sidora.tabularmetadata.heuristics.types;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.google.common.collect.Sets.filter;
 
-import java.util.SortedSet;
-
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.base.Predicate;
 
@@ -17,13 +15,12 @@ import com.google.common.base.Predicate;
  * @author ajs6f
  * @param <SelfType>
  */
-public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfType> & TypeDeterminingHeuristic<SelfType>>
-        extends CountAggregatingHeuristic<SelfType, SortedSet<DataType>> implements
-        TypeDeterminingHeuristic<SelfType> {
+public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfType>> extends
+        TypeCountAggregatingHeuristic<SelfType> {
 
     @Override
-    public SortedSet<DataType> results() {
-        return sortByHierarchy(filter(DataType.valuesSet(), candidacyPredicate));
+    public DataType results() {
+        return sortByHierarchy(filter(DataType.valuesSet(), candidacyPredicate)).first();
     }
 
     private Predicate<DataType> candidacyPredicate = new Predicate<DataType>() {

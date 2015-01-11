@@ -1,12 +1,9 @@
 
 package com.asoroka.sidora.tabularmetadata;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.collect.Iterables.all;
-import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Sets.newHashSet;
-import static com.google.common.collect.Sets.newTreeSet;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
 import static org.junit.Assert.assertEquals;
@@ -27,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.SortedSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -73,20 +69,20 @@ public class TabularMetadataGeneratorTest {
 
     private static final byte[] testTsv = (testTsvHeaders + "\n" + testTsvRow1).getBytes();
 
-    @SuppressWarnings("rawtypes")
     @Mock
+    @SuppressWarnings("rawtypes")
     private RangeDeterminingHeuristic mockRangeStrategy;
 
-    @SuppressWarnings("rawtypes")
     @Mock
+    @SuppressWarnings("rawtypes")
     private TypeDeterminingHeuristic mockTypeStrategy;
 
-    @SuppressWarnings("rawtypes")
     @Mock
+    @SuppressWarnings("rawtypes")
     private EnumeratedValuesHeuristic mockEnumStrategy;
 
-    @SuppressWarnings("rawtypes")
     @Mock
+    @SuppressWarnings("rawtypes")
     private HeaderHeuristic mockHeaderHeuristic;
 
     @Before
@@ -96,13 +92,13 @@ public class TabularMetadataGeneratorTest {
         when(mockEnumStrategy.addValue(anyString())).thenReturn(true);
         when(mockRangeStrategy.addValue(anyString())).thenReturn(true);
 
-        when(mockTypeStrategy.results()).thenReturn(newTreeSet(asList(mockDataType)));
+        when(mockTypeStrategy.results()).thenReturn(mockDataType);
         when(mockRangeStrategy.results()).thenReturn(testRanges);
         when(mockEnumStrategy.results()).thenReturn(mockEnumeratedValues);
 
-        when(mockTypeStrategy.newInstance()).thenReturn(mockTypeStrategy);
-        when(mockEnumStrategy.newInstance()).thenReturn(mockEnumStrategy);
-        when(mockRangeStrategy.newInstance()).thenReturn(mockRangeStrategy);
+        when(mockTypeStrategy.get()).thenReturn(mockTypeStrategy);
+        when(mockEnumStrategy.get()).thenReturn(mockEnumStrategy);
+        when(mockRangeStrategy.get()).thenReturn(mockRangeStrategy);
     }
 
     @Mock
@@ -134,11 +130,11 @@ public class TabularMetadataGeneratorTest {
         when(testRanges.get(mockDataType)).thenReturn(TEST_RANGE);
     }
 
-    private Predicate<NavigableMap<DataType, Range<?>>> matchesTestRanges =
-            new Predicate<NavigableMap<DataType, Range<?>>>() {
+    private Predicate<Map<DataType, Range<?>>> matchesTestRanges =
+            new Predicate<Map<DataType, Range<?>>>() {
 
                 @Override
-                public boolean apply(final NavigableMap<DataType, Range<?>> map) {
+                public boolean apply(final Map<DataType, Range<?>> map) {
                     return map.get(mockDataType).equals(TEST_RANGE);
                 }
             };
@@ -174,10 +170,10 @@ public class TabularMetadataGeneratorTest {
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
         final List<String> headers = results.headerNames();
-        final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<Map<DataType, Range<?>>> ranges = results.minMaxes();
         assertEquals(asList(testHeaders.split(",")), headers);
-        final List<SortedSet<DataType>> types = results.fieldTypes();
-        assertTrue("Found a data type that didn't originate from our mocking!", all(concat(types), equalTo(mockDataType)));
+        final List<DataType> types = results.fieldTypes();
+        assertTrue("Found a data type that didn't originate from our mocking!", all(types, equalTo(mockDataType)));
         assertTrue("Failed to find the right mock range results!", all(ranges, matchesTestRanges));
     }
 
@@ -191,10 +187,10 @@ public class TabularMetadataGeneratorTest {
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
-        final List<SortedSet<DataType>> types = results.fieldTypes();
-        assertTrue(all(concat(types), equalTo(mockDataType)));
+        final List<DataType> types = results.fieldTypes();
+        assertTrue(all(types, equalTo(mockDataType)));
 
-        final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<Map<DataType, Range<?>>> ranges = results.minMaxes();
         assertTrue("Failed to find the right mock range results!", all(ranges, matchesTestRanges));
         final List<String> headers = results.headerNames();
         assertEquals("Got a bad list of header names!", asList(testHeaders.split(",")), headers);
@@ -212,10 +208,10 @@ public class TabularMetadataGeneratorTest {
         testParser.setHeaderStrategy(mockHeaderHeuristic);
         final TabularMetadata results = testParser.getMetadata(mockURL);
 
-        final List<SortedSet<DataType>> types = results.fieldTypes();
-        assertTrue(all(concat(types), equalTo(mockDataType)));
+        final List<DataType> types = results.fieldTypes();
+        assertTrue(all(types, equalTo(mockDataType)));
 
-        final List<NavigableMap<DataType, Range<?>>> ranges = results.minMaxes();
+        final List<Map<DataType, Range<?>>> ranges = results.minMaxes();
         assertTrue("Got a range that wasn't the one we inserted!", all(ranges, matchesTestRanges));
 
         final List<String> headers = results.headerNames();
@@ -287,12 +283,12 @@ public class TabularMetadataGeneratorTest {
         public boolean hasMarkerBeenSeen = false;
 
         @Override
-        public SortedSet<DataType> results() {
-            return sortByHierarchy(DataType.valuesSet());
+        public DataType results() {
+            return DataType.Boolean;
         }
 
         @Override
-        public MarkingMockDataTypeHeuristic newInstance() {
+        public MarkingMockDataTypeHeuristic get() {
             return this;
         }
 
@@ -306,13 +302,20 @@ public class TabularMetadataGeneratorTest {
         }
 
         @Override
-        public MarkingMockDataTypeHeuristic get() {
-            return this;
+        public void reset() {
+            // NO OP
         }
 
         @Override
-        public void reset() {
+        public int valuesSeen() {
             // NO OP
+            return 0;
+        }
+
+        @Override
+        public int parseableValuesSeen() {
+            // NO OP
+            return 0;
         }
     }
 }

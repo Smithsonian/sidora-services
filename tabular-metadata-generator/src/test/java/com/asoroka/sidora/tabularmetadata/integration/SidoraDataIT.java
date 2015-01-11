@@ -70,7 +70,7 @@ public class SidoraDataIT {
         assertTrue("Should have found all header names matching against '" + DEFAULT_HEADER_NAME + "'!",
                 all(result.headerNames(), contains(DEFAULT_HEADER_NAME)));
 
-        final List<DataType> mostLikelyTypes = getFirstElements(result.fieldTypes());
+        final List<DataType> mostLikelyTypes = result.fieldTypes();
         assertEquals("Didn't get the expected type determinations!", expectedTypes, mostLikelyTypes);
 
         for (int i = 0; i < result.minMaxes().size(); i++) {

@@ -43,7 +43,7 @@ public abstract class TestUtilities {
 
                 @Override
                 public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
-                    return heuristic.results().first();
+                    return heuristic.results();
                 }
             };
 

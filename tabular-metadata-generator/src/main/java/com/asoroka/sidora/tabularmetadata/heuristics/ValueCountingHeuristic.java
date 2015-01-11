@@ -32,7 +32,7 @@ public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuri
         return true;
     }
 
-    public int totalNumValues() {
+    public int valuesSeen() {
         return totalNumValues;
     }
 }

@@ -13,7 +13,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
-import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
@@ -24,9 +23,6 @@ import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.RandomValu
 
 @RunWith(Theories.class)
 public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeuristic> {
-
-    @DataPoints
-    public static DataType[] datatypes = DataType.values();
 
     @Override
     protected FractionHeuristic newTestHeuristic() {
@@ -43,7 +39,7 @@ public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeu
             // NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
             assertTrue(type.equals(NonNegativeInteger) || type.equals(PositiveInteger));
         } else {
-            assertEquals(type, testHeuristic.results().first());
+            assertEquals(type, testHeuristic.results());
         }
     }
 
@@ -60,7 +56,7 @@ public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeu
             // NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
             assertTrue(type.equals(NonNegativeInteger) || type.equals(PositiveInteger));
         } else {
-            assertEquals(type, testHeuristic.results().first());
+            assertEquals(type, testHeuristic.results());
         }
     }
 
@@ -78,13 +74,8 @@ public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeu
             values.add(randomUUID());
         }
         addValues(testHeuristic, values);
-        assertNotEquals(values.type, testHeuristic.results().first());
+        assertNotEquals(values.type, testHeuristic.results());
 
     }
 
-    @Theory
-    public void testAcceptAllTypesInTheAbsenceOfData(final DataType type) {
-        final FractionHeuristic testHeuristic = newTestHeuristic();
-        assertTrue(testHeuristic.results().contains(type));
-    }
 }

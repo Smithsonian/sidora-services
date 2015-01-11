@@ -1,7 +1,7 @@
 
 package com.asoroka.sidora.tabularmetadata.heuristics;
 
-import com.asoroka.sidora.tabularmetadata.SelfTypeInstanceGenerator;
+import com.google.common.base.Supplier;
 import com.googlecode.totallylazy.Function1;
 
 /**
@@ -10,8 +10,7 @@ import com.googlecode.totallylazy.Function1;
  * 
  * @author ajs6f
  */
-public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, ResultType> extends
-        SelfTypeInstanceGenerator<SelfType> {
+public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, ResultType> extends Supplier<SelfType> {
 
     /**
      * Provide a value to this heuristic for consideration.
@@ -26,6 +25,9 @@ public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, Res
      */
     void reset();
 
+    /**
+     * @return the results of this heuristic's operation
+     */
     ResultType results();
 
     public static class Extract<ResultType> extends Function1<Heuristic<?, ResultType>, ResultType> {

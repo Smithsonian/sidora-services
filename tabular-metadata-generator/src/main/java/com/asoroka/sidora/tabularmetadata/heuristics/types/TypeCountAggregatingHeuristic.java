@@ -17,22 +17,21 @@ import java.util.Map;
 import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ValueCountingHeuristic;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * A {@link Heuristic} that aggregates candidate type appearance information for its field.
+ * A {@link TypeDeterminingHeuristic} that aggregates candidate type appearance information for its field.
  * 
  * @author ajs6f
  * @param <SelfType>
  */
-public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatingHeuristic<SelfType, ResultType>, ResultType>
-        extends ValueCountingHeuristic<SelfType, ResultType> {
+public abstract class TypeCountAggregatingHeuristic<SelfType extends TypeCountAggregatingHeuristic<SelfType>>
+        extends ValueCountingHeuristic<SelfType, DataType> implements TypeDeterminingHeuristic<SelfType> {
 
     private static final ImmutableMap<DataType, Integer> zeroes = toMap(DataType.valuesSet(), constant(0));
 
-    private static final Logger log = getLogger(CountAggregatingHeuristic.class);
+    private static final Logger log = getLogger(TypeCountAggregatingHeuristic.class);
 
     /**
      * In this {@link Map}, we aggregate counts of parseable values for each datatype.
@@ -63,5 +62,10 @@ public abstract class CountAggregatingHeuristic<SelfType extends CountAggregatin
         for (final DataType type : types) {
             typeCounts.put(type, typeCounts.get(type) + 1);
         }
+    }
+
+    @Override
+    public int parseableValuesSeen() {
+        return typeCounts.get(results());
     }
 }

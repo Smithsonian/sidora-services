@@ -4,7 +4,6 @@ package com.asoroka.sidora.tabularmetadata.spring;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Decimal;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.String;
-import static com.googlecode.totallylazy.Sequences.sequence;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -14,7 +13,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
-import java.util.SortedSet;
 
 import javax.inject.Inject;
 
@@ -26,7 +24,6 @@ import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
-import com.googlecode.totallylazy.Callable1;
 
 /**
  * Framework for running Spring integration tests.
@@ -51,7 +48,7 @@ public abstract class SpringITFramework {
             final Range<?> minMaxes, final DataType expectedDataTypeForRangeTest)
             throws IOException {
         final TabularMetadata result = testGenerator.getMetadata(testFile);
-        assertEquals("Got incorrect column types!", expectedMostLikelyDatatypes, getFirstElements(result.fieldTypes()));
+        assertEquals("Got incorrect column types!", expectedMostLikelyDatatypes, result.fieldTypes());
         assertEquals("Got wrong range for a field!", minMaxes, result.minMaxes().get(2).get(
                 expectedDataTypeForRangeTest));
         return result;
@@ -78,15 +75,5 @@ public abstract class SpringITFramework {
     protected static final List<DataType> SLIGHTLY_SIMPLE_TYPES = asList(String, String, Decimal);
 
     protected static final List<DataType> STRING_TYPES = asList(String, String, String);
-
-    private static <T> List<T> getFirstElements(final Iterable<SortedSet<T>> inputs) {
-        return sequence(inputs).map(new Callable1<SortedSet<T>, T>() {
-
-            @Override
-            public T call(final SortedSet<T> s) {
-                return s.first();
-            }
-        }).toList();
-    }
 
 }

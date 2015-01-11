@@ -38,7 +38,7 @@ public class StrictHeuristicTest extends PerTypeHeuristicTestFrame<StrictHeurist
         values.add(randomUUID());
         final StrictHeuristic testHeuristic = newTestHeuristic();
         addValues(testHeuristic, values);
-        assertNotEquals(values.type, testHeuristic.results().first());
+        assertNotEquals(values.type, testHeuristic.results());
     }
 
     @Theory
@@ -47,6 +47,6 @@ public class StrictHeuristicTest extends PerTypeHeuristicTestFrame<StrictHeurist
         log.trace("StrictHeuristicTest chacking {}", values.type);
         final StrictHeuristic testHeuristic = newTestHeuristic();
         addValues(testHeuristic, values);
-        assertEquals(values.type, testHeuristic.results().first());
+        assertEquals(values.type, testHeuristic.results());
     }
 }

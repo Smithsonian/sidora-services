@@ -38,11 +38,6 @@ public class RegexpHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<R
 
     @Override
     public RegexpHeaderHeuristic get() {
-        return this;
-    }
-
-    @Override
-    public RegexpHeaderHeuristic newInstance() {
         return new RegexpHeaderHeuristic(regexp.pattern());
     }
 }

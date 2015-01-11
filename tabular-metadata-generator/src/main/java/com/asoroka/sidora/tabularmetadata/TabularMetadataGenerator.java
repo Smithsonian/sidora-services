@@ -9,6 +9,7 @@ import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -16,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.SortedSet;
 
 import javax.inject.Inject;
 
@@ -37,6 +37,8 @@ import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
+import com.googlecode.totallylazy.Callable1;
+import com.googlecode.totallylazy.numbers.Ratio;
 
 /**
  * Master entry point for this API. This is the class from which all parsing should initiate, via
@@ -98,14 +100,13 @@ public class TabularMetadataGenerator {
             final List<EnumeratedValuesHeuristic<?>> enumStrategies = scanner.getEnumStrategies();
 
             // extract the results for each field
-            final List<SortedSet<DataType>> columnTypes =
-                    sequence(typeStrategies).map(new Extract<SortedSet<DataType>>()).toList();
+            final List<DataType> columnTypes = sequence(typeStrategies).map(new Extract<DataType>()).toList();
             final List<Map<DataType, Range<?>>> minMaxes =
                     sequence(rangeStrategies).map(new Extract<Map<DataType, Range<?>>>()).toList();
             final List<Map<DataType, Set<String>>> enumValues =
                     sequence(enumStrategies).map(new Extract<Map<DataType, Set<String>>>()).toList();
-
-            return new TabularMetadata(headerNames, columnTypes, minMaxes, enumValues);
+            final List<Ratio> valuesSeen = sequence(typeStrategies).map(EXTRACT_RATIOS).toList();
+            return new TabularMetadata(headerNames, valuesSeen, columnTypes, minMaxes, enumValues);
         } catch (final NoSuchElementException e) {
             throw new EmptyDataFileException(dataUrl + " has no data in it!");
         }
@@ -118,6 +119,17 @@ public class TabularMetadataGenerator {
         }
         return headers;
     }
+
+    private static final Callable1<TypeDeterminingHeuristic<?>, Ratio> EXTRACT_RATIOS =
+            new Callable1<TypeDeterminingHeuristic<?>, Ratio>() {
+
+                @Override
+                public Ratio call(final TypeDeterminingHeuristic<?> h) {
+                    return new Ratio(new BigInteger(Integer.toString(h.valuesSeen() - h.parseableValuesSeen())),
+                            new BigInteger(Integer.toString(h
+                                    .valuesSeen())));
+                }
+            };
 
     /**
      * @param scanLimit A limit to the number of rows to scan, including any header row that may be present. {@code 0}

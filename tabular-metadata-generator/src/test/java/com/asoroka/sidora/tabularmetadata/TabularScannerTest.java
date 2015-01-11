@@ -4,8 +4,6 @@ package com.asoroka.sidora.tabularmetadata;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
-import static com.google.common.collect.Sets.newTreeSet;
-import static java.util.Arrays.asList;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 import static org.junit.Assert.assertEquals;
@@ -37,16 +35,16 @@ public class TabularScannerTest extends TestUtilities {
     @Mock
     private DataType mockDataType;
 
-    @SuppressWarnings("rawtypes")
     @Mock
+    @SuppressWarnings("rawtypes")
     private RangeDeterminingHeuristic mockRangeStrategy;
 
-    @SuppressWarnings("rawtypes")
     @Mock
+    @SuppressWarnings("rawtypes")
     private TypeDeterminingHeuristic mockTypeStrategy;
 
-    @SuppressWarnings("rawtypes")
     @Mock
+    @SuppressWarnings("rawtypes")
     private EnumeratedValuesHeuristic mockEnumStrategy;
 
     private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
@@ -58,10 +56,10 @@ public class TabularScannerTest extends TestUtilities {
     @Before
     public void setUp() {
         expectedResults = newArrayList(mockDataType, mockDataType, mockDataType, mockDataType);
-        when(mockTypeStrategy.results()).thenReturn(newTreeSet(asList(mockDataType)));
-        when(mockTypeStrategy.newInstance()).thenReturn(mockTypeStrategy);
-        when(mockEnumStrategy.newInstance()).thenReturn(mockEnumStrategy);
-        when(mockRangeStrategy.newInstance()).thenReturn(mockRangeStrategy);
+        when(mockTypeStrategy.results()).thenReturn(mockDataType);
+        when(mockTypeStrategy.get()).thenReturn(mockTypeStrategy);
+        when(mockEnumStrategy.get()).thenReturn(mockEnumStrategy);
+        when(mockRangeStrategy.get()).thenReturn(mockRangeStrategy);
     }
 
     @Test

@@ -8,9 +8,8 @@ import static javax.xml.bind.annotation.XmlAccessType.FIELD;
 import static javax.xml.bind.annotation.XmlAccessType.NONE;
 
 import java.net.URI;
-import java.util.NavigableMap;
+import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -22,8 +21,9 @@ import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Function1;
-import com.googlecode.totallylazy.Quadruple;
+import com.googlecode.totallylazy.Quintuple;
 import com.googlecode.totallylazy.Sequence;
+import com.googlecode.totallylazy.numbers.Ratio;
 
 import edu.si.codebook.Codebook.VariableType;
 
@@ -34,16 +34,17 @@ import edu.si.codebook.Codebook.VariableType;
  */
 @XmlAccessorType(NONE)
 @XmlRootElement
-public class Codebook extends
-        Function1<Quadruple<String, SortedSet<DataType>, NavigableMap<DataType, Range<?>>, NavigableMap<DataType, Set<String>>>, VariableType> {
+public class Codebook
+        extends
+        Function1<Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>>, VariableType> {
 
     private TabularMetadata metadata;
 
     @XmlElementWrapper
     @XmlElement(name = "variable")
     public Sequence<VariableType> getVariables() {
-        return zip(metadata.headerNames(), metadata.fieldTypes(), metadata.minMaxes(), metadata.enumeratedValues())
-                .map(this);
+        return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
+                metadata.minMaxes(), metadata.enumeratedValues()).map(this);
     }
 
     /**
@@ -51,12 +52,13 @@ public class Codebook extends
      */
     @Override
     public VariableType call(
-            final Quadruple<String, SortedSet<DataType>, NavigableMap<DataType, Range<?>>, NavigableMap<DataType, Set<String>>> data) {
+            final Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>> data) {
         final String name = data.first();
-        final URI type = data.second().first().uri;
-        final Range<?> range = data.third().firstEntry().getValue();
-        final Set<String> enumeration = data.fourth().firstEntry().getValue();
-        return variableType(name, type, range, enumeration);
+        final Ratio unparseableOverTotal = data.second();
+        final DataType type = data.third();
+        final Range<?> range = data.fourth().get(type);
+        final Set<String> enumeration = data.fifth().get(type);
+        return variableType(name, unparseableOverTotal, type, range, enumeration);
     }
 
     public static Codebook codebook(final TabularMetadata m) {
@@ -85,14 +87,24 @@ public class Codebook extends
         @XmlAttribute
         public URI type;
 
-        protected static VariableType variableType(final String name, final URI type, final Range<?> range,
+        private Ratio unparseableOverTotal;
+
+        protected static VariableType variableType(final String name, final Ratio unparseableOverTotal,
+                final DataType type, final Range<?> range,
                 final Set<String> enumeration) {
             final VariableType variableType = new VariableType();
             variableType.name = name;
-            variableType.type = type;
+            variableType.unparseableOverTotal = unparseableOverTotal;
+            variableType.type = type.uri;
             variableType.range = range;
             variableType.enumeration = enumeration;
             return variableType;
+        }
+
+        @XmlElement
+        String getDescription() {
+            return "[Found " + unparseableOverTotal.numerator + " values that failed to parse as " + type +
+                    " out of " + unparseableOverTotal.denominator + " values examined by automatic process.]";
         }
 
         @XmlElement

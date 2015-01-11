@@ -44,12 +44,7 @@ public class InMemoryEnumeratedValuesHeuristic extends
     }
 
     @Override
-    public InMemoryEnumeratedValuesHeuristic newInstance() {
-        return new InMemoryEnumeratedValuesHeuristic();
-    }
-
-    @Override
     public InMemoryEnumeratedValuesHeuristic get() {
-        return this;
+        return new InMemoryEnumeratedValuesHeuristic();
     }
 }

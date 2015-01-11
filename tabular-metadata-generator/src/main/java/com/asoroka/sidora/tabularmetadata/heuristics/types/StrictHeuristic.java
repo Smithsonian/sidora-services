@@ -21,17 +21,12 @@ public class StrictHeuristic extends PerTypeHeuristic<StrictHeuristic> {
     @Override
     protected boolean candidacy(final DataType type) {
         final Integer typeCount = typeCounts.get(type);
-        log.debug("For type {} found {} occurrences out of {} total values", type, typeCount, totalNumValues());
-        return typeCount.equals(totalNumValues());
-    }
-
-    @Override
-    public StrictHeuristic newInstance() {
-        return new StrictHeuristic();
+        log.debug("For type {} found {} occurrences out of {} total values", type, typeCount, valuesSeen());
+        return typeCount.equals(valuesSeen());
     }
 
     @Override
     public StrictHeuristic get() {
-        return this;
+        return new StrictHeuristic();
     }
 }

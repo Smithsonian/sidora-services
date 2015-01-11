@@ -104,12 +104,7 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
     }
 
     @Override
-    public RunningMinMaxHeuristic newInstance() {
-        return new RunningMinMaxHeuristic();
-    }
-
-    @Override
     public RunningMinMaxHeuristic get() {
-        return this;
+        return new RunningMinMaxHeuristic();
     }
 }

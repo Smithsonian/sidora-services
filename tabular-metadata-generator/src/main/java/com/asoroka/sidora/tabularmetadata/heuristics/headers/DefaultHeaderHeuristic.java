@@ -29,11 +29,6 @@ public class DefaultHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<
 
     @Override
     public DefaultHeaderHeuristic get() {
-        return this;
-    }
-
-    @Override
-    public DefaultHeaderHeuristic newInstance() {
         return new DefaultHeaderHeuristic();
     }
 

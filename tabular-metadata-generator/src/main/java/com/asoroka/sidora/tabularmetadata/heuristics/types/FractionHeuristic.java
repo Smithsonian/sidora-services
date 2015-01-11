@@ -29,11 +29,11 @@ public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
 
     @Override
     protected boolean candidacy(final DataType type) {
-        final float nonParseableOccurrences = totalNumValues() - typeCounts.get(type);
+        final float nonParseableOccurrences = valuesSeen() - typeCounts.get(type);
         log.trace("Found {} nonparseable occurrences out of {} total values for type {}.", nonParseableOccurrences,
-                totalNumValues(), type);
+                valuesSeen(), type);
 
-        final float nonParseableFraction = nonParseableOccurrences / totalNumValues();
+        final float nonParseableFraction = nonParseableOccurrences / valuesSeen();
         if (isNaN(nonParseableFraction)) {
             // there were no lexes accepted
             return true;
@@ -43,12 +43,7 @@ public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
     }
 
     @Override
-    public FractionHeuristic newInstance() {
-        return new FractionHeuristic(fractionOfAllowedNonparseables);
-    }
-
-    @Override
     public FractionHeuristic get() {
-        return this;
+        return new FractionHeuristic(fractionOfAllowedNonparseables);
     }
 }

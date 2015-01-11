@@ -55,7 +55,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
         this.rowOfTypeStrategies = new ArrayList<>(numColumns);
         int i;
         for (i = 0; i < numColumns; i++) {
-            rowOfTypeStrategies.add(typeStrategy.newInstance());
+            rowOfTypeStrategies.add(typeStrategy.get());
         }
         // this.typeStrategies will cycle endlessly around our row
         this.typeStrategies = cycle(rowOfTypeStrategies);
@@ -63,7 +63,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
         // create a "row" of range strategy instances of the same length as the rows in our data
         this.rowOfRangeStrategies = new ArrayList<>(numColumns);
         for (i = 0; i < numColumns; i++) {
-            rowOfRangeStrategies.add(rangeStrategy.newInstance());
+            rowOfRangeStrategies.add(rangeStrategy.get());
         }
         // this.rangeStrategies will cycle endlessly around our row
         this.rangeStrategies = cycle(rowOfRangeStrategies);
@@ -71,7 +71,7 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
         // create a "row" of enum strategy instances of the same length as the rows in our data
         this.rowOfEnumStrategies = new ArrayList<>(numColumns);
         for (i = 0; i < numColumns; i++) {
-            rowOfEnumStrategies.add(enumStrategy.newInstance());
+            rowOfEnumStrategies.add(enumStrategy.get());
         }
         // this.enumStrategies will cycle endlessly around our row
         this.enumStrategies = cycle(rowOfEnumStrategies);
