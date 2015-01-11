@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
@@ -24,6 +26,8 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.LimitedEnumeratedValuesHeuristic;
+import com.google.common.collect.Range;
 
 public class SidoraDataIT {
 
@@ -70,10 +74,18 @@ public class SidoraDataIT {
         final List<DataType> mostLikelyTypes = result.fieldTypes();
         assertEquals("Didn't get the expected type determinations!", expectedTypes, mostLikelyTypes);
 
-        for (int i = 0; i < result.minMaxes().size(); i++) {
+        final List<Map<DataType, Range<?>>> minMaxes = result.minMaxes();
+        for (int i = 0; i < minMaxes.size(); i++) {
             final DataType mostLikelyType = mostLikelyTypes.get(i);
-            log.debug("For most likely type {} got range: {}", mostLikelyType, result.minMaxes().get(i).get(
-                    mostLikelyType));
+            log.debug("For most likely type {} got range: {}", mostLikelyType, minMaxes.get(i).get(mostLikelyType));
+        }
+        final List<Map<DataType, Set<String>>> enumerations = result.enumeratedValues();
+        for (int i = 0; i < enumerations.size(); i++) {
+            final DataType mostLikelyType = mostLikelyTypes.get(i);
+            final Set<String> enumeration = enumerations.get(i).get(mostLikelyType);
+            log.debug("For most likely type {} got enumeration: {}", mostLikelyType, enumeration);
+            // Default operation is to limit to 10 enumerated values recorded
+            assertTrue(LimitedEnumeratedValuesHeuristic.DEFAULT_LIMIT >= enumeration.size());
         }
     }
 }

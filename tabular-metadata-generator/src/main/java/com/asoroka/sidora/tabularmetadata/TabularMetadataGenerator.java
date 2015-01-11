@@ -28,7 +28,7 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
 import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic.Extract;
 import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
-import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumeratedValuesHeuristic;
+import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.LimitedEnumeratedValuesHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.headers.HeaderHeuristic;
 import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
@@ -61,7 +61,7 @@ public class TabularMetadataGenerator {
 
     private TypeDeterminingHeuristic<?> typeStrategy = new StrictHeuristic();
 
-    private EnumeratedValuesHeuristic<?> enumStrategy = new InMemoryEnumeratedValuesHeuristic();
+    private EnumeratedValuesHeuristic<?> enumStrategy = new LimitedEnumeratedValuesHeuristic();
 
     private HeaderHeuristic<?> headerStrategy = new DefaultHeaderHeuristic();
 
