@@ -4,7 +4,7 @@ package com.asoroka.sidora.tabularmetadata;
 /**
  * Thrown when an empty data file is offered for examination.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class EmptyDataFileException extends IllegalArgumentException {
 
@@ -15,7 +15,5 @@ public class EmptyDataFileException extends IllegalArgumentException {
      */
     public EmptyDataFileException(final String url) {
         super(url);
-        // TODO Auto-generated constructor stub
     }
-
 }

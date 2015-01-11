@@ -25,7 +25,7 @@ import com.googlecode.totallylazy.Callable1;
 /**
  * Utilities for testing.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public abstract class TestUtilities {
 

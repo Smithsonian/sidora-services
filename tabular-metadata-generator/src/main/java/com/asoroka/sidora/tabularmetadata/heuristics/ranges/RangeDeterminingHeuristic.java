@@ -10,7 +10,7 @@ import com.google.common.collect.Range;
 /**
  * Determines ranges in different {@link DataType}s for the supplied values.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public interface RangeDeterminingHeuristic<SelfType extends RangeDeterminingHeuristic<SelfType>> extends
         Heuristic<SelfType, Map<DataType, Range<?>>> {

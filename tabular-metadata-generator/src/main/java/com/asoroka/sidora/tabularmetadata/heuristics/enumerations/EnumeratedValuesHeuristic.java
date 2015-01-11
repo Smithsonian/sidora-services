@@ -15,7 +15,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
  * parsed as a String, but if the lexes presented are {"1","Foo","34,56"}, then the set for {@link DataType#Integer}
  * will include only "1".
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public interface EnumeratedValuesHeuristic<SelfType extends EnumeratedValuesHeuristic<SelfType>> extends
         Heuristic<SelfType, Map<DataType, Set<String>>> {

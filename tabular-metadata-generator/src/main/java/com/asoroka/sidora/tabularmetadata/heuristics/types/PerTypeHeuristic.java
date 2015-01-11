@@ -12,7 +12,7 @@ import com.google.common.base.Predicate;
  * created by overriding {@link #candidacy(DataType)}. Types are passed or rejected without any particular order other
  * than specificity of type within the hierarchy.
  * 
- * @author ajs6f
+ * @author A. Soroka
  * @param <SelfType>
  */
 public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfType>> extends

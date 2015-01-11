@@ -11,7 +11,7 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 /**
  * A heuristic that permits a certain specified fraction of values to fail at parsing to the most likely type.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
 

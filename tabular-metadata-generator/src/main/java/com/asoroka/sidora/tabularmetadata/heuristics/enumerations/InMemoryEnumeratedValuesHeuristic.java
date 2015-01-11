@@ -17,7 +17,7 @@ import com.google.common.collect.Multimap;
 /**
  * A {@link EnumeratedValuesHeuristic} that maintains an in-memory map of enumerated lexes.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class InMemoryEnumeratedValuesHeuristic extends
         AbstractHeuristic<InMemoryEnumeratedValuesHeuristic, Map<DataType, Set<String>>> implements

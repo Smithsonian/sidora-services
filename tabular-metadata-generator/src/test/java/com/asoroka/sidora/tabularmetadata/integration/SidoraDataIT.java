@@ -5,7 +5,6 @@ import static com.asoroka.sidora.tabularmetadata.datatype.DataType.DateTime;
 import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.google.common.base.Predicates.contains;
 import static com.google.common.collect.Iterables.all;
-import static com.googlecode.totallylazy.Sequences.sequence;
 import static java.util.Arrays.asList;
 import static java.util.regex.Pattern.compile;
 import static org.junit.Assert.assertEquals;
@@ -17,7 +16,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
-import java.util.SortedSet;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
@@ -26,7 +24,6 @@ import org.slf4j.Logger;
 import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
-import com.googlecode.totallylazy.Function1;
 
 public class SidoraDataIT {
 
@@ -78,19 +75,5 @@ public class SidoraDataIT {
             log.debug("For most likely type {} got range: {}", mostLikelyType, result.minMaxes().get(i).get(
                     mostLikelyType));
         }
-    }
-
-    private static <T> List<T> getFirstElements(final List<SortedSet<T>> inputs) {
-        return sequence(inputs).map(SidoraDataIT.<T> first()).toList();
-    }
-
-    private static final <T> Function1<SortedSet<T>, T> first() {
-        return new Function1<SortedSet<T>, T>() {
-
-            @Override
-            public T call(final SortedSet<T> s) {
-                return s.first();
-            }
-        };
     }
 }

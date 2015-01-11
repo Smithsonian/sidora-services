@@ -19,7 +19,7 @@ import com.asoroka.sidora.tabularmetadata.testframework.TestUtilities.RandomValu
 import com.google.common.collect.Range;
 
 /**
- * @author ajs6f
+ * @author A. Soroka
  */
 @RunWith(Theories.class)
 public class RunningMinMaxHeuristicTest extends HeuristicTestFrame<RunningMinMaxHeuristic, Map<DataType, Range<?>>> {

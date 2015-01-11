@@ -12,7 +12,7 @@ import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 /**
  * A specialization of {@link com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator} for use with Camel.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class TabularMetadataGenerator extends com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator {
 

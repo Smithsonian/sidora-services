@@ -7,7 +7,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
 /**
  * Determines into which {@link DataType} a series of values most likely falls.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public interface TypeDeterminingHeuristic<SelfType extends TypeDeterminingHeuristic<SelfType>> extends
         Heuristic<SelfType, DataType> {

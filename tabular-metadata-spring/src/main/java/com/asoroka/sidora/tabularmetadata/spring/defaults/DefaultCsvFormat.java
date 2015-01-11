@@ -8,7 +8,7 @@ import com.asoroka.sidora.tabularmetadata.formats.TabularFormat.Default;
 /**
  * Supplies {@link Default} as the default format in Spring integrations.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @Component
 public class DefaultCsvFormat extends Default {

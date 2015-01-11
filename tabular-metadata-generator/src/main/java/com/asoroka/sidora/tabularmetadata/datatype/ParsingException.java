@@ -4,7 +4,7 @@ package com.asoroka.sidora.tabularmetadata.datatype;
 /**
  * Represents a failure to parse some string into an instance of some type.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class ParsingException extends Exception {
 

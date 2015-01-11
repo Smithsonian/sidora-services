@@ -13,7 +13,7 @@ import com.google.common.collect.Ordering;
 /**
  * A simple type for geographic coordinates.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class GeographicValue implements Comparable<GeographicValue>, Serializable {
 

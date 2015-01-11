@@ -10,7 +10,7 @@ import org.junit.experimental.theories.ParametersSuppliedBy;
 /**
  * Machinery for generating random test values.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @Retention(RUNTIME)
 @ParametersSuppliedBy(RowsOfRandomValuesForAllTypesSupplier.class)

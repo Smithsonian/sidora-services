@@ -1,7 +1,7 @@
 /**
  * Integration tests for tabular-metadata-generator.
  * 
- * @author ajs6f
+ * @author A. Soroka
  *
  */
 

@@ -15,7 +15,7 @@ import com.google.common.base.Predicate;
  * A {@link HeaderHeuristic} that uses a regular expression applied to each field in a row to determine whether the
  * row is a header row.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class RegexpHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<RegexpHeaderHeuristic> {
 

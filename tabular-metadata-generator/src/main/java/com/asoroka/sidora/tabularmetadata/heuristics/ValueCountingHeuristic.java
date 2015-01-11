@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 /**
  * A {@link Heuristic} that counts the number of values received.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuristic<SelfType, ResultType>, ResultType>
         extends AbstractHeuristic<SelfType, ResultType> {

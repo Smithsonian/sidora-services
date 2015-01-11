@@ -28,7 +28,7 @@ import com.google.common.collect.Range;
 /**
  * Framework for running Spring integration tests.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 public abstract class SpringITFramework {

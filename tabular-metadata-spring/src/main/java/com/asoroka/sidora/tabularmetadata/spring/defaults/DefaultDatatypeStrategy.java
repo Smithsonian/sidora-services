@@ -8,7 +8,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
 /**
  * Supplies {@link StrictHeuristic} as the default type determination strategy in Spring integrations.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @Component
 public class DefaultDatatypeStrategy extends StrictHeuristic {

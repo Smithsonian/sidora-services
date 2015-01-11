@@ -17,7 +17,7 @@ import com.google.common.base.Predicate;
  * to each. Only if every field value passes the field-test does the row pass this test. Subclasses define the test by
  * implementing {@link #fieldTest()}.
  * 
- * @author ajs6f
+ * @author A. Soroka
  * @param <SelfType>
  */
 public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends TreatsEachFieldAlikeHeaderHeuristic<SelfType>>

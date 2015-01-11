@@ -12,7 +12,7 @@ import com.asoroka.sidora.tabularmetadata.datatype.DataType;
  * <i>every</i> value in the field can be parsed as that type. This heuristic is weak to typos and to "special"
  * values.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class StrictHeuristic extends PerTypeHeuristic<StrictHeuristic> {
 

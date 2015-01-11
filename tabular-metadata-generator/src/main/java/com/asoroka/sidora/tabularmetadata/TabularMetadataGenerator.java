@@ -44,7 +44,7 @@ import com.googlecode.totallylazy.numbers.Ratio;
  * Master entry point for this API. This is the class from which all parsing should initiate, via
  * {@link #getMetadata(URL)}.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class TabularMetadataGenerator {
 

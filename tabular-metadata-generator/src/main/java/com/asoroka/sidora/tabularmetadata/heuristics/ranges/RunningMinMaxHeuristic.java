@@ -26,7 +26,7 @@ import com.google.common.collect.Range;
 /**
  * Calculates the ranges of values supplied for each possible parseable type, without caching the values supplied.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuristic, Map<DataType, Range<?>>>
         implements RangeDeterminingHeuristic<RunningMinMaxHeuristic> {

@@ -1,5 +1,5 @@
 /**
- * @author ajs6f
+ * @author A. Soroka
  *
  */
 

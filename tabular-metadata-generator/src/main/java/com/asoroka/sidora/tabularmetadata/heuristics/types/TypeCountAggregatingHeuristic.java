@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableMap;
 /**
  * A {@link TypeDeterminingHeuristic} that aggregates candidate type appearance information for its field.
  * 
- * @author ajs6f
+ * @author A. Soroka
  * @param <SelfType>
  */
 public abstract class TypeCountAggregatingHeuristic<SelfType extends TypeCountAggregatingHeuristic<SelfType>>

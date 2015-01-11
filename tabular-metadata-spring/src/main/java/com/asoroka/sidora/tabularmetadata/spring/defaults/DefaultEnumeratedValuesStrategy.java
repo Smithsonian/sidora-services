@@ -9,7 +9,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumer
  * Supplies {@link InMemoryEnumeratedValuesHeuristic} as the default enumerated values determination strategy in
  * Spring integrations.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @Component
 public class DefaultEnumeratedValuesStrategy extends InMemoryEnumeratedValuesHeuristic {

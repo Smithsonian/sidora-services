@@ -8,7 +8,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.Heuristic;
  * they do. <br/>
  * TODO allow this type to access more information than a single row of fields with which to make its determination
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public interface HeaderHeuristic<SelfType extends HeaderHeuristic<SelfType>> extends Heuristic<SelfType, Boolean> {
     // EMPTY

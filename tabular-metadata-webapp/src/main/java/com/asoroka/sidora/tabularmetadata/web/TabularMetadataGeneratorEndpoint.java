@@ -19,7 +19,7 @@ import edu.si.codebook.Codebook;
 /**
  * A simple HTTP endpoint for tabular metadata generation.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {

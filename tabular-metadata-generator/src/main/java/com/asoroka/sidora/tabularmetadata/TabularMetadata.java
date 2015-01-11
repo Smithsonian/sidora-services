@@ -15,7 +15,7 @@ import com.googlecode.totallylazy.numbers.Ratio;
  * A container for the results of metadata extraction on a single data file, with machinery to present those results
  * in appropriate orders.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class TabularMetadata {
 

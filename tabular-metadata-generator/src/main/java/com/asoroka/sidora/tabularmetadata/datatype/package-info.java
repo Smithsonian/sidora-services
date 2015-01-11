@@ -5,7 +5,7 @@
 /**
  * The type system in play and utilities for working with it.
  * 
- * @author ajs6f
+ * @author A. Soroka
  *
  */
 

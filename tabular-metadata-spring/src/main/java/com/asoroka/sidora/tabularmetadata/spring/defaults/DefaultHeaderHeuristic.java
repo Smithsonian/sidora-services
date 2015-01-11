@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
  * Supplies {@link com.asoroka.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic} as the default header
  * determination strategy in Spring integrations.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @Component
 public class DefaultHeaderHeuristic extends

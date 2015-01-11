@@ -8,7 +8,7 @@ import com.asoroka.sidora.tabularmetadata.heuristics.ranges.RunningMinMaxHeurist
 /**
  * Supplies {@link RunningMinMaxHeuristic} as the default range determination strategy in Spring integrations.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @Component
 public class DefaultRangeStrategy extends RunningMinMaxHeuristic {

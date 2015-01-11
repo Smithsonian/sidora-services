@@ -30,7 +30,7 @@ import edu.si.codebook.Codebook.VariableType;
 /**
  * Constructs an SI-schema XML serialization of a precis of metadata results.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 @XmlAccessorType(NONE)
 @XmlRootElement
@@ -70,7 +70,7 @@ public class Codebook
     /**
      * Serializes a single variable description.
      * 
-     * @author ajs6f
+     * @author A. Soroka
      */
     @javax.xml.bind.annotation.XmlAccessorType(NONE)
     public static class VariableType {
@@ -115,7 +115,7 @@ public class Codebook
         /**
          * Serializes the range of a single variable.
          * 
-         * @author ajs6f
+         * @author A. Soroka
          */
         @javax.xml.bind.annotation.XmlAccessorType(FIELD)
         public static class RangeType {

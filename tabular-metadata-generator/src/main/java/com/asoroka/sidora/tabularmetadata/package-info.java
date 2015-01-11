@@ -1,7 +1,7 @@
 /**
  * Main entry points for the component and result types.
  * 
- * @author ajs6f
+ * @author A. Soroka
  *
  */
 

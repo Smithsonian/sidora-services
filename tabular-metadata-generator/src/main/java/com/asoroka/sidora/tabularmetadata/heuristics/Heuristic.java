@@ -8,7 +8,7 @@ import com.googlecode.totallylazy.Function1;
  * The simple idea of a heuristic that accepts lexes and does some kind of work with them. See its subtypes for
  * examples of use.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, ResultType> extends Supplier<SelfType> {
 

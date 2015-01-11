@@ -25,7 +25,7 @@ import com.google.common.collect.PeekingIterator;
  * Scanning workflow. Handed a {@link CSVParser}, this class will scan through it and supply the values of fields to
  * "rows" of {@link Heuristic}s cloned from the configured choices.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public class TabularScanner extends AbstractIterator<CSVRecord> {
 

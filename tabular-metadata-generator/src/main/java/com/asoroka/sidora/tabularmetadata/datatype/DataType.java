@@ -52,7 +52,7 @@ import com.google.common.collect.ImmutableList;
  * </ul>
  * It also offers convenience methods for working with our type system.
  * 
- * @author ajs6f
+ * @author A. Soroka
  */
 public enum DataType {
 

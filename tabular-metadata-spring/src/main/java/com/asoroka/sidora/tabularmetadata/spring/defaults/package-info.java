@@ -1,7 +1,7 @@
 /**
  * DefaultHeaderHeuristic components for Spring operation.
  * 
- * @author ajs6f
+ * @author A. Soroka
  *
  */
 
