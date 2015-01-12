@@ -139,10 +139,10 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
                         .recipientList(simple("fedora:datastream?pid=${header.CamelFedoraPid}&name=OBJ&type=image/jpeg&group=M"))
                         .to("mock:result");
                 from("direct:testDatastreamNoPid")
-                        .recipientList(simple("fedora:datastream?name=OBJ&type=image/jpeg&group=M"))
+                        .to("fedora:datastream?name=OBJ&type=image/jpeg&group=M")
                         .to("mock:result");
                 from("direct:testDatastreamCSV")
-                        .recipientList(simple("fedora:datastream?name=OBJ&type=text/csv&group=M"))
+                        .to("fedora:datastream?name=OBJ&type=text/csv&group=M")
                         .to("mock:result");
 
                 //Helper route to set up object in add datastreams to
