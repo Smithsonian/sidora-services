@@ -37,6 +37,9 @@ import java.net.URL;
 public class FedoraSettings 
 {
 
+    //
+    //  TODO: Add Unit Test if this gets used!!!
+    //
     private FedoraCredentials credentials;
 
     public FedoraSettings()

@@ -30,7 +30,6 @@ import com.yourmediashelf.fedora.client.FedoraClient;
 import java.io.InputStream;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.mock.MockEndpoint;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
@@ -44,68 +43,88 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
     @Test
     public void testDatastream() throws Exception
     {
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(2);
+        mockEnpoint.expectedMinimumMessageCount(2);
 
         template.sendBody("direct:testCreate", null);
-        Message in = mock.getExchanges().get(0).getIn();
+        Message in = this.getMockMessage();
 
         InputStream input = this.getClass().getResourceAsStream("/test-image.jpg");
         template.sendBodyAndHeaders("direct:testDatastream", input, in.getHeaders());
 
         assertMockEndpointsSatisfied();
 
-        Message msg = mock.getExchanges().get(1).getIn();
-
-        assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-
+        Message msg = this.getMockMessage(1);
         String pid = msg.getHeader("CamelFedoraPid", String.class);
-        FedoraClient.purgeObject(pid).execute();
+
+        try
+        {
+            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
+        }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid).execute();
+            }
+        }
     }
 
     @Test
     public void testDataStreamNoPid() throws Exception
     {
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(2);
+        mockEnpoint.expectedMinimumMessageCount(2);
 
         template.sendBody("direct:testCreate", null);
-        Message in = mock.getExchanges().get(0).getIn();
+        Message in = this.getMockMessage();
 
         InputStream input = this.getClass().getResourceAsStream("/test-image.jpg");
         template.sendBodyAndHeaders("direct:testDatastreamNoPid", input, in.getHeaders());
 
         assertMockEndpointsSatisfied();
 
-        Message msg = mock.getExchanges().get(1).getIn();
-
-        assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-
+        Message msg = this.getMockMessage(1);
         String pid = msg.getHeader("CamelFedoraPid", String.class);
-        FedoraClient.purgeObject(pid).execute();
+
+        try
+        {
+            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
+        }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid).execute();
+            }
+        }
     }
 
     @Test
     public void testDataStreamString() throws Exception
     {
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(2);
+        mockEnpoint.expectedMinimumMessageCount(2);
 
         template.sendBody("direct:testCreate", null);
-        Message in = mock.getExchanges().get(0).getIn();
+        Message in = this.getMockMessage();
 
         String input = "Testing,input,CSV##More,test,";
         template.sendBodyAndHeaders("direct:testDatastreamCSV", input, in.getHeaders());
 
         assertMockEndpointsSatisfied();
 
-        Message msg = mock.getExchanges().get(1).getIn();
-
-        assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-
+        Message msg = this.getMockMessage(1);
         String pid = msg.getHeader("CamelFedoraPid", String.class);
 
-        FedoraClient.purgeObject(pid).execute();
+        try
+        {
+            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
+        }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid).execute();
+            }
+        }
     }
 
     @Override
