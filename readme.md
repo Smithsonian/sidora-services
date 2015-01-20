@@ -1,7 +1,8 @@
 # SI - Service Execution Environment (SI-See)
 ## Installation of ServiceMix
 See the ServiceMix [Quickstart](http://servicemix.apache.org/docs/5.0.x/quickstart/index.html) guide [install section](http://servicemix.apache.org/docs/5.0.x/quickstart/installation.html) for help 
->Note: ServiceMix 5.3.0 prints out an error about an "Unknown signal: HUP" but does not seem to cause an acutal project
+> Tested with ServiceMix Versions: 5.0.1, 5.3.0
+>> Note: ServiceMix 5.3.0 prints out an error about an "Unknown signal: HUP" but does not seem to cause an acutal project
 
 ### Steps:
 1. Download and extract ServiceMix (http://servicemix.apache.org/)
@@ -39,11 +40,9 @@ To process Camera Trap data copy the data archive (e.g. p1d246.tar.gz) into the 
 
 #### Helpful ServiceMix Commands
 - `log:display` -- To display the log file
-- `log:tail` -- To watch the log file (ctrl-C to stop watching)
+- `log:tail` -- To watch the log file (ctrl-c to stop watching)
 - `route-list` -- To display the current active Camel Routes
 - `logout` -- To shutdown ServiceMix
-
-> Tested with ServiceMix Versions: 5.0.1, 5.3.0
 
 ## Building 
 - Install Apache Maven version 3.X (http://maven.apache.org/)
@@ -52,7 +51,7 @@ To process Camera Trap data copy the data archive (e.g. p1d246.tar.gz) into the 
 - Run the command `mvn install`
     - Note: Some Integration Test look for Fedora Repository Host at localhost with the default username and password
 - Or run the command `mvn install -DskipTests` to build without running Unit and Integration Tests    
-- Newly built jars will need to be moved from there `target` folders to the `SM_HOME/deploy/` folder
+- Newly built jars will need to be moved from their individual `target` folders to the `SM_HOME/deploy/` folder
 
 > Note: SI-See is built with Maven 3 (although Maven 2 should work [untested])
 
