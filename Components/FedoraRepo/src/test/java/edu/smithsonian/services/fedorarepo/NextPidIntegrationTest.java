@@ -26,10 +26,8 @@
  */
 package edu.smithsonian.services.fedorarepo;
 
-import com.yourmediashelf.fedora.client.FedoraClient;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.mock.MockEndpoint;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -45,14 +43,13 @@ public class NextPidIntegrationTest extends FedoraComponentIntegrationTest
     @Test
     public void testGetNextPid() throws Exception
     {
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(1);
+        mockEnpoint.expectedMinimumMessageCount(1);
 
         template.sendBody("direct:testPid", "Integration Test");
 
         assertMockEndpointsSatisfied();
 
-        Message msg = mock.getExchanges().get(0).getIn();
+        Message msg = this.getMockMessage();
         String pid = msg.getHeader("CamelFedoraPid", String.class);
 
         assertNotNull("PID Should not be null", pid);
@@ -81,24 +78,6 @@ public class NextPidIntegrationTest extends FedoraComponentIntegrationTest
 
     }
 
-    @Test
-    public void testCreateWithPid() throws Exception
-    {
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(1);
-
-        template.sendBody("direct:testCreateWithPid", null);
-
-        assertMockEndpointsSatisfied();
-
-        Message msg = mock.getExchanges().get(0).getIn();
-
-        assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-
-        String pid = msg.getHeader("CamelFedoraPid", String.class);
-        FedoraClient.purgeObject(pid).execute();
-    }
-
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception
     {
@@ -112,10 +91,6 @@ public class NextPidIntegrationTest extends FedoraComponentIntegrationTest
                         .to("mock:result");
                 from("direct:testPidWithNamespace")
                         .to("fedora:nextPid?namespace=namespaceTest")
-                        .to("mock:result");
-                from("direct:testCreateWithPid")
-                        .to("fedora:nextPID")
-                        .recipientList(simple("fedora:create?pid=${header.CamelFedoraPid}"))
                         .to("mock:result");
             }
         };

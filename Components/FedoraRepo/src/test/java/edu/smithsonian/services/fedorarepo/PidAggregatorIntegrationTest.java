@@ -29,7 +29,6 @@ package edu.smithsonian.services.fedorarepo;
 import edu.smithsonian.services.fedorarepo.aggregators.PidAggregationStrategy;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.mock.MockEndpoint;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -45,8 +44,7 @@ public class PidAggregatorIntegrationTest extends FedoraComponentIntegrationTest
     @Test
     public void testPidAggregator() throws Exception
     {
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(4);
+        mockEnpoint.expectedMinimumMessageCount(4);
 
         StringBuilder sb = new StringBuilder("<testing>");
         sb.append("\t<test>test1</test>");
@@ -62,7 +60,7 @@ public class PidAggregatorIntegrationTest extends FedoraComponentIntegrationTest
 
         for (int i = 0; i < 3; i++)
         {
-            Message in = mock.getExchanges().get(i).getIn();
+            Message in = this.getMockMessage(i);
             String pid = in.getHeader("CamelFedoraPid", String.class);
             assertNotNull("PID should not be null", pid);
 
@@ -79,7 +77,7 @@ public class PidAggregatorIntegrationTest extends FedoraComponentIntegrationTest
             assertEquals("Test body should equal test#", body, String.format("test%d", i + 1));
         }//end for
 
-        Message in = mock.getExchanges().get(3).getIn();
+        Message in = this.getMockMessage(3);
 
         String actualPids = in.getBody(String.class);
 

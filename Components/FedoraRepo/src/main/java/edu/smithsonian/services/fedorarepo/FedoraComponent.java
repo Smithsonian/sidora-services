@@ -74,7 +74,6 @@ public class FedoraComponent extends DefaultComponent
             {
                 LOG.warning("No Fedora Settings found! Using defautls [Host: http://localhost:8080/fedora]");
                 client = new FedoraClient(new FedoraCredentials("http://localhost:8080/fedora", "fedoraAdmin", "password"));
-//                throw new UnsupportedOperationException("No Fedora Settings found!!!");
             }
 
             FedoraRequest.setDefaultClient(client);

@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.mock.MockEndpoint;
 import static org.apache.camel.test.junit4.TestSupport.assertStringContains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -52,21 +51,29 @@ public class CreateIntegrationTest extends FedoraComponentIntegrationTest
     @Test
     public void testCreate() throws Exception
     {
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedMinimumMessageCount(1);
+        
+        mockEnpoint.expectedMinimumMessageCount(1);
 
         String expectedBody = "Test Create Body";
         template.sendBody("direct:testCreate", expectedBody);
 
         assertMockEndpointsSatisfied();
 
-        Message msg = mock.getExchanges().get(0).getIn();
-
-        assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-
-        assertEquals("Message Body should be", expectedBody, msg.getBody(String.class));
+        Message msg = this.getMockMessage();
         String pid = msg.getHeader("CamelFedoraPid", String.class);
-        FedoraClient.purgeObject(pid).execute();
+
+        try
+        {
+            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
+            assertEquals("Message Body should be", expectedBody, msg.getBody(String.class));
+        }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid).execute();
+            }
+        }
     }
 
     @Test
@@ -79,21 +86,29 @@ public class CreateIntegrationTest extends FedoraComponentIntegrationTest
         assertMockEndpointsSatisfied();
 
         Message msg = this.getMockMessage();
-
-        assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-
         String pid = msg.getHeader("CamelFedoraPid", String.class);
-        assertTrue("PID should have namespace 'namespaceTest'", pid.startsWith("namespaceTest:"));
 
-        GetObjectProfileResponse profile = FedoraClient.getObjectProfile(pid).execute();
-        assertEquals("Owner wasn't properly set", "Test Owner", profile.getOwnerId());
-        assertEquals("Label wasn't set properly", "This is a label 2 test", profile.getLabel());
+        try
+        {
+            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
+            assertTrue("PID should have namespace 'namespaceTest'", pid.startsWith("namespaceTest:"));
 
-        String foxml = FedoraClient.getObjectXML(pid).execute().getEntity(String.class);
-        String logMsg = "Logging action 4 create/ingest";
-        assertStringContains(foxml, logMsg);
+            GetObjectProfileResponse profile = FedoraClient.getObjectProfile(pid).execute();
+            assertEquals("Owner wasn't properly set", "Test Owner", profile.getOwnerId());
+            assertEquals("Label wasn't set properly", "This is a label 2 test", profile.getLabel());
 
-        FedoraClient.purgeObject(pid).execute();
+            String foxml = FedoraClient.getObjectXML(pid).execute().getEntity(String.class);
+            String logMsg = "Logging action 4 create/ingest";
+            assertStringContains(foxml, logMsg);
+        }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid).execute();
+            }
+        }
+
     }
 
     @Test
@@ -118,6 +133,13 @@ public class CreateIntegrationTest extends FedoraComponentIntegrationTest
         {
             fail("PID was not set by header");
         }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid);
+            }
+        }
     }
 
     @Test
@@ -137,11 +159,11 @@ public class CreateIntegrationTest extends FedoraComponentIntegrationTest
         assertMockEndpointsSatisfied();
 
         String pid = getMockMessage().getHeader("CamelFedoraPid", String.class);
-        assertNotNull("PID should have been set", pid);
-        assertNotEquals("PID was not overwritten", badPid, pid);
 
         try
         {
+            assertNotNull("PID should have been set", pid);
+            assertNotEquals("PID was not overwritten", badPid, pid);
             GetObjectProfileResponse profile = FedoraClient.getObjectProfile(pid).execute();
             assertEquals("Owner wasn't properly set", "URI Set Owner", profile.getOwnerId());
         }
@@ -149,7 +171,39 @@ public class CreateIntegrationTest extends FedoraComponentIntegrationTest
         {
             fail("Could not find Fedora object from PID");
         }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid);
+            }
+        }
 
+    }
+
+    @Test
+    public void testCreateWithPid() throws Exception
+    {
+        mockEnpoint.expectedMinimumMessageCount(1);
+
+        template.sendBody("direct:testCreateWithPid", null);
+
+        assertMockEndpointsSatisfied();
+
+        Message msg = this.getMockMessage();
+        String pid = msg.getHeader("CamelFedoraPid", String.class);
+
+        try
+        {
+            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
+        }
+        finally
+        {
+            if (pid != null)
+            {
+                FedoraClient.purgeObject(pid).execute();
+            }
+        }
     }
 
     @Override
@@ -173,6 +227,10 @@ public class CreateIntegrationTest extends FedoraComponentIntegrationTest
                         .to("mock:result");
                 from("direct:testCreateOverwriteHeaders")
                         .to("fedora:create?owner=URI Set Owner&pid=null")
+                        .to("mock:result");
+                from("direct:testCreateWithPid")
+                        .to("fedora:nextPID")
+                        .recipientList(simple("fedora:create?pid=${header.CamelFedoraPid}"))
                         .to("mock:result");
             }
         };

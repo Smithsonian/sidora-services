@@ -26,7 +26,6 @@
  */
 package edu.smithsonian.services.fedorarepo.base;
 
-import com.yourmediashelf.fedora.client.response.FedoraResponse;
 import org.apache.camel.Endpoint;
 import org.apache.camel.impl.DefaultProducer;
 
@@ -44,6 +43,7 @@ public abstract class FedoraProducer extends DefaultProducer
 
     protected boolean hasParam(String param)
     {
+        //NOTE: This does not call param.trim() prior to checking if it is empty
         return (param != null && !param.isEmpty() && !"null".equalsIgnoreCase(param));
     }
 
@@ -62,14 +62,11 @@ public abstract class FedoraProducer extends DefaultProducer
     protected String getParam(String param, String header)
     {
         String value = null;
-        if (param != null && !param.isEmpty())
+        if (hasParam(param))
         {
-            if (!"null".equalsIgnoreCase(param))
-            {
-                value = param;
-            }//end if
+            value = param;
         }//end if
-        else
+        else if (!"null".equalsIgnoreCase(param))
         {
             value = header;
         }//end else
@@ -77,10 +74,10 @@ public abstract class FedoraProducer extends DefaultProducer
         return value;
     }
 
-    protected boolean checkStatus(FedoraResponse response)
-    {
-        //Think checking the status is pointless since the FedoraClient will throw
-        // an exception if the execution failed
-        return (response.getStatus() >= 200 && response.getStatus() < 300);
-    }
+//    protected boolean checkStatus(FedoraResponse response)
+//    {
+//        //Think checking the status is pointless since the FedoraClient will throw
+//        // an exception if the execution failed
+//        return (response.getStatus() >= 200 && response.getStatus() < 300);
+//    }
 }
