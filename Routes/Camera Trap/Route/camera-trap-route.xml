@@ -47,32 +47,28 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="fedora:create?owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
             <multicast>
                 <to uri="direct:manifest" />
+                <to uri="direct:fgdc" />
                 <!-- Researcher Observations are a resource object like the images --> 
                 <!-- <to uri="direct:researcher" /> -->
                 <!-- Volunteer Observations are a resource object like the images -->
                 <!-- <to uri="direct:volunteer" /> -->
-                <!-- <to uri="direct:processImages" /> -->
+                <to uri="direct:processImages" />
             </multicast>
             <log message="Finished Data processing!" /> 
         </route>
         <route id="CameraTrapTransformManifest" >
             <from uri="direct:manifest" />
             <to uri="fedora:datastream?name=MANIFEST&amp;type=text/xml&amp;group=M" />
-            <!--
+            <log message="Added Manifest DataStream" /> 
+        </route>
+        <route id="CameraTrapAddFGDCDatastream" >
+            <from uri="direct:fgdc" />
+            <log message="${in.body}" />
             <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
-            -->
-            <!--
-                NOTE: Double check to make sure over writing the original manifest
-                        with the modified one is correct
-            
-                DWD: It is OK to update a datastream. However, too many updates of
-                     versioned datastreams will bloat the XML and reduce performance
-                     especially inlined "x" ones
-            -->
-            <!-- <to uri="fedora:datastream?name=MANIFEST&amp;type=text/xml&amp;group=M" /> -->
-            <log message="Added Manifest DataStream" /> 
+            <to uri="fedora:datastream?name=FGDC&amp;type=text/xml&amp;group=M" />
+            <log message="Added FGDC DataStream" />
         </route>
         <route id="CameraTrapTransformResearcherData" >
             <from uri="direct:researcher" />
@@ -94,7 +90,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         </route>
         <route id="CameraTrapProcessImages" >
             <from uri="direct:processImages" /> 
-            <log message="Starting Image processing..." /> 
+            <log message="Starting Image processing..." />
+            <log message="${body}" />
             <setHeader headerName="FedoraParentConcept">
                 <simple>${header.CamelFedoraPid}</simple>
             </setHeader>
