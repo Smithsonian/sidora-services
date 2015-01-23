@@ -91,19 +91,21 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         <route id="CameraTrapProcessImages" >
             <from uri="direct:processImages" /> 
             <log message="Starting Image processing..." />
-            <log message="${body}" />
             <setHeader headerName="FedoraParentConcept">
                 <simple>${header.CamelFedoraPid}</simple>
             </setHeader>
             <split strategyRef="pidAggregator" >
                 <xpath>//ImageFileName/text()</xpath>
+                <setHeader headerName="CamelFedoraLabel">
+                    <simple>${body}</simple>
+                </setHeader>
                 <to uri="reader:file" />
-                <to uri="fedora:create?pid=null" />
+                <to uri="fedora:create?pid=null&amp;owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
                 <to uri="direct:transformImage" />
             </split>
             <!--
-                FIXME: Change template to use 'FedoreParentConcept' instead of 'CamelParentConcept'
+                FIXME: Change template to use 'FedoraParentConcept' instead of 'CamelParentConcept'
                       Pointless to store and unstore the parent PID
             -->
             <setHeader headerName="CamelFedoraPid">
@@ -127,7 +129,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         <route id="CameraTrapCreateThumbnailImage" >
             <from uri="direct:createThumbnail" />
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(72,96)"/>
-            <to uri="fedora:datastream?name=THUMBNAIL&amp;type=image/jpeg&amp;group=M" />
+            <to uri="fedora:datastream?name=TN&amp;type=image/jpeg&amp;group=M" />
         </route>
         <route id="CameraTrapCreateResampledImage">
             <from uri="direct:createResampled" />
