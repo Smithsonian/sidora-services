@@ -32,6 +32,8 @@ import org.apache.camel.builder.RouteBuilder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -75,12 +77,12 @@ public class PidAggregatorIntegrationTest extends FedoraComponentIntegrationTest
 
             String body = in.getBody(String.class);
             assertEquals("Test body should equal test#", body, String.format("test%d", i + 1));
+            
         }//end for
 
         Message in = this.getMockMessage(3);
-
-        String actualPids = in.getBody(String.class);
-
+        String actualPids = in.getHeader("PIDAggregation", String.class);
+        
         assertNotNull("Aggregator body shouldn't be null", actualPids);
         assertArrayEquals("PIDs should be equal", expectedPids.split(","), actualPids.split(","));
 

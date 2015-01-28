@@ -43,6 +43,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String">//CameraSiteName</xpath>
             </setHeader>
+            <setHeader headerName="ManifestXML"><simple>${body}</simple></setHeader>
             <!-- <log message="SiteLabel - ${header.CamelFedoraLabel}" /> -->
             <to uri="fedora:create?owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
             <multicast>
@@ -63,7 +64,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         </route>
         <route id="CameraTrapAddFGDCDatastream" >
             <from uri="direct:fgdc" />
-            <log message="${in.body}" />
+            <!-- <log message="${in.body}" /> -->
             <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
@@ -72,15 +73,25 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         </route>
         <route id="CameraTrapTransformResearcherData" >
             <from uri="direct:researcher" />
-            <to uri="xslt:file:Input/xslt/researcher.xsl"/>
+            <setHeader headerName="CamelFedoraLabel">
+                <simple>researcher_observation.csv</simple>
+            </setHeader>
+            <setBody><simple>${header.ManifestXML}</simple></setBody>
+            <to uri="fedora:create?pid=null&amp;owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
+            <to uri="xslt:file:Input/xslt/researcher.xsl" />
             <transform>
                 <xpath>//researcher/text()</xpath>
             </transform>
             <to uri="fedora:datastream?name=RESEARCHER&amp;type=text/csv&amp;group=M" />
-            <log message="Researcher's Observation file created" /> 
+            <log message="Researcher's Observation resource created" />
         </route>
         <route id="CameraTrapTransformVolunteerData" >
             <from uri="direct:volunteer" />
+            <setHeader headerName="CamelFedoraLabel">
+                <simple>volunteer_observation.csv</simple>
+            </setHeader>
+            <setBody><simple>${header.ManifestXML}</simple></setBody>
+            <to uri="fedora:create?pid=null&amp;owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
             <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
             <transform>
                 <xpath>//researcher/text()</xpath>
@@ -91,9 +102,13 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         <route id="CameraTrapProcessImages" >
             <from uri="direct:processImages" /> 
             <log message="Starting Image processing..." />
+            <log message="Resource1 - ${body}" />
             <setHeader headerName="FedoraParentConcept">
                 <simple>${header.CamelFedoraPid}</simple>
             </setHeader>
+            <log message="Parent PID - ${header.CamelFedoraPid} and ${header.FedoraParentConcept}" />
+            <!-- <setBody><simple>Default</simple></setBody> -->
+            <!-- <log message="Resource2 - ${body}" /> -->
             <split strategyRef="pidAggregator" >
                 <xpath>//ImageFileName/text()</xpath>
                 <setHeader headerName="CamelFedoraLabel">
@@ -102,15 +117,31 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <to uri="reader:file" />
                 <to uri="fedora:create?pid=null&amp;owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
-                <to uri="direct:transformImage" />
+                <!-- <to uri="direct:transformImage" /> -->
             </split>
+            
+            <to uri="direct:researcher" />
+            <log message="${header.CamelFedoraPid}" />
+            <setHeader headerName="PIDAggregation">
+                <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
+            </setHeader>
+            <log message="Aggregation: ${header.PIDAggregation}" />
+
+            <to uri="direct:volunteer" />
+            <log message="${header.CamelFedoraPid}" />
+            <setHeader headerName="PIDAggregation">
+                <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
+            </setHeader>
+            <log message="Aggregation: ${header.PIDAggregation}" />
+
             <!--
-                FIXME: Change template to use 'FedoraParentConcept' instead of 'CamelParentConcept'
-                      Pointless to store and unstore the parent PID
+                FIXME: Change FedoraRepo to use 'FedoraParentConcept' instead of 'CamelParentConcept'
+                Pointless to store and unstore the parent PID
             -->
+            <!-- <log message="Resource2 - ${body}" /> -->
             <setHeader headerName="CamelFedoraPid">
                 <simple>${header.FedoraParentConcept}</simple>
-            </setHeader> 
+            </setHeader>
             <to uri="velocity:file:Input/templates/CameraTrapResourceTemplate.vsl" />
             <to uri="fedora:datastream?name=RELS-EXT" /> 
             <log message="Finished processing Images" />           

@@ -49,16 +49,17 @@ public class PidAggregationStrategy implements AggregationStrategy
             return oldExchange;
         }//end if
 
-        if (oldExchange == null)
+        if ((oldExchange == null) || (oldExchange.getIn().getHeader("PIDAggregation") == null))
         {
-            newExchange.getIn().setBody(pid);
+            newExchange.getIn().setHeader("PIDAggregation", pid);
             return newExchange;
         }//end if
 
-        String body = oldExchange.getIn().getBody(String.class);
-
-        oldExchange.getIn().setBody(String.format("%s,%s", body, pid), String.class);
+        String aggregation = oldExchange.getIn().getHeader("PIDAggregation", String.class);
+        oldExchange.getIn().setHeader("PIDAggregation", String.format("%s,%s", aggregation, pid));
 
         return oldExchange;
     }
+
 }
+
