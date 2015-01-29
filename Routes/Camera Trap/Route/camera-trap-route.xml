@@ -89,6 +89,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <to uri="fedora:create?pid=null" />
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
                 <to uri="direct:transformImage" />
+                <to uri="velocity:file:Input/templates/CameraTrapParentChildResourceTemplate.vsl" />
+                <to uri="fedora:datastream?name=RELS-EXT" /> 
             </split>
             <!--
                 FIXME: Change template to use 'FedoreParentConcept' instead of 'CamelParentConcept'
