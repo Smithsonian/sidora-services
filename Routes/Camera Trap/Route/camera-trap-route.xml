@@ -26,6 +26,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <simple>deployment_manifest.xml</simple>
             </transform>
             <to uri="reader:file?type=text" />
+            <to uri="validator:file:Input/schemas/DeploymentManifest.xsd" />
             <to uri="direct:process" />
             <log message="Finished Data processing!" />
         </route>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2013 rel. 2 sp2 (x64) (http://www.altova.com) by F Liu (SMITHSONIAN INSTITUTION) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" elementFormDefault="qualified" vc:minVersion="1.1">
+	<xs:element name="CameraTrapDeployment">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="ProjectId"/>
+				<xs:element name="ProjectName"/>
+				<xs:element name="SubProjectId"/>
+				<xs:element name="SubProjectName"/>
+				<xs:element name="SubProjectDesign"/>
+				<xs:element name="PlotName"/>
+				<xs:element name="PlotTreatment"/>
+				<xs:element name="CameraDeploymentID"/>
+				<xs:element name="CameraSiteName"/>
+				<xs:element name="OriginatorName"/>
+				<xs:element name="ProposedCameraDeploymentBeginDate" minOccurs="0"/>
+				<xs:element name="ProposedCameraDeploymentEndDate" minOccurs="0"/>
+				<xs:element name="ProposedLatitude" minOccurs="0"/>
+				<xs:element name="ProposedLongitude" minOccurs="0"/>
+				<xs:element name="CameraDeploymentBeginDate"/>
+				<xs:element name="CameraDeploymentEndDate"/>
+				<xs:element name="CameraDeploymentNotes" minOccurs="0"/>
+				<xs:element name="ActualLatitude"/>
+				<xs:element name="ActualLongitude"/>
+				<xs:element name="CameraFailureDetails"/>
+				<xs:element name="Bait"/>
+				<xs:element name="Feature"/>
+				<xs:element name="CameraID"/>
+				<xs:element name="DetectionDistance"/>
+				<xs:element name="QuietPeriodSetting"/>
+				<xs:element name="ImageResolutionSetting"/>
+				<xs:element name="SensitivitySetting"/>
+				<xs:element name="ImageSequence" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence maxOccurs="1">
+							<xs:element name="ImageSequenceId"/>
+							<xs:element name="ImageSequenceBeginTime"/>
+							<xs:element name="ImageSequenceEndTime"/>
+							<xs:element name="VolunteerIdentifications" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence maxOccurs="1">
+										<xs:element name="Identification" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="SpeciesId"/>
+													<xs:element name="SpeciesScientificName"/>
+													<xs:element name="SpeciesCommonName"/>
+													<xs:element name="Count"/>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="ResearcherIdentifications" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence maxOccurs="1">
+										<xs:element name="Identification" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="SpeciesId"/>
+													<xs:element name="SpeciesScientificName"/>
+													<xs:element name="SpeciesCommonName"/>
+													<xs:element name="Count"/>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Image" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="ImageId"/>
+										<xs:element name="ImageFileName"/>
+										<xs:element name="ImageInterestRanking"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
