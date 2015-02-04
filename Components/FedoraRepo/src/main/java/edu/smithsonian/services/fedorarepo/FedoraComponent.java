@@ -32,6 +32,7 @@ import com.yourmediashelf.fedora.client.request.FedoraRequest;
 import edu.smithsonian.services.fedorarepo.datastream.FedoraDatastreamEndpoint;
 import edu.smithsonian.services.fedorarepo.ingest.FedoraIngestEnpoint;
 import edu.smithsonian.services.fedorarepo.pid.FedoraPidEndpoint;
+import edu.smithsonian.services.fedorarepo.relationship.FedoraRelationshipEndpoint;
 import edu.smithsonian.services.fedorarepo.search.FedoraSearchEndpoint;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -100,6 +101,14 @@ public class FedoraComponent extends DefaultComponent
         else if ("search".equalsIgnoreCase(remaining))
         {
             endpoint = new FedoraSearchEndpoint(uri, this);
+        }
+        else if ("hasRelationship".equalsIgnoreCase(remaining))
+        {
+            FedoraRelationshipEndpoint temp = new FedoraRelationshipEndpoint(uri, this);
+            temp.setNameSpace("info:fedora/");
+            temp.setPredicate("info:fedora/fedora-system:def/relations-external#hasResource");
+
+            endpoint = temp;
         }
 //        else if ("find".equalsIgnoreCase(remaining))
         else
