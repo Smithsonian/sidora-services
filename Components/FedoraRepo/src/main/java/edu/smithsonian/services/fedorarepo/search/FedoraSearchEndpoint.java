@@ -39,11 +39,31 @@ import org.apache.camel.spi.UriParam;
  */
 public class FedoraSearchEndpoint extends DefaultEndpoint
 {
+ 
+    @UriParam
+    private String type;
+    
     @UriParam
     private String lang;
 
     @UriParam
+    private String format;
+
+    @UriParam
+    private boolean flush;
+
+    @UriParam
     private int limit;
+    
+    @UriParam
+    private boolean distinct;
+    
+    @UriParam
+    private boolean stream;
+    
+    @UriParam
+    private String template;
+
 
     public FedoraSearchEndpoint(String uri, FedoraComponent component)
     {
@@ -95,5 +115,61 @@ public class FedoraSearchEndpoint extends DefaultEndpoint
         this.limit = limit;
     }
 
+    public String getType()
+    {
+        return type;
+    }
 
+    public void setType(String type)
+    {
+        this.type = type;
+    }
+
+    public String getFormat()
+    {
+        return format;
+    }
+
+    public void setFormat(String format)
+    {
+        this.format = format;
+    }
+
+    public boolean isFlush()
+    {
+        return flush;
+    }
+
+    public void setFlush(boolean flush)
+    {
+        this.flush = flush;
+    }
+
+    public boolean isDistinct()
+    {
+        return distinct;
+    }
+
+    public void setDistinct(boolean distinct)
+    {
+        this.distinct = distinct;
+    }
+
+    public boolean isStream() { return stream; }
+
+    public void setStream(boolean stream)
+    {
+        this.stream = stream;
+    }
+
+    public String getTemplate()
+    {
+        return template;
+    }
+
+    public void setTemplate(String template)
+    {
+        this.template = template;
+    }
+    
 }

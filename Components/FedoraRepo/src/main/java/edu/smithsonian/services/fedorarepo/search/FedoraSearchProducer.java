@@ -55,9 +55,19 @@ class FedoraSearchProducer extends FedoraProducer
         //Call Fedora
         RiSearch search = FedoraClient.riSearch(query);
 
+        if (this.hasParam(this.endpoint.getType()))
+        {
+            search.type(this.endpoint.getType());
+        }
+
         if (this.hasParam(this.endpoint.getLang()))
         {
             search.lang(this.endpoint.getLang());
+        }
+
+        if (this.hasParam(this.endpoint.getFormat()))
+        {
+            search.format(this.endpoint.getFormat());
         }
 
         if (this.endpoint.getLimit() > 0)

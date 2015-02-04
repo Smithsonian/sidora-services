@@ -14,7 +14,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
     <!--
         TODO: Add Deployment Metadata backport
     -->
-    <camelContext xmlns="http://camel.apache.org/schema/blueprint" >
+    <camelContext xmlns="http://camel.apache.org/schema/blueprint" xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result" >
 
         <!-- using Camel properties component and refer to the blueprint property placeholder by its id -->
         <propertyPlaceholder id="properties" 
@@ -22,7 +22,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         
         <route id="CameraTrapStartProcessing">
             <from uri="file:Process?moveFailed=Error_CamelTrap&amp;delete=true"/>
-            <log message="Starting Camera Trap Process" /> 
+            <log message="Starting Camera Trap processing ..." />
             <!--If issue with large archives can 'slow' down the route with delay below-->
             <delay>
                 <constant>3000</constant>
@@ -35,7 +35,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             </transform>
             <to uri="reader:file?type=text" />
             <to uri="direct:process" />
-            <log message="Finished Data processing!" />
+            <log message="Finished Camera Trap processing!" />
         </route>
         <route id="CameraTrapProcessData">
             <from uri="direct:process" />
@@ -45,7 +45,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             </setHeader>
             <setHeader headerName="ManifestXML"><simple>${body}</simple></setHeader>
             <!-- <log message="SiteLabel - ${header.CamelFedoraLabel}" /> -->
-            <to uri="fedora:create?owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
+            <to uri="fedora:create?owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
             <multicast>
                 <to uri="direct:manifest" />
                 <to uri="direct:fgdc" />
@@ -54,8 +54,9 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <!-- Volunteer Observations are a resource object like the images -->
                 <!-- <to uri="direct:volunteer" /> -->
                 <to uri="direct:processImages" />
+                <to uri="direct:processParents" />
             </multicast>
-            <log message="Finished Data processing!" /> 
+            <log message="Finished Data processing." />
         </route>
         <route id="CameraTrapTransformManifest" >
             <from uri="direct:manifest" />
@@ -77,7 +78,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <simple>researcher_observation.csv</simple>
             </setHeader>
             <setBody><simple>${header.ManifestXML}</simple></setBody>
-            <to uri="fedora:create?pid=null&amp;owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
             <to uri="xslt:file:Input/xslt/researcher.xsl" />
             <transform>
                 <xpath>//researcher/text()</xpath>
@@ -91,7 +92,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <simple>volunteer_observation.csv</simple>
             </setHeader>
             <setBody><simple>${header.ManifestXML}</simple></setBody>
-            <to uri="fedora:create?pid=null&amp;owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
             <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
             <transform>
                 <xpath>//researcher/text()</xpath>
@@ -115,7 +116,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <simple>${body}</simple>
                 </setHeader>
                 <to uri="reader:file" />
-                <to uri="fedora:create?pid=null&amp;owner={{si.fedora.default.owner}}&amp;namespace={{si.fedora.default.namespace}}" />
+                <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
                 <!-- <to uri="direct:transformImage" /> -->
             </split>
@@ -135,8 +136,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <log message="Aggregation: ${header.PIDAggregation}" />
 
             <!--
-                FIXME: Change FedoraRepo to use 'FedoraParentConcept' instead of 'CamelParentConcept'
-                Pointless to store and unstore the parent PID
+                FIXME: We are stashing and unstashing 'FedoraParentConcept' to 'CamelParentConcept'
+                       to add the datastream. Its not elegant to store and unstore the parent PID
             -->
             <!-- <log message="Resource2 - ${body}" /> -->
             <setHeader headerName="CamelFedoraPid">
@@ -176,6 +177,178 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="thumbnailator:image?quality=80%&amp;size=(2048,1536)"/>
             <to uri="file://CameraTrapOutput/resample" />
         </route>
+        
+        <route id="CameraTrapProcessParents">
+            <from uri="direct:processParents"/>
+            <log message="Started processing parents ..."/>
+            <to uri="direct:processProject"/>
+            <to uri="direct:processSubproject"/>
+            <to uri="direct:processPlot"/>
+            <log message="Finished processing parents."/>
+        </route>
+        
+        <route id="CameraTrapFindObject">
+            <from uri="direct:findObject"/>
+            <log message="Started find object ..."/>
+            <log message="Root - ${headers.CamelFedoraObject} Label - ${headers.CamelFedoraLabel}"/>
+            <!--
+                Set a header with the PID if found, empty string if not.
+                We need to bring in two parameters for the call: The object label and the expected parent;
+                <setBody><constant>SELECT ?a ?b ?c FROM &lt;#ri&gt; WHERE {?a ?b ?c}</constant></setBody>
+            -->
+            <setBody>
+                <!--
+                <simple>
+                    select $o $title from &lt;#ri&gt; 
+                    where  $title &lt;mulgara:is&gt; '${headers.CamelFedoraLabel}' and
+                           $o &lt;fedora-model:label&gt; $title and
+                           &lt;info:fedora/${headers.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; $o
+                </simple>
+                -->
+                <!--
+                <simple>
+                    SELECT ?o ?title 
+                    FROM &lt;#ri&gt;
+                    WHERE
+                    { 
+                        ?o &lt;fedora-model:label&gt; '${headers.CamelFedoraLabel}' .
+                        &lt;info:fedora/${headers.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; ?o .
+                    }
+                </simple>
+                -->
+                <simple>
+                    SELECT ?o FROM &lt;#ri&gt;
+                    WHERE
+                    {
+                        ?o &lt;fedora-model:label&gt; '${headers.CamelFedoraLabel}' .
+                    }
+                </simple>
+            </setBody>
+            <log message="Project Parent - ${body}"/>
+            <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
+            
+            <!--
+            <setBody>
+                <simple>
+                    &lt;sparql xmlns="http://www.w3.org/2001/sw/DataAccess/rf1/result"&gt;
+                        &lt;head&gt;
+                            &lt;variable name="o"/&gt;
+                        &lt;/head&gt;
+                        &lt;results&gt;
+                            &lt;result&gt;
+                                Junk
+                                &lt;o uri="info:fedora/si:122557"/&gt;
+                            &lt;/result&gt;
+                            &lt;result&gt;
+                                &lt;o uri="info:fedora/si:122564"/&gt;
+                            &lt;/result&gt;
+                            &lt;result&gt;
+                                &lt;o uri="info:fedora/si:122571"/&gt;
+                            &lt;/result&gt;
+                        &lt;/results&gt;
+                    &lt;/sparql&gt;
+                </simple>
+            </setBody>
+            -->
+
+            <log message="Query Result - ${body}" />
+            <setHeader headerName="HierarchyObjectPID">
+                <xpath logNamespaces="true" resultType="java.lang.String">
+                    substring-after(/ri:sparql/ri:results/ri:result[1]/ri:o/@uri,'/')
+                </xpath>
+            </setHeader>
+            <!-- <log message="Query Result XPath - ${headers.HierarchyObjectPID}" /> -->
+            <setBody><simple>${headers.ManifestXML}</simple></setBody>
+            <!-- <log message="Find Object - ${body}" /> -->
+            <log message="Finished find object." />
+        </route>
+        <route id="CameraTrapProcessPlot">
+            <from uri="direct:processPlot"/>
+            <log message="Started processing plot ..."/>
+            <log message="Plot In - ${headers.CamelFedoraObject} Label - ${headers.CamelFedoraLabel}  PID - ${headers.CamelFedoraPid}"/>
+            <setHeader headerName="PlotLabel">
+                <xpath resultType="java.lang.String">//PlotName</xpath>
+            </setHeader>
+            <setHeader headerName="CamelFedoraLabel">
+                <simple>${headers.CamelFedoraLabel}:${headers.PlotLabel}</simple>
+            </setHeader>
+            <log message="Plot - ${headers.CamelFedoraObject} Label - ${headers.CamelFedoraLabel}  PID - ${headers.CamelFedoraPid}"/>
+            <to uri="direct:findObject" />
+            <log message="Hierarchy Object - ${headers.HierarchyObjectPID}"/>
+            <choice>
+                <when>
+                    <simple>${headers.HierarchyObjectPID} == ''</simple>
+                    <log message="Plot does not exist"/>
+                    <!-- Create CT plot and add it as a sub-concept of the sub-project -->
+                    <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+                    <!-- Todo Add Relation from parent CT sub-project to the child CT plot -->
+                </when>
+                <otherwise>
+                    <log message="Plot already exists"/>
+                </otherwise>
+            </choice>
+            <!-- <to uri="velocity:file:Input/templates/CameraTrapPlotTemplate.vsl" /> -->
+            <!--<to uri="fedora:datastream?name=RELS-EXT" /> -->
+            <log message="Plot - ${headers.CamelFedoraPid}"/>
+            <log message="Plot - ${body}" />
+            <log message="Finished processing plot."/>
+        </route>
+        <route id="CameraTrapProcessSubproject" >
+            <from uri="direct:processSubproject" />
+            <log message="Started processing subproject ..." />
+            <setHeader headerName="CamelFedoraLabel">
+                <xpath resultType="java.lang.String">//SubProjectName</xpath>
+            </setHeader>
+            <log message="Sub-project - ${headers.CamelFedoraObject} Label - ${headers.CamelFedoraLabel}  PID - ${headers.CamelFedoraPid}" />
+            <to uri="direct:findObject" />
+            <log message="Hierarchy Object - ${headers.HierarchyObjectPID}"/>
+            <choice>
+                <when>
+                    <simple>${headers.HierarchyObjectPID} == ''</simple>
+                    <log message="Sub-project does not exist"/>
+                    <!-- Create CT sub-project and add it as a sub-concept of the project -->
+                    <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
+                    <!-- Todo Add Relation from parent CT project to the child CT sub-project -->
+                </when>
+                <otherwise>
+                    <log message="Sub project already exists"/>
+                </otherwise>
+            </choice>
+            <log message="Sub-Project - ${headers.CamelFedoraPid}" />
+            <log message="Project - ${body}" />
+            <log message="Finished processing subproject." />
+        </route>
+        <route id="CameraTrapProcessProject" >
+            <from uri="direct:processProject" />
+            <log message="Started processing project ..." />
+            <setHeader headerName="CamelFedoraLabel">
+                <xpath resultType="java.lang.String">//ProjectName</xpath>
+            </setHeader>
+            <log message="Project - ${headers.CamelFedoraObject} Label - ${headers.CamelFedoraLabel}  PID - ${headers.CamelFedoraPid}" />
+            <!--
+            <setHeader headerName="CamelFedoraObject">
+                <simple>{{si.ct.root}}</simple>
+            </setHeader>
+            -->
+            <to uri="direct:findObject" />
+            <log message="Hierarchy Object - ${headers.HierarchyObjectPID}"/>
+            <choice>
+                <when>
+                    <simple>${headers.HierarchyObjectPID} == ''</simple>
+                    <log message="Project does not exist"/>
+                    <!-- Create CT project and add it as a sub-concept of the specified root -->
+                    <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
+                    <!-- Todo Add Relation from parent static CT root to the child CT project -->
+                </when>
+                <otherwise>
+                    <log message="Project already exists"/>
+                </otherwise>
+            </choice>
+            <log message="Project - ${headers.CamelFedoraPid}"/>
+            <log message="Project - ${body}"/>
+            <log message="Finished processing project."/>
+        </route>
+
     </camelContext>
         
 </blueprint>
