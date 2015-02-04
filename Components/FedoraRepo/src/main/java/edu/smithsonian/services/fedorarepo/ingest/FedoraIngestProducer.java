@@ -100,6 +100,7 @@ class FedoraIngestProducer extends FedoraProducer
         {
             ingest.namespace(endpoint.getNamespace());
         }
+        
         if (this.hasParam(endpoint.getLog()))
         {
             ingest.logMessage(endpoint.getLog());
