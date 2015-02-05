@@ -91,6 +91,59 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
         }
     }
 
+    @Test
+    public void testConcept() throws Exception
+    {
+        mockEnpoint.expectedMinimumMessageCount(3);
+        //Create Parent
+
+        template.sendBody("direct:testCreate", null);
+        Message in = this.getMockMessage();
+
+        String parentPid = in.getHeader(Headers.PID, String.class);
+
+        //Add RELS-EXT to parent
+        String input = getEmptyRELS_EXT(parentPid);
+        template.sendBodyAndHeaders("direct:testDatastream", input, in.getHeaders());
+
+        in.setHeader("FedoraParentConcept", parentPid);
+
+        //Create Child
+        template.sendBodyAndHeaders("direct:testCreateNoPid", null, in.getHeaders());
+
+        in = this.getMockMessage(1);
+        String childPid = in.getHeader(Headers.PID, String.class);
+
+        try
+        {
+            assertNotEquals("Parent and Child PIDs should not be the same", parentPid, childPid);
+            assertEquals("Parent PID should be the same", parentPid, in.getHeader("FedoraParentConcept", String.class));
+
+            //Add hasRelationship from Child to Parent
+            template.sendBodyAndHeaders("direct:testHasConcept", null, in.getHeaders());
+//            in = this.getMockMessage(2);
+
+            //Verify
+            assertMockEndpointsSatisfied();
+            //TODO: Add more verification
+
+        }
+        finally
+        {
+//            Thread.sleep(500);
+
+            //Clean up
+            if (parentPid != null)
+            {
+                FedoraClient.purgeObject(parentPid);
+            }
+            if (childPid != null)
+            {
+                FedoraClient.purgeObject(childPid);
+            }
+        }
+    }
+
     protected String getEmptyRELS_EXT(String pid)
     {
         return "<?xml version=\"1.0\"?>\n"
@@ -113,6 +166,10 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
             {
                 from("direct:testHasRelationship")
                         .to("fedora:hasRelationship?parentPid=${header.FedoraParentConcept}&childPid=${header.CamelFedoraPid}")
+                        .to("mock:result");
+
+                from("direct:testHasConcept")
+                        .to("fedora:hasConcept?parentPid=${header.FedoraParentConcept}&childPid=${header.CamelFedoraPid}")
                         .to("mock:result");
 
                 //Helper routes

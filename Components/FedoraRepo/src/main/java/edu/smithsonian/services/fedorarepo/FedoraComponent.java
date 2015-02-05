@@ -102,11 +102,11 @@ public class FedoraComponent extends DefaultComponent
         {
             endpoint = new FedoraSearchEndpoint(uri, this);
         }
-        else if ("hasRelationship".equalsIgnoreCase(remaining))
+        else if ("hasRelationship".equalsIgnoreCase(remaining) || "hasConcept".equalsIgnoreCase(remaining))
         {
             FedoraRelationshipEndpoint temp = new FedoraRelationshipEndpoint(uri, this);
             temp.setNameSpace("info:fedora/");
-            temp.setPredicate("info:fedora/fedora-system:def/relations-external#hasResource");
+            temp.setPredicate(String.format("info:fedora/fedora-system:def/relations-external#%s", remaining));
 
             endpoint = temp;
         }
