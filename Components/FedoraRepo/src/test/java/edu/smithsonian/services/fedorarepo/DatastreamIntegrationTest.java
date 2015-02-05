@@ -27,6 +27,7 @@
 package edu.smithsonian.services.fedorarepo;
 
 import com.yourmediashelf.fedora.client.FedoraClient;
+import com.yourmediashelf.fedora.client.response.GetDatastreamResponse;
 import java.io.InputStream;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
@@ -51,22 +52,7 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
         InputStream input = this.getClass().getResourceAsStream("/test-image.jpg");
         template.sendBodyAndHeaders("direct:testDatastream", input, in.getHeaders());
 
-        assertMockEndpointsSatisfied();
-
-        Message msg = this.getMockMessage(1);
-        String pid = msg.getHeader("CamelFedoraPid", String.class);
-
-        try
-        {
-            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-        }
-        finally
-        {
-            if (pid != null)
-            {
-                FedoraClient.purgeObject(pid).execute();
-            }
-        }
+        this.validate();
     }
 
     @Test
@@ -80,22 +66,7 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
         InputStream input = this.getClass().getResourceAsStream("/test-image.jpg");
         template.sendBodyAndHeaders("direct:testDatastreamNoPid", input, in.getHeaders());
 
-        assertMockEndpointsSatisfied();
-
-        Message msg = this.getMockMessage(1);
-        String pid = msg.getHeader("CamelFedoraPid", String.class);
-
-        try
-        {
-            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
-        }
-        finally
-        {
-            if (pid != null)
-            {
-                FedoraClient.purgeObject(pid).execute();
-            }
-        }
+        this.validate();
     }
 
     @Test
@@ -109,17 +80,41 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
         String input = "Testing,input,CSV##More,test,";
         template.sendBodyAndHeaders("direct:testDatastreamCSV", input, in.getHeaders());
 
-        assertMockEndpointsSatisfied();
+        this.validate("false");
+    }
 
-        Message msg = this.getMockMessage(1);
-        String pid = msg.getHeader("CamelFedoraPid", String.class);
+    private void validate() throws Exception
+    {
+        this.validate("true");
+    }
+
+    private void validate(String expectedVersionable) throws Exception
+    {
+
+        String pid = null;
 
         try
         {
-            assertEquals("Ingest Status should have been 201", 201, msg.getHeader("CamelFedoraStatus"));
+            assertMockEndpointsSatisfied();
+
+            Message msg = this.getMockMessage(1);
+            pid = msg.getHeader(Headers.PID, String.class);
+
+            assertEquals("Ingest Status should have been 201", 201, msg.getHeader(Headers.STATUS));
+            GetDatastreamResponse dstream = FedoraClient.getDatastream(pid, "OBJ").execute();
+            String versionable = dstream.getDatastreamProfile().getDsVersionable();
+            assertEquals("Datastream should not be versionable", expectedVersionable, versionable);
         }
         finally
         {
+            if (pid == null)
+            {
+                Message msg = this.getMockMessage();
+                if (msg != null)
+                {
+                    pid = msg.getHeader(Headers.PID, String.class);
+                }
+            }
             if (pid != null)
             {
                 FedoraClient.purgeObject(pid).execute();
@@ -142,9 +137,9 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
                         .to("fedora:datastream?name=OBJ&type=image/jpeg&group=M")
                         .to("mock:result");
                 from("direct:testDatastreamCSV")
-                        .to("fedora:datastream?name=OBJ&type=text/csv&group=M")
+                        .to("fedora:datastream?name=OBJ&type=text/csv&group=M&versionable=false")
                         .to("mock:result");
-
+                
                 //Helper route to set up object in add datastreams to
                 from("direct:testCreate")
                         .to("fedora:create")

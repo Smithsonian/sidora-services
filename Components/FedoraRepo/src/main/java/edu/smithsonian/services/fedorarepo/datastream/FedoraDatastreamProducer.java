@@ -90,7 +90,7 @@ public class FedoraDatastreamProducer extends FedoraProducer
             throw new RuntimeException("fedora:datastream producer requires a Datastream control group");
         }//end else if
 
-        AddDatastream datastream = FedoraClient.addDatastream(pid, name).content(body).mimeType(type).controlGroup(group);
+        AddDatastream datastream = FedoraClient.addDatastream(pid, name).content(body).mimeType(type).controlGroup(group).versionable(this.endpoint.isVersionable());
 
         AddDatastreamResponse response = datastream.execute();
 
