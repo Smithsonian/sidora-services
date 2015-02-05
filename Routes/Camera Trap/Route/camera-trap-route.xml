@@ -64,10 +64,6 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <multicast>
                 <to uri="direct:manifest" />
                 <to uri="direct:fgdc" />
-                <!-- Researcher Observations are a resource object like the images --> 
-                <!-- <to uri="direct:researcher" /> -->
-                <!-- Volunteer Observations are a resource object like the images -->
-                <!-- <to uri="direct:volunteer" /> -->
                 <to uri="direct:processImages" />
             </multicast>
             <log message="Finished Site processing." />
@@ -112,13 +108,13 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <xpath>//researcher/text()</xpath>
             </transform>
             <to uri="fedora:datastream?name=VOLUNTEER&amp;type=text/csv&amp;group=M" />
-            <log message="Volunteer's Observation file created" /> 
+            <log message="Volunteer's Observation resource created" />
         </route>
         <route id="CameraTrapProcessImages" >
             <from uri="direct:processImages" /> 
-            <log message="Starting Image processing..." />
+            <log message="Starting Image processing ..." />
             <log message="Resource1 - ${body}" />
-            <setHeader headerName="FedoraParentConcept">
+            <setHeader headerName="ParentPID">
                 <simple>${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Parent PID - ${header.CamelFedoraPid} and ${header.FedoraParentConcept}" />
@@ -151,14 +147,14 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
 
             <!--
                 FIXME: We are stashing and unstashing 'FedoraParentConcept' to 'CamelParentConcept'
-                       to add the datastream. Its not elegant to store and unstore the parent PID
+                       to add the datastream. Its not elegant to store and unstore the parent PID.
             -->
             <!-- <log message="Resource2 - ${body}" /> -->
             <setHeader headerName="CamelFedoraPid">
-                <simple>${header.FedoraParentConcept}</simple>
+                <simple>${header.ParentPID}</simple>
             </setHeader>
             <to uri="velocity:file:Input/templates/CameraTrapResourceTemplate.vsl" />
-            <to uri="fedora:datastream?name=RELS-EXT" /> 
+            <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false" />
             <log message="Finished processing Images" />           
         </route>
         <route id="CameraTrapTransformImages">
