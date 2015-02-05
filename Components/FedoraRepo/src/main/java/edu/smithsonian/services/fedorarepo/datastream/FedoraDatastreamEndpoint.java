@@ -59,7 +59,7 @@ public class FedoraDatastreamEndpoint extends DefaultEndpoint
     @UriParam
     private String log;
     @UriParam
-    private boolean versionable;
+    private boolean versionable = true;
 
 //    @UriParam private List<String> altIDs;
     //TODO: Add checksum verification(?)

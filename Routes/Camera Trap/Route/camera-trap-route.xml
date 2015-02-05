@@ -34,8 +34,9 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <simple>deployment_manifest.xml</simple>
             </transform>
             <to uri="reader:file?type=text" />
-            <to uri="direct:processPackage"/>
-            <log message="Finished Camera Trap processing!" />
+            <to uri="validator:file:Input/schemas/DeploymentManifest.xsd" />
+            <to uri="direct:process" />
+            <log message="Finished Data processing!" />
         </route>
         
         <route id="CameraTrapProcessPackage">
@@ -128,7 +129,9 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <to uri="reader:file" />
                 <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
-                <!-- <to uri="direct:transformImage" /> -->
+                <to uri="direct:transformImage" />
+                <to uri="velocity:file:Input/templates/CameraTrapParentChildResourceTemplate.vsl" />
+                <to uri="fedora:datastream?name=RELS-EXT" /> 
             </split>
             
             <to uri="direct:researcher" />
