@@ -22,25 +22,25 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         
         <route id="CameraTrapStartProcessing">
             <from uri="file:Process?moveFailed=Error_CamelTrap&amp;delete=true"/>
-            <log message="Starting Camera Trap processing ..." />
+            <log message="Starting Camera Trap processing ..."/>
             <!--If issue with large archives can 'slow' down the route with delay below-->
             <delay>
                 <constant>3000</constant>
             </delay>
-            <log message="Starting Extraction" />
-            <to uri="extractor:extract?location=CameraTrapData" />
-            <log message="Finished Extraction" />
+            <log message="Starting Extraction"/>
+            <to uri="extractor:extract?location=CameraTrapData"/>
+            <log message="Finished Extraction"/>
             <transform>
                 <simple>deployment_manifest.xml</simple>
             </transform>
-            <to uri="reader:file?type=text" />
-            <to uri="validator:file:Input/schemas/DeploymentManifest.xsd" />
-            <to uri="direct:processPackage" />
-            <log message="Finished Camera Trap processing!" />
+            <to uri="reader:file?type=text"/>
+            <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
+            <to uri="direct:processPackage"/>
+            <log message="Finished Camera Trap processing!"/>
         </route>
         
         <route id="CameraTrapProcessPackage">
-            <from uri="direct:processPackage" />
+            <from uri="direct:processPackage"/>
             <log message="Starting package processing..."/>
             <setHeader headerName="ManifestXML"><simple>${body}</simple></setHeader>
             <setHeader headerName="CamelFedoraPid"><simple>{{si.ct.root}}</simple></setHeader>
@@ -56,82 +56,81 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         
         <route id="CameraTrapProcessSite">
             <from uri="direct:processSite"/>
-            <log message="Starting Site processing... " />
+            <log message="Starting Site processing... "/>
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String">//CameraSiteName</xpath>
             </setHeader>
             <!-- <log message="SiteLabel - ${header.CamelFedoraLabel}" /> -->
-            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
+            <setHeader headerName="ParentPID"><simple>${headers.CamelFedoraPid}</simple></setHeader>
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+            <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
             <multicast>
-                <to uri="direct:manifest" />
-                <to uri="direct:fgdc" />
-                <to uri="direct:processImages" />
+                <to uri="direct:manifest"/>
+                <to uri="direct:fgdc"/>
+                <to uri="direct:processImages"/>
             </multicast>
-            <log message="Finished Site processing." />
+            <log message="Finished Site processing."/>
         </route>
-        <route id="CameraTrapTransformManifest" >
-            <from uri="direct:manifest" />
-            <to uri="fedora:datastream?name=MANIFEST&amp;type=text/xml&amp;group=M" />
-            <log message="Added Manifest DataStream" /> 
+        
+        <route id="CameraTrapTransformManifest">
+            <from uri="direct:manifest"/>
+            <to uri="fedora:datastream?name=MANIFEST&amp;type=text/xml&amp;group=M"/>
+            <log message="Added Manifest DataStream"/> 
         </route>
-        <route id="CameraTrapAddFGDCDatastream" >
-            <from uri="direct:fgdc" />
+        
+        <route id="CameraTrapAddFGDCDatastream">
+            <from uri="direct:fgdc"/>
             <!-- <log message="${in.body}" /> -->
             <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
-            <to uri="fedora:datastream?name=FGDC&amp;type=text/xml&amp;group=M" />
-            <log message="Added FGDC DataStream" />
+            <to uri="fedora:datastream?name=FGDC&amp;type=text/xml&amp;group=M"/>
+            <log message="Added FGDC DataStream"/>
         </route>
-        <route id="CameraTrapTransformResearcherData" >
-            <from uri="direct:researcher" />
-            <setHeader headerName="CamelFedoraLabel">
-                <simple>researcher_observation.csv</simple>
-            </setHeader>
+        
+        <route id="CameraTrapTransformResearcherData">
+            <from uri="direct:researcher"/>
+            <setHeader headerName="CamelFedoraLabel"><simple>researcher_observation.csv</simple></setHeader>
             <setBody><simple>${header.ManifestXML}</simple></setBody>
-            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
-            <to uri="xslt:file:Input/xslt/researcher.xsl" />
-            <transform>
-                <xpath>//researcher/text()</xpath>
-            </transform>
-            <to uri="fedora:datastream?name=RESEARCHER&amp;type=text/csv&amp;group=M" />
-            <log message="Researcher's Observation resource created" />
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+            <to uri="xslt:file:Input/xslt/researcher.xsl"/>
+            <transform><xpath>//researcher/text()</xpath></transform>
+            <to uri="fedora:datastream?name=RESEARCHER&amp;type=text/csv&amp;group=M"/>
+            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
+            <to uri="fedora:datastream?name=RELS-EXT"/>
+            <log message="Researcher's Observation resource created"/>
         </route>
-        <route id="CameraTrapTransformVolunteerData" >
-            <from uri="direct:volunteer" />
-            <setHeader headerName="CamelFedoraLabel">
-                <simple>volunteer_observation.csv</simple>
-            </setHeader>
+        
+        <route id="CameraTrapTransformVolunteerData">
+            <from uri="direct:volunteer"/>
+            <setHeader headerName="CamelFedoraLabel"><simple>volunteer_observation.csv</simple></setHeader>
             <setBody><simple>${header.ManifestXML}</simple></setBody>
-            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
-            <transform>
-                <xpath>//researcher/text()</xpath>
-            </transform>
-            <to uri="fedora:datastream?name=VOLUNTEER&amp;type=text/csv&amp;group=M" />
-            <log message="Volunteer's Observation resource created" />
+            <transform><xpath>//researcher/text()</xpath></transform>
+            <to uri="fedora:datastream?name=VOLUNTEER&amp;type=text/csv&amp;group=M"/>
+            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
+            <to uri="fedora:datastream?name=RELS-EXT"/>
+            <log message="Volunteer's Observation resource created"/>
         </route>
-        <route id="CameraTrapProcessImages" >
-            <from uri="direct:processImages" /> 
-            <log message="Starting Image processing ..." />
-            <log message="Resource1 - ${body}" />
-            <setHeader headerName="ParentPID">
-                <simple>${header.CamelFedoraPid}</simple>
-            </setHeader>
+        
+        <route id="CameraTrapProcessImages">
+            <from uri="direct:processImages"/> 
+            <log message="Starting Image processing ..."/>
+            <log message="Resource1 - ${body}"/>
+            <setHeader headerName="ParentPID"><simple>${header.CamelFedoraPid}</simple></setHeader>
             <log message="Parent PID - ${header.CamelFedoraPid} and ${header.FedoraParentConcept}" />
             <!-- <setBody><simple>Default</simple></setBody> -->
             <!-- <log message="Resource2 - ${body}" /> -->
-            <split strategyRef="pidAggregator" >
+            <split strategyRef="pidAggregator">
                 <xpath>//ImageFileName/text()</xpath>
-                <setHeader headerName="CamelFedoraLabel">
-                    <simple>${body}</simple>
-                </setHeader>
-                <to uri="reader:file" />
-                <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}" />
-                <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M" />
+                <setHeader headerName="CamelFedoraLabel"><simple>${body}</simple></setHeader>
+                <to uri="reader:file"/>
+                <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+                <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M"/>
                 <!-- <to uri="direct:transformImage" /> -->
-                <to uri="velocity:file:Input/templates/CTResourceTemplate.vsl" />
-                <to uri="fedora:datastream?name=RELS-EXT" /> 
+                <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl" />
+                <to uri="fedora:datastream?name=RELS-EXT"/> 
             </split>
             
             <to uri="direct:researcher" />
@@ -153,13 +152,12 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                        to add the datastream. Its not elegant to store and unstore the parent PID.
             -->
             <!-- <log message="Resource2 - ${body}" /> -->
-            <setHeader headerName="CamelFedoraPid">
-                <simple>${header.ParentPID}</simple>
-            </setHeader>
-            <to uri="velocity:file:Input/templates/CameraTrapResourceTemplate.vsl" />
-            <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false" />
-            <log message="Finished processing Images" />           
+            <setHeader headerName="CamelFedoraPid"><simple>${header.ParentPID}</simple></setHeader>
+            <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
+            <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
+            <log message="Finished processing Images"/>
         </route>
+        
         <route id="CameraTrapTransformImages">
             <from uri="direct:transformImage" />
             <!--<multicast>-->
@@ -287,6 +285,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <simple>${headers.CamelFedoraLabel}:${headers.PlotLabel}</simple>
             </setHeader>
             <log message="Plot: Label - ${headers.CamelFedoraLabel}  ParentPID - ${headers.CamelFedoraPid}"/>
+            <setHeader headerName="ParentPID"><simple>${headers.CamelFedoraPid}</simple></setHeader>
             <to uri="direct:findObject" />
             <log message="Found Object PID - ${headers.FoundObjectPID}"/>
             <choice>
@@ -298,7 +297,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
-                    <!-- Todo Add Relation from parent CT sub-project to the child CT plot -->
+                    <!-- Add Relation from parent CT sub-project to the child CT plot -->
+                    <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                 </when>
                 <otherwise>
                     <log message="Plot already exists"/>
@@ -315,6 +315,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">//SubProjectName</xpath>
             </setHeader>
+            <setHeader headerName="ParentPID"><simple>${headers.CamelFedoraPid}</simple></setHeader>
             <log message="Sub-project: Label - ${headers.CamelFedoraLabel}  ParentPID - ${headers.CamelFedoraPid}"/>
             <to uri="direct:findObject" />
             <log message="Found Object PID - ${headers.FoundObjectPID}"/>
@@ -327,7 +328,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
-                    <!-- Todo Add Relation from parent CT project to the child CT sub-project -->
+                    <!-- Add Relation from parent CT project to the child CT sub-project -->
+                    <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                 </when>
                 <otherwise>
                     <log message="Sub-project already exists"/>
@@ -344,6 +346,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">//ProjectName</xpath>
             </setHeader>
+            <setHeader headerName="ParentPID"><simple>${headers.CamelFedoraPid}</simple></setHeader>
             <log message="Label - ${headers.CamelFedoraLabel}  ParentPID - ${headers.CamelFedoraPid}"/>
             <to uri="direct:findObject"/>
             <log message="Found Object PID - ${headers.FoundObjectPID}"/>
@@ -356,7 +359,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
                     <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
-                    <!-- TODO: Add Relation from parent static CT root to the child CT project -->
+                    <!-- Add Relation from parent static CT root to the child CT project -->
+                    <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                 </when>
                 <otherwise>
                     <log message="Project already exists"/>
