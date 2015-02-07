@@ -67,7 +67,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <multicast>
                 <to uri="direct:manifest"/>
                 <to uri="direct:fgdc"/>
-                <to uri="direct:processImages"/>
+                <to uri="direct:processResources"/>
             </multicast>
             <log message="Finished Site processing."/>
         </route>
@@ -114,38 +114,41 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <log message="Volunteer's Observation resource created"/>
         </route>
         
-        <route id="CameraTrapProcessImages">
-            <from uri="direct:processImages"/> 
-            <log message="Starting Image processing ..."/>
+        <route id="CameraTrapProcessResources">
+            <from uri="direct:processResources"/>
+            <log message="Starting resource processing ..."/>
             <log message="Resource1 - ${body}"/>
             <setHeader headerName="ParentPID"><simple>${header.CamelFedoraPid}</simple></setHeader>
-            <log message="Parent PID - ${header.CamelFedoraPid} and ${header.FedoraParentConcept}" />
-            <!-- <setBody><simple>Default</simple></setBody> -->
-            <!-- <log message="Resource2 - ${body}" /> -->
+            <log message="Parent PID - ${header.ParentPID}"/>
+            <!-- <log message="Resource - ${body}" /> -->
+            
+            <!-- This could be done as a Composed Message Processor -->
             <split strategyRef="pidAggregator">
                 <xpath>//ImageFileName/text()</xpath>
+                <log message="Split - ${body}"/>
                 <setHeader headerName="CamelFedoraLabel"><simple>${body}</simple></setHeader>
+                <!-- <setHeader headerName="testName"><xpath>substring-before(${body},",Image)</xpath></setHeader> -->
                 <to uri="reader:file"/>
                 <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                 <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M"/>
-                <!-- <to uri="direct:transformImage" /> -->
-                <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl" />
-                <to uri="fedora:datastream?name=RELS-EXT"/> 
+                <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl"/>
+                <to uri="fedora:datastream?name=RELS-EXT"/>
+                <to uri="direct:transformImage"/>
             </split>
             
-            <to uri="direct:researcher" />
-            <log message="${header.CamelFedoraPid}" />
+            <to uri="direct:researcher"/>
+            <log message="${header.CamelFedoraPid}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}" />
+            <log message="Aggregation: ${header.PIDAggregation}"/>
 
-            <to uri="direct:volunteer" />
-            <log message="${header.CamelFedoraPid}" />
+            <to uri="direct:volunteer"/>
+            <log message="${header.CamelFedoraPid}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}" />
+            <log message="Aggregation: ${header.PIDAggregation}"/>
 
             <!--
                 FIXME: We are stashing and unstashing 'FedoraParentConcept' to 'CamelParentConcept'
@@ -155,38 +158,47 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <setHeader headerName="CamelFedoraPid"><simple>${header.ParentPID}</simple></setHeader>
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
             <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
-            <log message="Finished processing Images"/>
+            <log message="Finished resource processing."/>
         </route>
         
         <route id="CameraTrapTransformImages">
-            <from uri="direct:transformImage" />
+            <from uri="direct:transformImage"/>
             <!--<multicast>-->
-                <to uri="direct:createThumbnail" />
-                <!--<to uri="direct:createResampled" />-->
-                <!--
-                    TODO: Add FITS component to route
-                -->
+                <!-- <to uri="direct:createThumbnail"/> -->
+                <!-- <to uri="direct:createArchivalImage" /> -->
+                <to uri="direct:processFITS"/>
+                <!-- There needs to be a default MODS datastream. -->
+                <!-- Some data needs to be copied from FITS into MODS -->
             <!--</multicast>-->
-            <log message="Image processed" />
+            <log message="Image processed"/>
         </route>
-        <route id="CameraTrapCreateThumbnailImage" >
-            <from uri="direct:createThumbnail" />
+        
+        <route id="CameraTrapProcessFITS">
+            <from uri="direct:processFITS"/>
+            <log message="Started processing FITS ..."/>
+            <!-- TODO: Check if the call was successful and notify if not. -->
+            <recipientList><simple>exec:fits?args=-i ${header.CamelFileAbsolutePath}</simple></recipientList>
+            <log message="Exec - ${body}"/>
+            <to uri="fedora:datastream?name=FITS&amp;type=text/xml&amp;group=X"/>
+            <!-- Make a datastream from the output file called FITS -->
+            <log message="Finished processing parents."/>
+        </route>
+        
+        <route id="CameraTrapCreateThumbnailImage">
+            <from uri="direct:createThumbnail"/>
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(72,96)"/>
-            <to uri="fedora:datastream?name=TN&amp;type=image/jpeg&amp;group=M" />
+            <to uri="fedora:datastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
         </route>
-        <route id="CameraTrapCreateResampledImage">
-            <from uri="direct:createResampled" />
+        
+        <route id="CameraTrapCreateArchivalImage">
+            <from uri="direct:createArchivalImage"/>
             <!--
-                NOTE: This might not be needed
-
-                FIXME: Figure out what the Drush scripts are doing to 'normalized'
-                      the image. Based on conversation with Dan didn't sound like
-                      it was changing the quality of the original
-                FIXME: If 'normalized' image is needed and should be the same
-                       size as the original, remove size requirement from route
-            -->
+                NOTE: This is a JPEG 2000 and we are not doing it yet.
+            
             <to uri="thumbnailator:image?quality=80%&amp;size=(2048,1536)"/>
-            <to uri="file://CameraTrapOutput/resample" />
+            <to uri="file://CameraTrapOutput/resample"/>
+            -->
+            <log message="Finished creating archival image."/>
         </route>
         
         <route id="CameraTrapProcessParents">
@@ -227,6 +239,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     }
                 </simple>
                 -->
+                <!-- TODO - The query needs to also check directly along the parent axis since names are not unique. -->
                 <simple>
                     SELECT ?o FROM &lt;#ri&gt;
                     WHERE
@@ -247,7 +260,6 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                         &lt;/head&gt;
                         &lt;results&gt;
                             &lt;result&gt;
-                                Junk
                                 &lt;o uri="info:fedora/si:122557"/&gt;
                             &lt;/result&gt;
                             &lt;result&gt;
