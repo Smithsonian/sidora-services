@@ -351,6 +351,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <!-- Add Relation from parent CT sub-project to the child CT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a FGCD-CTPlot datastream with the Title set -->
+                    <to uri="velocity:file:Input/templates/CTPlotFGDC-CTPlotTemplate.vsl"/>
+                    <to uri="fedora:datastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <log message="Plot already exists"/>
@@ -383,6 +385,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <!-- Add Relation from parent CT project to the child CT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a FGDC-Research datastream with Title set to the Sub-project name -->
+                    <to uri="velocity:file:Input/templates/CTPlotFGDC-ResearchTemplate.vsl"/>
+                    <to uri="fedora:datastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <log message="Sub-project already exists"/>
@@ -415,6 +419,8 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <!-- Add Relation from parent static CT root to the child CT project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a EAC-CPF datastream with the Project Name and Abbreviation set -->
+                    <to uri="velocity:file:Input/templates/CTProjectEAC-CPFTemplate.vsl"/>
+                    <to uri="fedora:datastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <log message="Project already exists"/>

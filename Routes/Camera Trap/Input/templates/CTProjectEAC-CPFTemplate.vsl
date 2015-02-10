@@ -1,0 +1,66 @@
+## 
+## Template to create EAC-CPF metadata for Camera Trap project concept objects.
+##
+<?xml version="1.0"?>
+<eac-cpf xmlns="urn:isbn:1-931666-33-4" xmlns:eac="urn:isbn:1-931666-33-4" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <control>
+        <recordId>default</recordId>
+        <maintenanceStatus>revised</maintenanceStatus>
+        <maintenanceAgency>
+            <agencyName/>
+        </maintenanceAgency>
+        <localControl localType="Publication Date">
+            <date/>
+        </localControl>
+        <maintenanceHistory>
+            <maintenanceEvent>
+                <eventType>created</eventType>
+                <eventDateTime/>
+                <agentType>human</agentType>
+                <agent/>
+                <eventDescription/>
+            </maintenanceEvent>
+        </maintenanceHistory>
+    </control>
+    <cpfDescription>
+        <identity>
+            <entityType>corporateBody</entityType>
+            <nameEntry localType="primary">
+                <part>$headers.CamelFedoraLabel</part>
+            </nameEntry>
+            <nameEntry localType="abbreviation">
+                <part>$headers.CamelFedoraLabel</part>
+            </nameEntry>
+        </identity>
+        <description>
+            <existDates>
+                <dateRange>
+                    <fromDate/>
+                    <toDate/>
+                </dateRange>
+            </existDates>
+            <place>
+                <placeEntry localType="address"/>
+                <placeEntry localType="region"/>
+                <placeEntry countryCode="US" latitude="0" longitude="0"/>
+            </place>
+            <functions>
+                <function>
+                    <term>Project Data Access and Use Constraints</term>
+                    <descriptiveNote>
+                        <p/>
+                    </descriptiveNote>
+                </function>
+            </functions>
+        </description>
+        <relations>
+            <cpfRelation>
+                <relationEntry/>
+                <placeEntry localType="email address"/>
+                <descriptiveNote>
+                    <p>Project Owner</p>
+                </descriptiveNote>
+            </cpfRelation>
+        </relations>
+    </cpfDescription>
+</eac-cpf>
