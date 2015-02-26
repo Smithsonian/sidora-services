@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <!DOCTYPE xs:schema PUBLIC "-//W3C//DTD XMLSCHEMA 200102//EN"
-        "/home/ddavis/Projects/sidora/sem/sidora-ingest/Routes/Camera Trap/Input/schemas/XMLSchema.dtd" >
+        "/home/davisda/Projects/sidora/sem/sidora-ingest/Routes/Camera Trap/Input/schemas/XMLSchema.dtd" >
 <xs:schema targetNamespace="http://www.w3.org/XML/1998/namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema" xml:lang="en">
 
  <xs:annotation>

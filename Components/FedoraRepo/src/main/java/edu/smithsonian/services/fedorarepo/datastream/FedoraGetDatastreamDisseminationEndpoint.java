@@ -24,89 +24,63 @@
  * otherwise, even if any of the parties has been warned of the possibility of
  * such loss or damage.
  */
-package edu.smithsonian.services.fedorarepo;
+package edu.smithsonian.services.fedorarepo.datastream;
 
-import com.yourmediashelf.fedora.client.FedoraCredentials;
-import java.net.MalformedURLException;
-import java.net.URL;
+import edu.smithsonian.services.fedorarepo.FedoraComponent;
+import org.apache.camel.Producer;
+import org.apache.camel.spi.UriParam;
 
 /**
  *
- * @author jshingler
+ * @author davisda
  */
-public class FedoraSettings 
+public class FedoraGetDatastreamDisseminationEndpoint extends FedoraDatastreamEndpoint
 {
+    @UriParam
+    private String dsId;
+    @UriParam
+    private String asOfDateTime;
+    @UriParam
+    private boolean download = false;
 
-    //
-    //  TODO: Add Unit Test if this gets used!!!
-    //
-    private FedoraCredentials credentials;
-
-    public FedoraSettings()
+    public FedoraGetDatastreamDisseminationEndpoint(String uri, FedoraComponent component)
     {
-        this.credentials = null;
-    }
-    
-    public enum FedoraType {
-        
-        getDatastreamDissemination, addDatastream
-        
+        super(uri, component);
     }
 
-    public FedoraSettings(String baseUrl, String username, String password)
+    @Override
+    public Producer createProducer() throws Exception
     {
-        try
-        {
-            this.credentials = new FedoraCredentials(baseUrl, username, password);
-        }
-        catch (MalformedURLException ex)
-        {
-            this.credentials = null;
-        }
+        return new FedoraGetDatastreamDisseminationProducer(this);
     }
 
-    public boolean hasCredentials()
+    public String getDsId()
     {
-        return this.credentials != null;
+        return dsId;
     }
 
-    public FedoraCredentials getCredentials()
+    public void setDsId(String dsId)
     {
-        return this.credentials;
+        this.dsId = dsId;
     }
 
-    public void setHost(String url) throws MalformedURLException
+    public String getAsOfDateTime()
     {
-        this.credentials.setBaseUrl(new URL(url));
+        return asOfDateTime;
     }
 
-    public void setHost(URL baseUrl)
+    public void setAsOfDateTime(String asOfDateTime)
     {
-        this.credentials.setBaseUrl(baseUrl);
+        this.asOfDateTime = asOfDateTime;
     }
 
-    public URL getHost()
+    public boolean isDownload()
     {
-        return this.credentials.getBaseUrl();
+        return download;
     }
 
-    public String getUsername()
+    public void setDownload(boolean download)
     {
-        return credentials.getUsername();
-    }
-
-    public void setUsername(String username)
-    {
-        credentials.setUsername(username);
-    }
-
-    public String getPassword()
-    {
-        return credentials.getPassword();
-    }
-
-    public void setPassword(String password)
-    {
-        credentials.setPassword(password);
+        this.download = download;
     }
 }

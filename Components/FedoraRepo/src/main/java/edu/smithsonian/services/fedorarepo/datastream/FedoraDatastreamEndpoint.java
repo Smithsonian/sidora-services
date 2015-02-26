@@ -37,46 +37,27 @@ import org.apache.camel.spi.UriParam;
  *
  * @author jshingler
  */
-public class FedoraDatastreamEndpoint extends DefaultEndpoint
+public abstract class FedoraDatastreamEndpoint extends DefaultEndpoint
 {
 
     @UriParam
     private String pid;
-    @UriParam
-    private String name;
-    @UriParam
-    private String type;
-    @UriParam
-    private String group;
-    @UriParam
-    private String label;
-    @UriParam
-    private String location;
-    @UriParam
-    private String state;
-    @UriParam
-    private String format;
-    @UriParam
-    private String log;
-    @UriParam
-    private boolean versionable = true;
 
-//    @UriParam private List<String> altIDs;
-    //TODO: Add checksum verification(?)
-    public FedoraDatastreamEndpoint()
-    {
-    }
-
+//    public FedoraDatastreamEndpoint()
+//    {
+//    }
+//
     public FedoraDatastreamEndpoint(String uri, FedoraComponent component)
     {
         super(uri, component);
     }
+//
+//    @Override
+//    public Producer createProducer() throws Exception
+//    {
+//        return new FedoraAddDatastreamProducer(this);
+//    }
 
-    @Override
-    public Producer createProducer() throws Exception
-    {
-        return new FedoraDatastreamProducer(this);
-    }
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception
@@ -100,93 +81,4 @@ public class FedoraDatastreamEndpoint extends DefaultEndpoint
         this.pid = pid;
     }
 
-    public String getName()
-    {
-        return name;
-    }
-
-    public void setName(String name)
-    {
-        this.name = name;
-    }
-
-    public String getType()
-    {
-        return type;
-    }
-
-    public void setType(String type)
-    {
-        this.type = type;
-    }
-
-    public String getGroup()
-    {
-        return group;
-    }
-
-    public void setGroup(String group)
-    {
-        this.group = group;
-    }
-
-    public String getLabel()
-    {
-        return label;
-    }
-
-    public void setLabel(String label)
-    {
-        this.label = label;
-    }
-
-    public String getLocation()
-    {
-        return location;
-    }
-
-    public void setLocation(String location)
-    {
-        this.location = location;
-    }
-
-    public String getState()
-    {
-        return state;
-    }
-
-    public void setState(String state)
-    {
-        this.state = state;
-    }
-
-    public String getFormat()
-    {
-        return format;
-    }
-
-    public void setFormat(String format)
-    {
-        this.format = format;
-    }
-
-    public String getLog()
-    {
-        return log;
-    }
-
-    public void setLog(String log)
-    {
-        this.log = log;
-    }
-
-    public boolean isVersionable()
-    {
-        return versionable;
-    }
-
-    public void setVersionable(boolean versionable)
-    {
-        this.versionable = versionable;
-    }
 }

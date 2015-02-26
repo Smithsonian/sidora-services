@@ -32,6 +32,8 @@ import java.io.InputStream;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -83,6 +85,25 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
         this.validate("false");
     }
 
+    @Test
+    public void testGetDataStreamDisseminationString() throws Exception
+    {
+        //mockEnpoint.expectedMinimumMessageCount(2);
+
+        template.sendBody("direct:testCreate", null);
+        Message in = this.getMockMessage();
+
+        String input = "Testing,input,CSV##More,test,";
+        template.sendBodyAndHeaders("direct:testDatastreamCSV", input, in.getHeaders());
+
+        String dsOut = 
+            template.requestBodyAndHeaders("direct:testDatastreamDisseminationString", null, in.getHeaders(), String.class);
+        assertEquals(input, dsOut);
+
+        // TODO - Move this out to an after method in case an exception is thrown.
+        FedoraClient.purgeObject("test:dsIT").execute();
+    }
+    
     private void validate() throws Exception
     {
         this.validate("true");
@@ -93,6 +114,8 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
 
         String pid = null;
 
+        // TODO - We know the PID, its fixed, so this can be simplified.
+        
         try
         {
             assertMockEndpointsSatisfied();
@@ -103,7 +126,7 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
             assertEquals("Ingest Status should have been 201", 201, msg.getHeader(Headers.STATUS));
             GetDatastreamResponse dstream = FedoraClient.getDatastream(pid, "OBJ").execute();
             String versionable = dstream.getDatastreamProfile().getDsVersionable();
-            assertEquals("Datastream should not be versionable", expectedVersionable, versionable);
+            assertEquals("Datastream should not be versionable.", expectedVersionable, versionable);
         }
         finally
         {
@@ -131,18 +154,24 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
             public void configure()
             {
                 from("direct:testDatastream")
-                        .recipientList(simple("fedora:datastream?pid=${header.CamelFedoraPid}&name=OBJ&type=image/jpeg&group=M"))
-                        .to("mock:result");
-                from("direct:testDatastreamNoPid")
-                        .to("fedora:datastream?name=OBJ&type=image/jpeg&group=M")
-                        .to("mock:result");
-                from("direct:testDatastreamCSV")
-                        .to("fedora:datastream?name=OBJ&type=text/csv&group=M&versionable=false")
+                        .recipientList(simple("fedora://addDatastream?pid=${header.CamelFedoraPid}&name=OBJ&type=image/jpeg&group=M"))
                         .to("mock:result");
                 
-                //Helper route to set up object in add datastreams to
+                from("direct:testDatastreamNoPid")
+                        .to("fedora://addDatastream?name=OBJ&type=image/jpeg&group=M")
+                        .to("mock:result");
+                
+                from("direct:testDatastreamCSV")
+                        .to("fedora://addDatastream?name=OBJ&type=text/csv&group=M&versionable=false")
+                        .to("mock:result");
+                
+                from("direct:testDatastreamDisseminationString")
+                        .to("fedora://getDatastreamDissemination?dsId=OBJ")
+                        .to("mock:result");
+                
+                // Helper route to set up an object for doing datastream operations.
                 from("direct:testCreate")
-                        .to("fedora:create")
+                        .to("fedora:create?pid=test:dsIT")
                         .to("mock:result");
 
             }

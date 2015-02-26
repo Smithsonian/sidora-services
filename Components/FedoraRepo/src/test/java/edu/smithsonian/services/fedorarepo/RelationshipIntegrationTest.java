@@ -180,7 +180,7 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
                         .to("fedora:create?pid=null")
                         .to("mock:result");
                 from("direct:testDatastream")
-                        .to("fedora:datastream?name=RELS-EXT");
+                        .to("fedora:addDatastream?name=RELS-EXT");
 
             }
         };
