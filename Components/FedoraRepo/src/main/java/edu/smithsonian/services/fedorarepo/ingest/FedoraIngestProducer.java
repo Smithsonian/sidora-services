@@ -45,15 +45,15 @@ class FedoraIngestProducer extends FedoraProducer
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(FedoraIngestProducer.class);
-    private final FedoraIngestEnpoint endpoint;
+    private final FedoraIngestEndpoint endpoint;
     protected boolean createType;
 
-    public FedoraIngestProducer(FedoraIngestEnpoint endpoint)
+    public FedoraIngestProducer(FedoraIngestEndpoint endpoint)
     {
         this(endpoint, false);
     }
 
-    FedoraIngestProducer(FedoraIngestEnpoint endpoint, boolean createType)
+    FedoraIngestProducer(FedoraIngestEndpoint endpoint, boolean createType)
     {
         super(endpoint);
         this.endpoint = endpoint;

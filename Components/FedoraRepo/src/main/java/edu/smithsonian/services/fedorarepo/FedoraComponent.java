@@ -32,7 +32,7 @@ import com.yourmediashelf.fedora.client.request.FedoraRequest;
 import edu.smithsonian.services.fedorarepo.datastream.FedoraAddDatastreamEndpoint;
 import edu.smithsonian.services.fedorarepo.datastream.FedoraDatastreamEndpoint;
 import edu.smithsonian.services.fedorarepo.datastream.FedoraGetDatastreamDisseminationEndpoint;
-import edu.smithsonian.services.fedorarepo.ingest.FedoraIngestEnpoint;
+import edu.smithsonian.services.fedorarepo.ingest.FedoraIngestEndpoint;
 import edu.smithsonian.services.fedorarepo.pid.FedoraPidEndpoint;
 import edu.smithsonian.services.fedorarepo.relationship.FedoraRelationshipEndpoint;
 import edu.smithsonian.services.fedorarepo.search.FedoraSearchEndpoint;
@@ -94,7 +94,7 @@ public class FedoraComponent extends DefaultComponent
 //        }//end else if
         else if ("create".equalsIgnoreCase(remaining))
         {
-            endpoint = new FedoraIngestEnpoint(uri, this, true);
+            endpoint = new FedoraIngestEndpoint(uri, this, true);
         }
         else if ("addDatastream".equalsIgnoreCase(remaining))
         {

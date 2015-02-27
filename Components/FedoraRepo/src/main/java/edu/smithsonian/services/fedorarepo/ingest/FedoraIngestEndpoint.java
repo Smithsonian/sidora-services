@@ -37,9 +37,8 @@ import org.apache.camel.spi.UriParam;
  *
  * @author jshingler
  */
-public class FedoraIngestEnpoint extends DefaultEndpoint
+public class FedoraIngestEndpoint extends DefaultEndpoint
 {
-
     protected boolean createType;
 
     @UriParam
@@ -53,25 +52,26 @@ public class FedoraIngestEnpoint extends DefaultEndpoint
     @UriParam
     private String owner;
 
-    //TODO: Finish Injest with all options...
+    // TODO: Finish Ingest with all options...
 //    private String format;
 //    private boolean ignoreMime;
 
-    public FedoraIngestEnpoint()
+    public FedoraIngestEndpoint()
     {
         this.createType = false;
     }
 
-    public FedoraIngestEnpoint(String uri, FedoraComponent component)
+    public FedoraIngestEndpoint(String uri, FedoraComponent component)
     {
         this(uri, component, false);
     }
 
-    public FedoraIngestEnpoint(String uri, FedoraComponent component, boolean isCreateType)
+    public FedoraIngestEndpoint(String uri, FedoraComponent component, boolean isCreateType)
     {
         super(uri, component);
         this.createType = isCreateType;
     }
+ 
     @Override
     public Producer createProducer() throws Exception
     {
@@ -139,5 +139,4 @@ public class FedoraIngestEnpoint extends DefaultEndpoint
     {
         this.log = log;
     }
-
 }

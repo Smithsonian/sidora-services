@@ -81,7 +81,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         
         <route id="CameraTrapTransformManifest">
             <from uri="direct:manifest"/>
-            <to uri="fedora:datastream?name=MANIFEST&amp;type=text/xml&amp;group=M"/>
+            <to uri="fedora:addDatastream?name=MANIFEST&amp;type=text/xml&amp;group=M"/>
             <log message="Added Manifest DataStream"/> 
         </route>
         
@@ -91,7 +91,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
-            <to uri="fedora:datastream?name=FGDC&amp;type=text/xml&amp;group=M"/>
+            <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M"/>
             <log message="Added FGDC DataStream"/>
         </route>
         
@@ -102,9 +102,9 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <to uri="xslt:file:Input/xslt/researcher.xsl"/>
             <transform><xpath>//researcher/text()</xpath></transform>
-            <to uri="fedora:datastream?name=RESEARCHER&amp;type=text/csv&amp;group=M"/>
+            <to uri="fedora:addDatastream?name=RESEARCHER&amp;type=text/csv&amp;group=M"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
-            <to uri="fedora:datastream?name=RELS-EXT"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT"/>
             <log message="Researcher's Observation resource created"/>
         </route>
         
@@ -115,9 +115,9 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
             <transform><xpath>//researcher/text()</xpath></transform>
-            <to uri="fedora:datastream?name=VOLUNTEER&amp;type=text/csv&amp;group=M"/>
+            <to uri="fedora:addDatastream?name=VOLUNTEER&amp;type=text/csv&amp;group=M"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
-            <to uri="fedora:datastream?name=RELS-EXT"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT"/>
             <log message="Volunteer's Observation resource created"/>
         </route>
         
@@ -146,10 +146,10 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                 <!-- <setHeader headerName="testName"><xpath>substring-before(${body},",Image)</xpath></setHeader> -->
                 <to uri="reader:file"/>
                 <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-                <to uri="fedora:datastream?name=OBJ&amp;type=image/jpeg&amp;group=M"/>
+                <to uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M"/>
                 <to uri="direct:transformImage"/>
                 <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl"/>
-                <to uri="fedora:datastream?name=RELS-EXT"/>
+                <to uri="fedora:addDatastream?name=RELS-EXT"/>
                 
                 <!-- 
                     Creating FITS and MODS can be done as soon as the image is available since the image does not
@@ -180,7 +180,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <!-- <log message="Resource2 - ${body}" /> -->
             <setHeader headerName="CamelFedoraPid"><simple>${header.ParentPID}</simple></setHeader>
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
-            <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
             <log message="Finished resource processing."/>
         </route>
         
@@ -199,7 +199,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <!-- TODO: Check if the call was successful and notify if not. -->
             <recipientList><simple>exec:fits?args=-i ${header.CamelFileAbsolutePath}</simple></recipientList>
             <log message="Exec FITS - ${body}"/>
-            <to uri="fedora:datastream?name=FITS&amp;type=text/xml&amp;group=X"/>
+            <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
             <log message="Finished processing FITS."/>
         </route>
 
@@ -223,7 +223,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <!-- TODO - The Image ID has .JPG appended and this need to be made consistent. -->
             
             <to uri="velocity:file:Input/templates/CTImageResourceMODSTemplate.vsl"/>
-            <to uri="fedora:datastream?name=MODS&amp;type=text/xml&amp;group=X"/>
+            <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X"/>
             <log message="Finished processing MODS."/>
         </route>
 
@@ -231,7 +231,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <from uri="direct:createThumbnail"/>
             <log message="Started creating thumbnail ..."/>
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(72,96)"/>
-            <to uri="fedora:datastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
+            <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
             <log message="Finished creating thumbnail."/>
         </route>
         
@@ -354,12 +354,12 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
-                    <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
                     <!-- Add Relation from parent CT sub-project to the child CT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a FGCD-CTPlot datastream with the Title set -->
                     <to uri="velocity:file:Input/templates/CTPlotFGDC-CTPlotTemplate.vsl"/>
-                    <to uri="fedora:datastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
+                    <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <log message="Plot already exists"/>
@@ -388,12 +388,12 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
-                    <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
                     <!-- Add Relation from parent CT project to the child CT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a FGDC-Research datastream with Title set to the Sub-project name -->
                     <to uri="velocity:file:Input/templates/CTPlotFGDC-ResearchTemplate.vsl"/>
-                    <to uri="fedora:datastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
+                    <to uri="fedora:addDatastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <log message="Sub-project already exists"/>
@@ -422,12 +422,12 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
-                    <to uri="fedora:datastream?name=RELS-EXT&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
                     <!-- Add Relation from parent static CT root to the child CT project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a EAC-CPF datastream with the Project Name and Abbreviation set -->
                     <to uri="velocity:file:Input/templates/CTProjectEAC-CPFTemplate.vsl"/>
-                    <to uri="fedora:datastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
+                    <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <log message="Project already exists"/>
