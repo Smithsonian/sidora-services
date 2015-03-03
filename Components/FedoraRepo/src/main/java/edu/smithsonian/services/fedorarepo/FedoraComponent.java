@@ -42,7 +42,7 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.impl.DefaultComponent;
 
 /**
- * Represents the component that manages {@link FedoraEndpoint}.
+ * Represents the component that manages Fedora endpoints.
  */
 public class FedoraComponent extends DefaultComponent
 {
@@ -75,7 +75,7 @@ public class FedoraComponent extends DefaultComponent
             }
             else
             {
-                LOG.warning("No Fedora Settings found! Using defautls [Host: http://localhost:8080/fedora]");
+                LOG.warning("No Fedora Settings found! Using defaults [Host: http://localhost:8080/fedora]");
                 client = new FedoraClient(new FedoraCredentials("http://localhost:8080/fedora", "fedoraAdmin", "password"));
             }
 

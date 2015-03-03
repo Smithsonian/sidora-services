@@ -44,16 +44,27 @@
     </bean>
 
     <!-- Provides the Camel routing setup -->
-    <camelContext id="camelContext" xmlns="http://camel.apache.org/schema/blueprint" trace="false">
+    <camelContext id="derivativesCamelContext"
+                  xmlns="http://camel.apache.org/schema/blueprint"
+                  xmlns:atom="http://www.w3.org/2005/Atom"
+                  trace="true">
         
         <route id="DerivativesStartProcessing">
             <from uri="activemq:topic:fedora.apim.update"/>
             <log message="Starting Derivatives processing ..."/>
+            <log message="PID: ${headers.pid} Method Name: ${headers.methodName}"/>
+            <setHeader headerName="changeAuthor">
+                <xpath resultType="java.lang.String">/atom:entry/atom:author/atom:name</xpath>
+            </setHeader>
+            <log message="PID: ${headers.pid} Method Name: ${headers.methodName} Author: ${headers.changeAuthor}"/>
+
             <!--
             From the message get the PID and set the header.
+            We need to know the method is one for which we need to pay attention
             We need to know the content models for sure either from the triplestore or the FDO (the faster)
             If the object we need to pluck them from RELS-EXT
-            We also need to correlate a Fedora message resulting from a Camel-operation vs a UI operation to prevent loops
+            We also need to correlate a Fedora message resulting from a Camel-operation vs a UI operation to prevent
+            loops. Best choice for now is the Author which is linked to the process login.
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT"/>
             -->
             <log message="${body}"/>

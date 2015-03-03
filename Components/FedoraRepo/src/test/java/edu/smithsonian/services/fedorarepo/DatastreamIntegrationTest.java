@@ -29,10 +29,12 @@ package edu.smithsonian.services.fedorarepo;
 import com.yourmediashelf.fedora.client.FedoraClient;
 import com.yourmediashelf.fedora.client.response.GetDatastreamResponse;
 import java.io.InputStream;
+
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -47,8 +49,6 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
     public void testDatastream() throws Exception
     {
         mockEnpoint.expectedMinimumMessageCount(2);
-
-        template.sendBody("direct:testCreate", null);
         Message in = this.getMockMessage();
 
         InputStream input = this.getClass().getResourceAsStream("/test-image.jpg");
@@ -61,8 +61,6 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
     public void testDataStreamNoPid() throws Exception
     {
         mockEnpoint.expectedMinimumMessageCount(2);
-
-        template.sendBody("direct:testCreate", null);
         Message in = this.getMockMessage();
 
         InputStream input = this.getClass().getResourceAsStream("/test-image.jpg");
@@ -75,8 +73,6 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
     public void testDataStreamString() throws Exception
     {
         mockEnpoint.expectedMinimumMessageCount(2);
-
-        template.sendBody("direct:testCreate", null);
         Message in = this.getMockMessage();
 
         String input = "Testing,input,CSV##More,test,";
@@ -89,8 +85,6 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
     public void testGetDataStreamDisseminationString() throws Exception
     {
         //mockEnpoint.expectedMinimumMessageCount(2);
-
-        template.sendBody("direct:testCreate", null);
         Message in = this.getMockMessage();
 
         String input = "Testing,input,CSV##More,test,";
@@ -102,6 +96,13 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
 
         // TODO - Move this out to an after method in case an exception is thrown.
         FedoraClient.purgeObject("test:dsIT").execute();
+    }
+    
+    @Before
+    public void initialize()
+    {
+        // We need an FDO on which to perform datastream operations.
+        template.sendBody("direct:testCreate", null);
     }
     
     private void validate() throws Exception
@@ -124,8 +125,8 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
             pid = msg.getHeader(Headers.PID, String.class);
 
             assertEquals("Ingest Status should have been 201", 201, msg.getHeader(Headers.STATUS));
-            GetDatastreamResponse dstream = FedoraClient.getDatastream(pid, "OBJ").execute();
-            String versionable = dstream.getDatastreamProfile().getDsVersionable();
+            GetDatastreamResponse ds = FedoraClient.getDatastream(pid, "OBJ").execute();
+            String versionable = ds.getDatastreamProfile().getDsVersionable();
             assertEquals("Datastream should not be versionable.", expectedVersionable, versionable);
         }
         finally
@@ -153,6 +154,17 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
             @Override
             public void configure()
             {
+//                try
+//                {
+//                    System.setProperty("si.fedora.host", context.resolvePropertyPlaceholders("{{si.fedora.host}}"));
+//                    System.setProperty("si.fedora.user", context.resolvePropertyPlaceholders("{{siFedoraUser}}"));
+//                    System.setProperty("si.fedora.password", context.resolvePropertyPlaceholders("{{siFedoraPassword}}"));
+//                }
+//                catch (Exception e)
+//                {
+//                    System.out.println("DatastreamIntegrationTest: Fedora connection properties not set");
+//                }
+
                 from("direct:testDatastream")
                         .recipientList(simple("fedora://addDatastream?pid=${header.CamelFedoraPid}&name=OBJ&type=image/jpeg&group=M"))
                         .to("mock:result");
@@ -171,9 +183,8 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
                 
                 // Helper route to set up an object for doing datastream operations.
                 from("direct:testCreate")
-                        .to("fedora:create?pid=test:dsIT")
-                        .to("mock:result");
-
+                    .to("fedora:create?pid=test:dsIT")
+                    .to("mock:result");
             }
         };
     }

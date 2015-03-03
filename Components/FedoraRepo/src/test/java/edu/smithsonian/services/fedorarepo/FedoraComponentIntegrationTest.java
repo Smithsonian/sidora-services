@@ -1,19 +1,14 @@
 package edu.smithsonian.services.fedorarepo;
 
-import java.net.URL;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.camel.CamelContext;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Message;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
 
 public abstract class FedoraComponentIntegrationTest extends CamelTestSupport
 {
-
     @EndpointInject(uri = "mock:result")
     protected MockEndpoint mockEnpoint;
 
@@ -27,46 +22,25 @@ public abstract class FedoraComponentIntegrationTest extends CamelTestSupport
         return this.mockEnpoint.getExchanges().get(idx).getIn();
     }
 
-    private static boolean connected = false;
-
-    @BeforeClass
-    public static void beforeClass()
+    @Override
+    protected CamelContext createCamelContext() throws Exception
     {
-        String fileName = System.getProperty("fedoraUrl");
-        if (fileName == null || fileName.isEmpty())
-        {
-            fileName = "http://localhost:8080/fedora";
-            String msg = "Could not find 'fedoraUrl'. Defaulting to " + fileName;
-            Logger.getLogger(FedoraComponentIntegrationTest.class.getName()).log(Level.WARNING, msg);
-        }//end if
-        else
-        {
-            //This is not very robust. But assuming that future developers won't be completely crazy
-            String temp = fileName.toLowerCase();
-            if (!temp.startsWith("http://"))
-            {
-                fileName = "http://" + fileName;
-            }//end if
-        }//end else
+        CamelContext context = super.createCamelContext();
+        PropertiesComponent prop = context.getComponent("properties", PropertiesComponent.class);
+        prop.setLocation("classpath:test.properties");
 
         try
         {
-            new URL(fileName).getContent();
-
-            connected = true;
+            System.setProperty("si.fedora.host", context.resolvePropertyPlaceholders("{{si.fedora.host}}"));
+            System.setProperty("si.fedora.user", context.resolvePropertyPlaceholders("{{si.fedora.user}}"));
+            System.setProperty("si.fedora.password", context.resolvePropertyPlaceholders("{{si.fedora.password}}"));
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            String msg = String.format("Could not connect to Fedora at %s! Skipping test.", fileName);
-            Logger.getLogger(FedoraComponentIntegrationTest.class.getName()).log(Level.WARNING, msg);
+            System.out.println("FedoraComponentIntegrationTest: Fedora connection properties not set");
+            throw e;
         }
 
+        return context;
     }
-
-    @Before
-    public void beforeTest()
-    {
-        Assume.assumeTrue(connected);
-    }
-
 }
