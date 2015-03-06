@@ -44,7 +44,6 @@ import org.junit.Test;
  */
 public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
 {
-
     @Test
     public void testDatastream() throws Exception
     {
@@ -154,17 +153,6 @@ public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest
             @Override
             public void configure()
             {
-//                try
-//                {
-//                    System.setProperty("si.fedora.host", context.resolvePropertyPlaceholders("{{si.fedora.host}}"));
-//                    System.setProperty("si.fedora.user", context.resolvePropertyPlaceholders("{{siFedoraUser}}"));
-//                    System.setProperty("si.fedora.password", context.resolvePropertyPlaceholders("{{siFedoraPassword}}"));
-//                }
-//                catch (Exception e)
-//                {
-//                    System.out.println("DatastreamIntegrationTest: Fedora connection properties not set");
-//                }
-
                 from("direct:testDatastream")
                         .recipientList(simple("fedora://addDatastream?pid=${header.CamelFedoraPid}&name=OBJ&type=image/jpeg&group=M"))
                         .to("mock:result");

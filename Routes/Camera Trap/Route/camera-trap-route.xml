@@ -7,9 +7,9 @@
 http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
     <!-- OSGI blueprint property placeholder -->
-    <cm:property-placeholder id="system.placeholder" persistent-id="camel.blueprint" />
+    <cm:property-placeholder id="system.placeholder" persistent-id="camel.blueprint"/>
 
-    <bean id="pidAggregator" class="edu.smithsonian.services.fedorarepo.aggregators.PidAggregationStrategy" />
+    <bean id="pidAggregator" class="edu.smithsonian.services.fedorarepo.aggregators.PidAggregationStrategy"/>
     
     <!--
         TODO: Add Deployment Metadata backport

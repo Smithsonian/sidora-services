@@ -43,32 +43,69 @@
         <property name="configuration" ref="jmsConfig"/>
     </bean>
 
+    <bean id="modelAggregator" class="edu.smithsonian.services.fedorarepo.aggregators.ContentModelAggregationStrategy"/>
+    
+    <bean id="contentModels" class="java.util.HashSet"/>
+
     <!-- Provides the Camel routing setup -->
-    <camelContext id="derivativesCamelContext"
+    <camelContext id="DerivativesCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:atom="http://www.w3.org/2005/Atom"
-                  trace="true">
+                  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                  xmlns:fs="info:fedora/fedora-system:def/model#"
+                  trace="false">
         
         <route id="DerivativesStartProcessing">
             <from uri="activemq:topic:fedora.apim.update"/>
             <log message="Starting Derivatives processing ..."/>
             <log message="PID: ${headers.pid} Method Name: ${headers.methodName}"/>
-            <setHeader headerName="changeAuthor">
-                <xpath resultType="java.lang.String">/atom:entry/atom:author/atom:name</xpath>
-            </setHeader>
-            <log message="PID: ${headers.pid} Method Name: ${headers.methodName} Author: ${headers.changeAuthor}"/>
+            
+            <!-- Get the login used by the source of the message, effectively this is the source of the message. -->
+            <!-- Do not process messages coming from other Camel processes -->
+            <log message="Fedora User - {{si.fedora.user}}"/>
+            <filter>
+                <xpath>/atom:entry/atom:author/atom:name != '{{si.fedora.user}}'</xpath>
+                <stop/>
+            </filter>
+
+            <!-- If its a message type of interest -->
+            <to uri="direct:processDerivativesMessage"/>
 
             <!--
-            From the message get the PID and set the header.
-            We need to know the method is one for which we need to pay attention
-            We need to know the content models for sure either from the triplestore or the FDO (the faster)
-            If the object we need to pluck them from RELS-EXT
-            We also need to correlate a Fedora message resulting from a Camel-operation vs a UI operation to prevent
-            loops. Best choice for now is the Author which is linked to the process login.
-            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT"/>
+            From the message get the PID and set the CamelFedoraPid header.
+            We need to know whether the method in the message is one for which we need to pay attention
+            We need to get the source login so we can ignore messages from ingest routes
+            We need to know the content models for sure either from the triplestore or the FDO (faster)
             -->
             <log message="${body}"/>
             <log message="Finished Derivatives processing!"/>
+        </route>
+        
+        <route id="DerivativesProcessMessage">
+            <from uri="direct:processDerivativesMessage"/>
+            <log message="Starting Derivatives Message processing ..."/>
+            
+            <!-- Get the PID of the FDO that was just operated upon. -->
+            <log message="PID: ${headers.pid} Method Name: ${headers.methodName}"/>
+            <setHeader headerName="CamelFedoraPid"><simple>${headers.pid}</simple></setHeader>
+
+            <!-- Get the Content Models for the FDO and put them on a list. -->
+            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
+            <log message="Derivatives RELS-EXT: ${body}"/>
+            <split strategyRef="modelAggregator">
+                <xpath>//fs:hasModel/@rdf:resource</xpath>
+                <log message="Split Content Model - ${body}"/>
+            </split>
+
+            <choice>
+                <when>
+                    <spel>"#{request.headers[ContentModels].contains('info.fedora/si:cameraTrapCModel')}"</spel>
+                    <log message="Handle Camera Trap"/>
+                </when>
+            </choice>
+
+            <log message="Content Models - ${header.ContentModels}"/>
+            <log message="Finished Derivatives Message processing!"/>
         </route>
 
     </camelContext>
