@@ -53,31 +53,33 @@
                   xmlns:atom="http://www.w3.org/2005/Atom"
                   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                   xmlns:fs="info:fedora/fedora-system:def/model#"
+                  xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/"
+                  xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
+                  xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
                   trace="false">
         
         <route id="DerivativesStartProcessing">
             <from uri="activemq:topic:fedora.apim.update"/>
             <log message="Starting Derivatives processing ..."/>
             <log message="PID: ${headers.pid} Method Name: ${headers.methodName}"/>
+            <log message="Start of Derivatives Processing - ${body}"/>
             
             <!-- Get the login used by the source of the message, effectively this is the source of the message. -->
             <!-- Do not process messages coming from other Camel processes -->
             <log message="Fedora User - {{si.fedora.user}}"/>
             <filter>
-                <xpath>/atom:entry/atom:author/atom:name != '{{si.fedora.user}}'</xpath>
+                <xpath>/atom:entry/atom:author/atom:name = '{{si.fedora.user}}'</xpath>
                 <stop/>
             </filter>
-
-            <!-- If its a message type of interest -->
-            <to uri="direct:processDerivativesMessage"/>
-
-            <!--
-            From the message get the PID and set the CamelFedoraPid header.
-            We need to know whether the method in the message is one for which we need to pay attention
-            We need to get the source login so we can ignore messages from ingest routes
-            We need to know the content models for sure either from the triplestore or the FDO (faster)
-            -->
-            <log message="${body}"/>
+            
+            <!-- If its a operation type of interest. -->
+            <filter>
+                <simple>
+                    ${headers.methodName} in &#39;addDatastream,modifyDatastreamByValue,modifyDatastreamByReference,modifyObject,ingest&#39;
+                </simple>
+                <to uri="direct:processDerivativesMessage"/>
+            </filter>
+            
             <log message="Finished Derivatives processing!"/>
         </route>
         
@@ -89,23 +91,240 @@
             <log message="PID: ${headers.pid} Method Name: ${headers.methodName}"/>
             <setHeader headerName="CamelFedoraPid"><simple>${headers.pid}</simple></setHeader>
 
+            <!-- Get the DSID from the Atom message. -->
+            <setHeader headerName="DSID">
+                <xpath resultType="java.lang.String">/atom:entry/atom:category[@scheme="fedora-types:dsID"]/@term</xpath>
+            </setHeader>
+            <log message="DSID - ${headers.DSID}"/>
+
             <!-- Get the Content Models for the FDO and put them on a list. -->
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
+            <convertBodyTo type="java.lang.String" charset="utf-8"/>
             <log message="Derivatives RELS-EXT: ${body}"/>
             <split strategyRef="modelAggregator">
                 <xpath>//fs:hasModel/@rdf:resource</xpath>
                 <log message="Split Content Model - ${body}"/>
             </split>
-
+            <log message="Content Models - ${header.ContentModels}"/>
+            
             <choice>
-                <when>
-                    <spel>"#{request.headers[ContentModels].contains('info.fedora/si:cameraTrapCModel')}"</spel>
-                    <log message="Handle Camera Trap"/>
+                <when> <!-- If imageCModel or generalImageCModel, and the DSID is "OBJ" process the image." -->
+                    <spel>
+                        #{(request.headers[ContentModels].contains('info:fedora/si:imageCModel') or
+                          request.headers[ContentModels].contains('info:fedora/si:generalImageCModel')) and
+                          request.headers[DSID] == 'OBJ'}
+                    </spel>
+                    <log message="Handle Image"/>
+                    <to uri="direct:processDerivativesImage"/>
                 </when>
+                <when> <!-- If imageCModel or generalImageCModel, and the DSID is "OBJ" process the image." -->
+                    <spel>
+                        #{request.headers[ContentModels].contains('info:fedora/si:fieldbookCModel') and
+                          request.headers[DSID] == 'OBJ'}
+                    </spel>
+                    <log message="Handle PDF"/>
+                    <to uri="direct:processDerivativesPDF"/>
+                </when>
+                <when> <!-- If imageCModel or generalImageCModel, and the DSID is "OBJ" process the image." -->
+                    <spel>
+                        #{request.headers[ContentModels].contains('info:fedora/si:datasetCModel') and
+                          request.headers[DSID] == 'OBJ'}
+                    </spel>
+                    <log message="Handle Dataset"/>
+                    <to uri="direct:processDerivativesDataset"/>
+                </when>
+                <otherwise>
+                    <log message="No derivatives message processing required"/>
+                </otherwise>
+            </choice>
+            
+            <log message="Finished Derivatives Message processing!"/>
+        </route>
+
+        <route id="DerivativesProcessImage">
+            <from uri="direct:processDerivativesImage"/>
+            <log message="Starting Derivatives Image processing ..."/>
+
+            <!-- Submit the file to FITS processing. -->
+            <!-- We really should only make new derivatives if the image has changed. -->
+            <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
+            <!-- We could get the MIME type from the datastream metadata or FIT (or both and compare). -->
+            <!-- <to uri="direct://processDerivativesFITS"/> -->
+
+            <!-- Get the MIME type from the datastream profile. -->
+            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <log message="Datastream Metadata - ${body}"/>
+            <setHeader headerName="dsMIME">
+                <xpath resultType="java.lang.String">/fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()</xpath>
+            </setHeader>
+            <log message="Datastream Metadata Mime - ${header.dsMIME}"/>
+
+            <!-- Get the Image and write it into a file in the staging area. -->
+            <!-- Write the file as a stream to save memory. -->
+            <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <to uri="file://staging/"/>
+
+            <!-- Determine what to do to make an image derivative as needed. -->
+            <choice>
+                <when> <!-- If the image is a JPEG? -->
+                    <simple>
+                        ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg'
+                    </simple>
+                    <log message="Handle JPEG"/>
+                </when>
+                <when> <!-- If the image is a TIFF? -->
+                    <simple>
+                        ${header.dsMIME} == 'image/tiff' || ${header.dsMIME} == 'image/tif'
+                    </simple>
+                    <log message="Handle Tiff"/>
+                </when>
+                <when> <!-- If the image is a JPEG2000? -->
+                    <simple>
+                        ${header.dsMIME} == 'image/jp2'
+                    </simple>
+                    <log message="Handle JPEG2000"/>
+                </when>
+                <otherwise>
+                    <!-- If the image is some other mime type just store it in the IMAGE datastream? -->
+                    <log message="Unsupported image type found - ${headers.dsMIME}"/>
+                </otherwise>
             </choice>
 
-            <log message="Content Models - ${header.ContentModels}"/>
-            <log message="Finished Derivatives Message processing!"/>
+            <!-- 
+                If the mime-type (from FITS) is 'image/tiff' or obj['OBJ'].mimeType == 'image/tif'
+                then make a jpg and update the OBJ datastream with it
+                If the mime-type is jp2 (JPEG2000)
+                then copy it to the IMAGE datastream and
+                     convert the jp2 to jpg and
+                     store it in the OBJ datastream
+                 Ask Bobby if we can store uploaded jp2 to IMAGE directly
+            -->
+
+            <!-- Make a Thumbnail from the IMAGE datastream. -->
+            <!-- Delete the file from the staging area. -->
+            
+            <log message="Finished Derivatives Image processing!"/>
+        </route>
+
+        <route id="DerivativesProcessDataset">
+            <from uri="direct:processDerivativesDataset"/>
+            <log message="Starting Derivatives Dataset processing ..."/>
+
+            <!-- Submit the file to FITS processing. -->
+            <!-- We really should only make new derivatives if the image has changed. -->
+            <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
+            <!-- We could get the MIME type from the datastream metadata or FIT (or both and compare). -->
+            <!-- <to uri="direct://processDerivativesFITS"/> -->
+
+            <!-- Get the MIME type from the datastream profile. -->
+            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <log message="Datastream Metadata - ${body}"/>
+            <setHeader headerName="dsMIME">
+                <xpath resultType="java.lang.String">/fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()</xpath>
+            </setHeader>
+            <log message="Datastream Metadata Mime - ${header.dsMIME}"/>
+            
+            <!-- Create a CSV datastream. -->
+            <choice>
+                <when> <!-- If the content is Excel? -->
+                    <simple>
+                        ${header.dsMIME} == 'application/vnd.ms-excel'
+                    </simple>
+                    <log message="Handle Excel"/>
+
+                    <!-- Get the PDF and write it into a file in the staging area. -->
+                    <!-- Write the file as a stream to save memory. -->
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <to uri="file://staging/"/>
+
+                    <!-- Convert to CSV -->
+                    <!-- Add a CSV datastream to the object. -->
+                </when>
+                <when> <!-- If the content is a CSV? -->
+                    <simple>
+                        ${header.dsMIME} == 'text/csv'
+                    </simple>
+                    <log message="Handle CSV"/>
+
+                    <!-- Get the PDF and write it into a file in the staging area. -->
+                    <!-- Write the file as a stream to save memory. -->
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <to uri="file://staging/"/>
+
+                    <!-- Add a CSV datastream to the object. -->
+                </when>
+                <otherwise>
+                    <!-- If the image is some other mime type just store it in the IMAGE datastream? -->
+                    <log message="Not a PDF - ${headers.dsMIME}"/>
+                </otherwise>
+            </choice>
+
+            <!-- Delete the file from the staging area. -->
+
+            <log message="Finished Derivatives Dataset processing!"/>
+        </route>
+
+        <route id="DerivativesProcessPDF">
+            <from uri="direct:processDerivativesPDF"/>
+            <log message="Starting Derivatives PDF processing ..."/>
+
+            <!-- Submit the file to FITS processing. -->
+            <!-- We really should only make new derivatives if the image has changed. -->
+            <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
+            <!-- We could get the MIME type from the datastream metadata or FIT (or both and compare). -->
+            <!-- <to uri="direct://processDerivativesFITS"/> -->
+
+            <!-- Get the MIME type from the datastream profile. -->
+            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <log message="Datastream Metadata - ${body}"/>
+            <setHeader headerName="dsMIME">
+                <xpath resultType="java.lang.String">/fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()</xpath>
+            </setHeader>
+            <log message="Datastream Metadata Mime - ${header.dsMIME}"/>
+            
+            <!-- Only convert PDF datastreams. -->
+            <choice>
+                <when> <!-- If the content is a PDF? -->
+                    <simple>
+                        ${header.dsMIME} == 'application/pdf'
+                    </simple>
+                    <log message="Handle PDF"/>
+                    
+                    <!-- Get the PDF and write it into a file in the staging area. -->
+                    <!-- Write the file as a stream to save memory. -->
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <to uri="file://staging/"/>
+
+                    <!-- Convert using the SWFTools -->
+                    <!-- Add a OBJ.swf datastream to the object. -->
+                    <!-- Make a Thumbnail from the OBJ datastream. -->
+                </when>
+                <otherwise>
+                    <!-- If the image is some other mime type just store it in the IMAGE datastream? -->
+                    <log message="Not a PDF - ${headers.dsMIME}"/>
+                </otherwise>
+            </choice>
+
+            <!-- Delete the file from the staging area. -->
+
+            <log message="Finished Derivatives PDF processing!"/>
+        </route>
+
+        <route id="DerivativesProcessFITS">
+            <from uri="direct:processDerivativesFITS"/>
+            <log message="Started Derivatives FITS processing ..."/>
+            <!-- TODO: Check if the call was successful and notify if not. -->
+            <recipientList><simple>exec:fits?args=-i ${header.CamelFileNameProduced}</simple></recipientList>
+            <!-- Unless CamelExecExitValue=0 its an error. -->
+            <!-- Get the mime-type from the FITS output. -->
+            <!-- This can get complicated so we take the simple approach first. -->
+            <setHeader headerName="dsMIME">
+                <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
+            </setHeader>
+            <log message="FITS mimetype - ${headers.FITSmimeType}"/>
+            <log message="Exec FITS - ${body}"/>
+            <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
+            <log message="Finished Derivatives FITS processing."/>
         </route>
 
     </camelContext>

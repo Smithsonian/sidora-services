@@ -27,7 +27,7 @@
 package edu.smithsonian.services.fedorarepo.datastream;
 
 import com.yourmediashelf.fedora.client.FedoraClient;
-import com.yourmediashelf.fedora.client.request.GetDatastreamDissemination;
+import com.yourmediashelf.fedora.client.request.GetDatastream;
 import com.yourmediashelf.fedora.client.response.FedoraResponse;
 import edu.smithsonian.services.fedorarepo.Headers;
 import edu.smithsonian.services.fedorarepo.base.FedoraProducer;
@@ -43,12 +43,12 @@ import java.util.Map;
  *
  * @author davisda
  */
-public class FedoraGetDatastreamDisseminationProducer extends FedoraProducer
+public class FedoraGetDatastreamProducer extends FedoraProducer
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FedoraGetDatastreamDisseminationProducer.class);
-    private final FedoraGetDatastreamDisseminationEndpoint endpoint;
+    private static final Logger LOG = LoggerFactory.getLogger(FedoraGetDatastreamProducer.class);
+    private final FedoraGetDatastreamEndpoint endpoint;
 
-    public FedoraGetDatastreamDisseminationProducer(FedoraGetDatastreamDisseminationEndpoint endpoint)
+    public FedoraGetDatastreamProducer(FedoraGetDatastreamEndpoint endpoint)
     {
         super(endpoint);
         this.endpoint = endpoint;
@@ -57,6 +57,7 @@ public class FedoraGetDatastreamDisseminationProducer extends FedoraProducer
     @Override
     public void process(Exchange exchange) throws Exception
     {
+        TypeConverter converter = exchange.getContext().getTypeConverter();
         Message in = exchange.getIn();
 
         String pid = this.getParam(this.endpoint.getPid(), in.getHeader(Headers.PID, String.class));
@@ -65,30 +66,30 @@ public class FedoraGetDatastreamDisseminationProducer extends FedoraProducer
 
         if (pid == null)
         {
-            throw new RuntimeException("fedora:getDatastreamDissemination producer requires a PID");
+            throw new RuntimeException("fedora:getDatastream producer requires a PID");
         }//end if
         else if (dsID == null)
         {
-            throw new RuntimeException("fedora:getDatastreamDissemination producer requires a Datastream name");
+            throw new RuntimeException("fedora:getDatastream producer requires a Datastream name");
         }//end else if
 
-        GetDatastreamDissemination datastream =
-                FedoraClient.getDatastreamDissemination(pid, dsID).asOfDateTime(asOfDateTime).download(this.endpoint.isDownload());
+        GetDatastream datastream =
+                FedoraClient.getDatastream(pid, dsID).asOfDateTime(asOfDateTime).format("xml");
         FedoraResponse response = datastream.execute();
         
-        // This code put the burden on the route to manage the return type. By returning the input stream we can
-        // handle a large datastream efficiently.
+        // This code assumes we want to get the datastream metadata as an XML document so we will handle it as
+        // a string.
         //
         // Use the response status for error handling
-        Object dsContent = response.getEntityInputStream();
+        String dsMetadata = converter.convertTo(String.class, exchange, response.getEntityInputStream());
         
         Map<String, Object> headers = in.getHeaders();
         headers.put(Headers.STATUS, response.getStatus());
 
-        LOG.debug(String.format("Datastream: %s (%s) Status = %d", dsID, pid, response.getStatus()));
+        LOG.debug(String.format("Datastream Metadata: %s (%s) Status = %d", dsID, pid, response.getStatus()));
 
         Message out = exchange.getOut();
         out.setHeaders(headers);
-        out.setBody(dsContent);
+        out.setBody(dsMetadata);
     }
 }

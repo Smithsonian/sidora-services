@@ -199,6 +199,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
             <!-- TODO: Check if the call was successful and notify if not. -->
             <recipientList><simple>exec:fits?args=-i ${header.CamelFileAbsolutePath}</simple></recipientList>
             <log message="Exec FITS - ${body}"/>
+            <!-- Unless CamelExecExitValue=0 its an error. -->
             <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
             <log message="Finished processing FITS."/>
         </route>
