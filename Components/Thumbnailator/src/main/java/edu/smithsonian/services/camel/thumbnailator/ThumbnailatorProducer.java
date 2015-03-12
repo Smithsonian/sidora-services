@@ -64,7 +64,7 @@ public class ThumbnailatorProducer extends DefaultProducer
             //If size isn't set, there isn't anything to do.
             if (endpoint.isSizeSet())
             {
-                tb.size(endpoint.getWidth(), endpoint.getLength()).keepAspectRatio(endpoint.isKeepRatio());
+                tb.size(endpoint.getWidth(), endpoint.getHeight()).keepAspectRatio(endpoint.isKeepRatio());
 
                 //Setting quality will slow down the creation of the thumbnail
                 // even if the quality is set at (1.0 default). Issue with third party library

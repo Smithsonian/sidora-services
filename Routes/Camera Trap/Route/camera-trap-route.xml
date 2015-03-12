@@ -231,7 +231,7 @@ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v
         <route id="CameraTrapCreateThumbnailImage">
             <from uri="direct:createThumbnail"/>
             <log message="Started creating thumbnail ..."/>
-            <to uri="thumbnailator:image?keepRatio=false&amp;size=(72,96)"/>
+            <to uri="thumbnailator:image?keepRatio=true&amp;size=(200,150)"/>
             <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
             <log message="Finished creating thumbnail."/>
         </route>

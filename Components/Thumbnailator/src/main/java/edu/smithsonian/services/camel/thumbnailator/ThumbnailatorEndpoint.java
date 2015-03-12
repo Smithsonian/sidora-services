@@ -45,12 +45,12 @@ public class ThumbnailatorEndpoint extends DefaultEndpoint
 {
     Logger log = LoggerFactory.getLogger(ThumbnailatorComponent.class);
 
-    protected Pattern sizePattern = Pattern.compile("\\(\\s*(?<width>\\d+)\\s*,\\s*(?<length>\\d+)\\s*\\)");
+    protected Pattern sizePattern = Pattern.compile("\\(\\s*(?<width>\\d+)\\s*,\\s*(?<height>\\d+)\\s*\\)");
     protected Pattern qualityPattern = Pattern.compile("(?<quality>\\d+)%");
 
     private boolean keepRatio = true;
     private int width = 0;
-    private int length = 0;
+    private int height = 0;
     private double quality = 1.0;
 
 
@@ -94,12 +94,12 @@ public class ThumbnailatorEndpoint extends DefaultEndpoint
 
     public String getSize()
     {
-        return String.format("(%d,%d)", this.width, this.length);
+        return String.format("(%d,%d)", this.width, this.height);
     }
 
     public boolean isSizeSet()
     {
-        return (this.width > 0 && this.length > 0);
+        return (this.width > 0 && this.height > 0);
     }
 
     public void setSize(String size)
@@ -111,7 +111,7 @@ public class ThumbnailatorEndpoint extends DefaultEndpoint
             {
                 try
                 {
-                    this.setSize(Integer.parseInt(matcher.group("width")), Integer.parseInt(matcher.group("length")));
+                    this.setSize(Integer.parseInt(matcher.group("width")), Integer.parseInt(matcher.group("height")));
                 }//end try
                 catch (NumberFormatException numberFormatException)
                 {
@@ -121,10 +121,10 @@ public class ThumbnailatorEndpoint extends DefaultEndpoint
         }//end if
     }//end setSize
 
-    public void setSize(int width, int length)
+    public void setSize(int width, int height)
     {
         this.setWidth(width);
-        this.setLength(length);
+        this.setHeight(height);
     }
 
     public int getWidth()
@@ -137,14 +137,14 @@ public class ThumbnailatorEndpoint extends DefaultEndpoint
         this.width = width;
     }
 
-    public int getLength()
+    public int getHeight()
     {
-        return length;
+        return height;
     }
 
-    public void setLength(int length)
+    public void setHeight(int height)
     {
-        this.length = length;
+        this.height = height;
     }
 
     public boolean isQualitySet()

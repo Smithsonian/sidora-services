@@ -147,8 +147,7 @@
 
             <!-- Submit the file to FITS processing. -->
             <!-- We really should only make new derivatives if the image has changed. -->
-            <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
-            <!-- We could get the MIME type from the datastream metadata or FIT (or both and compare). -->
+            <!-- We could get the MIME type from the datastream metadata or FITS (or both and compare). -->
             <!-- <to uri="direct://processDerivativesFITS"/> -->
 
             <!-- Get the MIME type from the datastream profile. -->
@@ -171,18 +170,31 @@
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg'
                     </simple>
                     <log message="Handle JPEG"/>
+                    <!-- Make a JPEG2000 archival image and store it in the IMAGE datastream. -->
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <to uri="direct:derivativesCreateThumbnail"/>
                 </when>
                 <when> <!-- If the image is a TIFF? -->
                     <simple>
                         ${header.dsMIME} == 'image/tiff' || ${header.dsMIME} == 'image/tif'
                     </simple>
                     <log message="Handle Tiff"/>
+                    <!-- Make a JPEG and store it as a new version in the OBJ datastream. -->
+                    <!-- Make a JPEG2000 archival image and store it in the IMAGE datastream. -->
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <to uri="direct:derivativesCreateThumbnail"/>
                 </when>
                 <when> <!-- If the image is a JPEG2000? -->
                     <simple>
                         ${header.dsMIME} == 'image/jp2'
                     </simple>
                     <log message="Handle JPEG2000"/>
+                    <!-- Copy it to the IMAGE datastream. -->
+                    <!-- Destroy the original OBJ datastream. -->
+                    <!-- Convert the image to JPEG and store that in the OBJ datastream. -->
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <to uri="fedora:addDatastream?name=IMAGE&amp;type=image/jp2&amp;group=M"/>
+                    <!-- <to uri="direct:derivativesCreateThumbnail"/> -->
                 </when>
                 <otherwise>
                     <!-- If the image is some other mime type just store it in the IMAGE datastream? -->
@@ -202,6 +214,7 @@
 
             <!-- Make a Thumbnail from the IMAGE datastream. -->
             <!-- Delete the file from the staging area. -->
+            <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
             
             <log message="Finished Derivatives Image processing!"/>
         </route>
@@ -325,6 +338,14 @@
             <log message="Exec FITS - ${body}"/>
             <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
             <log message="Finished Derivatives FITS processing."/>
+        </route>
+
+        <route id="DerivativesCreateThumbnailImage">
+            <from uri="direct:derivativesCreateThumbnail"/>
+            <log message="Started Derivatives Creating Thumbnail processing ..."/>
+            <to uri="thumbnailator:image?keepRatio=false&amp;size=(200,150)"/>
+            <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
+            <log message="Finished Derivatives Create Thumbnail processing."/>
         </route>
 
     </camelContext>
