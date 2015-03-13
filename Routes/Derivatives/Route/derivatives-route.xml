@@ -56,7 +56,7 @@
                   xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
-                  trace="false">
+                  trace="true">
         
         <route id="DerivativesStartProcessing">
             <from uri="activemq:topic:fedora.apim.update"/>
@@ -170,9 +170,11 @@
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg'
                     </simple>
                     <log message="Handle JPEG"/>
-                    <!-- Make a JPEG2000 archival image and store it in the IMAGE datastream. -->
+                    <!-- Make a JPEG2000 archival image and store it in the MASTER datastream. Make a thumbnail. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
                     <to uri="direct:derivativesCreateThumbnail"/>
+                    <!-- Make a JPEG2000 archival image and store it in the MASTER datastream. -->
+                    <!-- Delete the file from the staging area. -->
                 </when>
                 <when> <!-- If the image is a TIFF? -->
                     <simple>
@@ -189,12 +191,18 @@
                         ${header.dsMIME} == 'image/jp2'
                     </simple>
                     <log message="Handle JPEG2000"/>
-                    <!-- Copy it to the IMAGE datastream. -->
-                    <!-- Destroy the original OBJ datastream. -->
-                    <!-- Convert the image to JPEG and store that in the OBJ datastream. -->
+                    <!-- Convert the image to JPEG and store that in the DISPLAY datastream. Make a thumbnail. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
-                    <to uri="fedora:addDatastream?name=IMAGE&amp;type=image/jp2&amp;group=M"/>
-                    <!-- <to uri="direct:derivativesCreateThumbnail"/> -->
+                    <recipientList>
+                        <simple>
+                            exec:convert?args=${header.CamelFileNameProduced}%20${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </recipientList>
+                    <setBody><simple>${header.CamelFileNameProduced}.jpg</simple></setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M"/>
+                    <to uri="direct:derivativesCreateThumbnail"/>
+                    <!-- Delete the file from the staging area. -->
                 </when>
                 <otherwise>
                     <!-- If the image is some other mime type just store it in the IMAGE datastream? -->
@@ -202,17 +210,6 @@
                 </otherwise>
             </choice>
 
-            <!-- 
-                If the mime-type (from FITS) is 'image/tiff' or obj['OBJ'].mimeType == 'image/tif'
-                then make a jpg and update the OBJ datastream with it
-                If the mime-type is jp2 (JPEG2000)
-                then copy it to the IMAGE datastream and
-                     convert the jp2 to jpg and
-                     store it in the OBJ datastream
-                 Ask Bobby if we can store uploaded jp2 to IMAGE directly
-            -->
-
-            <!-- Make a Thumbnail from the IMAGE datastream. -->
             <!-- Delete the file from the staging area. -->
             <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
             
@@ -308,9 +305,27 @@
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
                     <to uri="file://staging/"/>
 
-                    <!-- Convert using the SWFTools -->
-                    <!-- Add a OBJ.swf datastream to the object. -->
-                    <!-- Make a Thumbnail from the OBJ datastream. -->
+                    <!-- Create a thumbnail. -->
+                    <recipientList>
+                        <simple>
+                            exec:convert?args=${header.CamelFileNameProduced}%20${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </recipientList>
+                    <setBody><simple>${header.CamelFileNameProduced}-0.jpg</simple></setBody>
+                    <to uri="reader:file"/>
+                    <to uri="direct:derivativesCreateThumbnail"/>
+
+                    <!-- Create a Flash derivative to use with the Flexpaper viewer. -->
+                    <recipientList>
+                        <simple>
+                            exec:pdf2swf?args=${header.CamelFileNameProduced}%20-o%20${header.CamelFileNameProduced}.swf
+                        </simple>
+                    </recipientList>
+                    <!--
+                    <setBody><simple>${header.CamelFileNameProduced}.swf</simple></setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=image/jpg&amp;group=M"/>
+                    -->
                 </when>
                 <otherwise>
                     <!-- If the image is some other mime type just store it in the IMAGE datastream? -->

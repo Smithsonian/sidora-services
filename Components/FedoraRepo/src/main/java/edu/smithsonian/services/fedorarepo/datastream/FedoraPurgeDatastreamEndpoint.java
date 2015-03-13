@@ -24,88 +24,39 @@
  * otherwise, even if any of the parties has been warned of the possibility of
  * such loss or damage.
  */
-package edu.smithsonian.services.fedorarepo;
+package edu.smithsonian.services.fedorarepo.datastream;
 
-import com.yourmediashelf.fedora.client.FedoraCredentials;
-import java.net.MalformedURLException;
-import java.net.URL;
+import edu.smithsonian.services.fedorarepo.FedoraComponent;
+import org.apache.camel.Producer;
+import org.apache.camel.spi.UriParam;
 
 /**
  *
- * @author jshingler
+ * @author davisda
  */
-public class FedoraSettings 
+public class FedoraPurgeDatastreamEndpoint extends FedoraDatastreamEndpoint
 {
+    @UriParam
+    private String dsId;
 
-    //
-    //  TODO: Add Unit Test if this gets used!!!
-    //
-    private FedoraCredentials credentials;
-
-    public FedoraSettings()
+    public FedoraPurgeDatastreamEndpoint(String uri, FedoraComponent component)
     {
-        this.credentials = null;
-    }
-    
-    public enum FedoraType
-    {
-        getDatastream, getDatastreamDissemination, addDatastream, purgeDatastream
+        super(uri, component);
     }
 
-    public FedoraSettings(String baseUrl, String username, String password)
+    @Override
+    public Producer createProducer() throws Exception
     {
-        try
-        {
-            this.credentials = new FedoraCredentials(baseUrl, username, password);
-        }
-        catch (MalformedURLException ex)
-        {
-            this.credentials = null;
-        }
+        return new FedoraPurgeDatastreamProducer(this);
     }
 
-    public boolean hasCredentials()
+    public String getDsId()
     {
-        return this.credentials != null;
+        return dsId;
     }
 
-    public FedoraCredentials getCredentials()
+    public void setDsId(String dsId)
     {
-        return this.credentials;
-    }
-
-    public void setHost(String url) throws MalformedURLException
-    {
-        this.credentials.setBaseUrl(new URL(url));
-    }
-
-    public void setHost(URL baseUrl)
-    {
-        this.credentials.setBaseUrl(baseUrl);
-    }
-
-    public URL getHost()
-    {
-        return this.credentials.getBaseUrl();
-    }
-
-    public String getUsername()
-    {
-        return credentials.getUsername();
-    }
-
-    public void setUsername(String username)
-    {
-        credentials.setUsername(username);
-    }
-
-    public String getPassword()
-    {
-        return credentials.getPassword();
-    }
-
-    public void setPassword(String password)
-    {
-        credentials.setPassword(password);
+        this.dsId = dsId;
     }
 }

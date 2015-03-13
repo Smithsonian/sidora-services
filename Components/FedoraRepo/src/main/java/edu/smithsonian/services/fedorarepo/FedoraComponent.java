@@ -29,10 +29,7 @@ package edu.smithsonian.services.fedorarepo;
 import com.yourmediashelf.fedora.client.FedoraClient;
 import com.yourmediashelf.fedora.client.FedoraCredentials;
 import com.yourmediashelf.fedora.client.request.FedoraRequest;
-import edu.smithsonian.services.fedorarepo.datastream.FedoraAddDatastreamEndpoint;
-import edu.smithsonian.services.fedorarepo.datastream.FedoraDatastreamEndpoint;
-import edu.smithsonian.services.fedorarepo.datastream.FedoraGetDatastreamDisseminationEndpoint;
-import edu.smithsonian.services.fedorarepo.datastream.FedoraGetDatastreamEndpoint;
+import edu.smithsonian.services.fedorarepo.datastream.*;
 import edu.smithsonian.services.fedorarepo.ingest.FedoraIngestEndpoint;
 import edu.smithsonian.services.fedorarepo.pid.FedoraPidEndpoint;
 import edu.smithsonian.services.fedorarepo.relationship.FedoraRelationshipEndpoint;
@@ -118,6 +115,14 @@ public class FedoraComponent extends DefaultComponent
             FedoraDatastreamEndpoint fdsEndpoint = new FedoraGetDatastreamDisseminationEndpoint(uri, this);
             endpoint = fdsEndpoint;
         }
+        else if ("purgeDatastream".equalsIgnoreCase(remaining))
+        {
+            FedoraSettings.FedoraType opType =
+                getCamelContext().getTypeConverter().convertTo(FedoraSettings.FedoraType.class, remaining);
+            FedoraDatastreamEndpoint fdsEndpoint = new FedoraPurgeDatastreamEndpoint(uri, this);
+            endpoint = fdsEndpoint;
+        }
+
         else if ("search".equalsIgnoreCase(remaining))
         {
             endpoint = new FedoraSearchEndpoint(uri, this);
