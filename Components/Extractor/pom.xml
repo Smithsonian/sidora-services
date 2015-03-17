@@ -102,7 +102,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>edu.smithsonian.services.camel.Extractor</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>edu.si.services.camel.Extractor</Bundle-SymbolicName>
                         <Export-Service>org.apache.camel.spi.ComponentResolver;component=extractor</Export-Service>
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>

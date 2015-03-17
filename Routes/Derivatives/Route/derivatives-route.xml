@@ -43,7 +43,7 @@
         <property name="configuration" ref="jmsConfig"/>
     </bean>
 
-    <bean id="modelAggregator" class="edu.smithsonian.services.fedorarepo.aggregators.ContentModelAggregationStrategy"/>
+    <bean id="modelAggregator" class="edu.si.services.fedorarepo.aggregators.ContentModelAggregationStrategy"/>
     
     <bean id="contentModels" class="java.util.HashSet"/>
 
@@ -65,14 +65,14 @@
             <log message="Start of Derivatives Processing - ${body}"/>
             
             <!-- Get the login used by the source of the message, effectively this is the source of the message. -->
-            <!-- Do not process messages coming from other Camel processes -->
+            <!-- Filter for messages coming from monitored processes. -->
             <log message="Fedora User - {{si.fedora.user}}"/>
             <filter>
                 <xpath>/atom:entry/atom:author/atom:name = '{{si.fedora.user}}'</xpath>
                 <stop/>
             </filter>
             
-            <!-- If its a operation type of interest. -->
+            <!-- Filter out messages that do not need derivatives processing. -->
             <filter>
                 <simple>
                     ${headers.methodName} in &#39;addDatastream,modifyDatastreamByValue,modifyDatastreamByReference,modifyObject,ingest&#39;
@@ -163,7 +163,7 @@
             <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
             <to uri="file://staging/"/>
 
-            <!-- Determine what to do to make an image derivative as needed. -->
+            <!-- Filter content by image format. -->
             <choice>
                 <when> <!-- If the image is a JPEG? -->
                     <simple>
@@ -172,7 +172,7 @@
                     <log message="Handle JPEG"/>
                     <!-- Make a JPEG2000 archival image and store it in the MASTER datastream. Make a thumbnail. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
-                    <to uri="direct:derivativesCreateThumbnail"/>
+                    <to uri="direct:processDerivativesThumbnailator"/>
                     <!-- Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     <!-- Delete the file from the staging area. -->
                 </when>
@@ -184,7 +184,7 @@
                     <!-- Make a JPEG and store it as a new version in the OBJ datastream. -->
                     <!-- Make a JPEG2000 archival image and store it in the IMAGE datastream. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
-                    <to uri="direct:derivativesCreateThumbnail"/>
+                    <to uri="direct:processDerivativesThumbnailator"/>
                 </when>
                 <when> <!-- If the image is a JPEG2000? -->
                     <simple>
@@ -198,10 +198,22 @@
                             exec:convert?args=${header.CamelFileNameProduced}%20${header.CamelFileNameProduced}.jpg
                         </simple>
                     </recipientList>
-                    <setBody><simple>${header.CamelFileNameProduced}.jpg</simple></setBody>
-                    <to uri="reader:file"/>
-                    <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M"/>
-                    <to uri="direct:derivativesCreateThumbnail"/>
+                    <choice>
+                        <when> <!-- If the conversion succeeded, store the image? -->
+                            <simple>${headers.CamelExecExitValue} == 0</simple>
+                            <setBody>
+                                <simple>
+                                    ${header.CamelFileNameProduced}.jpg
+                                </simple>
+                            </setBody>
+                            <to uri="reader:file"/>
+                            <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M"/>
+                            <to uri="direct:processDerivativesThumbnailator"/>
+                        </when>
+                        <otherwise>
+                            <log message="Unable to convert JP2 to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"/>
+                        </otherwise>
+                    </choice>
                     <!-- Delete the file from the staging area. -->
                 </when>
                 <otherwise>
@@ -211,7 +223,7 @@
             </choice>
 
             <!-- Delete the file from the staging area. -->
-            <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
+            <!-- Camel generates a unique name for the file but we need to clean out staging after things are done. -->
             
             <log message="Finished Derivatives Image processing!"/>
         </route>
@@ -222,8 +234,8 @@
 
             <!-- Submit the file to FITS processing. -->
             <!-- We really should only make new derivatives if the image has changed. -->
-            <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
-            <!-- We could get the MIME type from the datastream metadata or FIT (or both and compare). -->
+            <!-- Camel generates a unique name for the file but we need to clean out staging after things are done. -->
+            <!-- We could get the MIME type from the datastream metadata or FITS (or both and compare). -->
             <!-- <to uri="direct://processDerivativesFITS"/> -->
 
             <!-- Get the MIME type from the datastream profile. -->
@@ -233,13 +245,11 @@
                 <xpath resultType="java.lang.String">/fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()</xpath>
             </setHeader>
             <log message="Datastream Metadata Mime - ${header.dsMIME}"/>
-            
-            <!-- Create a CSV datastream. -->
+
+            <!-- Filter content by dataset format. -->
             <choice>
                 <when> <!-- If the content is Excel? -->
-                    <simple>
-                        ${header.dsMIME} == 'application/vnd.ms-excel'
-                    </simple>
+                    <simple>${header.dsMIME} == 'application/vnd.ms-excel'</simple>
                     <log message="Handle Excel"/>
 
                     <!-- Get the PDF and write it into a file in the staging area. -->
@@ -251,9 +261,7 @@
                     <!-- Add a CSV datastream to the object. -->
                 </when>
                 <when> <!-- If the content is a CSV? -->
-                    <simple>
-                        ${header.dsMIME} == 'text/csv'
-                    </simple>
+                    <simple>${header.dsMIME} == 'text/csv'</simple>
                     <log message="Handle CSV"/>
 
                     <!-- Get the PDF and write it into a file in the staging area. -->
@@ -269,7 +277,7 @@
                 </otherwise>
             </choice>
 
-            <!-- Delete the file from the staging area. -->
+            <!-- Delete the files from the staging area. -->
 
             <log message="Finished Derivatives Dataset processing!"/>
         </route>
@@ -278,89 +286,138 @@
             <from uri="direct:processDerivativesPDF"/>
             <log message="Starting Derivatives PDF processing ..."/>
 
-            <!-- Submit the file to FITS processing. -->
-            <!-- We really should only make new derivatives if the image has changed. -->
+            <!-- We really should make new derivatives only if OBJ has changed. -->
             <!-- Camel generates a unique name for the file but we need to clean it out of staging after things are done. -->
-            <!-- We could get the MIME type from the datastream metadata or FIT (or both and compare). -->
+            <!-- We could get the MIME type from the datastream metadata or FITS (or both and compare). -->
             <!-- <to uri="direct://processDerivativesFITS"/> -->
 
             <!-- Get the MIME type from the datastream profile. -->
+            <!-- We should try the getDatastream more than once if it fails. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
             <log message="Datastream Metadata - ${body}"/>
             <setHeader headerName="dsMIME">
                 <xpath resultType="java.lang.String">/fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()</xpath>
             </setHeader>
             <log message="Datastream Metadata Mime - ${header.dsMIME}"/>
-            
-            <!-- Only convert PDF datastreams. -->
             <choice>
                 <when> <!-- If the content is a PDF? -->
-                    <simple>
-                        ${header.dsMIME} == 'application/pdf'
-                    </simple>
-                    <log message="Handle PDF"/>
+                    <simple>${header.dsMIME} == 'application/pdf'</simple>
+                    <log message="Handle PDF" loggingLevel="DEBUG"/>
                     
                     <!-- Get the PDF and write it into a file in the staging area. -->
                     <!-- Write the file as a stream to save memory. -->
+                    <!-- We should try the getDatastreamDissemination more than once if it fails. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
                     <to uri="file://staging/"/>
 
-                    <!-- Create a thumbnail. -->
-                    <recipientList>
-                        <simple>
-                            exec:convert?args=${header.CamelFileNameProduced}%20${header.CamelFileNameProduced}.jpg
-                        </simple>
-                    </recipientList>
-                    <setBody><simple>${header.CamelFileNameProduced}-0.jpg</simple></setBody>
-                    <to uri="reader:file"/>
-                    <to uri="direct:derivativesCreateThumbnail"/>
+                    <!-- Consider Multicast for improved error handling. -->
+                    <to uri="direct:processDerivativesThumbnailImage"/>
+                    <to uri="direct:processDerivativesPDF2SWF"/>
 
-                    <!-- Create a Flash derivative to use with the Flexpaper viewer. -->
-                    <recipientList>
-                        <simple>
-                            exec:pdf2swf?args=${header.CamelFileNameProduced}%20-o%20${header.CamelFileNameProduced}.swf
-                        </simple>
-                    </recipientList>
-                    <!--
-                    <setBody><simple>${header.CamelFileNameProduced}.swf</simple></setBody>
-                    <to uri="reader:file"/>
-                    <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=image/jpg&amp;group=M"/>
-                    -->
                 </when>
                 <otherwise>
                     <!-- If the image is some other mime type just store it in the IMAGE datastream? -->
-                    <log message="Not a PDF - ${headers.dsMIME}"/>
+                    <log message="Not a PDF - ${headers.dsMIME} loggingLevel=DEBUG"/>
                 </otherwise>
             </choice>
 
-            <!-- Delete the file from the staging area. -->
+            <!-- Delete the files from the staging area. -->
 
             <log message="Finished Derivatives PDF processing!"/>
+        </route>
+
+        <route id="DerivativesProcessPDF2SWF">
+            <from uri="direct:processDerivativesPDF2SWF"/>
+            <log message="Started Derivatives PDF2SWF processing ..."/>
+            <!-- Create a Flash derivative to use with the Flexpaper viewer. -->
+            <recipientList>
+                <simple>
+                    exec:pdf2swf?args=${header.CamelFileNameProduced}%20-o%20${header.CamelFileNameProduced}.swf
+                </simple>
+            </recipientList>
+            <choice>
+                <when>
+                    <simple>${headers.CamelExecExitValue} == 0</simple>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.swf
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=application/x-shockwave-flash&amp;group=M"/>
+                </when>
+                <otherwise>
+                    <log message="Unable to convert PDF to SWF: PID: ${headers.CamelFedoraPid}  ${headers.CamelExecExitValue}"/>
+                </otherwise>
+            </choice>
+            <log message="Finished Derivatives PDF2SWF processing."/>
         </route>
 
         <route id="DerivativesProcessFITS">
             <from uri="direct:processDerivativesFITS"/>
             <log message="Started Derivatives FITS processing ..."/>
-            <!-- TODO: Check if the call was successful and notify if not. -->
-            <recipientList><simple>exec:fits?args=-i ${header.CamelFileNameProduced}</simple></recipientList>
-            <!-- Unless CamelExecExitValue=0 its an error. -->
-            <!-- Get the mime-type from the FITS output. -->
-            <!-- This can get complicated so we take the simple approach first. -->
-            <setHeader headerName="dsMIME">
-                <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
-            </setHeader>
-            <log message="FITS mimetype - ${headers.FITSmimeType}"/>
-            <log message="Exec FITS - ${body}"/>
-            <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
+            <!-- Create a FITS derivative. -->
+            <recipientList>
+                <simple>
+                    exec:fits?args=-i ${header.CamelFileNameProduced}
+                </simple>
+            </recipientList>
+            <choice>
+                <when> <!-- If FITS processing succeeded? -->
+                    <simple>${headers.CamelExecExitValue} == 0</simple>
+                    <!-- Get the mime-type from the FITS output. -->
+                    <!-- This can get complicated so we take the simple approach first. -->
+                    <setHeader headerName="dsMIME">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
+                        <log message="FITS mimetype - ${headers.FITSmimeType}"/>
+                    </setHeader>
+                    <log message="Exec FITS - ${body}"/>
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
+                </when>
+                <otherwise>
+                    <log message="FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"/>
+                </otherwise>
+            </choice>
             <log message="Finished Derivatives FITS processing."/>
         </route>
 
-        <route id="DerivativesCreateThumbnailImage">
-            <from uri="direct:derivativesCreateThumbnail"/>
-            <log message="Started Derivatives Creating Thumbnail processing ..."/>
+        <route id="DerivativesProcessThumbnailator">
+            <from uri="direct:processDerivativesThumbnailator"/>
+            <log message="Started Derivatives Thumbnailator processing ..."/>
+            <!-- Create a thumbnail derivative using the Thumnailator library. -->
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(200,150)"/>
             <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
-            <log message="Finished Derivatives Create Thumbnail processing."/>
+            <log message="Finished Derivatives Thumbnailator processing."/>
+        </route>
+
+        <route id="DerivativesProcessThumbnailImage">
+            <from uri="direct:processDerivativesThumbnailImage"/>
+            <log message="Started Derivatives Thumbnail Image processing ..."/>
+            <!-- Create a thumbnail derivative using ImageMagick. -->
+            <recipientList>
+                <simple>
+                    <!-- The arg tokenizer strips of the plus for profile.  This is unsolved. -->
+                    <!-- exec:convert?args=${header.CamelFileNameProduced}%20-thumbnail%20200x150%20-colorspace%20RGB%20%2Bprofile%20${header.CamelFileNameProduced}.jpg -->
+                    <!-- Convert only the first page since the PDF may have multiple pages. -->
+                    exec:convert?args=${header.CamelFileNameProduced}[0] -thumbnail 200x150 -colorspace RGB ${header.CamelFileNameProduced}.jpg
+                </simple>
+            </recipientList>
+            <choice>
+                <when> <!-- If the conversion succeeded, store the thumbnail image? -->
+                    <simple>${headers.CamelExecExitValue} == 0</simple>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
+                </when>
+                <otherwise>
+                    <log message="Unable to create thumbnail image. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"/>
+                </otherwise>
+            </choice>
+            <log message="Finished Derivatives Thumbnail Image processing."/>
         </route>
 
     </camelContext>

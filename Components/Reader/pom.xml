@@ -89,7 +89,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>edu.smithsonian.services.camel.Reader</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>edu.si.services.camel.Reader</Bundle-SymbolicName>
                         <Export-Service>org.apache.camel.spi.ComponentResolver;component=reader</Export-Service>
                     </instructions>
                 </configuration>

@@ -5,7 +5,7 @@
 
     <!--  <parent>
       <artifactId>camel</artifactId>
-      <groupId>edu.smithsonian.services</groupId>
+      <groupId>edu.si</groupId>
       <version>1.0</version>
     </parent>-->
 
@@ -130,15 +130,15 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>edu.smithsonian.services.FedoraRepo</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>edu.si.services.FedoraRepo</Bundle-SymbolicName>
                         <Export-Service>org.apache.camel.spi.ComponentResolver;component=fedora</Export-Service>
                         <Import-Package>*;resolution:="optional"</Import-Package>
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         
                         <!--<DynamicImport-Package>com.fasterxml.jackson.*</DynamicImport-Package>-->
-                        <Export-Package>edu.smithsonian.services.fedorarepo,edu.smithsonian.services.fedorarepo.aggregators,edu.smithsonian.services.fedorarepo.datastream,edu.smithsonian.services.fedorarepo.ingest,edu.smithsonian.services.fedorarepo.pid,edu.smithsonian.services.fedorarepo.search</Export-Package>
-                        <Private-Package>edu.smithsonian.services.fedorarepo.*</Private-Package>
+                        <Export-Package>edu.si.services.fedorarepo,edu.si.services.fedorarepo.aggregators,edu.si.services.fedorarepo.datastream,edu.si.services.fedorarepo.ingest,edu.si.services.fedorarepo.pid,edu.si.services.fedorarepo.search</Export-Package>
+                        <Private-Package>edu.si.services.fedorarepo.*</Private-Package>
                     </instructions>
                 </configuration>
             </plugin>

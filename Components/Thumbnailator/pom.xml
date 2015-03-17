@@ -113,7 +113,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>edu.smithsonian.services.camel.Thumbnailator</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>edu.si.services.camel.Thumbnailator</Bundle-SymbolicName>
                         <Export-Service>org.apache.camel.spi.ComponentResolver;component=thumbnailator</Export-Service>
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                     </instructions>

@@ -1,1 +1,1 @@
-class=edu.smithsonian.services.camel.extractor.ExtractorComponent
+class=edu.si.services.camel.extractor.ExtractorComponent
