@@ -3,13 +3,13 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>edu.smithsonian.services.camel</groupId>
+    <groupId>edu.si.services.camel</groupId>
     <artifactId>Reader</artifactId>
     <packaging>bundle</packaging>
     <version>1.0</version>
 
     <name>SI :: Camel :: Reader</name>
-    <url>http://www.myorganization.org</url>
+    <url>http://si.edu</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

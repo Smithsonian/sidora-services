@@ -3,7 +3,7 @@
 
     <name>SI :: Camel :: Components</name>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>edu.smithsonian.services</groupId>
+    <groupId>edu.si.services</groupId>
     <artifactId>camel</artifactId>
     <version>1.0</version>
     <packaging>pom</packaging>
