@@ -28,18 +28,16 @@ package edu.si.services.fedorarepo;
 
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 /**
+ * Tests the nextPID functions.
  *
+ * @author davisda
  * @author jshingler
  */
 public class NextPidIntegrationTest extends FedoraComponentIntegrationTest
 {
-
     @Test
     public void testGetNextPid() throws Exception
     {

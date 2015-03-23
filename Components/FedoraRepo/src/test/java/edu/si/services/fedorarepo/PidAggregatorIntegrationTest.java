@@ -29,19 +29,17 @@ package edu.si.services.fedorarepo;
 import edu.si.services.fedorarepo.aggregators.PidAggregationStrategy;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
 
 /**
+ * Tests the FedoraRepo Camel component PID aggregation strategy.
  *
+ * @author davisda
  * @author jshingler
  */
 public class PidAggregatorIntegrationTest extends FedoraComponentIntegrationTest
 {
-
     @Test
     public void testPidAggregator() throws Exception
     {
@@ -84,7 +82,6 @@ public class PidAggregatorIntegrationTest extends FedoraComponentIntegrationTest
         
         assertNotNull("Aggregator body shouldn't be null", actualPids);
         assertArrayEquals("PIDs should be equal", expectedPids.split(","), actualPids.split(","));
-
     }
 
     @Override

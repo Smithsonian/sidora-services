@@ -9,7 +9,7 @@
     <version>1.0</version>
 
     <name>SI :: Camel :: Reader</name>
-    <url>http://si.edu</url>
+    <!-- <url>http://oris.si.edu/sidora</url> -->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

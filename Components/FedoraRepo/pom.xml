@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -9,9 +10,10 @@
     <version>1.0</version>
 
     <name>SI :: Camel :: Fedora Commons</name>
-    <!--<url>http://www.myorganization.org</url>-->
+    <!-- <url>http://oris.si.edu/sidora</url> -->
 
     <properties>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <camel.version>2.12.3</camel.version>
@@ -20,9 +22,11 @@
         <fedora.client.version>0.7</fedora.client.version>
         <jersy.version>1.17.1</jersy.version>
         <fedoraUrl>localhost:8080/fedora</fedoraUrl>
+
     </properties>
 
     <dependencies>
+
         <dependency>
             <groupId>com.yourmediashelf.fedora.client</groupId>
             <artifactId>fedora-client-core</artifactId>
@@ -39,23 +43,31 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-bundle</artifactId>
             <version>${jersy.version}</version>
             <scope>runtime</scope>        
         </dependency>
-        <!--        <dependency>
+
+        <!--
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>2.2.1</version>
             <scope>runtime</scope>
-        </dependency>-->
-        <!--        <dependency>
+        </dependency>
+        -->
+
+        <!--
+        <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-jaxrs</artifactId>
             <version>1.9.11</version>
-        </dependency>-->
+        </dependency>
+        -->
+
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
@@ -63,19 +75,21 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- logging -->
+        <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
@@ -83,16 +97,18 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- testing -->
+        <!-- Testing -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
             <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
+
         <defaultGoal>install</defaultGoal>
 
         <plugins>
@@ -116,7 +132,7 @@
                 </configuration>
             </plugin>
 
-            <!-- to generate the MANIFEST-FILE of the bundle -->
+            <!-- To generate the MANIFEST-FILE of the bundle. -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -152,6 +168,7 @@
             </plugin>
 
         </plugins>
+
     </build>
 
 </project>

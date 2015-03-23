@@ -34,20 +34,16 @@ import java.util.Map;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import org.junit.Test;
 
 /**
+ * Tests SIdora services ingest functions.
  *
+ * @author davisda
  * @author jshingler
  */
 public class CreateIntegrationTest extends FedoraComponentIntegrationTest
 {
-
     @Test
     public void testCreate() throws Exception
     {

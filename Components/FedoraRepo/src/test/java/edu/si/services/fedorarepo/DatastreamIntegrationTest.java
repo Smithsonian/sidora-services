@@ -32,13 +32,14 @@ import java.io.InputStream;
 
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;
 import org.junit.Test;
 
 /**
+ * Tests SIdora datastream operations.
  *
+ * @author davisda
  * @author jshingler
  */
 public class DatastreamIntegrationTest extends FedoraComponentIntegrationTest

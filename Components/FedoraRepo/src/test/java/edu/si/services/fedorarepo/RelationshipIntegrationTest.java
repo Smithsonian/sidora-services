@@ -32,12 +32,13 @@ import org.apache.camel.builder.RouteBuilder;
 import org.junit.Test;
 
 /**
+ * Tests SIdora relationship handling functions.
  *
+ * @author davisda
  * @author jshingler
  */
 public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
 {
-
     @Test
     public void testRelationship() throws Exception
     {
@@ -49,13 +50,13 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
 
         String parentPid = in.getHeader(Headers.PID, String.class);
 
-        //Add RELS-EXT to parent
+        // Add RELS-EXT to the parent.
         String input = getEmptyRELS_EXT(parentPid);
         template.sendBodyAndHeaders("direct:testDatastream", input, in.getHeaders());
 
         in.setHeader("FedoraParentConcept", parentPid);
 
-        //Create Child
+        // Create a Child.
         template.sendBodyAndHeaders("direct:testCreateNoPid", null, in.getHeaders());
 
         in = this.getMockMessage(1);
@@ -66,7 +67,7 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
             assertNotEquals("Parent and Child PIDs should not be the same", parentPid, childPid);
             assertEquals("Parent PID should be the same", parentPid, in.getHeader("FedoraParentConcept", String.class));
 
-            //Add hasRelationship from Child to Parent
+            // Add hasRelationship from Child to Parent.
             template.sendBodyAndHeaders("direct:testHasRelationship", null, in.getHeaders());
 //            in = this.getMockMessage(2);
 
@@ -77,16 +78,14 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
         }
         finally
         {
-//            Thread.sleep(500);
-
-            //Clean up
+            // Clean up
             if (parentPid != null)
             {
-                FedoraClient.purgeObject(parentPid);
+                FedoraClient.purgeObject(parentPid).execute();
             }
             if (childPid != null)
             {
-                FedoraClient.purgeObject(childPid);
+                FedoraClient.purgeObject(childPid).execute();
             }
         }
     }
@@ -102,13 +101,13 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
 
         String parentPid = in.getHeader(Headers.PID, String.class);
 
-        //Add RELS-EXT to parent
+        // Add RELS-EXT to the parent.
         String input = getEmptyRELS_EXT(parentPid);
         template.sendBodyAndHeaders("direct:testDatastream", input, in.getHeaders());
 
         in.setHeader("FedoraParentConcept", parentPid);
 
-        //Create Child
+        // Create a Child.
         template.sendBodyAndHeaders("direct:testCreateNoPid", null, in.getHeaders());
 
         in = this.getMockMessage(1);
@@ -119,7 +118,7 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
             assertNotEquals("Parent and Child PIDs should not be the same", parentPid, childPid);
             assertEquals("Parent PID should be the same", parentPid, in.getHeader("FedoraParentConcept", String.class));
 
-            //Add hasRelationship from Child to Parent
+            // Add hasRelationship from Child to Parent.
             template.sendBodyAndHeaders("direct:testHasConcept", null, in.getHeaders());
 //            in = this.getMockMessage(2);
 
@@ -130,16 +129,14 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
         }
         finally
         {
-//            Thread.sleep(500);
-
-            //Clean up
+            // Clean up.
             if (parentPid != null)
             {
-                FedoraClient.purgeObject(parentPid);
+                FedoraClient.purgeObject(parentPid).execute();
             }
             if (childPid != null)
             {
-                FedoraClient.purgeObject(childPid);
+                FedoraClient.purgeObject(childPid).execute();
             }
         }
     }
@@ -172,16 +169,17 @@ public class RelationshipIntegrationTest extends FedoraComponentIntegrationTest
                         .to("fedora:hasConcept?parentPid=${header.FedoraParentConcept}&childPid=${header.CamelFedoraPid}")
                         .to("mock:result");
 
-                //Helper routes
+                // Helper routes
                 from("direct:testCreate")
                         .to("fedora:create")
                         .to("mock:result");
+
                 from("direct:testCreateNoPid")
                         .to("fedora:create?pid=null")
                         .to("mock:result");
+
                 from("direct:testDatastream")
                         .to("fedora:addDatastream?name=RELS-EXT");
-
             }
         };
     }

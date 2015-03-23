@@ -5,7 +5,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="info:fedora/fedora-system:def/foxml# http://www.fedora.info/definitions/1/0/foxml1-1.xsd">
 <foxml:objectProperties>
 <foxml:property NAME="info:fedora/fedora-system:def/model#state" VALUE="Active"/>
-<foxml:property NAME="info:fedora/fedora-system:def/model#label" VALUE="Dumb Effect of consumptive and non-consumptive recreation on mid-Atlantic wildlife"/>
+<foxml:property NAME="info:fedora/fedora-system:def/model#label" VALUE="Test Label"/>
 <foxml:property NAME="info:fedora/fedora-system:def/model#ownerId" VALUE="HuaD"/>
 <foxml:property NAME="info:fedora/fedora-system:def/model#createdDate" VALUE="2014-03-11T18:24:19.879Z"/>
 <foxml:property NAME="info:fedora/fedora-system:def/view#lastModifiedDate" VALUE="2014-07-16T16:12:52.562Z"/>

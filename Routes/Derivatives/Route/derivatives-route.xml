@@ -62,7 +62,14 @@
                   xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
                   trace="false"
                   streamCache="true">
-        
+
+        <errorHandler id="derivativesErrorHandler" type="DefaultErrorHandler">
+            <redeliveryPolicy maximumRedeliveries="20"
+                              retryAttemptedLogLevel="WARN"
+                              backOffMultiplier="2"
+                              useExponentialBackOff="true"/>
+        </errorHandler>
+
         <route id="DerivativesStartProcessing">
             <from uri="activemq:queue:fedora.apim.update"/>
             <log message="${id} Derivatives: Starting processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
@@ -85,6 +92,7 @@
             </filter>
             
             <!-- Filter out Fedora API methods that do not need derivatives processing. -->
+            <!-- This could be done with a JMS selector. -->
             <filter>
                 <simple>
                     ${headers.methodName} in &#39;addDatastream,modifyDatastreamByValue,modifyDatastreamByReference,modifyObject,ingest&#39;
