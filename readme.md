@@ -1,8 +1,8 @@
-# SI - Service Execution Environment (SI-See)
+# SIservices - Microservices Execution Platform
 ## Installation of ServiceMix
 See the ServiceMix [Quickstart](http://servicemix.apache.org/docs/5.0.x/quickstart/index.html) guide [install section](http://servicemix.apache.org/docs/5.0.x/quickstart/installation.html) for help 
-> Tested with ServiceMix Versions: 5.0.1, 5.3.0
->> Note: ServiceMix 5.3.0 prints out an error about an "Unknown signal: HUP" but does not seem to cause an acutal project
+> Tested with ServiceMix Versions: 5.3.0 and 5.4.0
+>> Note: ServiceMix 5.3.0 prints out an error about an "Unknown signal: HUP" but does not seem to cause an actual problem
 
 ### Steps:
 1. Download and extract ServiceMix (http://servicemix.apache.org/)
@@ -28,9 +28,9 @@ See the ServiceMix [Quickstart](http://servicemix.apache.org/docs/5.0.x/quicksta
 - Folder called `Process` will be created in the SM_HOME directory
 - ServiceMix command `route-list` should have 9 _CameraTrap*_ routes that have the status _'Started'_
 
-### Trouble Shutting Issues
+### Trouble Shutting Down
 - The commands `log:display-exception` or the alias `lde` will display the last exception that occurred within ServiceMix.
-- If not error and not routes listed, enter the command `la | grep camera-trap-route.xml` if it returns something like `[ 196][Active ][GracePeriod][  ][ 80] camera-trap-route.xml (0.0.0)`
+- If no error and no routes are listed, enter the command `la | grep camera-trap-route.xml` if it returns something like `[ 196][Active ][GracePeriod][  ][ 80] camera-trap-route.xml (0.0.0)`
     - Then if `la | grep camel-velocity` returns nothing. It means Camel-Velocity was not started automatically
     - Enter the command `features:install camel-velocity` to install and start the Camel-Velocity feature
     - The camera-trap-route.xml should go from 'GracePeriod' to 'Created'
@@ -53,7 +53,7 @@ To process Camera Trap data copy the data archive (e.g. p1d246.tar.gz) into the 
 - Or run the command `mvn install -DskipTests` to build without running Unit and Integration Tests    
 - Newly built jars will need to be moved from their individual `target` folders to the `SM_HOME/deploy/` folder
 
-> Note: SI-See is built with Maven 3 (although Maven 2 should work [untested])
+> Note: SIservices is built with Maven 3
 
 ### Version
-1.0.0
+0.0.4
