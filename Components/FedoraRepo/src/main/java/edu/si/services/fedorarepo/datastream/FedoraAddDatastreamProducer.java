@@ -70,6 +70,7 @@ public class FedoraAddDatastreamProducer extends FedoraProducer
         String name = this.getParam(this.endpoint.getName());
         String type = this.getParam(this.endpoint.getType());
         String group = this.getParam(this.endpoint.getGroup());
+        String dsLabel = this.getParam(this.endpoint.getDsLabel());
 
         if (pid == null)
         {
@@ -90,8 +91,8 @@ public class FedoraAddDatastreamProducer extends FedoraProducer
             throw new RuntimeException("fedora:datastream producer requires a Datastream control group");
         }//end else if
 
-        AddDatastream datastream = FedoraClient.addDatastream(pid, name).content(body).mimeType(type).controlGroup(group).versionable(this.endpoint.isVersionable());
-
+        AddDatastream datastream =
+            FedoraClient.addDatastream(pid, name).content(body).mimeType(type).controlGroup(group).dsLabel(dsLabel).versionable(this.endpoint.isVersionable());
         AddDatastreamResponse response = datastream.execute();
 
         Map<String, Object> headers = in.getHeaders();

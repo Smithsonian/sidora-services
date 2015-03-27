@@ -43,7 +43,7 @@ public class FedoraAddDatastreamEndpoint extends FedoraDatastreamEndpoint
     @UriParam
     private String group;
     @UriParam
-    private String label;
+    private String dsLabel;
     @UriParam
     private String location;
     @UriParam
@@ -100,14 +100,14 @@ public class FedoraAddDatastreamEndpoint extends FedoraDatastreamEndpoint
         this.group = group;
     }
 
-    public String getLabel()
+    public String getDsLabel()
     {
-        return label;
+        return dsLabel;
     }
 
-    public void setLabel(String label)
+    public void setDsLabel(String dsLabel)
     {
-        this.label = label;
+        this.dsLabel = dsLabel;
     }
 
     public String getLocation()

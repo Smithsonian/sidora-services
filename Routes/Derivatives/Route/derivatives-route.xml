@@ -33,7 +33,7 @@
     <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
         <property name="connectionFactory" ref="pooledConnectionFactory"/>
         <property name="concurrentConsumers" value="1"/>
-        <!-- Until we choose our means of consuming this avoids duplication -->
+        <!-- When ready we can make this run more consumers. -->
         <!-- <property name="concurrentConsumers" value="10"/> -->
     </bean>
 
@@ -194,7 +194,7 @@
             <choice> <!-- Filter content by image format. -->
                 <when> <!-- If the image is a JPEG? Add an archival JPEG2000 and a thumbnail to the FDO -->
                     <simple>
-                        ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg'
+                        ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
                     <log message="${id} Derivatives: Found JPEG." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
@@ -207,10 +207,25 @@
                         ${header.dsMIME} == 'image/tiff' || ${header.dsMIME} == 'image/tif'
                     </simple>
                     <log message="${id} Derivatives: Found TIFF." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
-                    <!-- Make a JPEG and store it the DISPLAY datastream. -->
-                    <!-- Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
-                    <to uri="direct:processDerivativesThumbnailator"/>
+                    <!-- Make a JPEG and store it the DISPLAY datastream. -->
+                    <recipientList>
+                        <simple>
+                            exec:convert?args= - jpg:-
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when> <!-- If the conversion succeeded, Add a display datastream for the image to the FDO? -->
+                            <simple>${headers.CamelExecExitValue} == 0</simple>
+                            <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
+                            <!-- Also add a thumbnail from the JPEG since TIFF is not supported. -->
+                            <to uri="direct:processDerivativesThumbnailator"/>
+                        </when>
+                        <otherwise>
+                            <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                        </otherwise>
+                    </choice>
+                    <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <when> <!-- If the image is a JPEG2000? Add a JPG datastream and thumbnail to the FDO. -->
                     <simple>
@@ -227,7 +242,7 @@
                     <choice>
                         <when> <!-- If the conversion succeeded, Add a display datastream for the image to the FDO? -->
                             <simple>${headers.CamelExecExitValue} == 0</simple>
-                            <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M"/>
+                            <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
                             <!-- Also add a thumbnail from the JPEG since JPG2 is not supported. -->
                             <to uri="direct:processDerivativesThumbnailator"/>
                         </when>
@@ -236,8 +251,34 @@
                         </otherwise>
                     </choice>
                 </when>
+                <when> <!-- If the image is a PNG, GIF, BMP? Add a JPG datastream and thumbnail for the image to the FDO. -->
+                    <simple>
+                        ${header.dsMIME} == 'image/png' || ${header.dsMIME} == 'image/gif' || ${header.dsMIME} == 'image/bmp'
+                    </simple>
+                    <log message="${id} Derivatives: Found TIFF." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <to uri="direct:processDerivativesThumbnailator"/>
+                    <!-- Make a JPEG and store it the DISPLAY datastream. -->
+                    <recipientList>
+                        <simple>
+                            exec:convert?args= - jpg:-
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when> <!-- If the conversion succeeded, Add a display datastream for the image to the FDO? -->
+                            <simple>${headers.CamelExecExitValue} == 0</simple>
+                            <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
+                            <!-- Also add a thumbnail from the JPEG since TIFF is not supported. -->
+                            <!-- <to uri="direct:processDerivativesThumbnailator"/> -->
+                        </when>
+                        <otherwise>
+                            <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                        </otherwise>
+                    </choice>
+                    <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
+                </when>
                 <otherwise>
-                    <!-- If the image is some other mime type, just log a warning? -->
+                    <!-- If the image is some other MIME type, just log a warning? -->
                     <log message="${id} Derivatives: Unsupported image type found. MIME: ${headers.dsMIME}" loggingLevel="WARN"/>
                 </otherwise>
             </choice>
@@ -289,7 +330,7 @@
 
                     <!-- Copy the OBJ datastream to the CSV datastream. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
-                    <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M"/>
+                    <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
                 </when>
                 <otherwise>
                     <!-- If the dataset is some other mime type, just log a warning? -->
@@ -360,7 +401,7 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
-                    <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=application/x-shockwave-flash&amp;group=M"/>
+                    <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=application/x-shockwave-flash&amp;group=M&amp;dsLabel=Flexpaper&amp;versionable=false"/>
                 </when>
                 <otherwise>
                     <log message="${id} Derivatives: Unable to convert PDF to SWF. PID: ${headers.CamelFedoraPid}  ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
@@ -388,7 +429,7 @@
                         <log message="${id} Derivatives: FITS MIME: ${headers.FITSmimeType}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
                     </setHeader>
                     <log message="${id} Derivatives: Exec FITS. BODY: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
-                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
                     <log message="${id} Derivatives: FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
@@ -402,13 +443,14 @@
             <log message="${id} Derivatives: Started Thumbnailator processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
             <!-- Create a thumbnail derivative using the Thumbnailator library. -->
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(200,150)"/>
-            <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
+            <to uri="fedora:addDatastream?name=TN&amp;type=image/jpg&amp;group=M&amp;dsLabel=Thumbail&amp;versionable=false"/>
             <log message="${id} Derivatives: Finished Thumbnailator processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessThumbnailImage">
             <from uri="direct:processDerivativesThumbnailImage"/>
             <log message="${id} Derivatives: Started Thumbnail Image processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+
             <!--
                 Making a call to camel:exec is less reliable and portable then using the Thumbnailator library.
                 However, ImageMagick can create Thumbails from type that Thumbnailator cannot, for this case
@@ -430,7 +472,7 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
-                    <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
+                    <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
                 </when>
                 <otherwise>
                     <log message="${id} Derivatives: Unable to create thumbnail image. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
