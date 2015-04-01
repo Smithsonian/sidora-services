@@ -38,7 +38,6 @@ import org.apache.camel.impl.DefaultComponent;
  */
 public class ExtractorComponent extends DefaultComponent
 {
-
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception
     {

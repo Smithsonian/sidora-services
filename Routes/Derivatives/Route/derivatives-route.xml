@@ -47,6 +47,8 @@
         <property name="configuration" ref="jmsConfig"/>
     </bean>
 
+    <bean id="excelToCSV" class="edu.si.services.beans.excel.ExcelToCSV"/>
+
     <bean id="modelAggregator" class="edu.si.services.fedorarepo.aggregators.ContentModelAggregationStrategy"/>
     
     <bean id="contentModels" class="java.util.HashSet"/>
@@ -309,9 +311,12 @@
             <choice> <!-- Filter content by dataset format. -->
                 <when> <!-- If the content is Excel? -->
                     <simple>
-                        ${header.dsMIME} == 'application/vnd.ms-excel'
+                        ${header.dsMIME} == 'application/vnd.ms-excel' || ${header.dsMIME} == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     </simple>
                     <log message="${id} Derivatives: Found Excel." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+                    <bean ref="excelToCSV" method="convertExcelToCSV"/>
+                    <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
                     <log message="${id} Derivatives: Excel formats are not yet supported. MIME: ${headers.dsMIME}" loggingLevel="WARN"/>
 
                     <!-- Get the Excel content and an convert to CSV using Apache POI and/or OpenOffice. -->

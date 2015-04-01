@@ -45,8 +45,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ReaderProducer extends DefaultProducer
 {
-
     private static final Logger LOG = LoggerFactory.getLogger(ReaderProducer.class);
+
     private ReaderEndpoint endpoint;
 
     public ReaderProducer(ReaderEndpoint endpoint)
@@ -73,7 +73,7 @@ public class ReaderProducer extends DefaultProducer
         }
         else
         {
-            //Change to GenericFile...
+            // Change to GenericFile...
             out.setBody(file, File.class);
         }
 
@@ -82,7 +82,6 @@ public class ReaderProducer extends DefaultProducer
 
     private File findFile(String body, Map<String, Object> headers) throws FileNotFoundException
     {
-
         File file = new File(body);
         if (!file.exists())
         {
@@ -125,4 +124,4 @@ public class ReaderProducer extends DefaultProducer
         return headers;
     }
 
-}//end ReadProducer.class
+}// end ReadProducer.class

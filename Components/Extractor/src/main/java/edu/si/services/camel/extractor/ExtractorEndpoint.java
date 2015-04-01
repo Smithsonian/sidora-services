@@ -39,7 +39,6 @@ import org.apache.camel.impl.DefaultEndpoint;
  */
 public class ExtractorEndpoint extends DefaultEndpoint
 {
-
     private String location;
 
     public ExtractorEndpoint()

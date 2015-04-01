@@ -48,7 +48,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ExtractorProducer extends DefaultProducer
 {
-
     private static final Logger LOG = LoggerFactory.getLogger(ExtractorProducer.class);
     private final ExtractorEndpoint endpoint;
 

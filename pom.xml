@@ -13,6 +13,7 @@
 
     <modules>
         <module>Components</module>
+        <module>Beans</module>
     </modules>    
     
 </project>
