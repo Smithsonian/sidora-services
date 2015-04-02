@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
@@ -13,16 +14,14 @@
     <!-- <url>http://oris.si.edu/sidora</url> -->
 
     <properties>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <camel.version>2.12.3</camel.version>
+        <camel.version>2.14.1</camel.version>
         <slf4j.version>1.7.6</slf4j.version>
         <log4j.version>1.2.17</log4j.version>
         <fedora.client.version>0.7</fedora.client.version>
         <jersy.version>1.17.1</jersy.version>
         <fedoraUrl>localhost:8080/fedora</fedoraUrl>
-
     </properties>
 
     <dependencies>
@@ -108,7 +107,6 @@
     </dependencies>
 
     <build>
-
         <defaultGoal>install</defaultGoal>
 
         <plugins>
@@ -145,9 +143,15 @@
                         <Import-Package>*;resolution:="optional"</Import-Package>
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
-                        
                         <!--<DynamicImport-Package>com.fasterxml.jackson.*</DynamicImport-Package>-->
-                        <Export-Package>edu.si.services.fedorarepo,edu.si.services.fedorarepo.aggregators,edu.si.services.fedorarepo.datastream,edu.si.services.fedorarepo.ingest,edu.si.services.fedorarepo.pid,edu.si.services.fedorarepo.search</Export-Package>
+                        <Export-Package>
+                            edu.si.services.fedorarepo,
+                            edu.si.services.fedorarepo.aggregators,
+                            edu.si.services.fedorarepo.datastream,
+                            edu.si.services.fedorarepo.ingest,
+                            edu.si.services.fedorarepo.pid,
+                            edu.si.services.fedorarepo.search
+                        </Export-Package>
                         <Private-Package>edu.si.services.fedorarepo.*</Private-Package>
                     </instructions>
                 </configuration>
@@ -168,7 +172,6 @@
             </plugin>
 
         </plugins>
-
     </build>
 
 </project>
