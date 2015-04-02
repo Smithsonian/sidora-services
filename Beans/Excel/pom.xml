@@ -41,22 +41,22 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>3.12-beta1</version>
-            <scope>compile</scope>
+            <version>3.11</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>3.12-beta1</version>
-            <scope>compile</scope>
+            <version>3.11</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml-schemas</artifactId>
-            <version>3.12-beta1</version>
-            <scope>compile</scope>
+            <version>3.11</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Logging -->
@@ -135,7 +135,9 @@
                         <Embed-Transitive>true</Embed-Transitive>
 
                         <Import-Package>
-                            javax.xml.stream.XMLEventFactory,
+                            org.apache.poi; version=3.11.0,
+
+                            <!-- javax.xml.stream.XMLEventFactory, -->
                             <!-- poi 3.12-beta1 -->
                             com.sun.javadoc; resolution:=optional,
                             com.sun.tools.javadoc; resolution:=optional,
