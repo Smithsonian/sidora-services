@@ -365,8 +365,9 @@
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
 
                     <multicast>
-                        <to uri="direct:processDerivativesPDF2SWF"/>
+                        <!-- Because of a file deletion in PDF2SWF the order of these two routes is important. -->
                         <to uri="direct:processDerivativesThumbnailImage"/>
+                        <to uri="direct:processDerivativesPDF2SWF"/>
                     </multicast>
 
                 </when>
@@ -379,7 +380,7 @@
             <log message="${id} Derivatives: Finished PDF processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
         </route>
 
-        <route id="DerivativesProcessPDF2SWF">
+        <route id="DerivativesProcessPDF2SWF" trace="true">
             <from uri="direct:processDerivativesPDF2SWF"/>
             <log message="${id} Derivatives: Started PDF2SWF processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
             <!-- Create a Flash derivative using pdf2swf for the Flexpaper viewer. -->
@@ -387,7 +388,7 @@
             <to uri="file://staging/"/> <!-- This will create a temporary file that must be cleaned out. -->
             <recipientList>
                 <simple>
-                    exec:pdf2swf?args=${header.CamelFileNameProduced}
+                    exec:pdf2swf?args=${header.CamelFileNameProduced} -o ${header.CamelFileNameProduced}.swf
                 </simple>
             </recipientList>
             <choice>
@@ -396,10 +397,38 @@
                         ${headers.CamelExecExitValue} == 0
                     </simple>
                     <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=application/x-shockwave-flash&amp;group=M&amp;dsLabel=Flexpaper&amp;versionable=false"/>
+                    <recipientList> <!-- Delete the temporary SWF conversion file. Note: This approach is Unix specific. -->
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.swf
+                        </simple>
+                    </recipientList>
+                    <choice>
+                       <when>
+                           <simple>
+                               ${headers.CamelExecExitValue} != 0
+                           </simple>
+                           <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.swf" loggingLevel="WARN"/>
+                           <!-- We also want to proactively tell monitoring -->
+                       </when>
+                    </choice>
                 </when>
                 <otherwise>
                     <log message="${id} Derivatives: Unable to convert PDF to SWF. PID: ${headers.CamelFedoraPid}  ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
                 </otherwise>
+            </choice>
+            <recipientList> <!-- Delete the temporary file. Note: This approach is Unix specific. -->
+                <simple>
+                    exec:rm?args=-f ${header.CamelFileNameProduced}
+                </simple>
+            </recipientList>
+            <choice>
+            <when>
+                <simple>
+                    ${headers.CamelExecExitValue} != 0
+                </simple>
+                <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}" loggingLevel="WARN"/>
+                <!-- We also want to proactively tell monitoring -->
+            </when>
             </choice>
             <log message="${id} Derivatives: Finished PDF2SWF processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
         </route>
