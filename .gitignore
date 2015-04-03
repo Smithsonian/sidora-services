@@ -3,6 +3,7 @@
 /Components/Thumbnailator/target/
 /Components/Reader/target/
 /Components/Extractor/target/
+/Beans/Excel/target
 **/.idea/workspace.xml
 **/.idea/tasks.xml
 *.iml
