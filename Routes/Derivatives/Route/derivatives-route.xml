@@ -176,7 +176,6 @@
             <!-- We could get the MIME type from the datastream metadata or FITS (or both and compare). -->
             <!-- For now we will just trust Fedora's datastream metadata. -->
             <!-- We really should only make new derivatives if the OBJ has changed. -->
-            <!-- <to uri="direct://processDerivativesFITS"/> -->
 
             <!-- Get the MIME type from the datastream profile. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
@@ -202,6 +201,7 @@
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
                     <!-- Add a thumbnail from the JPEG. -->
                     <to uri="direct:processDerivativesThumbnailator"/>
+                    <to uri="direct://processDerivativesFITS"/>
                     <!-- Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <when> <!-- If the image is a TIFF? Add a JPG datastream and thumbnail for the image to the FDO. -->
@@ -227,6 +227,7 @@
                             <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
                         </otherwise>
                     </choice>
+                    <to uri="direct://processDerivativesFITS"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <when> <!-- If the image is a JPEG2000? Add a JPG datastream and thumbnail to the FDO. -->
@@ -252,6 +253,7 @@
                             <log message="${id} Derivatives: Unable to convert JP2 to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
                         </otherwise>
                     </choice>
+                    <to uri="direct://processDerivativesFITS"/>
                 </when>
                 <when> <!-- If the image is a PNG, GIF, BMP? Add a JPG datastream and thumbnail for the image to the FDO. -->
                     <simple>
@@ -277,6 +279,7 @@
                             <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
                         </otherwise>
                     </choice>
+                    <to uri="direct://processDerivativesFITS"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <otherwise>
@@ -441,9 +444,11 @@
             <from uri="direct:processDerivativesFITS"/>
             <log message="${id} Derivatives: Started FITS processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
             <!-- Create a FITS derivative using Harvard FITS. -->
+            <to uri="file://staging/"/> <!-- This will create a temporary file that must be cleaned out. -->
             <recipientList>
                 <simple>
                     exec:fits?args=-i ${header.CamelFileNameProduced}
+                    <!-- exec:fits?args=RAW(-i <<< /dev/stdin) -->
                 </simple>
             </recipientList>
             <choice>
@@ -461,6 +466,20 @@
                 <otherwise>
                     <log message="${id} Derivatives: FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
                 </otherwise>
+            </choice>
+            <recipientList> <!-- Delete the temporary file. Note: This approach is Unix specific. -->
+                <simple>
+                    exec:rm?args=-f ${header.CamelFileNameProduced}
+                </simple>
+            </recipientList>
+            <choice>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} != 0
+                    </simple>
+                    <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}" loggingLevel="WARN"/>
+                    <!-- We also want to proactively tell monitoring -->
+                </when>
             </choice>
             <log message="${id} Finished Derivatives FITS processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
         </route>
