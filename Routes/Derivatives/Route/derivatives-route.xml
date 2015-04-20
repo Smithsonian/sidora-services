@@ -74,9 +74,13 @@
 
         <route id="DerivativesStartProcessing">
             <from uri="activemq:queue:sidora.apim.update"/>
-            <log message="${id} Derivatives: Starting processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
             <log message="${id} Derivatives: Processing PID: ${headers.pid}  Method Name: ${headers.methodName}  Origin: {{si.fedora.user}}"/>
-            <log message="${id} Derivatives: Processing BODY: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Processing BODY: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
             
             <!--
                 The login used by the source of the message is put in the ATOM Author element by Fedora. Since this
@@ -108,11 +112,19 @@
         
         <route id="DerivativesProcessMessage">
             <from uri="direct:processDerivativesMessage"/>
-            <log message="${id} Derivatives: Starting Derivatives Message processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting Derivatives Message processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
             
             <!-- Get the PID of the FDO that was just operated upon. -->
-            <log message="${id} Derivatives: PID: ${headers.pid}  Method Name: ${headers.methodName}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
-            <setHeader headerName="CamelFedoraPid"><simple>${headers.pid}</simple></setHeader>
+            <log message="${id} Derivatives: PID: ${headers.pid}  Method Name: ${headers.methodName}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${headers.pid}
+                </simple>
+            </setHeader>
 
             <!-- Get the DSID from the Atom message if any. -->
             <setHeader headerName="DSID">
@@ -120,19 +132,27 @@
                     /atom:entry/atom:category[@scheme="fedora-types:dsID"]/@term
                 </xpath>
             </setHeader>
-            <log message="${id} Derivatives: Atom DSID: ${headers.DSID}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Atom DSID: ${headers.DSID}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!-- Get the Content Models for the FDO and put them on a list. -->
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String" charset="utf-8"/>
-            <log message="${id} Derivatives: RELS-EXT: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: RELS-EXT: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
             <split strategyRef="modelAggregator">
                 <xpath>
                     //fs:hasModel/@rdf:resource
                 </xpath>
-                <log message="${id} Derivatives: Split Content Model. BODY: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                <log message="${id} Derivatives: Split Content Model. BODY: ${body}"
+                     loggingLevel="DEBUG"
+                     logName="edu.si.derivatives"/>
             </split>
-            <log message="${id} Derivatives: Content Models: ${header.ContentModels}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Content Models: ${header.ContentModels}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
             
             <choice> <!-- Filter by content model. -->
                 <when> <!-- If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." -->
@@ -141,7 +161,9 @@
                           request.headers[ContentModels].contains('info:fedora/si:generalImageCModel')) and
                           request.headers[DSID] == 'OBJ'}
                     </spel>
-                    <log message="${id} Derivatives: Found Image." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found Image."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <to uri="direct:processDerivativesImage"/>
                 </when>
                 <when> <!-- If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." -->
@@ -149,7 +171,9 @@
                         #{request.headers[ContentModels].contains('info:fedora/si:fieldbookCModel') and
                           request.headers[DSID] == 'OBJ'}
                     </spel>
-                    <log message="${id} Derivatives: Found PDF." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found PDF."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <to uri="direct:processDerivativesPDF"/>
                 </when>
                 <when> <!-- If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." -->
@@ -157,7 +181,9 @@
                         #{request.headers[ContentModels].contains('info:fedora/si:datasetCModel') and
                           request.headers[DSID] == 'OBJ'}
                     </spel>
-                    <log message="${id} Derivatives: Found Dataset." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found Dataset."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <to uri="direct:processDerivativesDataset"/>
                 </when>
                 <otherwise> <!-- No supported content model was found. -->
@@ -165,12 +191,16 @@
                 </otherwise>
             </choice>
             
-            <log message="${id} Derivatives: Finished Message processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished Message processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessImage">
             <from uri="direct:processDerivativesImage"/>
-            <log message="${id} Derivatives: Starting Image processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting Image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!-- We could submit the file to FITS processing to get the MIME but that can be complicated. -->
             <!-- We could get the MIME type from the datastream metadata or FITS (or both and compare). -->
@@ -179,21 +209,27 @@
 
             <!-- Get the MIME type from the datastream profile. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
-            <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
             <setHeader headerName="dsMIME">
                 <xpath resultType="java.lang.String">
                     /fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()
                 </xpath>
             </setHeader>
-            <log message="${id} Derivatives: Datastream Metadata. MIME: ${header.dsMIME}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Datastream Metadata. MIME: ${header.dsMIME}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!--
-                We need to convert to a good lossless JPEG2000. This current code uses a very naive approach.  DGI has
-                quite a bit more in their Python conversions so we need to improve this, likely with help.
+                DGI has quite a bit more in their Python conversions so we need to improve this.
             -->
 
             <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
             <to uri="file://staging/"/>
+            <log message="${id} Derivatives: Staged file. BODY: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <choice> <!-- Filter content by image format. -->
 
@@ -201,7 +237,9 @@
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
-                    <log message="${id} Derivatives: Found JPEG." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found JPEG."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <!-- Add a thumbnail from the JPEG. -->
                     <multicast>
                         <to uri="direct://processDerivativesThumbnailator"/>
@@ -214,7 +252,9 @@
                     <simple>
                         ${header.dsMIME} == 'image/tiff' || ${header.dsMIME} == 'image/tif'
                     </simple>
-                    <log message="${id} Derivatives: Found TIFF." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found TIFF."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <multicast>
                         <to uri="direct://processDerivativesTIFFImage"/>
                         <to uri="direct://processDerivativesFITS"/>
@@ -226,8 +266,9 @@
                     <simple>
                         ${header.dsMIME} == 'image/jp2'
                     </simple>
-                    <log message="${id} Derivatives: Found JPEG2000." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
-                    <!-- Convert the image to JPEG and store that in the DISPLAY datastream. Make a thumbnail. -->
+                    <log message="${id} Derivatives: Found JPEG2000."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <multicast>
                         <to uri="direct://processDerivativesJP2Image"/>
                         <to uri="direct://processDerivativesFITS"/>
@@ -238,9 +279,10 @@
                     <simple>
                         ${header.dsMIME} == 'image/png' || ${header.dsMIME} == 'image/gif' || ${header.dsMIME} == 'image/bmp'
                     </simple>
-                    <log message="${id} Derivatives: Found PNG, GIF or BMP." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found PNG, GIF or BMP."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesThumbnailator"/>
                         <to uri="direct://processDerivativesBGPImage"/>
                         <to uri="direct://processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
@@ -249,7 +291,8 @@
 
                 <otherwise>
                     <!-- If the image is some other MIME type, just log a warning? -->
-                    <log message="${id} Derivatives: Unsupported image type found. MIME: ${headers.dsMIME}" loggingLevel="WARN"/>
+                    <log message="${id} Derivatives: Unsupported image type found. MIME: ${headers.dsMIME}"
+                         loggingLevel="WARN"/>
                 </otherwise>
 
             </choice>
@@ -264,21 +307,27 @@
                     <simple>
                         ${headers.CamelExecExitValue} != 0
                     </simple>
-                    <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}" loggingLevel="WARN"/>
+                    <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}"
+                         loggingLevel="WARN"/>
                     <!-- We also want to proactively tell monitoring -->
                 </when>
             </choice>
 
-            <log message="${id} Derivatives: Finished Image processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessTIFFImage">
             <from uri="direct:processDerivativesTIFFImage"/>
-            <log message="${id} Derivatives: Starting TIFF image processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting TIFF image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <recipientList>
                 <simple>
-                    exec:convert?args= - jpg:-
+                    <!-- exec:convert?args= - jpg:- -->
+                    exec:convert?args= - jpg:${header.CamelFileNameProduced}.jpg
                 </simple>
             </recipientList>
             <choice>
@@ -286,25 +335,56 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
                     <!-- Also add a thumbnail from the JPEG since TIFF is not supported. -->
                     <to uri="direct:processDerivativesThumbnailator"/>
+
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
+                    <recipientList>
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.jpg"
+                                 loggingLevel="WARN"/>
+                            <!-- We also want to proactively tell monitoring -->
+                        </when>
+                    </choice>
                 </when>
                 <otherwise>
-                    <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                    <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} Derivatives: Finished TIFF Image processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished TIFF Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessJP2Image">
             <from uri="direct:processDerivativesJP2Image"/>
-            <log message="${id} Derivatives: Starting JP2 image processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting JP2 image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- We need to convert to a good lossless JPEG2000. This current code uses a very naive approach. -->
 
             <recipientList>
                 <simple>
-                    exec:convert?args= - jpg:-
+                    <!-- exec:convert?args= - jpg:- -->
+                    exec:convert?args= - jpg:${header.CamelFileNameProduced}.jpg
                 </simple>
             </recipientList>
             <choice>
@@ -312,25 +392,54 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
                     <!-- Also add a thumbnail from the JPEG since JPG2 is not supported. -->
                     <to uri="direct:processDerivativesThumbnailator"/>
+
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
+                    <recipientList>
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.jpg"
+                                 loggingLevel="WARN"/>
+                            <!-- We also want to proactively tell monitoring -->
+                        </when>
+                    </choice>
                 </when>
                 <otherwise>
-                    <log message="${id} Derivatives: Unable to convert JP2 to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                    <log message="${id} Derivatives: Unable to convert JP2 to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} Derivatives: Finished JP2 Image processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished JP2 Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessBGPImage">
             <from uri="direct:processDerivativesBGPImage"/>
-            <log message="${id} Derivatives: Starting BGP image processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting BGP image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <recipientList>
                 <simple>
-                    exec:convert?args= - jpg:-
+                    <!-- exec:convert?args= - jpg:- -->
+                    exec:convert?args= - jpg:${header.CamelFileNameProduced}.jpg
                 </simple>
             </recipientList>
             <choice>
@@ -338,19 +447,48 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
+                    <to uri="direct://processDerivativesThumbnailator"/>
+
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
+                    <recipientList>
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.jpg"
+                                 loggingLevel="WARN"/>
+                            <!-- We also want to proactively tell monitoring -->
+                        </when>
+                    </choice>
                 </when>
                 <otherwise>
-                    <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                    <log message="${id} Derivatives: Unable to convert TIFF to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} Derivatives: Finished BGP Image processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished BGP Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessDataset">
             <from uri="direct:processDerivativesDataset"/>
-            <log message="${id} Derivatives: Starting Dataset processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting Dataset processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!-- We could submit the file to FITS processing to get the MIME but that can be complicated. -->
             <!-- We could get the MIME type from the datastream metadata or FITS (or both and compare). -->
@@ -360,13 +498,18 @@
 
             <!-- Get the MIME type from the datastream profile. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
-            <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
             <setHeader headerName="dsMIME">
                 <xpath resultType="java.lang.String">
                     /fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()
                 </xpath>
             </setHeader>
-            <log message="${id} Derivatives: Datastream Metadata. MIME: ${header.dsMIME}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Datastream Metadata. MIME: ${header.dsMIME}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <choice> <!-- Filter content by dataset format. -->
 
@@ -374,7 +517,9 @@
                     <simple>
                         ${header.dsMIME} == 'application/vnd.ms-excel' || ${header.dsMIME} == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     </simple>
-                    <log message="${id} Derivatives: Found Excel." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found Excel."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
                     <bean ref="excelToCSV" method="convertExcelToCSV"/>
                     <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
@@ -384,7 +529,9 @@
                     <simple>
                         ${header.dsMIME} == 'text/csv'
                     </simple>
-                    <log message="${id} Derivatives: Found CSV." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Found CSV."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
 
                     <!-- Copy the OBJ datastream to the CSV datastream. -->
                     <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
@@ -393,17 +540,22 @@
 
                 <otherwise>
                     <!-- If the dataset is some other mime type, just log a warning? -->
-                    <log message="${id} Derivatives: Not a supported dataset format.. MIME: ${headers.dsMIME}" loggingLevel="WARN"/>
+                    <log message="${id} Derivatives: Not a supported dataset format.. MIME: ${headers.dsMIME}"
+                         loggingLevel="WARN"/>
                 </otherwise>
 
             </choice>
 
-            <log message="${id} Derivatives: Finished Dataset processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished Dataset processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessPDF">
             <from uri="direct:processDerivativesPDF"/>
-            <log message="${id} Derivatives: Starting PDF processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Starting PDF processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!-- We really should make new derivatives only if OBJ has changed. -->
             <!-- We could get the MIME type from the datastream metadata or FITS (or both and compare). -->
@@ -412,14 +564,18 @@
             <!-- Get the MIME type from the datastream profile. -->
             <!-- We should try the getDatastream more than once if it fails. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
-            <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <setHeader headerName="dsMIME">
                 <xpath resultType="java.lang.String">
                     /fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()
                 </xpath>
             </setHeader>
-            <log message="${id} Derivatives: Datastream Metadata. MIME: ${header.dsMIME}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Datastream Metadata. MIME: ${header.dsMIME}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <choice> <!-- Filter the content by PDF type (remember PDF-A) -->
 
@@ -427,7 +583,9 @@
                     <simple>
                         ${header.dsMIME} == 'application/pdf'
                     </simple>
-                    <log message="${id} Derivatives: Process PDF." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Process PDF."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     
                     <!-- Get the PDF from the FDO. -->
                     <!-- We should try the getDatastreamDissemination more than once if it fails. -->
@@ -447,23 +605,30 @@
                             <simple>
                               ${headers.CamelExecExitValue} != 0
                             </simple>
-                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}" loggingLevel="WARN"/>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}"
+                                 loggingLevel="WARN"/>
                             <!-- We also want to proactively tell monitoring -->
                        </when>
                     </choice>
                 </when>
                 <otherwise>
                     <!-- If the PDF is some other mime type, just log a warning? -->
-                    <log message="${id} Derivatives: Not a PDF. MIME: ${headers.dsMIME}" loggingLevel="WARN"  logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Not a PDF. MIME: ${headers.dsMIME}"
+                         loggingLevel="WARN"
+                         logName="edu.si.derivatives"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} Derivatives: Finished PDF processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished PDF processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessPDF2SWF">
             <from uri="direct:processDerivativesPDF2SWF"/>
-            <log message="${id} Derivatives: Started PDF2SWF processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Started PDF2SWF processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!-- Create a Flash derivative using pdf2swf for the Flexpaper viewer. -->
             <!-- Unfortunately pdf2swf cannot accept a pipe as an input stream source, hence we use a temporary file. -->
@@ -498,28 +663,35 @@
                            <simple>
                                ${headers.CamelExecExitValue} != 0
                            </simple>
-                           <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.swf" loggingLevel="WARN"/>
+                           <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.swf"
+                                loggingLevel="WARN"/>
                            <!-- We also want to proactively tell monitoring -->
                        </when>
                     </choice>
                 </when>
 
                 <otherwise>
-                    <log message="${id} Derivatives: Unable to convert PDF to SWF. PID: ${headers.CamelFedoraPid}  ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                    <log message="${id} Derivatives: Unable to convert PDF to SWF. PID: ${headers.CamelFedoraPid}  ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
                 </otherwise>
 
             </choice>
 
-            <log message="${id} Derivatives: Finished PDF2SWF processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished PDF2SWF processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessFITS">
             <from uri="direct:processDerivativesFITS"/>
-            <log message="${id} Derivatives: Started FITS processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Started FITS processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!-- Create a FITS derivative using Harvard FITS. -->
             <recipientList>
                 <simple>
+                    <!-- exec:fits?args=-i ${header.CamelFileNameProduced} -o ${header.CamelFileName.produced}.xml -->
                     exec:fits?args=-i ${header.CamelFileNameProduced}
                     <!-- exec:fits?args=RAW(-i <<< /dev/stdin) -->
                 </simple>
@@ -532,35 +704,49 @@
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
-                        <log message="${id} Derivatives: FITS MIME: ${headers.FITSmimeType}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                        <log message="${id} Derivatives: FITS MIME: ${headers.FITSmimeType}"
+                             loggingLevel="DEBUG"
+                             logName="edu.si.derivatives"/>
                     </setHeader>
-                    <log message="${id} Derivatives: Exec FITS. BODY: ${body}" loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+                    <log message="${id} Derivatives: Exec FITS. BODY: ${body}"
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS&amp;group=X&amp;versionable=false"/>
                 </when>
 
                 <otherwise>
-                    <log message="${id} Derivatives: FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                    <log message="${id} Derivatives: FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
                 </otherwise>
 
             </choice>
 
-            <log message="${id} Finished Derivatives FITS processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Finished Derivatives FITS processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessThumbnailator">
             <from uri="direct:processDerivativesThumbnailator"/>
-            <log message="${id} Derivatives: Started Thumbnailator processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Started Thumbnailator processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!-- Create a thumbnail derivative using the Thumbnailator library. -->
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(200,150)"/>
             <to uri="fedora:addDatastream?name=TN&amp;type=image/jpg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
 
-            <log message="${id} Derivatives: Finished Thumbnailator processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished Thumbnailator processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
         <route id="DerivativesProcessThumbnailImage" trace="true">
             <from uri="direct:processDerivativesThumbnailImage"/>
-            <log message="${id} Derivatives: Started Thumbnail Image processing ..." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Started Thumbnail Image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
 
             <!--
                 Making a call to camel:exec is less reliable and portable then using the Thumbnailator library.
@@ -599,17 +785,21 @@
                             <simple>
                                 ${headers.CamelExecExitValue} != 0
                             </simple>
-                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.swf" loggingLevel="WARN"/>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.jpg"
+                                 loggingLevel="WARN"/>
                             <!-- We also want to proactively tell monitoring. -->
                         </when>
                     </choice>
                 </when>
                 <otherwise>
-                    <log message="${id} Derivatives: Unable to create thumbnail image. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}" loggingLevel="ERROR"/>
+                    <log message="${id} Derivatives: Unable to create thumbnail image. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} Derivatives: Finished Thumbnail Image processing." loggingLevel="DEBUG" logName="edu.si.derivatives"/>
+            <log message="${id} Derivatives: Finished Thumbnail Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
         </route>
 
     </camelContext>
