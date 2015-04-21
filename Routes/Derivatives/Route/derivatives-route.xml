@@ -209,9 +209,13 @@
 
             <!-- Get the MIME type from the datastream profile. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+
+            <!--
             <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+            -->
+
             <setHeader headerName="dsMIME">
                 <xpath resultType="java.lang.String">
                     /fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()
@@ -227,9 +231,11 @@
 
             <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
             <to uri="file://staging/"/>
+            <!--
             <log message="${id} Derivatives: Staged file. BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+            -->
 
             <choice> <!-- Filter content by image format. -->
 
@@ -498,9 +504,11 @@
 
             <!-- Get the MIME type from the datastream profile. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <!--
             <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+            -->
 
             <setHeader headerName="dsMIME">
                 <xpath resultType="java.lang.String">
@@ -564,9 +572,11 @@
             <!-- Get the MIME type from the datastream profile. -->
             <!-- We should try the getDatastream more than once if it fails. -->
             <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <!--
             <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+            -->
 
             <setHeader headerName="dsMIME">
                 <xpath resultType="java.lang.String">
@@ -645,7 +655,11 @@
                         ${headers.CamelExecExitValue} == 0
                     </simple>
 
-                    <setBody><simple>${header.CamelFileNameProduced}.swf</simple></setBody>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.swf
+                        </simple>
+                    </setBody>
                     <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=application/x-shockwave-flash&amp;group=M&amp;dsLabel=Flexpaper&amp;versionable=false"/>
 
@@ -691,8 +705,8 @@
             <!-- Create a FITS derivative using Harvard FITS. -->
             <recipientList>
                 <simple>
-                    <!-- exec:fits?args=-i ${header.CamelFileNameProduced} -o ${header.CamelFileName.produced}.xml -->
-                    exec:fits?args=-i ${header.CamelFileNameProduced}
+                    exec:fits?args=-i ${header.CamelFileNameProduced} -o ${header.CamelFileNameProduced}.xml&amp;outFile=${header.CamelFileNameProduced}.xml
+                    <!-- exec:fits?args=-i ${header.CamelFileNameProduced} -->
                     <!-- exec:fits?args=RAW(-i <<< /dev/stdin) -->
                 </simple>
             </recipientList>
@@ -712,7 +726,30 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
 
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.xml
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS&amp;group=X&amp;versionable=false"/>
+
+                    <!-- Delete the temporary XML conversion file. Note: This approach is Unix specific. -->
+                    <!-- We also want to proactively tell monitoring -->
+                    <recipientList>
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.xml
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.swf"
+                                 loggingLevel="WARN"/>
+                        </when>
+                    </choice>
                 </when>
 
                 <otherwise>
@@ -771,7 +808,11 @@
                         ${headers.CamelExecExitValue} == 0
                     </simple>
 
-                    <setBody><simple>${header.CamelFileNameProduced}.jpg</simple></setBody>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </setBody>
                     <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
 
