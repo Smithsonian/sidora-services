@@ -65,6 +65,10 @@
                   trace="false"
                   streamCache="true">
 
+        <!--
+            The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
+        -->
+
         <errorHandler id="derivativesErrorHandler" type="DefaultErrorHandler">
             <redeliveryPolicy maximumRedeliveries="20"
                               retryAttemptedLogLevel="WARN"
