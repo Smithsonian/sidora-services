@@ -701,8 +701,8 @@
                 </simple>
             </recipientList>
             <choice>
-
-                <when> <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
+                <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
+                <when>
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
@@ -715,15 +715,12 @@
                     <log message="${id} Derivatives: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
-
-                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS&amp;group=X&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
-
                 <otherwise>
                     <log message="${id} Derivatives: FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
                          loggingLevel="ERROR"/>
                 </otherwise>
-
             </choice>
 
             <log message="${id} Finished Derivatives FITS processing."

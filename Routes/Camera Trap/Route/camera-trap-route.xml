@@ -9,6 +9,10 @@
     <cm:property-placeholder id="system.placeholder" persistent-id="camel.blueprint"/>
 
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
+
+    <bean id="noRootObject" class="java.lang.IllegalArgumentException">
+        <argument value="CameraTrapIngest: Root object does not exist."/>
+    </bean>
     
     <!--
         TODO: Add Deployment Metadata backport
@@ -47,7 +51,7 @@
 
         <route id="CameraTrapStartProcessing">
             <from uri="file:Process?moveFailed=Error_CamelTrap&amp;delete=true"/>
-            <log message="${id} CameraTrap: Starting Camera Trap processing ..."
+            <log message="${id} CameraTrapIngest: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <!--If there is an issue with staging large archives we can can 'slow' down the route with delay below. -->
@@ -56,9 +60,9 @@
                 <constant>3000</constant>
             </delay>
             -->
-            <log message="${id} CameraTrap: Starting Extraction"/>
+            <log message="${id} CameraTrapIngest: Starting Extraction"/>
             <to uri="extractor:extract?location=CameraTrapData"/>
-            <log message="${id} CameraTrap: Finished Extraction"/>
+            <log message="${id} CameraTrapIngest: Finished Extraction"/>
             <transform>
                 <simple>deployment_manifest.xml</simple>
             </transform>
@@ -67,14 +71,14 @@
             <!-- Add Schematron validation. -->
             <!-- Add image count check. -->
             <to uri="direct:processPackage"/>
-            <log message="${id} CameraTrap: Finished Camera Trap processing!"
+            <log message="${id} CameraTrapIngest: Finished Camera Trap processing!"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapProcessPackage">
             <from uri="direct:processPackage"/>
-            <log message="${id} CameraTrap: Starting Package processing..."
+            <log message="${id} CameraTrapIngest: Starting Package processing..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <setHeader headerName="ManifestXML">
@@ -83,43 +87,43 @@
                 </simple>
             </setHeader>
             <to uri="direct:processParents"/>
-            <!--
-                The CamelFedoraPid is coming out correctly but the manifest is overwritten on some routes. Since
-                Camel supports doing XPath directly from headers this is convenient.
-             -->
             <setBody>
                 <simple>
-                    ${headers.ManifestXML}
+                    ${header.ManifestXML}
                 </simple>
             </setBody>
             <to uri="direct:processSite"/>
-            <log message="${id} CameraTrap: Finished Package processing."
+            <log message="${id} CameraTrapIngest: Finished Package processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapProcessSite">
             <from uri="direct:processSite"/>
-            <log message="${id} CameraTrap: Starting Site processing... "
+            <log message="${id} CameraTrapIngest: Starting Site processing... "
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String">
                     //CameraSiteName
                 </xpath>
             </setHeader>
-            <!-- <log message="SiteLabel - ${header.CamelFedoraLabel}" /> -->
+            <log message="${id} CameraTrapIngest: Site: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+            <!-- Stash the parent PID which could be a Plot or a Sub-project. -->
             <setHeader headerName="ParentPID">
                 <simple>
-                    ${headers.CamelFedoraPid}
+                    ${header.CamelFedoraPid}
                 </simple>
             </setHeader>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-            <log message="${id} CameraTrap: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-            <log message="${id} CameraTrap: Add Relation: Status - ${header.CamelFedoraStatus}"
+            <log message="${id} CameraTrapIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <multicast>
@@ -127,41 +131,47 @@
                 <to uri="direct:fgdc"/>
                 <to uri="direct:processResources"/>
             </multicast>
-            <log message="${id} CameraTrap: Finished Site processing."
+
+            <log message="${id} CameraTrapIngest: Finished Site processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapTransformManifest">
             <from uri="direct:manifest"/>
-            <log message="${id} CameraTrap: Starting Manifest processing ..."
+            <log message="${id} CameraTrapIngest: Starting Manifest processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <to uri="fedora:addDatastream?name=MANIFEST&amp;type=text/xml&amp;group=M"/>
-            <log message="${id} CameraTrap: Finished Manifest processing."
+
+            <to uri="fedora:addDatastream?name=MANIFEST&amp;type=text/xml&amp;group=M&amp;dsLabel=MANIFEST"/>
+
+            <log message="${id} CameraTrapIngest: Finished Manifest processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapAddFGDCDatastream">
             <from uri="direct:fgdc"/>
-            <log message="${id} CameraTrap: Starting FGDC processing ..."
+            <log message="${id} CameraTrapIngest: Starting FGDC processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
             <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
-            <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M"/>
-            <log message="${id} CameraTrap: Finished FGDC processing."
+            <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
+
+            <log message="${id} CameraTrapIngest: Finished FGDC processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapTransformResearcherData">
             <from uri="direct:researcher"/>
-            <log message="${id} CameraTrap: Starting Researcher's data processing ..."
+            <log message="${id} CameraTrapIngest: Starting Researcher's data processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
             <setHeader headerName="CamelFedoraLabel">
                 <simple>
                     researcher_observation.csv
@@ -179,19 +189,27 @@
                     //researcher/text()
                 </xpath>
             </transform>
-            <to uri="fedora:addDatastream?name=RESEARCHER&amp;type=text/csv&amp;group=M"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
-            <to uri="fedora:addDatastream?name=RELS-EXT"/>
-            <log message="${id} CameraTrap: Finished Researcher's data processing."
+            <recipientList>
+                <simple>
+                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.CamelFedoraLabel}&amp;versionable=false"
+                </simple>
+            </recipientList>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <!-- TODO - Missing FGDC. -->
+            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+
+            <log message="${id} CameraTrapIngest: Finished Researcher's data processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapTransformVolunteerData">
             <from uri="direct:volunteer"/>
-            <log message="${id} CameraTrap: Starting Volunteer's data processing ..."
+            <log message="${id} CameraTrapIngest: Starting Volunteer's data processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
             <setHeader headerName="CamelFedoraLabel">
                 <simple>
                     volunteer_observation.csv
@@ -209,20 +227,27 @@
                     //researcher/text()
                 </xpath>
             </transform>
-            <to uri="fedora:addDatastream?name=VOLUNTEER&amp;type=text/csv&amp;group=M"/>
+            <recipientList>
+                <simple>
+                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.CamelFedoraLabel}&amp;versionable=false"
+                </simple>
+            </recipientList>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <!-- TODO - Missing FGDC. -->
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
-            <to uri="fedora:addDatastream?name=RELS-EXT"/>
-            <log message="${id} CameraTrap: Finished Volunteer's data processing."
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+
+            <log message="${id} CameraTrapIngest: Finished Volunteer's data processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapProcessResources">
             <from uri="direct:processResources"/>
-            <log message="${id} CameraTrap: Starting resource processing ..."
+            <log message="${id} CameraTrapIngest: Starting resource processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrap: Resource1 - ${body}"
+            <log message="${id} CameraTrapIngest: Resource1 - ${body}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -231,7 +256,7 @@
                     ${header.CamelFedoraPid}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrap: Parent PID - ${header.ParentPID}"
+            <log message="${id} CameraTrapIngest: Parent PID - ${header.ParentPID}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <!-- <log message="Resource - ${body}" /> -->
@@ -242,7 +267,7 @@
                 <xpath>
                     //ImageFileName/text()
                 </xpath>
-                <log message="${id} CameraTrap: Split - ${body}"
+                <log message="${id} CameraTrapIngest: Split - ${body}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
                 <setHeader headerName="CamelFedoraLabel">
@@ -255,19 +280,23 @@
                         //ImageFileName[text()=$CamelFedoraLabel]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                     </xpath>
                 </setHeader>
-                <log message="${id} CameraTrap: CTImageSequenceID - ${headers.CTImageSequenceID}"
+                <log message="${id} CameraTrapIngest: CTImageSequenceID - ${header.CTImageSequenceID}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
-                <log message="${id} CameraTrap: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
                 <!-- <setHeader headerName="testName"><xpath>substring-before(${body},",Image)</xpath></setHeader> -->
                 <to uri="reader:file"/>
                 <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-                <to uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M"/>
+                <recipientList>
+                    <simple>
+                        fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${headers.CTImageSequenceID}&amp;versionable=false"
+                    </simple>
+                </recipientList>
                 <to uri="direct:transformImage"/>
                 <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl"/>
-                <to uri="fedora:addDatastream?name=RELS-EXT"/>
+                <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                 <!-- 
                     Creating FITS and MODS can be done as soon as the image is available since the image does not
                     need to be transformed in any way.
@@ -277,7 +306,7 @@
             </split>
             
             <to uri="direct:researcher"/>
-            <log message="${id} CameraTrap: ${header.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <setHeader headerName="PIDAggregation">
@@ -285,12 +314,12 @@
                     ${header.PIDAggregation},${header.CamelFedoraPid}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrap: Aggregation: ${header.PIDAggregation}"
+            <log message="${id} CameraTrapIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
             <to uri="direct:volunteer"/>
-            <log message="${id} CameraTrap: ${header.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <setHeader headerName="PIDAggregation">
@@ -298,7 +327,7 @@
                     ${header.PIDAggregation},${header.CamelFedoraPid}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrap: Aggregation: ${header.PIDAggregation}"
+            <log message="${id} CameraTrapIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -314,48 +343,72 @@
                 </simple>
             </setHeader>
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
-            <log message="${id} CameraTrap: Finished resource processing."
+            <log message="${id} CameraTrapIngest: Finished resource processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapTransformImages">
             <from uri="direct:transformImage"/>
+            <log message="${id} CameraTrapIngest: Started Image processing ..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
             <!--<multicast>-->
                 <to uri="direct:createThumbnail"/>
                 <!-- <to uri="direct:createArchivalImage" /> -->
+                <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
-            <log message="Image processed"
+
+            <log message="${id} CameraTrapIngest: Finished Image processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapProcessFITS">
             <from uri="direct:processFITS"/>
-            <log message="${id} CameraTrap: Started processing FITS ..."
+            <log message="${id} CameraTrapIngest: Started processing FITS ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <!-- TODO: Check if the call was successful and notify if not. -->
+
             <recipientList>
                 <simple>
                     exec:fits?args=-i ${header.CamelFileAbsolutePath}
                 </simple>
             </recipientList>
-            <log message="${id} CameraTrap: Exec FITS - ${body}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-            <!-- Unless CamelExecExitValue=0 its an error. -->
-            <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;group=X"/>
-            <log message="${id} CameraTrap: Finished processing FITS."
+            <choice>
+                <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
+                <when>
+                    <simple>
+                        ${header.CamelExecExitValue} == 0
+                    </simple>
+                    <setHeader headerName="dsMIME">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
+                        <log message="${id} CameraTrapIngest: FITS MIME: ${header.FITSmimeType}"
+                             loggingLevel="INFO"
+                             logName="edu.si.ctingest"/>
+                    </setHeader>
+                    <log message="${id} CameraTrapIngest: Exec FITS. BODY: ${body}"
+                         loggingLevel="INFO"
+                         logName="edu.si.ctingest"/>
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
+                </when>
+                <otherwise>
+                    <log message="${id} CameraTrapIngest: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} CameraTrapIngest: Finished processing FITS."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
         <route id="CameraTrapProcessMODS">
             <from uri="direct:processMODS"/>
-            <log message="${id} CameraTrap: Started processing MODS ..."
+            <log message="${id} CameraTrapIngest: Started processing MODS ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             
@@ -367,35 +420,38 @@
             </setHeader>
             
             <!--
-            <log message="MODS FITS Created Date - ${headers.FITSCreatedDate}"/>
-            <log message="MODS CTImageSequenceID - ${headers.CTImageSequenceID}"/>
+            <log message="MODS FITS Created Date - ${header.FITSCreatedDate}"/>
+            <log message="MODS CTImageSequenceID - ${header.CTImageSequenceID}"/>
             <log message="CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"/>
             -->
 
             <!-- TODO - The Image ID has .JPG appended and this need to be made consistent. -->
             
             <to uri="velocity:file:Input/templates/CTImageResourceMODSTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X"/>
-            <log message="${id} CameraTrap: Finished processing MODS."
+            <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
+
+            <log message="${id} CameraTrapIngest: Finished processing MODS."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
         <route id="CameraTrapCreateThumbnailImage">
             <from uri="direct:createThumbnail"/>
-            <log message="${id} CameraTrap: Started creating thumbnail ..."
+            <log message="${id} CameraTrapIngest: Started creating thumbnail ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
             <to uri="thumbnailator:image?keepRatio=true&amp;size=(200,150)"/>
-            <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M"/>
-            <log message="${id} CameraTrap: Finished creating thumbnail."
+            <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
+
+            <log message="${id} CameraTrapIngest: Finished creating thumbnail."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapCreateArchivalImage">
             <from uri="direct:createArchivalImage"/>
-            <log message="${id} CameraTrap: Started creating archival image ..."
+            <log message="${id} CameraTrapIngest: Started creating archival image ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <!--
@@ -404,50 +460,82 @@
             <to uri="thumbnailator:image?quality=80%&amp;size=(2048,1536)"/>
             <to uri="file://CameraTrapOutput/resample"/>
             -->
-            <log message="${id} CameraTrap: Finished creating archival image."
+            <log message="${id} CameraTrapIngest: Finished creating archival image."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapProcessParents">
             <from uri="direct:processParents"/>
-            <log message="${id} CameraTrap: Started processing parents ..."
+            <log message="${id} CameraTrapIngest: Started processing parents ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <setHeader headerName="CamelFedoraPid">
+
+            <setBody>
                 <simple>
                     {{si.ct.root}}
                 </simple>
-            </setHeader>
+            </setBody>
             <!-- Check if the root exists, else quit. -->
-            <to uri="direct:processProject"/>
-            <to uri="direct:processSubproject"/>
-            <to uri="direct:processPlot"/>
-            <log message="${id} CameraTrap: Finished processing parents."
+            <to uri="direct:findObjectByPIDPredicate"/>
+            <choice>
+                <when>
+                    <simple>
+                        ${body} == 'true'
+                    </simple>
+                    <log message="${id} CameraTrapIngest: Root object exists."
+                         loggingLevel="INFO"
+                         logName="edu.si.ctingest"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            {{si.ct.root}}
+                        </simple>
+                    </setHeader>
+                    <!-- Add the parents if needed. -->
+                    <to uri="direct:processProject"/>
+                    <to uri="direct:processSubproject"/>
+                    <!-- Plot is optional. -->
+                    <filter>
+                        <xpath resultType="java.lang.String" headerName="ManifestXML">
+                            boolean(//PlotName/text()[1])
+                        </xpath>
+                        <to uri="direct:processPlot"/>
+                    </filter>
+                </when>
+                <otherwise>
+                    <!-- Stop processing this deployment. -->
+                    <log message="${id} CameraTrapIngest: Root object does not exist."
+                         loggingLevel="INFO"
+                         logName="edu.si.ctingest"/>
+                    <throwException ref="noRootObject"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} CameraTrapIngest: Finished processing parents."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapFindObject">
             <from uri="direct:findObject"/>
-            <log message="${id} CameraTrap: Started find object ..."
+            <log message="${id} CameraTrapIngest: Started find object ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrap: Root: Label - ${headers.CamelFedoraLabel}"
+            <log message="${id} CameraTrapIngest: Root: Label - ${header.CamelFedoraLabel}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <!--
                 Set a header with the PID if found, empty string if not.
-                We need to bring in two parameters for the call: The object label and the expected parent;
+                We need to bring in two parameters for the route: The object label and the expected parent;
                 <setBody><constant>SELECT ?a ?b ?c FROM &lt;#ri&gt; WHERE {?a ?b ?c}</constant></setBody>
             -->
             <setBody>
                 <!--
                 <simple>
                     select $o $title from &lt;#ri&gt; 
-                    where  $title &lt;mulgara:is&gt; '${headers.CamelFedoraLabel}' and
+                    where  $title &lt;mulgara:is&gt; '${header.CamelFedoraLabel}' and
                            $o &lt;fedora-model:label&gt; $title and
-                           &lt;info:fedora/${headers.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; $o
+                           &lt;info:fedora/${header.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; $o
                 </simple>
                 -->
                 <!--
@@ -456,8 +544,8 @@
                     FROM &lt;#ri&gt;
                     WHERE
                     { 
-                        ?o &lt;fedora-model:label&gt; '${headers.CamelFedoraLabel}' .
-                        &lt;info:fedora/${headers.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; ?o .
+                        ?o &lt;fedora-model:label&gt; '${header.CamelFedoraLabel}' .
+                        &lt;info:fedora/${header.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; ?o .
                     }
                 </simple>
                 -->
@@ -466,11 +554,11 @@
                     SELECT ?o FROM &lt;#ri&gt;
                     WHERE
                     {
-                        ?o &lt;fedora-model:label&gt; '${headers.CamelFedoraLabel}' .
+                        ?o &lt;fedora-model:label&gt; '${header.CamelFedoraLabel}' .
                     }
                 </simple>
             </setBody>
-            <log message="${id} CameraTrap: Project Parent - ${body}"
+            <log message="${id} CameraTrapIngest: Project Parent - ${body}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
@@ -498,7 +586,7 @@
             </setBody>
             -->
 
-            <log message="${id} CameraTrap: Query Result - ${body}"
+            <log message="${id} CameraTrapIngest: Query Result - ${body}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <setHeader headerName="FoundObjectPID">
@@ -506,26 +594,63 @@
                     substring-after(/ri:sparql/ri:results/ri:result[1]/ri:o/@uri,'/')
                 </xpath>
             </setHeader>
-            <!-- <log message="Query Result XPath - ${headers.FoundObjectPID}"/> -->
             <setBody>
-                <simple>
-                    ${headers.ManifestXML}
-                </simple>
+                <xpath logNamespaces="false" resultType="java.lang.String">
+                    substring-after(/ri:sparql/ri:results/ri:result[1]/ri:o/@uri,'/')
+                </xpath>
             </setBody>
-            <!-- <log message="Find Object - ${body}"/> -->
-            <log message="${id} CameraTrap: Finished find object."
+
+            <log message="${id} CameraTrapIngest: Finished find object."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
+        <route id="CameraTrapFindObjectByPIDPredicate">
+            <from uri="direct:findObjectByPIDPredicate"/>
+            <log message="${id} CameraTrapIngest: Started find object by PID ..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <!-- Return true in the body if the object exists for the PID, false if not. -->
+            <setBody>
+                <simple>
+                    ASK FROM &lt;#ri&gt;
+                    {
+                    &lt;info:fedora/${body}&gt; ?p ?o .
+                    }
+                </simple>
+            </setBody>
+            <log message="${id} CameraTrapIngest: Find Query - ${body}"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+            <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
+            <log message="${id} CameraTrapIngest: Find Query Result - ${body}"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+            <setBody>
+                <xpath logNamespaces="false" resultType="java.lang.String">
+                    /ri:sparql/ri:results/ri:result[1]/ri:k0/text()
+                </xpath>
+            </setBody>
+            <log message="Find Object By PID - ${body}."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <log message="${id} CameraTrapIngest: Finished find object by PID."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
         <route id="CameraTrapProcessPlot">
             <from uri="direct:processPlot"/>
-            <log message="${id} CameraTrap: Started processing plot ..."
+            <log message="${id} CameraTrapIngest: Started processing plot ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrap: Plot In: Label - ${headers.CamelFedoraLabel}  ParentPID - ${headers.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: Plot In: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
+            <!-- Plot is optional and has no ID.  We can only use the label. -->
             <setHeader headerName="PlotLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //PlotName
@@ -533,180 +658,170 @@
             </setHeader>
             <setHeader headerName="CamelFedoraLabel">
                 <simple>
-                    ${headers.CamelFedoraLabel}:${headers.PlotLabel}
+                    ${header.CamelFedoraLabel}:${header.PlotLabel}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrap: Plot: Label - ${headers.CamelFedoraLabel}  ParentPID - ${headers.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: Plot: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <setHeader headerName="ParentPID">
-                <simple>
-                    ${headers.CamelFedoraPid}
-                </simple>
-            </setHeader>
             <to uri="direct:findObject" />
-            <log message="${id} CameraTrap: Found Plot PID - ${headers.FoundObjectPID}"
+            <log message="${id} CameraTrapIngest: Found Plot PID - ${header.FoundObjectPID}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <choice>
                 <when>
                     <simple>
-                        ${headers.FoundObjectPID} == ''
+                        ${header.FoundObjectPID} == ''
                     </simple>
-                    <log message="${id} CameraTrap: Plot does not exist"
+                    <log message="${id} CameraTrapIngest: Plot does not exist"
                          loggingLevel="INFO"
                          logName="edu.si.ctingest"/>
+                    <!-- Stash the sub-project PID. -->
+                    <setHeader headerName="ParentPID">
+                        <simple>
+                            ${header.CamelFedoraPid}
+                        </simple>
+                    </setHeader>
                     <!-- Create CT plot and add it as a sub-concept of the sub-project -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT sub-project to the child CT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a FGCD-CTPlot datastream with the Title set -->
                     <to uri="velocity:file:Input/templates/CTPlotFGDC-CTPlotTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
+                    <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-CTPlot%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
-                    <setHeader headerName="CamelFedoraPid">
-                        <simple>
-                            ${headers.FoundObjectPID}
-                        </simple>
-                    </setHeader>
-                    <log message="${id} CameraTrap: Plot already exists"
+                    <!-- Return the existing plot as the current object. -->
+                    <log message="${id} CameraTrapIngest: Plot already exists - ${body}."
                          loggingLevel="INFO"
                          logName="edu.si.ctingest"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            ${body}
+                        </simple>
+                    </setHeader>
                 </otherwise>
             </choice>
-            <log message="${id} CameraTrap: Plot End - ${headers.CamelFedoraPid}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-            <!-- <log message="Plot - ${body}"/> -->
-            <log message="${id} CameraTrap: Finished processing plot."
+
+            <log message="${id} CameraTrapIngest: Finished processing plot."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapProcessSubproject">
             <from uri="direct:processSubproject"/>
-            <log message="${id} CameraTrap: Started processing subproject ..."
+            <log message="${id} CameraTrapIngest: Started processing subproject ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
+            <!-- Look for the sub-project ID first and then the label. -->
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //SubProjectName
                 </xpath>
             </setHeader>
-            <setHeader headerName="ParentPID">
-                <simple>
-                    ${headers.CamelFedoraPid}
-                </simple>
-            </setHeader>
-            <log message="${id} CameraTrap: Sub-project: Label - ${headers.CamelFedoraLabel}  ParentPID - ${headers.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: Sub-project: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="direct:findObject" />
-            <log message="${id} CameraTrap: Found Object PID - ${headers.FoundObjectPID}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
             <choice>
                 <when>
                     <simple>
-                        ${headers.FoundObjectPID} == ''
+                        ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrap: Sub-project does not exist"
+                    <log message="${id} CameraTrapIngest: Sub-project does not exist"
                          loggingLevel="INFO"
                          logName="edu.si.ctingest"/>
-                    <!-- Create CT sub-project and add it as a sub-concept of the project -->
+                    <!-- Stash the Project PID. -->
+                    <setHeader headerName="ParentPID">
+                        <simple>
+                            ${header.CamelFedoraPid}
+                        </simple>
+                    </setHeader>
+                    <!-- Create CT sub-project and add it as a sub-concept of the project. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-                    <!-- Add a minimal RELS-EXT to the project -->
+                    <!-- Add a minimal RELS-EXT to the sub-project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT project to the child CT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a FGDC-Research datastream with Title set to the Sub-project name -->
                     <to uri="velocity:file:Input/templates/CTPlotFGDC-ResearchTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
+                    <to uri="fedora:addDatastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-Research%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
-                    <setHeader headerName="CamelFedoraPid">
-                        <simple>
-                            ${headers.FoundObjectPID}
-                        </simple>
-                    </setHeader>
-                    <log message="${id} CameraTrap: Sub-project already exists"
+                    <!-- Return the existing sub-project as the current object. -->
+                    <log message="${id} CameraTrapIngest: Sub-project already exists - ${body}."
                          loggingLevel="INFO"
                          logName="edu.si.ctingest"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            ${body}
+                        </simple>
+                    </setHeader>
                 </otherwise>
             </choice>
-            <log message="${id} CameraTrap: Sub-Project End - ${headers.CamelFedoraPid}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrap: Finished processing subproject."
+
+            <log message="${id} CameraTrapIngest: Finished processing subproject."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
         <route id="CameraTrapProcessProject">
             <from uri="direct:processProject"/>
-            <log message="${id} CameraTrap: Started processing project ..."
+            <log message="${id} CameraTrapIngest: Started processing project ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
+            <!-- Look for the project ID first and then the label. -->
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //ProjectName
                 </xpath>
             </setHeader>
-            <setHeader headerName="ParentPID">
-                <simple>
-                    ${headers.CamelFedoraPid}
-                </simple>
-            </setHeader>
-            <log message="${id} CameraTrap: Label - ${headers.CamelFedoraLabel}  ParentPID - ${headers.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="direct:findObject"/>
-            <log message="${id} CameraTrap: Found Object PID - ${headers.FoundObjectPID}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
             <choice>
                 <when>
                     <simple>
-                        ${headers.FoundObjectPID} == ''
+                        ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrap: Project does not exist"
+                    <log message="${id} CameraTrapIngest: Project does not exist."
                          loggingLevel="INFO"
                          logName="edu.si.ctingest"/>
-                    <!-- Create CT project and add it as a sub-concept of the specified root -->
+                    <!-- Create CT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-                    <!-- Add a minimal RELS-EXT to the project -->
+                    <!-- Add a minimal RELS-EXT to the project. -->
                     <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;versionable=false"/>
-                    <!-- Add Relation from parent static CT root to the child CT project -->
-                    <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+                    <!-- Add Relation from parent CT root object to the child CT project. -->
+                    <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- TODO - Add a EAC-CPF datastream with the Project Name and Abbreviation set -->
                     <to uri="velocity:file:Input/templates/CTProjectEAC-CPFTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;versionable=true"/>
+                    <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF&amp;versionable=true"/>
                 </when>
                 <otherwise>
-                    <setHeader headerName="CamelFedoraPid">
-                        <simple>
-                            ${headers.FoundObjectPID}
-                        </simple>
-                    </setHeader>
-                    <log message="${id} CameraTrap: Project already exists"
+                    <!-- Return the existing project as the current object. -->
+                    <log message="${id} CameraTrapIngest: Project already exists - ${body}."
                          loggingLevel="INFO"
                          logName="edu.si.ctingest"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            ${body}
+                        </simple>
+                    </setHeader>
                 </otherwise>
             </choice>
-            <log message="${id} CameraTrap: Project End - ${headers.CamelFedoraPid}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrap: Finished processing project."
+
+            <log message="${id} CameraTrapIngest: Finished processing project."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
     </camelContext>
-        
 </blueprint>
