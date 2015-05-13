@@ -10,6 +10,7 @@
 
     <modules>
         <module>Excel</module>
+        <module>CameraTrap</module>
     </modules>
 
 </project>

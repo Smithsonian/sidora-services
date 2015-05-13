@@ -13,6 +13,8 @@
     <bean id="noRootObject" class="java.lang.IllegalArgumentException">
         <argument value="CameraTrapIngest: Root object does not exist."/>
     </bean>
+
+    <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
     
     <!--
         TODO: Add Deployment Metadata backport
@@ -23,7 +25,7 @@
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result" 
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   trace="false">
-        
+
         <!--
           The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
@@ -39,6 +41,8 @@
                               useExponentialBackOff="true"/>
         </errorHandler>
         -->
+
+        <routeBuilder ref="cameraTrapRoutes"/>
 
         <onException>
             <exception>java.net.ConnectException</exception>
@@ -70,20 +74,20 @@
             <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
 
             <!-- Add Schematron validation. -->
-            <!-- <to uri="schematron://./Input/schemas/DeploymentManifest2014.sch"/> -->
+            <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
             <!--
-            <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/>
+            <to uri="schematron:///opt/sidora/servicemix/Input/schemas/DeploymentManifest2014.sch"/>
             <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                  loggingLevel="INFO"/>
             -->
+
+            <!-- Add image count and filename check. -->
             <setHeader headerName="ManifestXML">
                 <simple>
                     ${body}
                 </simple>
             </setHeader>
             <to uri="direct:validatePackage"/>
-
-            <!-- Add image count and filename check. -->
 
             <to uri="direct:processPackage"/>
             <log message="${id} CameraTrapIngest: Finished Camera Trap processing!"
@@ -156,6 +160,11 @@
                     ${header.CamelFedoraPid}
                 </simple>
             </setHeader>
+            <setHeader headerName="CamelFedoraLabel">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //CameraSiteName
+                </xpath>
+            </setHeader>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <log message="${id} CameraTrapIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
@@ -164,6 +173,11 @@
             <log message="${id} CameraTrapIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+            <setBody>
+                <simple>
+                    ${header.ManifestXML}
+                </simple>
+            </setBody>
             <multicast>
                 <to uri="direct:addManifestDataStream"/>
                 <to uri="direct:addFGDCDataStream"/>
@@ -228,7 +242,7 @@
                 <log message="${id} CameraTrapIngest: Split Resource - ${body}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
-                <setHeader headerName="ResourceName">
+                <setHeader headerName="CamelFedoraLabel">
                     <simple resultType="java.lang.String">
                         ${body}
                     </simple>
@@ -237,7 +251,7 @@
                     <!-- If its a Researcher Identification resource? -->
                     <when>
                         <spel>
-                            #{request.headers[ResourceName].contains('ResearcherIdentifications')}
+                            #{request.headers[CamelFedoraLabel].contains('ResearcherIdentifications')}
                         </spel>
                         <to uri="direct:addResearcherResource"/>
                         <log message="${id} CameraTrapIngest: Created Researcher's observation resource."
@@ -247,7 +261,7 @@
                     <!-- If its a Volunteer Identification resource? -->
                     <when>
                         <spel>
-                            #{request.headers[ResourceName].contains('VolunteerIdentifications')}
+                            #{request.headers[CamelFedoraLabel].contains('VolunteerIdentifications')}
                         </spel>
                         <to uri="direct:addVolunteerResource"/>
                         <log message="${id} CameraTrapIngest: Created Volunteer's observation resource"
@@ -256,15 +270,10 @@
                     </when>
                     <!-- Else its an Image resource. -->
                     <otherwise>
-                        <setHeader headerName="ImageSequenceID">
-                            <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
-                                //ImageFileName[text()=$ResourceName]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
-                            </xpath>
-                        </setHeader>
-                        <log message="${id} CameraTrapIngest: ImageSequenceID - ${header.ImageSequenceID}"
+                        <to uri="direct:addImageResource"/>
+                        <log message="${id} CameraTrapIngest: Created Image Resource - ${header.CamelFedoraLabel}"
                              loggingLevel="INFO"
                              logName="edu.si.ctingest"/>
-                        <to uri="direct:addImageResource"/>
                     </otherwise>
                 </choice>
                 <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
@@ -292,11 +301,24 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
+            <setHeader headerName="ImageID">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$CamelFedoraLabel]/parent::Image/ImageId/text()
+                    <!-- //ImageFileName[text()=$CamelFedoraLabel]/parent::Image/parent::ImageSequence/ImageSequenceId/text() -->
+                </xpath>
+            </setHeader>
+            <log message="${id} CameraTrapIngest: CamelFedoraLabel - ${header.CamelFedoraLabel}  ImageID - ${header.ImageID}"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
             <to uri="reader:file"/>
-            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <recipientList>
                 <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.ImageSequenceID}&amp;versionable=false"
+                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.ImageID}
+                </simple>
+            </recipientList>
+            <recipientList>
+                <simple>
+                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.ImageID}&amp;versionable=false
                 </simple>
             </recipientList>
             <!--<multicast>-->
@@ -320,7 +342,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <setHeader headerName="ResourceLabel">
+            <setHeader headerName="CamelFedoraLabel">
                 <simple>
                     researcher_observation.csv
                 </simple>
@@ -339,7 +361,7 @@
             </transform>
             <recipientList>
                 <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.ResourceLabel}&amp;versionable=false"
+                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.CamelFedoraLabel}&amp;versionable=false"
                 </simple>
             </recipientList>
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
@@ -357,7 +379,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <setHeader headerName="ResourceLabel">
+            <setHeader headerName="CamelFedoraLabel">
                 <simple>
                     volunteer_observation.csv
                 </simple>
@@ -376,7 +398,7 @@
             </transform>
             <recipientList>
                 <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.ResourceLabel}&amp;versionable=false"
+                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.CamelFedoraLabel}&amp;versionable=false"
                 </simple>
             </recipientList>
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
