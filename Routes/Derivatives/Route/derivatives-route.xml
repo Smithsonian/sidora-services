@@ -69,12 +69,23 @@
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
 
+        <!--
         <errorHandler id="derivativesErrorHandler" type="DefaultErrorHandler">
             <redeliveryPolicy maximumRedeliveries="20"
                               retryAttemptedLogLevel="WARN"
                               backOffMultiplier="2"
                               useExponentialBackOff="true"/>
         </errorHandler>
+        -->
+
+        <onException>
+            <exception>java.net.ConnectException</exception>
+            <redeliveryPolicy useExponentialBackOff="true"
+                              backOffMultiplier="2"
+                              redeliveryDelay="1000"
+                              maximumRedeliveries="200"
+                              retryAttemptedLogLevel="WARN"/>
+        </onException>
 
         <route id="DerivativesStartProcessing">
             <from uri="activemq:queue:sidora.apim.update"/>

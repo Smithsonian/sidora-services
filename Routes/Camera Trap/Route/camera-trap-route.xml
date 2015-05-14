@@ -232,8 +232,7 @@
             <log message="${id} CameraTrapIngest: Site PID - ${header.SitePID}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            
-            <!-- This could be done as a Composed Message Processor -->
+
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
                 <xpath headerName="ManifestXML">
@@ -242,16 +241,23 @@
                 <log message="${id} CameraTrapIngest: Split Resource - ${body}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
+                <!--
                 <setHeader headerName="CamelFedoraLabel">
                     <simple resultType="java.lang.String">
                         ${body}
                     </simple>
                 </setHeader>
+                -->
+                <setBody>
+                    <simple resultType="java.lang.String">
+                        ${body}
+                    </simple>
+                </setBody>
                 <choice>
                     <!-- If its a Researcher Identification resource? -->
                     <when>
                         <spel>
-                            #{request.headers[CamelFedoraLabel].contains('ResearcherIdentifications')}
+                            #{request.body.contains('ResearcherIdentifications')}
                         </spel>
                         <to uri="direct:addResearcherResource"/>
                         <log message="${id} CameraTrapIngest: Created Researcher's observation resource."
@@ -261,7 +267,7 @@
                     <!-- If its a Volunteer Identification resource? -->
                     <when>
                         <spel>
-                            #{request.headers[CamelFedoraLabel].contains('VolunteerIdentifications')}
+                            #{request.body.contains('VolunteerIdentifications')}
                         </spel>
                         <to uri="direct:addVolunteerResource"/>
                         <log message="${id} CameraTrapIngest: Created Volunteer's observation resource"
@@ -271,7 +277,7 @@
                     <!-- Else its an Image resource. -->
                     <otherwise>
                         <to uri="direct:addImageResource"/>
-                        <log message="${id} CameraTrapIngest: Created Image Resource - ${header.CamelFedoraLabel}"
+                        <log message="${id} CameraTrapIngest: Created Image Resource - ${body}."
                              loggingLevel="INFO"
                              logName="edu.si.ctingest"/>
                     </otherwise>
@@ -282,13 +288,20 @@
             </split>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
+            <!--
             <setHeader headerName="CamelFedoraPid">
                 <simple>
                     ${header.SitePID}
                 </simple>
             </setHeader>
+            -->
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <recipientList>
+                <simple>
+                    fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false
+                </simple>
+            </recipientList>
+            <!-- <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/> -->
 
             <log message="${id} CameraTrapIngest: Finished resource processing."
                  loggingLevel="INFO"
@@ -303,11 +316,11 @@
 
             <setHeader headerName="ImageID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
-                    //ImageFileName[text()=$CamelFedoraLabel]/parent::Image/ImageId/text()
-                    <!-- //ImageFileName[text()=$CamelFedoraLabel]/parent::Image/parent::ImageSequence/ImageSequenceId/text() -->
+                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
+                    <!-- //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text() -->
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: CamelFedoraLabel - ${header.CamelFedoraLabel}  ImageID - ${header.ImageID}"
+            <log message="${id} CameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="reader:file"/>
@@ -342,17 +355,12 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <setHeader headerName="CamelFedoraLabel">
-                <simple>
-                    researcher_observation.csv
-                </simple>
-            </setHeader>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Researcher%20Observations"/>
             <to uri="xslt:file:Input/xslt/researcher.xsl"/>
             <transform>
                 <xpath>
@@ -361,7 +369,7 @@
             </transform>
             <recipientList>
                 <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.CamelFedoraLabel}&amp;versionable=false"
+                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"
                 </simple>
             </recipientList>
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
@@ -379,17 +387,12 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <setHeader headerName="CamelFedoraLabel">
-                <simple>
-                    volunteer_observation.csv
-                </simple>
-            </setHeader>
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Volunteer%20Observations"/>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
             <transform>
                 <xpath>
@@ -398,7 +401,7 @@
             </transform>
             <recipientList>
                 <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=${header.CamelFedoraLabel}&amp;versionable=false"
+                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"
                 </simple>
             </recipientList>
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
@@ -495,12 +498,13 @@
             <log message="${id} CameraTrapIngest: Started creating archival image ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
             <!--
-                NOTE: This is a JPEG 2000 and we are not doing it yet.
-            
+                NOTE: This is planned to be a JPEG 2000 but we are not doing it yet.
             <to uri="thumbnailator:image?quality=80%&amp;size=(2048,1536)"/>
             <to uri="file://CameraTrapOutput/resample"/>
             -->
+
             <log message="${id} CameraTrapIngest: Finished creating archival image."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -562,40 +566,18 @@
             <log message="${id} CameraTrapIngest: Started find object ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrapIngest: Root: Label - ${header.CamelFedoraLabel}"
+            <log message="${id} CameraTrapIngest: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <!--
-                Set a header with the PID if found, empty string if not.
-                We need to bring in two parameters for the route: The object label and the expected parent;
-                <setBody><constant>SELECT ?a ?b ?c FROM &lt;#ri&gt; WHERE {?a ?b ?c}</constant></setBody>
-            -->
+
             <setBody>
-                <!--
-                <simple>
-                    select $o $title from &lt;#ri&gt; 
-                    where  $title &lt;mulgara:is&gt; '${header.CamelFedoraLabel}' and
-                           $o &lt;fedora-model:label&gt; $title and
-                           &lt;info:fedora/${header.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; $o
-                </simple>
-                -->
-                <!--
-                <simple>
-                    SELECT ?o ?title 
-                    FROM &lt;#ri&gt;
-                    WHERE
-                    { 
-                        ?o &lt;fedora-model:label&gt; '${header.CamelFedoraLabel}' .
-                        &lt;info:fedora/${header.CamelFedoraObject}&gt; &lt;fedora-rels-ext:hasConcept&gt; ?o .
-                    }
-                </simple>
-                -->
-                <!-- TODO - The query needs to also check directly along the parent axis since names are not unique. -->
+                <!-- The query needs to also check directly along the parent axis since names are not unique. -->
                 <simple>
                     SELECT ?o FROM &lt;#ri&gt;
                     WHERE
                     {
-                        ?o &lt;fedora-model:label&gt; '${header.CamelFedoraLabel}' .
+                        ?o &lt;fedora-model:label&gt; '${body}' .
+                        &lt;info:fedora/${header.CamelFedoraPid}&gt; &lt;info:fedora/fedora-system:def/relations-external#hasConcept&gt; ?o .
                     }
                 </simple>
             </setBody>
@@ -603,38 +585,20 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
-            
-            <!--
-            <setBody>
-                <simple>
-                    &lt;sparql xmlns="http://www.w3.org/2001/sw/DataAccess/rf1/result"&gt;
-                        &lt;head&gt;
-                            &lt;variable name="o"/&gt;
-                        &lt;/head&gt;
-                        &lt;results&gt;
-                            &lt;result&gt;
-                                &lt;o uri="info:fedora/si:122557"/&gt;
-                            &lt;/result&gt;
-                            &lt;result&gt;
-                                &lt;o uri="info:fedora/si:122564"/&gt;
-                            &lt;/result&gt;
-                            &lt;result&gt;
-                                &lt;o uri="info:fedora/si:122571"/&gt;
-                            &lt;/result&gt;
-                        &lt;/results&gt;
-                    &lt;/sparql&gt;
-                </simple>
-            </setBody>
-            -->
-
             <log message="${id} CameraTrapIngest: Query Result - ${body}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <setHeader headerName="FoundObjectPID">
-                <xpath logNamespaces="false" resultType="java.lang.String">
-                    substring-after(/ri:sparql/ri:results/ri:result[1]/ri:o/@uri,'/')
-                </xpath>
-            </setHeader>
+            <!-- Count the results. If greater than one warn about duplicate parents. -->
+            <choice>
+                <when>
+                    <xpath>
+                        count(/ri:sparql/ri:results/ri:result) > 1
+                    </xpath>
+                    <log message="${id} CameraTrapIngest: Warning - Duplicate parents."
+                         loggingLevel="WARN"
+                         logName="edu.si.ctingest"/>
+                </when>
+            </choice>
             <setBody>
                 <xpath logNamespaces="false" resultType="java.lang.String">
                     substring-after(/ri:sparql/ri:results/ri:result[1]/ri:o/@uri,'/')
@@ -657,7 +621,7 @@
                 <simple>
                     ASK FROM &lt;#ri&gt;
                     {
-                    &lt;info:fedora/${body}&gt; ?p ?o .
+                        &lt;info:fedora/${body}&gt; ?p ?o .
                     }
                 </simple>
             </setBody>
@@ -687,32 +651,26 @@
             <log message="${id} CameraTrapIngest: Started processing plot ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrapIngest: Plot In: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
 
-            <!-- Plot is optional and has no ID.  We can only use the label. -->
-            <setHeader headerName="PlotLabel">
+            <!-- Look for the plot (its optional). -->
+            <setBody>
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
-                    //PlotName
+                    concat(//SubProjectName/text(), ':', //PlotName/text())
                 </xpath>
-            </setHeader>
+            </setBody>
             <setHeader headerName="CamelFedoraLabel">
                 <simple>
-                    ${header.CamelFedoraLabel}:${header.PlotLabel}
+                    ${body}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Plot: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="direct:findObject" />
-            <log message="${id} CameraTrapIngest: Found Plot PID - ${header.FoundObjectPID}"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
             <choice>
                 <when>
                     <simple>
-                        ${header.FoundObjectPID} == ''
+                        ${body} == ''
                     </simple>
                     <log message="${id} CameraTrapIngest: Plot does not exist"
                          loggingLevel="INFO"
@@ -757,13 +715,18 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <!-- Look for the sub-project ID first and then the label. -->
-            <setHeader headerName="CamelFedoraLabel">
+            <!-- Look for the sub-project. -->
+            <setBody>
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //SubProjectName
                 </xpath>
+            </setBody>
+            <setHeader headerName="CamelFedoraLabel">
+                <simple>
+                    ${body}
+                </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Sub-project: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id} CameraTrapIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="direct:findObject" />
@@ -815,13 +778,18 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <!-- Look for the project ID first and then the label. -->
-            <setHeader headerName="CamelFedoraLabel">
+            <!-- Look for the project. -->
+            <setBody>
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //ProjectName
                 </xpath>
+            </setBody>
+            <setHeader headerName="CamelFedoraLabel">
+                <simple>
+                    ${body}
+                </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}."
+            <log message="${id} CameraTrapIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="direct:findObject"/>
