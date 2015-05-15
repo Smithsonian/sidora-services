@@ -317,7 +317,12 @@
             <setHeader headerName="ImageID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
-                    <!-- //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text() -->
+                </xpath>
+            </setHeader>
+            <!-- Image Sequence ID used in MODS datastream. -->
+            <setHeader headerName="ImageSequenceID">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                 </xpath>
             </setHeader>
             <log message="${id} CameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}"
