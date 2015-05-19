@@ -1,15 +1,16 @@
 ## 
 ## Template to create MODS metadata for Camera Trap image resource objects.
 ##
-#set ($count = $exchange.properties.CamelSplitIndex + 1)
+## <title>$headers.CamelFedoraLabel image $count of $exchange.properties.CamelSplitSize</title>
+#set ($count = $headers.ImageIndex + 1)
 <?xml version="1.0"?>
 <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink">
     <titleInfo>
-        <title>$headers.CamelFedoraLabel image $count of $exchange.properties.CamelSplitSize</title>
+        <title>$headers.CamelFedoraLabel image $count of $headers.ImageCount</title>
     </titleInfo>
     <identifier>$headers.CamelFedoraLabel</identifier>
     <relatedItem>
-        <identifier>$headers.CTImageSequenceID</identifier>
+        <identifier>$headers.ImageSequenceID</identifier>
     </relatedItem>
     <typeOfResource>still image</typeOfResource>
     <abstract/>

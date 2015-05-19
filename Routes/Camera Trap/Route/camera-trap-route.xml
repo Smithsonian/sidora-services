@@ -17,7 +17,7 @@
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
     
     <!--
-        TODO: Add Deployment Metadata backport
+        TODO: Verify Deployment Metadata backport
     -->
     <!-- errorHandlerRef="ctingestErrorHandler" -->
     <camelContext id="CTIngestCamelContext"
@@ -229,7 +229,12 @@
                     ${header.CamelFedoraPid}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Site PID - ${header.SitePID}"
+            <setHeader headerName="ImageCount">
+                <xpath resultType="java.lang.String">
+                    count(//ImageFileName)
+                </xpath>
+            </setHeader>
+            <log message="${id} CameraTrapIngest: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -241,13 +246,6 @@
                 <log message="${id} CameraTrapIngest: Split Resource - ${body}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
-                <!--
-                <setHeader headerName="CamelFedoraLabel">
-                    <simple resultType="java.lang.String">
-                        ${body}
-                    </simple>
-                </setHeader>
-                -->
                 <setBody>
                     <simple resultType="java.lang.String">
                         ${body}
@@ -288,27 +286,19 @@
             </split>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
-            <!--
-            <setHeader headerName="CamelFedoraPid">
-                <simple>
-                    ${header.SitePID}
-                </simple>
-            </setHeader>
-            -->
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
             <recipientList>
                 <simple>
                     fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false
                 </simple>
             </recipientList>
-            <!-- <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/> -->
 
             <log message="${id} CameraTrapIngest: Finished resource processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
         
-        <route id="CameraTrapAddImageResource">
+        <route id="CameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
             <log message="${id} CameraTrapIngest: Started Image processing ..."
                  loggingLevel="INFO"
@@ -325,7 +315,12 @@
                     //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}"
+            <setHeader headerName="ImageIndex">
+                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
+                    count(//Image/ImageId[.=$ImageID]/../preceding-sibling::Image)
+                </xpath>
+            </setHeader>
+            <log message="${id} CameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}  ImageIndex - ${header.ImageIndex}  ImageSequenceID - ${header.ImageSequenceID}"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
             <to uri="reader:file"/>
