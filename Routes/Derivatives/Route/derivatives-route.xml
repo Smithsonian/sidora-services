@@ -660,7 +660,11 @@
                         ${headers.CamelExecExitValue} == 0
                     </simple>
 
-                    <setBody><simple>${header.CamelFileNameProduced}.swf</simple></setBody>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.swf
+                        </simple>
+                    </setBody>
                     <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=OBJ.swf&amp;type=application/x-shockwave-flash&amp;group=M&amp;dsLabel=Flexpaper&amp;versionable=false"/>
 
@@ -726,6 +730,7 @@
                     <log message="${id} Derivatives: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
+                    <convertBodyTo type="java.lang.String"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>

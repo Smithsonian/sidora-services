@@ -16,10 +16,8 @@
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
     
-    <!--
-        TODO: Verify Deployment Metadata backport
-    -->
     <!-- errorHandlerRef="ctingestErrorHandler" -->
+
     <camelContext id="CTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result" 
@@ -126,7 +124,7 @@
                 <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
-                <!-- We could check the count to see if its exact but its OK to have too many images. -->
+                <!-- We should check the image count to see if it exactly matches the image file count. -->
             </split>
 
             <log message="${id} CameraTrapIngest: Finished Package validation."
@@ -436,6 +434,7 @@
                              loggingLevel="INFO"
                              logName="edu.si.ctingest"/>
                     </setHeader>
+                    <!-- Todo - If not a JPG add a warning to the logs. -->
                     <log message="${id} CameraTrapIngest: Exec FITS. BODY: ${body}"
                          loggingLevel="INFO"
                          logName="edu.si.ctingest"/>
