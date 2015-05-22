@@ -18,7 +18,7 @@ http://www.altova.com/mapforce
                 <xsl:for-each select="ImageSequence">
                     <xsl:variable name="var1_cur" select="."/>
                     <xsl:for-each select="VolunteerIdentifications/Identification">
-                        <xsl:value-of select="concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat('Volunteer,', string($var2_cur/CameraDeploymentID)), ','), string($var1_cur/ImageSequenceId)), ','), string($var1_cur/ImageSequenceBeginTime)), ','), string($var1_cur/ImageSequenceEndTime)), ','), '&quot;'), string(SpeciesScientificName)), '&quot;'), ','), '&quot;'), string(SpeciesCommonName)), '&quot;'), ','), ','), ','), ','), string(number(string(Count)))), ','), ','), ','), '##')"/>
+                        <xsl:value-of select="concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat(concat('Volunteer,', string($var2_cur/CameraDeploymentID)), ','), string($var1_cur/ImageSequenceId)), ','), string($var1_cur/ImageSequenceBeginTime)), ','), string($var1_cur/ImageSequenceEndTime)), ','), '&quot;'), string(SpeciesScientificName)), '&quot;'), ','), '&quot;'), string(SpeciesCommonName)), '&quot;'), ','), ','), ','), ','), string(number(string(Count)))), ','), ','), ','), '&#xa;')"/>
                     </xsl:for-each>
                 </xsl:for-each>
             </xsl:for-each>
