@@ -26,10 +26,10 @@
         <identity>
             <entityType>corporateBody</entityType>
             <nameEntry localType="primary">
-                <part>$headers.CamelFedoraLabel</part>
+                <part>$headers.esc.xml($headers.CamelFedoraLabel)</part>
             </nameEntry>
             <nameEntry localType="abbreviation">
-                <part>$headers.CamelFedoraLabel</part>
+                <part>$headers.esc.xml($headers.CamelFedoraLabel)</part>
             </nameEntry>
         </identity>
         <description>

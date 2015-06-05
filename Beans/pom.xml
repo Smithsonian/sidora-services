@@ -11,6 +11,7 @@
     <modules>
         <module>Excel</module>
         <module>CameraTrap</module>
+        <module>VelocityToolsHandler</module>
     </modules>
 
 </project>

@@ -1,6 +1,8 @@
 ## 
 ## Template to create FGDC-Research metadata for Camera Trap Park concept objects.
 ##
+##<title>$headers.esc.xml($headers.CamelFedoraLabel)</title>
+##<title>$headers.CamelFedoraLabel</title>
 <?xml version="1.0"?>
 <metadata xmlns:fgdc="http://localhost">
     <idinfo>
@@ -8,7 +10,7 @@
             <citeinfo>
                 <origin/>
                 <pubdate>Unpublished material</pubdate>
-                <title>$headers.CamelFedoraLabel</title>
+                <title>$headers.esc.xml($headers.CamelFedoraLabel)</title>
                 <geoform>tabular digital data</geoform>
                 <othercit/>
             </citeinfo>

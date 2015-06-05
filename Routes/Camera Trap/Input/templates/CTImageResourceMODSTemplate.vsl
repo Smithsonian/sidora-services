@@ -2,22 +2,22 @@
 ## Template to create MODS metadata for Camera Trap image resource objects.
 ##
 ## <title>$headers.CamelFedoraLabel image $count of $exchange.properties.CamelSplitSize</title>
-#set ($count = $headers.ImageIndex + 1)
+##set ($count = $headers.ImageSequenceIndex + 1)
 <?xml version="1.0"?>
 <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink">
     <titleInfo>
-        <title>$headers.CamelFedoraLabel image $count of $headers.ImageCount</title>
+        <title>$headers.esc.xml($headers.CamelFedoraLabel), image $headers.ImageSequenceIndex of $headers.ImageSequenceCount</title>
     </titleInfo>
-    <identifier>$headers.CamelFedoraLabel</identifier>
+    <identifier type="Image ID">$headers.ImageID</identifier>
     <relatedItem>
-        <identifier>$headers.ImageSequenceID</identifier>
+        <identifier type="Image Sequence ID">$headers.ImageSequenceID</identifier>
     </relatedItem>
     <typeOfResource>still image</typeOfResource>
     <abstract/>
     <physicalDescription>
         <digitalOrigin>born digital</digitalOrigin>
     </physicalDescription>
-    <subject authority="camera trap data federation Photo Type">
+    <subject authority="Camera Trap Data Network Photo Type">
         <topic>unknown</topic>
     </subject>
     <subject authorityURI="http://www.iucnredlist.org">
@@ -36,7 +36,7 @@
             <roleTerm authority="marcrelator" type="text"/>
         </role>
     </name>
-    <note type="Interest Rank">Unranked</note>
+    <note type="Interest Rank">None</note>
     <originInfo>
         <dateCaptured>$headers.FITSCreatedDate</dateCaptured>
         <dateOther type="Embargo Period End Date"/>

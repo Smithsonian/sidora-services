@@ -1,12 +1,13 @@
 ## 
 ## Template to create FGDC-CTPlot metadata for Camera Trap plot concept objects.
 ##
+## <title>$headers.CamelFedoraLabel</title>
 <?xml version="1.0"?>
 <metadata xmlns:fgdc="http://localhost/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <idinfo>
         <citation>
             <citeinfo>
-                <title>$headers.CamelFedoraLabel</title>
+                <title>$headers.esc.xml($headers.CamelFedoraLabel)</title>
             </citeinfo>
         </citation>
         <descript>
