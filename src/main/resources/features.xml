@@ -1,0 +1,48 @@
+<!--
+  ~ Copyright 2015 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<features name="tabular-metadata-servicemix-features">
+    <feature name="tabular-metadata-blueprint" version="1.0-SNAPSHOT" resolver="(obr)">
+        <feature version="3.0.2">cxf</feature>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.11.RELEASE_1</bundle>
+        <bundle dependency="true">mvn:commons-codec/commons-codec/1.9</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/3.11_1</bundle>
+        <bundle dependency="true">mvn:com.google.guava/guava/18.0</bundle>
+        <bundle>mvn:com.jbirkhimer.sidora/tabular-metadata-cxf-services-SMX-blueprint/1.0-SNAPSHOT</bundle>
+    </feature>
+    <feature name="tabular-metadata-spring" version="1.0-SNAPSHOT" resolver="(obr)">
+        <feature version="3.0.2">cxf</feature>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.11.RELEASE_1</bundle>
+        <bundle dependency="true">mvn:commons-codec/commons-codec/1.9</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/3.11_1</bundle>
+        <bundle dependency="true">mvn:com.google.guava/guava/18.0</bundle>
+        <bundle>mvn:com.jbirkhimer.sidora/tabular-metadata-cxf-services-SMX-spring/1.0-SNAPSHOT</bundle>
+    </feature>
+</features>

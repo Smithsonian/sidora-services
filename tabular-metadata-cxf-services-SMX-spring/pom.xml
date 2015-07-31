@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <repositories>
+        <repository>
+            <id>repository.springsource.com.release</id>
+            <name>SpringSource OBR - Release</name>
+            <url>http://repository.springsource.com/maven/bundles/release</url>
+        </repository>
+        <repository>
+            <id>repository.springsource.com.external</id>
+            <name>SpringSource OBR - External</name>
+            <url>http://repository.springsource.com/maven/bundles/external</url>
+        </repository>
+    </repositories>
+
+    <parent>
+        <artifactId>tabular-metadata-cxf-services</artifactId>
+        <groupId>com.jbirkhimer.sidora</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>tabular-metadata-cxf-services-SMX-spring</artifactId>
+    <name>SMX OSGi Spring CXF service for Tabular Metadata Generator</name>
+    <description>SMX OSGi Spring CXF service for developing metadata from tabular data files.</description>
+    <packaging>bundle</packaging>
+
+    <properties>
+        <cxf.version>3.0.2</cxf.version>
+        <spring.version>3.2.11.RELEASE</spring.version>
+        <jaxb.api.version>2.2</jaxb.api.version>
+        <servicemix.specs.version>2.5.0</servicemix.specs.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.asoroka.sidora</groupId>
+            <artifactId>tabular-metadata-generator</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.asoroka.sidora</groupId>
+            <artifactId>excel2tabular-translator</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-frontend-jaxrs</artifactId>
+            <version>${cxf.version}</version>
+        </dependency>
+        <!-- dependency injection -->
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>com.springsource.javax.inject</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.5.4</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Description>${project.description}</Bundle-Description>
+                        <Import-Package>
+                            javax.wsdl,
+                            javax.xml.bind,
+                            javax.xml.bind.annotation,
+                            javax.ws.rs,
+                            javax.ws.rs.core,
+                            org.apache.commons.httpclient,
+                            org.apache.commons.httpclient.methods,
+                            org.springframework.beans.factory.config,
+                            *;resolution:=optional
+                        </Import-Package>
+                        <Export-Package>
+                            com.asoroka.sidora.tabularmetadata*,
+                            com.asoroka.sidora.excel2tabular*,
+                            edu.si.codebook*,
+                            com.googlecode.totallylazy*,
+                            org.joda.time*,
+                            org.joda.convert*,
+                            javax.inject,
+                            org.apache.commons.csv
+                        </Export-Package>
+                        <!--<Embed-Dependency>*;scope=compile|runtime;inline=false</Embed-Dependency>
+                        <Embed-Directory>target/dependency</Embed-Directory>
+                        <Embed-StripGroup>true</Embed-StripGroup>
+                        <Embed-Transitive>true</Embed-Transitive>-->
+                    </instructions>
+                </configuration>
+            </plugin>
+
+            <!-- Plugin used to copy the compiled jar file to servicemix's deploy directory -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>copy-jar-files</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <!-- http://ant.apache.org/manual/Tasks/copy.html -->
+                                <copy overwrite="true" force="true" verbose="true"
+                                      failonerror="false"
+                                      file="${project.build.directory}/${project.build.finalName}.jar"
+                                      tofile="C:/apache-servicemix-5.4.0/deploy/${project.build.finalName}.jar" />
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>

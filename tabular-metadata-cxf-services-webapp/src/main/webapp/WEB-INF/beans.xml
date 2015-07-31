@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+    http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.1.xsd">
+
+    <import resource="classpath:META-INF/cxf/cxf.xml"/>
+
+    <context:component-scan base-package="com.asoroka"/>
+
+    <bean id="metadataGeneratorExcel" class="com.asoroka.sidora.excel2tabular.ExcelToTabular"/>
+    <bean id="metadataGenerator" class="com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator"/>
+    
+    <jaxrs:server address="/">
+        <jaxrs:serviceBeans>
+            <bean id="jaxrsResource" class="com.jbirkhimer.sidora.tabularmetadata.webapp.TabularMetadataGeneratorEndpoint"/>
+        </jaxrs:serviceBeans>
+
+        <jaxrs:providers>
+            <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+                <property name="marshallerProperties">
+                    <util:map id="marshallerPropertiesMap">
+                        <entry key="jaxb.formatted.output">
+                            <value type="java.lang.Boolean">true</value>
+                        </entry>
+                    </util:map>
+                </property>
+            </bean>
+        </jaxrs:providers>
+    </jaxrs:server>
+
+    
+</beans>
