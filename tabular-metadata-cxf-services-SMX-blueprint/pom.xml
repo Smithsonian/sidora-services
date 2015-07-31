@@ -40,18 +40,6 @@
     <artifactId>tabular-metadata-cxf-services-SMX-blueprint</artifactId>
     <name>SMX OSGi Blueprint CXF service for Tabular Metadata Generator</name>
     <description>SMX OSGi Blueprint CXF service for developing metadata from tabular data files.</description>
-    <repositories>
-        <repository>
-            <id>repository.springsource.com.release</id>
-            <name>SpringSource OBR - Release</name>
-            <url>http://repository.springsource.com/maven/bundles/release</url>
-        </repository>
-        <repository>
-            <id>repository.springsource.com.external</id>
-            <name>SpringSource OBR - External</name>
-            <url>http://repository.springsource.com/maven/bundles/external</url>
-        </repository>
-    </repositories>
     <packaging>bundle</packaging>
 
     <properties>
@@ -129,7 +117,7 @@
             </plugin>
 
             <!-- Plugin used to copy the compiled jar file to servicemix's deploy directory -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.7</version>
@@ -142,7 +130,7 @@
                         </goals>
                         <configuration>
                             <tasks>
-                                <!-- http://ant.apache.org/manual/Tasks/copy.html -->
+                                &lt;!&ndash; http://ant.apache.org/manual/Tasks/copy.html &ndash;&gt;
                                 <copy overwrite="true" force="true" verbose="true"
                                       failonerror="false"
                                       file="${project.build.directory}/${project.build.finalName}.jar"
@@ -151,7 +139,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
 
