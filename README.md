@@ -107,7 +107,7 @@ b. Use shell config commands, for example:
 
 cd /tabular-metadata-cxf-services/tabular-metadata-cxf-services-webapp/target
 
-copy 'codebook.war' to '$TOMCAT_HOME/webapps'
+copy `codebook.war` to `$TOMCAT_HOME/webapps`
 
 ##Testing the Tabular Data Service WebApp:
 
