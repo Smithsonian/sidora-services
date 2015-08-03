@@ -8,24 +8,24 @@
 
 ##Install projects to local maven repository:
 
-- excel2tabular
--------------
+####excel2tabular:
+
 `git clone https://github.com/ocymum/excel2tabular.git`
 
 `cd excel2tabular`
 
 `mvn clean install`
 
-- tabular-metadata
-----------------
+####tabular-metadata:
+
 `git clone https://github.com/ocymum/tabular-metadata.git`
 
 `cd tabular-metadata`
 
 `mvn clean install`
 
-- tabular-metadata-cxf-services
------------------------------
+####tabular-metadata-cxf-services:
+
 `git clone https://github.com/jbirkhimer/tabular-metadata-cxf-services.git`
 
 `cd to tabular-metadata-cxf-services`
