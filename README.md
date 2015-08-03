@@ -9,16 +9,25 @@
 ##Install projects to local maven repository:
 
 `git clone https://github.com/ocymum/excel2tabular.git`
+
 `cd excel2tabular`
+
 `mvn clean install`
+
 
 `git clone https://github.com/ocymum/tabular-metadata.git`
+
 `cd tabular-metadata`
+
 `mvn clean install`
 
+
 `git clone https://github.com/jbirkhimer/tabular-metadata-cxf-services.git`
+
 `cd to tabular-metadata-cxf-services`
+
 `mvn clean install`
+
 
 ##There are several options for deploying the Tabular Data Service:
 
