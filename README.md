@@ -57,7 +57,7 @@ example depends on.
 
 `karaf@root> features:list | grep tabular-metadata`
 
-### Start either the `tabular-metadata-blueprint` or `tabular-metadata-spring` CXF service:
+###Start either the `tabular-metadata-blueprint` or `tabular-metadata-spring` CXF service:
 
 `karaf@root> features:install tabular-metadata-blueprint`
 

@@ -47,9 +47,7 @@ import edu.si.codebook.Codebook;
 import org.apache.cxf.interceptor.Fault;
 
 /**
- * A simple HTTP endpoint for tabular metadata generation.
- *
- * @author A. Soroka
+ * Created by Jason Birkhimer on 7/14/2015.
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {

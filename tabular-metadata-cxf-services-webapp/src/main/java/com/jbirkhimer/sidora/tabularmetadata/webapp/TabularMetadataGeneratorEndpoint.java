@@ -45,9 +45,7 @@ import java.net.URL;
 import static edu.si.codebook.Codebook.codebook;
 
 /**
- * A simple HTTP endpoint for tabular metadata generation.
- * 
- * @author A. Soroka
+ * Created by Jason Birkhimer on 7/14/2015.
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {
