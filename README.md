@@ -105,7 +105,7 @@ b. Use shell config commands, for example:
 
 ##Deploying to Tomcat:
 
-cd /tabular-metadata-cxf-services/tabular-metadata-cxf-services-webapp/target
+`cd /tabular-metadata-cxf-services/tabular-metadata-cxf-services-webapp/target`
 
 copy `codebook.war` to `$TOMCAT_HOME/webapps`
 
