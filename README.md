@@ -45,7 +45,7 @@
 
 2. Deploy to Tomcat or Jetty
 
-##Deploying to Servicemix:
+##Deploying to ServiceMix:
 
 The tabular data service makes use of the ServiceMix features facility.
 A feature is a named, versioned collection of OSGi bundles that work
