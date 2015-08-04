@@ -99,7 +99,7 @@
             </plugin>
 
             <!-- Plugin used to copy the compiled jar file to servicemix's deploy directory -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.7</version>
@@ -112,7 +112,7 @@
                         </goals>
                         <configuration>
                             <tasks>
-                                <!-- http://ant.apache.org/manual/Tasks/copy.html -->
+                                &lt;!&ndash; http://ant.apache.org/manual/Tasks/copy.html &ndash;&gt;
                                 <copy overwrite="true" force="true" verbose="true"
                                       failonerror="false"
                                       file="${project.build.directory}/${project.build.finalName}.jar"
@@ -121,7 +121,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
 
