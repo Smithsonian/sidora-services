@@ -28,7 +28,7 @@
 
 `git clone https://github.com/jbirkhimer/tabular-metadata-cxf-services.git`
 
-`cd to tabular-metadata-cxf-services`
+`cd tabular-metadata-cxf-services`
 
 `mvn clean install`
 

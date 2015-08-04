@@ -8,7 +8,7 @@
           <property key="Import-Package" value="javax.wsdl,javax.xml.bind,javax.xml.bind.annotation,javax.ws.rs,javax.ws.rs.core,org.apache.commons.httpclient,org.apache.commons.httpclient.methods,org.springframework.beans.factory.config,*;resolution:=optional" />
           <property key="Export-Package" value="com.asoroka.sidora.tabularmetadata*,com.asoroka.sidora.excel2tabular*,edu.si.codebook*,com.googlecode.totallylazy*,org.joda.time*,org.joda.convert*,javax.inject,org.apache.commons.csv" />
           <property key="Bundle-Name" value="SMX OSGi Spring CXF service for Tabular Metadata Generator" />
-          <property key="Include-Resource" value="META-INF/spring/beans.xml=$MODULE_DIR$/src/main/resources/META-INF/spring/beans.xml,tabular-metadata-servicemix-features.xml=$MODULE_DIR$/src/main/resources/tabular-metadata-servicemix-features.xml" />
+          <property key="Include-Resource" value="META-INF/spring/beans.xml=$MODULE_DIR$/src/main/resources/META-INF/spring/beans.xml" />
         </additionalProperties>
         <additionalJARContents />
       </configuration>
@@ -29,7 +29,6 @@
     <orderEntry type="library" name="Maven: org.apache.commons:commons-csv:1.1" level="project" />
     <orderEntry type="library" name="Maven: joda-time:joda-time:2.6" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
-    <orderEntry type="library" name="Maven: javax.inject:javax.inject:1" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.7" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.totallylazy:totallylazy:1.55" level="project" />
     <orderEntry type="library" name="Maven: com.asoroka.sidora:excel2tabular-translator:0.0.1-SNAPSHOT" level="project" />
