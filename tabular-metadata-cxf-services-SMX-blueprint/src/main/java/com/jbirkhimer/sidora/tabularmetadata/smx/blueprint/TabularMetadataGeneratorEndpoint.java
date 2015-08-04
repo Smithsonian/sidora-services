@@ -83,7 +83,7 @@ public class TabularMetadataGeneratorEndpoint {
         return codebook(generator.getMetadata(url));
     }
 
-    @GET
+    /*@GET
     @Path("/csv")
     @Produces("text/xml")
     public Codebook getCodebookCSV(@QueryParam("url") final URL url) throws IOException {
@@ -116,7 +116,7 @@ public class TabularMetadataGeneratorEndpoint {
             attachments.add(result);
         }
         return multisheet(attachments);
-    }
+    }*/
 
 
 
