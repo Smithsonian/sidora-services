@@ -14,6 +14,10 @@
         <argument value="CameraTrapIngest: Root object does not exist."/>
     </bean>
 
+    <bean id="noImageSequence" class="java.lang.IllegalArgumentException">
+        <argument value="CameraTrapIngest: Image sequence does not exist."/>
+    </bean>
+
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
 
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
@@ -54,8 +58,17 @@
                               retryAttemptedLogLevel="WARN"/>
         </onException>
 
+        <onException>
+            <exception>java.io.FileNotFoundException</exception>
+            <redeliveryPolicy useExponentialBackOff="true"
+                              backOffMultiplier="2"
+                              redeliveryDelay="1000"
+                              maximumRedeliveries="5"
+                              retryAttemptedLogLevel="WARN"/>
+        </onException>
+
         <route id="CameraTrapStartProcessing">
-            <from uri="file:Process?moveFailed=Error_CamelTrap&amp;delete=true"/>
+            <from uri="file:Process?delay=9000&amp;moveFailed=Error_CamelTrap&amp;delete=true&amp;maxMessagesPerPoll=1"/>
             <log message="${id} CameraTrapIngest: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -73,29 +86,38 @@
             <log message="${id} CameraTrapIngest: Starting Extraction"/>
             <to uri="extractor:extract?location=CameraTrapData"/>
             <log message="${id} CameraTrapIngest: Finished Extraction"/>
-            <transform>
-                <simple>deployment_manifest.xml</simple>
-            </transform>
-            <to uri="reader:file?type=text"/>
-            <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
+            <log message="${id} CameraTrapIngest: AbsolutePath - ${header.CamelFileAbsolutePath}"
+                 loggingLevel="WARN"/>
 
-            <!-- Add Schematron validation. -->
-            <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
-            <!--
-            <to uri="schematron:///opt/sidora/servicemix/Input/schemas/DeploymentManifest2014.sch"/>
-            <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                 loggingLevel="INFO"/>
-            -->
+            <threads poolSize="3" maxPoolSize="5">
 
-            <!-- Add image count and filename check. -->
-            <setHeader headerName="ManifestXML">
-                <simple>
-                    ${body}
-                </simple>
-            </setHeader>
-            <to uri="direct:validatePackage"/>
+                <transform>
+                    <simple>deployment_manifest.xml</simple>
+                </transform>
+                <to uri="reader:file?type=text"/>
+                <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
 
-            <to uri="direct:processPackage"/>
+                <!-- Add Schematron validation. -->
+                <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
+                <!--
+                <to uri="schematron:///opt/sidora/servicemix/Input/schemas/DeploymentManifest2014.sch"/>
+                <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
+                     loggingLevel="INFO"/>
+                -->
+
+                <!-- Add image count and filename check. -->
+                <setHeader headerName="ManifestXML">
+                    <simple>
+                        ${body}
+                    </simple>
+                </setHeader>
+                <to uri="direct:validatePackage"/>
+
+                <!-- Process the deployment -->
+                <to uri="direct:processPackage"/>
+
+            </threads>
+
             <log message="${id} CameraTrapIngest: Finished Camera Trap processing!"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -307,11 +329,35 @@
                 </xpath>
             </setHeader>
             -->
+            <!--
             <setHeader headerName="ImageSequenceIndex">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
                     substring-after($ImageID,concat($ImageSequenceID,'i'))
                 </xpath>
             </setHeader>
+            -->
+            <!--
+                This is a fix to deal with a change made to the backlog CT ImageID format.  It will fail if there are
+                two or more 'i' characters in the ImageID.
+            -->
+            <setHeader headerName="ImageSequenceIndex">
+                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
+                    substring-after($ImageID,'i')
+                </xpath>
+            </setHeader>
+            <choice>
+                <when>
+                    <simple>
+                        ${header.ImageSequenceIndex} == ''
+                    </simple>
+                    <!-- Stop processing this deployment. -->
+                    <log message="${id} CameraTrapIngest: Image sequence does not exist."
+                         loggingLevel="WARN"
+                         logName="edu.si.ctingest"/>
+                    <throwException ref="noImageSequence"/>
+                </when>
+            </choice>
+
             <setHeader headerName="ImageSequenceCount">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
                     count(//Image[../ImageSequenceId=$ImageSequenceID])
