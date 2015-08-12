@@ -62,6 +62,18 @@ the tabular data service quick and easy. Each feature enables you to use
 a single command to install the example bundle and any bundles that the
 example depends on.
 
+###Add your local Maven repository to `org.ops4j.pax.url.mvn.cfg`:
+
+Edit the `org.ops4j.pax.url.mvn.cfg` file located in `[SERVICEMIX_HOME]/etc/`
+
+Find the `Path to local Maven repository...` section and add the following line 
+
+`org.ops4j.pax.url.mvn.localRepository=${user.home}/.m2/repository`
+
+**NOTE:**
+`${user.home}/.m2/repository` should be the absolute path to your local Maven
+repository for example `/home/user_home/.m2/repository`
+
 ###Add the Tabular Data feature repository to ServiceMix:
 
 `karaf@root> features:addurl mvn:com.jbirkhimer.sidora/tabular-metadata-cxf-services/1.0-SNAPSHOT/xml/features`
@@ -98,9 +110,9 @@ a. Add org.apache.cxf.osgi.cfg to the /etc directory and set the
 
 b. Use shell config commands, for example:
 
-     config:edit org.apache.cxf.osgi   
-     config:propset org.apache.cxf.servlet.context /super
-     config:update
+   `config:edit org.apache.cxf.osgi`
+   `config:propset org.apache.cxf.servlet.context /super`
+   `config:update`
 
 
 ##Deploying to Tomcat:
