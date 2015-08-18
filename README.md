@@ -10,19 +10,19 @@
 
 ####excel2tabular:
 
-`git clone https://github.com/ocymum/excel2tabular.git`
+`git clone https://github.com/jbirkhimer/excel2tabular.git`
 
 `cd excel2tabular`
 
-`mvn clean install`
+`mvn clean install -DskipTests=true`
 
 ####tabular-metadata:
 
-`git clone https://github.com/ocymum/tabular-metadata.git`
+`git clone https://github.com/jbirkhimer/tabular-metadata.git`
 
 `cd tabular-metadata`
 
-`mvn clean install`
+`mvn clean install -DskipTests=true`
 
 ####tabular-metadata-cxf-services:
 
@@ -30,7 +30,7 @@
 
 `cd tabular-metadata-cxf-services`
 
-`mvn clean install`
+`mvn clean install -DskipTests=true`
 
 
 ##There are several options for deploying the Tabular Data Service:
