@@ -1,5 +1,5 @@
-/* 
- * Copyright 2014 Smithsonian Institution.  
+/*
+ * Copyright 2015 Smithsonian Institution.
  *
  * Permission is granted to use, copy, modify,
  * and distribute this software and its documentation for educational, research
@@ -8,8 +8,8 @@
  * appear in all copies, modifications and distributions.  For commercial
  * licensing, contact the Office of the Chief Information Officer, Smithsonian
  * Institution, 380 Herndon Parkway, MRC 1010, Herndon, VA. 20170, 202-633-5256.
- *  
- * This software and accompanying documentation is supplied â€œas isâ€� without
+ *
+ * This software and accompanying documentation is supplied "as is" without
  * warranty of any kind. The copyright holder and the Smithsonian Institution:
  * (1) expressly disclaim any warranties, express or implied, including but not
  * limited to any implied warranties of merchantability, fitness for a
@@ -24,6 +24,7 @@
  * otherwise, even if any of the parties has been warned of the possibility of
  * such loss or damage.
  */
+
 package edu.si.services.camel.reader;
 
 import java.io.File;
