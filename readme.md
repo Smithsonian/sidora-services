@@ -57,7 +57,7 @@ To process Camera Trap data copy the data archive (e.g. p1d246.tar.gz) into the 
 > Note: SIservices is built with Maven 3
 
 ### Version
-0.0.4
+0.4
 
 Copyright 2015 Smithsonian Institution.
 
