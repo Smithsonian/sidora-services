@@ -12,6 +12,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+import com.asoroka.sidora.tabularmetadata.TabularMetadata;
 import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
 
 import edu.si.codebook.Codebook;
@@ -24,13 +25,14 @@ import edu.si.codebook.Codebook;
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {
 
-    @Inject
-    private TabularMetadataGenerator generator;
+	@Inject
+	private TabularMetadataGenerator generator;
 
-    @GET
-    @Path("/")
-    @Produces("text/xml")
-    public Codebook get(@QueryParam("url") final URL url) throws IOException {
-        return codebook(generator.getMetadata(url));
-    }
+	@GET
+	@Path("/")
+	@Produces("text/xml")
+	public Codebook get(@QueryParam("url") final URL url, @QueryParam("hasHeaders") final Boolean headers)
+			throws IOException {
+		return codebook(generator.getMetadata(url, headers));
+	}
 }

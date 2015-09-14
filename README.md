@@ -7,4 +7,4 @@ There is only one way to use it: send a GET (with browser or command-line tool) 
 
 `http://localhost:8080/?url={URL-of-my-tabular-data-file}`
 
-That URL can be a `file:///path/to/my/file.csv` URL for convenience.
+That URL can be a `file:///path/to/my/file.csv` URL for convenience. You may also add a `hasHeaders` query parameter with value either `true` or `false` if you know whether your data has a header row.

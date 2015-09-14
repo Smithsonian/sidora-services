@@ -176,6 +176,26 @@ public class TabularMetadataGeneratorTest {
         assertTrue("Found a data type that didn't originate from our mocking!", all(types, equalTo(mockDataType)));
         assertTrue("Failed to find the right mock range results!", all(ranges, matchesTestRanges));
     }
+    
+    @Test
+    public void testOperationWithDeclaredHeaders() throws IOException {
+        log.trace("Entering testOperationWithDeclaredHeaders()...");
+        when(mockHeaderHeuristic.results()).thenReturn(false);
+        final URL mockURL = mockURL(testCsv);
+        final TabularMetadataGenerator testParser =
+                newGenerator(mockRangeStrategy, mockEnumStrategy, mockTypeStrategy);
+        testParser.setHeaderStrategy(mockHeaderHeuristic);
+        final TabularMetadata results = testParser.getMetadata(mockURL, true);
+
+        final List<DataType> types = results.fieldTypes();
+        assertTrue(all(types, equalTo(mockDataType)));
+
+        final List<Map<DataType, Range<?>>> ranges = results.minMaxes();
+        assertTrue("Failed to find the right mock range results!", all(ranges, matchesTestRanges));
+        final List<String> headers = results.headerNames();
+        assertEquals("Got a bad list of header names!", asList(testHeaders.split(",")), headers);
+        assertTrue(all(results.enumeratedValues(), matchesMockEnumeratedValues));
+    }
 
     @Test
     public void testOperationWithHeaders() throws IOException {
@@ -195,7 +215,6 @@ public class TabularMetadataGeneratorTest {
         final List<String> headers = results.headerNames();
         assertEquals("Got a bad list of header names!", asList(testHeaders.split(",")), headers);
         assertTrue(all(results.enumeratedValues(), matchesMockEnumeratedValues));
-
     }
 
     @Test

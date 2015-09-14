@@ -7,6 +7,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.googlecode.totallylazy.Sequences.sequence;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -23,6 +24,7 @@ import javax.inject.Inject;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
 
 import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.asoroka.sidora.tabularmetadata.formats.TabularFormat;
@@ -41,141 +43,163 @@ import com.googlecode.totallylazy.Callable1;
 import com.googlecode.totallylazy.numbers.Ratio;
 
 /**
- * Master entry point for this API. This is the class from which all parsing should initiate, via
- * {@link #getMetadata(URL)}.
+ * Master entry point for this API. This is the class from which all parsing
+ * should initiate, via {@link #getMetadata(URL)} or
+ * {@link #getMetadata(URL, Boolean)}.
  * 
  * @author A. Soroka
  */
 public class TabularMetadataGenerator {
 
-    private static final Charset CHARACTER_ENCODING = UTF_8;
+	private static final Charset CHARACTER_ENCODING = UTF_8;
 
-    private CSVFormat format = DEFAULT;
+	private CSVFormat format = DEFAULT;
 
-    /**
-     * Default value of {@code 0} indicates no limit. See {@link TabularScanner.scan(final int limit)}.
-     */
-    private Integer scanLimit = 0;
+	/**
+	 * Default value of {@code 0} indicates no limit. See
+	 * {@link TabularScanner.scan(final int limit)}.
+	 */
+	private Integer scanLimit = 0;
 
-    private RangeDeterminingHeuristic<?> rangeStrategy = new RunningMinMaxHeuristic();
+	private RangeDeterminingHeuristic<?> rangeStrategy = new RunningMinMaxHeuristic();
 
-    private TypeDeterminingHeuristic<?> typeStrategy = new StrictHeuristic();
+	private TypeDeterminingHeuristic<?> typeStrategy = new StrictHeuristic();
 
-    private EnumeratedValuesHeuristic<?> enumStrategy = new LimitedEnumeratedValuesHeuristic();
+	private EnumeratedValuesHeuristic<?> enumStrategy = new LimitedEnumeratedValuesHeuristic();
 
-    private HeaderHeuristic<?> headerStrategy = new DefaultHeaderHeuristic();
+	private HeaderHeuristic<?> headerStrategy = new DefaultHeaderHeuristic();
 
-    /**
-     * The main entry point to application workflow.
-     * 
-     * @param dataUrl Where to find some tabular data.
-     * @return The results of metadata extraction.
-     * @throws IOException
-     */
-    public TabularMetadata getMetadata(final URL dataUrl) throws IOException {
+	private static final Logger log = getLogger(TabularMetadataGenerator.class);
 
-        try (final CSVParser csvParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
-            final PeekingIterator<CSVRecord> parser = peekingIterator(csvParser.iterator());
-            // TODO allow a HeaderHeuristic to use more information than the first line of data
-            final CSVRecord firstLine = parser.peek();
-            for (final String field : firstLine) {
-                headerStrategy.addValue(field);
-            }
-            final boolean hasHeaders = headerStrategy.results();
-            headerStrategy.reset();
-            final List<String> headerNames;
-            if (hasHeaders) {
-                headerNames = newArrayList(firstLine);
-                parser.next();
-            }
-            else {
-                headerNames = emptyHeaders(firstLine.size());
-            }
-            // scan values up to the limit
-            final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
-            scanner.scan(scanLimit);
+	/**
+	 * The main entry point to application workflow.
+	 * 
+	 * @param dataUrl Where to find some tabular data.
+	 * @param withHeaders whether this tabular data has a header row
+	 * @return The results of metadata extraction.
+	 * @throws IOException
+	 */
+	public TabularMetadata getMetadata(final URL dataUrl, final Boolean withHeaders) throws IOException {
+		try (final CSVParser csvParser = parse(dataUrl, CHARACTER_ENCODING, format)) {
+			final PeekingIterator<CSVRecord> parser = peekingIterator(csvParser.iterator());
+			// TODO allow a HeaderHeuristic to use more information than the
+			// first line of data
+			final CSVRecord firstLine = parser.peek();
+			final boolean hasHeaders;
+			if (withHeaders == null) {
+				log.debug("Checking for the existence of headers.");
+				for (final String field : firstLine) {
+					headerStrategy.addValue(field);
+				}
+				hasHeaders = headerStrategy.results();
+				headerStrategy.reset();
+			} else {
+				hasHeaders = withHeaders;
+				log.debug("Accepted information that headers is {}.", hasHeaders);
+			}
+			final List<String> headerNames;
+			if (hasHeaders) {
+				headerNames = newArrayList(firstLine);
+				log.debug("Found headers: {}", headerNames);
+				parser.next();
+			} else {
+				headerNames = emptyHeaders(firstLine.size());
+				log.debug("Found no headers.");
+			}
+			// scan values up to the limit
+			final TabularScanner scanner = new TabularScanner(parser, typeStrategy, rangeStrategy, enumStrategy);
+			scanner.scan(scanLimit);
 
-            final List<TypeDeterminingHeuristic<?>> typeStrategies = scanner.getTypeStrategies();
-            final List<RangeDeterminingHeuristic<?>> rangeStrategies = scanner.getRangeStrategies();
-            final List<EnumeratedValuesHeuristic<?>> enumStrategies = scanner.getEnumStrategies();
+			final List<TypeDeterminingHeuristic<?>> typeStrategies = scanner.getTypeStrategies();
+			final List<RangeDeterminingHeuristic<?>> rangeStrategies = scanner.getRangeStrategies();
+			final List<EnumeratedValuesHeuristic<?>> enumStrategies = scanner.getEnumStrategies();
 
-            // extract the results for each field
-            final List<DataType> columnTypes = sequence(typeStrategies).map(new Extract<DataType>()).toList();
-            final List<Map<DataType, Range<?>>> minMaxes =
-                    sequence(rangeStrategies).map(new Extract<Map<DataType, Range<?>>>()).toList();
-            final List<Map<DataType, Set<String>>> enumValues =
-                    sequence(enumStrategies).map(new Extract<Map<DataType, Set<String>>>()).toList();
-            final List<Ratio> valuesSeen = sequence(typeStrategies).map(EXTRACT_RATIOS).toList();
-            return new TabularMetadata(headerNames, valuesSeen, columnTypes, minMaxes, enumValues);
-        } catch (final NoSuchElementException e) {
-            throw new EmptyDataFileException(dataUrl + " has no data in it!");
-        }
-    }
+			// extract the results for each field
+			final List<DataType> columnTypes = sequence(typeStrategies).map(new Extract<DataType>()).toList();
+			final List<Map<DataType, Range<?>>> minMaxes = sequence(rangeStrategies)
+					.map(new Extract<Map<DataType, Range<?>>>()).toList();
+			final List<Map<DataType, Set<String>>> enumValues = sequence(enumStrategies)
+					.map(new Extract<Map<DataType, Set<String>>>()).toList();
+			final List<Ratio> valuesSeen = sequence(typeStrategies).map(EXTRACT_RATIOS).toList();
+			return new TabularMetadata(headerNames, valuesSeen, columnTypes, minMaxes, enumValues);
+		} catch (final NoSuchElementException e) {
+			throw new EmptyDataFileException(dataUrl + " has no data in it!");
+		}
+	}
 
-    private static final List<String> emptyHeaders(final int numFields) {
-        final List<String> headers = new ArrayList<>(numFields);
-        for (int i = 1; i <= numFields; i++) {
-            headers.add("Variable " + i);
-        }
-        return headers;
-    }
+	/**
+	 * Another, simpler entry point to application workflow.
+	 * 
+	 * @param dataUrl Where to find some tabular data.
+	 * @return The results of metadata extraction.
+	 * @throws IOException
+	 */
+	public TabularMetadata getMetadata(final URL dataUrl) throws IOException {
+		return getMetadata(dataUrl, null);
+	}
 
-    private static final Callable1<TypeDeterminingHeuristic<?>, Ratio> EXTRACT_RATIOS =
-            new Callable1<TypeDeterminingHeuristic<?>, Ratio>() {
+	private static final List<String> emptyHeaders(final int numFields) {
+		final List<String> headers = new ArrayList<>(numFields);
+		for (int i = 1; i <= numFields; i++) {
+			headers.add("Variable " + i);
+		}
+		return headers;
+	}
 
-                @Override
-                public Ratio call(final TypeDeterminingHeuristic<?> h) {
-                    return new Ratio(new BigInteger(Integer.toString(h.valuesSeen() - h.parseableValuesSeen())),
-                            new BigInteger(Integer.toString(h
-                                    .valuesSeen())));
-                }
-            };
+	private static final Callable1<TypeDeterminingHeuristic<?>, Ratio> EXTRACT_RATIOS = new Callable1<TypeDeterminingHeuristic<?>, Ratio>() {
 
-    /**
-     * @param scanLimit A limit to the number of rows to scan, including any header row that may be present. {@code 0}
-     *        indicates no limit.
-     */
-    public void setScanLimit(final Integer scanLimit) {
-        this.scanLimit = scanLimit;
-    }
+		@Override
+		public Ratio call(final TypeDeterminingHeuristic<?> h) {
+			return new Ratio(new BigInteger(Integer.toString(h.valuesSeen() - h.parseableValuesSeen())),
+					new BigInteger(Integer.toString(h.valuesSeen())));
+		}
+	};
 
-    /**
-     * @param strategy The header recognition strategy to use.
-     */
-    @Inject
-    public <H extends HeaderHeuristic<?>> void setHeaderStrategy(final H strategy) {
-        this.headerStrategy = strategy;
-    }
+	/**
+	 * @param scanLimit A limit to the number of rows to scan, including any
+	 *        header row that may be present. {@code 0} indicates no limit.
+	 */
+	public void setScanLimit(final Integer scanLimit) {
+		this.scanLimit = scanLimit;
+	}
 
-    /**
-     * @param format The tabular data format to expect.
-     */
-    @Inject
-    public void setFormat(final TabularFormat format) {
-        this.format = format.get();
-    }
+	/**
+	 * @param strategy The header recognition strategy to use.
+	 */
+	@Inject
+	public <H extends HeaderHeuristic<?>> void setHeaderStrategy(final H strategy) {
+		this.headerStrategy = strategy;
+	}
 
-    /**
-     * @param strategy The type recognition strategy to use.
-     */
-    @Inject
-    public void setTypeStrategy(final TypeDeterminingHeuristic<?> strategy) {
-        this.typeStrategy = strategy;
-    }
+	/**
+	 * @param format The tabular data format to expect.
+	 */
+	@Inject
+	public void setFormat(final TabularFormat format) {
+		this.format = format.get();
+	}
 
-    /**
-     * @param strategy The range recognition strategy to use.
-     */
-    @Inject
-    public void setRangeStrategy(final RangeDeterminingHeuristic<?> strategy) {
-        this.rangeStrategy = strategy;
-    }
+	/**
+	 * @param strategy The type recognition strategy to use.
+	 */
+	@Inject
+	public void setTypeStrategy(final TypeDeterminingHeuristic<?> strategy) {
+		this.typeStrategy = strategy;
+	}
 
-    /**
-     * @param strategy The enumerated-values recognition strategy to use.
-     */
-    @Inject
-    public void setEnumStrategy(final EnumeratedValuesHeuristic<?> strategy) {
-        this.enumStrategy = strategy;
-    }
+	/**
+	 * @param strategy The range recognition strategy to use.
+	 */
+	@Inject
+	public void setRangeStrategy(final RangeDeterminingHeuristic<?> strategy) {
+		this.rangeStrategy = strategy;
+	}
+
+	/**
+	 * @param strategy The enumerated-values recognition strategy to use.
+	 */
+	@Inject
+	public void setEnumStrategy(final EnumeratedValuesHeuristic<?> strategy) {
+		this.enumStrategy = strategy;
+	}
 }
