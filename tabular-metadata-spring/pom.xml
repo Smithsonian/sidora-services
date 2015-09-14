@@ -13,7 +13,7 @@
 	<description>Spring utilities for developing metadata from tabular data files.</description>
 
 	<properties>
-		<spring.version>4.1.3.RELEASE</spring.version>
+		<spring.version>4.2.1.RELEASE</spring.version>
 	</properties>
 
 	<dependencies>
