@@ -43,8 +43,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.asoroka.sidora.tabularmetadata.TabularMetadata;
-import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Function1;
 import com.googlecode.totallylazy.Quintuple;
@@ -52,6 +50,8 @@ import com.googlecode.totallylazy.Sequence;
 import com.googlecode.totallylazy.numbers.Ratio;
 
 import edu.si.codebook.Codebook.VariableType;
+import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 /**
  * Constructs an SI-schema XML serialization of a precis of metadata results.

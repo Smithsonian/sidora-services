@@ -12,11 +12,11 @@
 
     <context:component-scan base-package="com.asoroka"/>
 
-    <bean id="metadataGenerator" class="com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator"/>
+    <bean id="metadataGenerator" class="edu.si.sidora.tabularmetadata.TabularMetadataGenerator"/>
     
     <jaxrs:server address="/">
         <jaxrs:serviceBeans>
-            <bean id="jaxrsResource" class="com.asoroka.sidora.tabularmetadata.web.TabularMetadataGeneratorEndpoint"/>
+            <bean id="jaxrsResource" class="edu.si.sidora.tabularmetadata.web.TabularMetadataGeneratorEndpoint"/>
         </jaxrs:serviceBeans>
 
         <jaxrs:providers>

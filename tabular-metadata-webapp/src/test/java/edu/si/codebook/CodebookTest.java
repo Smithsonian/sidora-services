@@ -26,10 +26,10 @@
  */
 package edu.si.codebook;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Geographic;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.google.common.collect.Sets.newHashSet;
 import static edu.si.codebook.Codebook.codebook;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.Geographic;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static java.math.BigInteger.ONE;
 import static java.math.BigInteger.TEN;
 import static java.util.Arrays.asList;
@@ -47,14 +47,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.asoroka.sidora.tabularmetadata.TabularMetadata;
-import com.asoroka.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Sequence;
 import com.googlecode.totallylazy.numbers.Ratio;
 
 import edu.si.codebook.Codebook.VariableType;
 import edu.si.codebook.Codebook.VariableType.RangeType;
+import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CodebookTest {

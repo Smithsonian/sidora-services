@@ -12,13 +12,13 @@
 
     <import resource="classpath:META-INF/cxf/cxf.xml"/>
 
-    <context:component-scan base-package="com.asoroka"/>
+    <context:component-scan base-package="edu.si"/>
 
-    <bean id="testGenerator" class="com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator"/>
+    <bean id="testGenerator" class="edu.si.sidora.tabularmetadata.TabularMetadataGenerator"/>
 
     <jaxrs:server address="local://tabular">
         <jaxrs:serviceBeans>
-            <bean id="jaxrsResource" class="com.asoroka.sidora.tabularmetadata.web.TabularMetadataGeneratorEndpoint"/>
+            <bean id="jaxrsResource" class="edu.si.sidora.tabularmetadata.web.TabularMetadataGeneratorEndpoint"/>
         </jaxrs:serviceBeans>
 
         <jaxrs:providers>
