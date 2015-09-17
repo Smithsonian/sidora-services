@@ -1,6 +1,9 @@
 # Created by .ignore support plugin (hsz.mobi)
 
+
+**/.idea/workspace.xml
 *.iml
+/.idea
 
 ## Directory-based project format:
 .idea/

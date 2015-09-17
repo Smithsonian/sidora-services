@@ -36,6 +36,7 @@
     <artifactId>tabular-metadata-cxf-services</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+
     <modules>
         <module>tabular-metadata-cxf-services-SMX-blueprint</module>
         <module>tabular-metadata-cxf-services-SMX-spring</module>
@@ -68,7 +69,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.3</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>

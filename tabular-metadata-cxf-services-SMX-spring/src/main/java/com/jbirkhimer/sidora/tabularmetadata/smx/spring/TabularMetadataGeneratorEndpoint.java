@@ -41,7 +41,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
-import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
+import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
 
 import edu.si.codebook.Codebook;
 import org.apache.cxf.interceptor.Fault;
@@ -66,7 +66,7 @@ public class TabularMetadataGeneratorEndpoint {
     @GET
     @Path("/")
     @Produces("text/xml")
-    public Codebook getCodebook(@QueryParam("url") final URL url) throws IOException, URISyntaxException {
+    public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
         String fileExt = url.getFile().toLowerCase();
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
             Fault fault = new Fault(new Exception("File Not Valid"));
@@ -74,9 +74,9 @@ public class TabularMetadataGeneratorEndpoint {
             throw fault;
         } else if (fileExt.endsWith(".xls") || fileExt.endsWith(".xlsx")) {
             final URL xlsUrl = translator.process(url).get(0).toURI().toURL();
-            return codebook(generator.getMetadata(xlsUrl));
+            return codebook(generator.getMetadata(xlsUrl, hasHeaders));
         }
 
-        return codebook(generator.getMetadata(url));
+        return codebook(generator.getMetadata(url, hasHeaders));
     }
 }

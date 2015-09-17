@@ -38,10 +38,10 @@
 
     <import resource="classpath:META-INF/cxf/cxf.xml"/>
 
-    <context:component-scan base-package="com.asoroka"/>
+    <context:component-scan base-package="edu.si"/>
 
     <bean id="metadataGeneratorExcel" class="com.asoroka.sidora.excel2tabular.ExcelToTabular"/>
-    <bean id="metadataGenerator" class="com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator"/>
+    <bean id="metadataGenerator" class="edu.si.sidora.tabularmetadata.TabularMetadataGenerator"/>
     
     <jaxrs:server address="/">
         <jaxrs:serviceBeans>
@@ -60,6 +60,4 @@
             </bean>
         </jaxrs:providers>
     </jaxrs:server>
-
-    
 </beans>

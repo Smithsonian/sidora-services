@@ -6,7 +6,7 @@
         <additionalProperties>
           <property key="Bundle-Description" value="SMX OSGi Blueprint CXF service for developing metadata from tabular data files." />
           <property key="Import-Package" value="javax.wsdl,javax.xml.bind,javax.xml.bind.annotation,javax.ws.rs,javax.ws.rs.core,org.apache.commons.httpclient,org.apache.commons.httpclient.methods,org.osgi.service.blueprint,*;resolution:=optional" />
-          <property key="Export-Package" value="com.asoroka.sidora.tabularmetadata*,com.asoroka.sidora.excel2tabular*,edu.si.codebook*,com.googlecode.totallylazy*,org.joda.time*,org.joda.convert*,javax.inject,org.apache.commons.csv" />
+          <property key="Export-Package" value="edu.si.sidora.tabularmetadata*,com.asoroka.sidora.excel2tabular*,edu.si.codebook*,com.googlecode.totallylazy*,org.joda.time*,org.joda.convert*,javax.inject,org.apache.commons.csv" />
           <property key="Bundle-Name" value="SMX OSGi Blueprint CXF service for Tabular Metadata Generator" />
           <property key="Include-Resource" value="OSGI-INF/blueprint/blueprint.xml=$MODULE_DIR$/src/main/resources/OSGI-INF/blueprint/blueprint.xml" />
         </additionalProperties>
@@ -25,15 +25,15 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: com.asoroka.sidora:tabular-metadata-generator:0.0.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-csv:1.1" level="project" />
-    <orderEntry type="library" name="Maven: joda-time:joda-time:2.6" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.commons:commons-csv:1.2" level="project" />
+    <orderEntry type="library" name="Maven: joda-time:joda-time:2.8.2" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
-    <orderEntry type="library" name="Maven: javax.inject:javax.inject:1" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.7" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.12" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.totallylazy:totallylazy:1.55" level="project" />
     <orderEntry type="library" name="Maven: com.asoroka.sidora:excel2tabular-translator:0.0.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.apache.poi:poi-ooxml:3.10.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.poi:poi:3.10.1" level="project" />
+    <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.5" level="project" />
     <orderEntry type="library" name="Maven: org.apache.poi:poi-ooxml-schemas:3.10.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.xmlbeans:xmlbeans:2.6.0" level="project" />
     <orderEntry type="library" name="Maven: stax:stax-api:1.0.1" level="project" />
@@ -48,9 +48,5 @@
     <orderEntry type="library" name="Maven: javax.annotation:javax.annotation-api:1.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.cxf:cxf-rt-transports-http:3.0.2" level="project" />
     <orderEntry type="library" name="Maven: javax.inject:com.springsource.javax.inject:1.0.0" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.4.1" level="project" />
-    <orderEntry type="library" name="Maven: commons-logging:commons-logging:1.2" level="project" />
-    <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.9" level="project" />
   </component>
 </module>

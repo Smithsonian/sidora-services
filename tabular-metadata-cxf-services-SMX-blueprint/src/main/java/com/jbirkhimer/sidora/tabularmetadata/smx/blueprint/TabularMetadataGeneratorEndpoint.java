@@ -29,9 +29,8 @@
 package com.jbirkhimer.sidora.tabularmetadata.smx.blueprint;
 
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
-import com.asoroka.sidora.tabularmetadata.TabularMetadataGenerator;
+import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
 import edu.si.codebook.Codebook;
-import edu.si.codebook.MultiSheet;
 import org.apache.cxf.interceptor.Fault;
 
 import javax.inject.Inject;
@@ -39,15 +38,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 
 import static edu.si.codebook.Codebook.codebook;
-import static edu.si.codebook.MultiSheet.multisheet;
 
 /**
  * Created by Jason Birkhimer on 7/14/2015.
@@ -69,7 +64,7 @@ public class TabularMetadataGeneratorEndpoint {
     @GET
     @Path("/")
     @Produces("text/xml")
-    public Codebook getCodebook(@QueryParam("url") final URL url) throws IOException, URISyntaxException {
+    public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
         String fileExt = url.getFile().toLowerCase();
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
             Fault fault = new Fault(new Exception("File Not Valid"));
@@ -77,47 +72,9 @@ public class TabularMetadataGeneratorEndpoint {
             throw fault;
         } else if (fileExt.endsWith(".xls") || fileExt.endsWith(".xlsx")) {
             final URL xlsUrl = translator.process(url).get(0).toURI().toURL();
-            return codebook(generator.getMetadata(xlsUrl));
+            return codebook(generator.getMetadata(xlsUrl, hasHeaders));
         }
 
-        return codebook(generator.getMetadata(url));
+        return codebook(generator.getMetadata(url, hasHeaders));
     }
-
-    /*@GET
-    @Path("/csv")
-    @Produces("text/xml")
-    public Codebook getCodebookCSV(@QueryParam("url") final URL url) throws IOException {
-        return codebook(generator.getMetadata(url));
-    }
-
-    @GET
-    @Path("/excel")
-    @Produces("text/xml")
-    public Codebook getCodebookExcel(@QueryParam("url") final URL url) throws IOException {
-
-        final URL result;
-        result = translator.process(url).get(0).toURI().toURL();
-
-        return codebook(generator.getMetadata(result));
-    }
-
-    @GET
-    @Path("/excel/multi-sheet")
-    @Produces("text/xml")
-    public MultiSheet getCodebookMultiSheetExcel(@QueryParam("url") final URL url) throws IOException {
-        Codebook result;
-        //log.debug("Retrieving from URL: {}", url);
-        final List<File> files = translator.process(url);
-        int sheetNumber = 1;
-        final List<Codebook> attachments = new ArrayList<>(files.size());
-        for (final File file : files) {
-            generator = new TabularMetadataGenerator();
-            result = codebook(generator.getMetadata(file.toURI().toURL()));
-            attachments.add(result);
-        }
-        return multisheet(attachments);
-    }*/
-
-
-
 }

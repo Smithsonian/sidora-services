@@ -28,8 +28,8 @@
 
 package edu.si.codebook;
 
-import com.asoroka.sidora.tabularmetadata.TabularMetadata;
-import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Sequence;
 import com.googlecode.totallylazy.numbers.Ratio;
@@ -45,8 +45,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.Geographic;
-import static com.asoroka.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.Geographic;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static com.google.common.collect.Sets.newHashSet;
 import static edu.si.codebook.Codebook.codebook;
 import static java.math.BigInteger.ONE;

@@ -28,8 +28,8 @@
 
 package edu.si.codebook;
 
-import com.asoroka.sidora.tabularmetadata.TabularMetadata;
-import com.asoroka.sidora.tabularmetadata.datatype.DataType;
+import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Function1;
 import com.googlecode.totallylazy.Quintuple;
@@ -38,7 +38,6 @@ import com.googlecode.totallylazy.numbers.Ratio;
 import edu.si.codebook.Codebook.VariableType;
 
 import javax.xml.bind.annotation.*;
-import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,14 +54,18 @@ import static javax.xml.bind.annotation.XmlAccessType.NONE;
  */
 @XmlAccessorType(NONE)
 @XmlRootElement
+@XmlType(propOrder = {"title", "description", "creator", "date", "identifier", "variables"})
 public class Codebook
         extends
         Function1<Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>>, VariableType> {
 
     private TabularMetadata metadata;
 
+    @XmlElement(namespace = "http://purl.org/dc/terms/", nillable = true)
+    public String title, description, creator, date, identifier;
+
     @XmlElementWrapper
-    @XmlElement(name = "variable")
+    @XmlElement(name = "variable", namespace = "urn:si.edu/codebook#")
     public Sequence<VariableType> getVariables() {
         return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
                 metadata.minMaxes(), metadata.enumeratedValues()).map(this);
@@ -94,6 +97,17 @@ public class Codebook
      * @author A. Soroka
      */
     @XmlAccessorType(NONE)
+    @XmlType(propOrder = {
+            "label",
+            "description",
+            "enumeration",
+            "projection",
+            "datum",
+            "format",
+            "range",
+            "uom",
+            "valueForMissingValue",
+            "dateFormat"})
     public static class VariableType {
 
         private Range<?> range;
@@ -103,12 +117,15 @@ public class Codebook
         public Set<String> enumeration;
 
         @XmlAttribute
-        public String name;
-
-        @XmlAttribute
-        public URI type;
+        public String name, type, vocabulary;
 
         private Ratio unparseableOverTotal;
+
+        @XmlElement(nillable = true)
+        private String label, description, projection, datum, format, uom, dateFormat;
+
+        @XmlElement(defaultValue = "--", nillable = true)
+        public String valueForMissingValue;
 
         protected static VariableType variableType(final String name, final Ratio unparseableOverTotal,
                                                    final DataType type, final Range<?> range,
@@ -116,16 +133,34 @@ public class Codebook
             final VariableType variableType = new VariableType();
             variableType.name = name;
             variableType.unparseableOverTotal = unparseableOverTotal;
-            variableType.type = type.uri;
+            variableType.type = getType(type.name().toLowerCase());
             variableType.range = range;
             variableType.enumeration = enumeration;
+            variableType.label = "label of " + name;
+            variableType.description = "desc of " + name;
+            variableType.projection = null;
+            variableType.datum = null;
+            variableType.format = null;
+            variableType.uom = null;
+            variableType.valueForMissingValue = "--";
+            variableType.dateFormat = null;
+            variableType.vocabulary = name;
             return variableType;
         }
 
-        @XmlElement
-        String getDescription() {
-            return "[Found " + unparseableOverTotal.numerator + " values that failed to parse as " + type +
-                    " out of " + unparseableOverTotal.denominator + " values examined by automatic process.]";
+        private static String getType(String type) {
+
+            switch (type) {
+                case "decimal":
+                    type = "numeric";
+                case "integer":
+                    type = "numeric";
+                case "positiveinteger":
+                    type = "numeric";
+                case "nonNegativeinteger":
+                    type = "numeric";
+            }
+            return type;
         }
 
         @XmlElement
@@ -149,6 +184,25 @@ public class Codebook
                 rangeType.max = r.hasUpperBound() ? r.upperEndpoint().toString() : null;
                 return rangeType;
             }
+        }
+    }
+
+
+    @XmlAccessorType(FIELD)
+    @XmlType(propOrder = {"title", "description", "creator", "date", "identifier"},
+            namespace = "http://purl.org/dc/terms/")
+    public static class CodebookMeta {
+
+        public String title, description, creator, date, identifier;
+
+        protected static CodebookMeta codebookMeta() {
+            final CodebookMeta codebookMeta = new CodebookMeta();
+            codebookMeta.title = "Codebook 20150824 1445";
+            codebookMeta.description = "Preview generated...";
+            codebookMeta.creator = "Jason Birkhimer";
+            codebookMeta.date = "Todays Date";
+            codebookMeta.identifier = "Identifier";
+            return codebookMeta;
         }
     }
 }

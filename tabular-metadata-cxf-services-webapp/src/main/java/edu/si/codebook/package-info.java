@@ -26,59 +26,19 @@
  * those of third-party libraries, please see the product release notes.
  */
 
+/**
+ * Created by Jason Birkhimer on 7/22/2015.
+ */
+@XmlSchema(namespace = "urn:si.edu/codebook#",
+        xmlns = {
+                @XmlNs(namespaceURI = "urn:si.edu/codebook#", prefix = ""),
+                //@XmlNs(namespaceURI = "urn:si.edu/codebook#", prefix = "si"),
+                @XmlNs(namespaceURI = "http://purl.org/dc/terms/", prefix = "dc")
+        },
+        elementFormDefault = QUALIFIED)
 package edu.si.codebook;
 
-import org.slf4j.Logger;
+import static javax.xml.bind.annotation.XmlNsForm.QUALIFIED;
 
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlValue;
-import java.util.List;
-
-import static javax.xml.bind.annotation.XmlAccessType.NONE;
-import static org.slf4j.LoggerFactory.getLogger;
-
-/**
- * Created by Jason Birkhimer on 7/23/2015.
- */
-
-@XmlRootElement(name = "codebook")
-@XmlAccessorType(NONE)
-public class MultiSheet {
-
-    @XmlValue
-    private int index;
-
-    //@XmlElementWrapper
-    @XmlElement(name = "Sheet")
-    private List<Codebook> list;
-
-    private static final Logger log = getLogger(MultiSheet.class);
-
-    public int getIndex() {
-        return list.size();
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
-    public List<Codebook> getList() {
-        log.trace(list.get(0).toString());
-        return list;
-    }
-
-    public void setList(List<Codebook> list) {
-        this.list = list;
-    }
-
-    public static MultiSheet multisheet(List<Codebook> attachments) {
-        final MultiSheet multiSheet = new MultiSheet();
-        multiSheet.list = attachments;
-        multiSheet.index = attachments.size();
-        return multiSheet;
-    }
-
-}
-
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlSchema;

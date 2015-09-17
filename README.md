@@ -10,7 +10,7 @@
 
 ####excel2tabular:
 
-`git clone https://github.com/jbirkhimer/excel2tabular.git`
+`git clone https://github.com/ocymum/excel2tabular.git`
 
 `cd excel2tabular`
 
@@ -18,7 +18,7 @@
 
 ####tabular-metadata:
 
-`git clone https://github.com/jbirkhimer/tabular-metadata.git`
+`git clone https://github.com/ocymum/tabular-metadata.git`
 
 `cd tabular-metadata`
 

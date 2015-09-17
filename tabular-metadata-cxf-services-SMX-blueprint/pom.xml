@@ -71,13 +71,6 @@
             <artifactId>com.springsource.javax.inject</artifactId>
             <version>1.0.0</version>
         </dependency>
-
-        <!-- testing -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -103,7 +96,7 @@
                             *;resolution:=optional
                         </Import-Package>
                         <Export-Package>
-                            com.asoroka.sidora.tabularmetadata*,
+                            edu.si.sidora.tabularmetadata*,
                             com.asoroka.sidora.excel2tabular*,
                             edu.si.codebook*,
                             com.googlecode.totallylazy*,
@@ -115,31 +108,6 @@
                     </instructions>
                 </configuration>
             </plugin>
-
-            <!-- Plugin used to copy the compiled jar file to servicemix's deploy directory -->
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                    <execution>
-                        <id>copy-jar-files</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <tasks>
-                                &lt;!&ndash; http://ant.apache.org/manual/Tasks/copy.html &ndash;&gt;
-                                <copy overwrite="true" force="true" verbose="true"
-                                      failonerror="false"
-                                      file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="C:/apache-servicemix-5.4.0/deploy/${project.build.finalName}.jar" />
-                            </tasks>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>-->
         </plugins>
     </build>
 

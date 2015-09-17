@@ -29,9 +29,16 @@
 /**
  * Created by Jason Birkhimer on 7/22/2015.
  */
-@XmlSchema(namespace = "urn:si.edu/codebook#", elementFormDefault = QUALIFIED)
+@XmlSchema(namespace = "urn:si.edu/codebook#",
+        xmlns = {
+                @XmlNs(namespaceURI = "urn:si.edu/codebook#", prefix = ""),
+                //@XmlNs(namespaceURI = "urn:si.edu/codebook#", prefix = "si"),
+                @XmlNs(namespaceURI = "http://purl.org/dc/terms/", prefix = "dc")
+        },
+        elementFormDefault = QUALIFIED)
 package edu.si.codebook;
 
 import static javax.xml.bind.annotation.XmlNsForm.QUALIFIED;
 
+import javax.xml.bind.annotation.XmlNs;
 import javax.xml.bind.annotation.XmlSchema;
