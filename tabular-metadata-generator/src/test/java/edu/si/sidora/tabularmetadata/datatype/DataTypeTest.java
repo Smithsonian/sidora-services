@@ -34,6 +34,7 @@ package edu.si.sidora.tabularmetadata.datatype;
 import static com.google.common.collect.FluentIterable.from;
 import static com.google.common.collect.ImmutableMap.builder;
 import static com.google.common.collect.Sets.newHashSet;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.datatypes;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.orderingByHierarchy;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static java.util.Arrays.asList;
@@ -132,7 +133,7 @@ public class DataTypeTest {
 
 	@Test
 	public void testCorrectParsingOfValues() {
-		for (final DataType testType : DataType.values()) {
+		for (final DataType testType : datatypes()) {
 			for (final String testValue : sampleValues.get(testType)) {
 				final Set<DataType> result = parseableAs(testValue);
 				assertEquals("Did not find the appropriate datatypes suggested as parseable for a " + testType + "!",

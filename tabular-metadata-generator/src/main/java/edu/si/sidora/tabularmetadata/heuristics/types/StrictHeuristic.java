@@ -25,7 +25,6 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.heuristics.types;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -36,24 +35,23 @@ import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 /**
  * A very strict heuristic for determining types for CSV fields. This heuristic accepts a type for a field only if
- * <i>every</i> value in the field can be parsed as that type. This heuristic is weak to typos and to "special"
- * values.
+ * <i>every</i> value in the field can be parsed as that type. This heuristic is weak to typos and to "special" values.
  * 
  * @author A. Soroka
  */
 public class StrictHeuristic extends PerTypeHeuristic<StrictHeuristic> {
 
-    private static final Logger log = getLogger(StrictHeuristic.class);
+	private static final Logger log = getLogger(StrictHeuristic.class);
 
-    @Override
-    protected boolean candidacy(final DataType type) {
-        final Integer typeCount = typeCounts.get(type);
-        log.debug("For type {} found {} occurrences out of {} total values", type, typeCount, valuesSeen());
-        return typeCount.equals(valuesSeen());
-    }
+	@Override
+	protected boolean candidacy(final DataType type) {
+		final Integer typeCount = typeCounts.getOrDefault(type, 0);
+		log.debug("For type {} found {} occurrences out of {} total values", type, typeCount, valuesSeen());
+		return typeCount.equals(valuesSeen());
+	}
 
-    @Override
-    public StrictHeuristic get() {
-        return new StrictHeuristic();
-    }
+	@Override
+	public StrictHeuristic get() {
+		return new StrictHeuristic();
+	}
 }

@@ -38,6 +38,7 @@ import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
+import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 import static org.joda.time.format.DateTimeFormat.forPattern;
@@ -54,7 +55,6 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
@@ -186,7 +186,7 @@ public enum DataType {
 		}
 	};
 
-	public static final EnumSet<DataType> valuesSet() {
+	public static final EnumSet<DataType> datatypes() {
 		return allOf(DataType.class);
 	}
 
@@ -248,17 +248,8 @@ public enum DataType {
 	 * @return an {@link EnumSet} of those DataTypes into which s can be parsed
 	 */
 	public static EnumSet<DataType> parseableAs(final String s) {
-		return valuesSet().stream().filter(t -> t.parseable(s)).collect(enumSetCollector);
+		return datatypes().stream().filter(t -> t.parseable(s)).collect(toCollection(() -> noneOf(DataType.class)));
 	}
-
-	/**
-	 * A simple {@link Collector} into an {@link EnumSet}.
-	 */
-	private static final Collector<DataType, EnumSet<DataType>, EnumSet<DataType>> enumSetCollector = Collector
-			.<DataType, EnumSet<DataType>> of(() -> noneOf(DataType.class), EnumSet::add, (l, r) -> {
-				l.addAll(r);
-				return l;
-			});
 
 	/**
 	 * A simple ordering by hierarchy. Those types with more supertypes are considered "smaller" than those with fewer.

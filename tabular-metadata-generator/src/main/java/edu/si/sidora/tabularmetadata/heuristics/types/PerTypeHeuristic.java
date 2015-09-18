@@ -28,6 +28,7 @@
 package edu.si.sidora.tabularmetadata.heuristics.types;
 
 import static edu.si.sidora.tabularmetadata.datatype.DataType.String;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.datatypes;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.orderingByHierarchy;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
@@ -45,7 +46,7 @@ public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfTyp
 
 	@Override
 	public DataType results() {
-		return DataType.valuesSet().stream().filter(this::candidacy).min(orderingByHierarchy).orElse(String);
+		return datatypes().stream().filter(this::candidacy).min(orderingByHierarchy).orElse(String);
 	}
 
 	/**
@@ -55,5 +56,4 @@ public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfTyp
 	 * @return Whether this type should be considered as a candidate for selection.
 	 */
 	protected abstract boolean candidacy(final DataType type);
-
 }

@@ -64,11 +64,11 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
         candidateTypes = new EnumMap<>(DataType.class);
         locationsOfLastNonparseables = new EnumMap<>(DataType.class);
         // assume that every type is a candidate
-        final Map<DataType, Boolean> allTrue = toMap(DataType.valuesSet(), constant(true));
+        final Map<DataType, Boolean> allTrue = toMap(DataType.datatypes(), constant(true));
         candidateTypes.putAll(allTrue);
 
         // record that we haven't yet seen any nonparseables
-        final Map<DataType, Float> originalLocations = toMap(DataType.valuesSet(), constant(NEGATIVE_INFINITY));
+        final Map<DataType, Float> originalLocations = toMap(DataType.datatypes(), constant(NEGATIVE_INFINITY));
         locationsOfLastNonparseables.putAll(originalLocations);
     }
 

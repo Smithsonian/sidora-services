@@ -83,7 +83,7 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
 
 	@Override
 	public Map<DataType, Range<?>> results() {
-		return asMap(DataType.valuesSet(), type -> {
+		return asMap(DataType.datatypes(), type -> {
 			final boolean hasMax = maxs.containsKey(type);
 			final Comparable<?> min = mins.get(type);
 			final Comparable<?> max = maxs.get(type);

@@ -56,7 +56,7 @@ public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
 
     @Override
     protected boolean candidacy(final DataType type) {
-        final float nonParseableOccurrences = valuesSeen() - typeCounts.get(type);
+        final float nonParseableOccurrences = valuesSeen() - typeCounts.getOrDefault(type, 0);
         log.trace("Found {} nonparseable occurrences out of {} total values for type {}.", nonParseableOccurrences,
                 valuesSeen(), type);
 
