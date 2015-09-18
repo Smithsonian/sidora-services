@@ -28,14 +28,12 @@ package edu.si.sidora.tabularmetadata.heuristics;
 
 /**
  * Convenience class for arranging {@link Heuristic} initialization. Subclasses should put all initialization code in
- * {@link #reset()} and assume that it will be called on construction.
+ * {@link #reset()}, which is called on construction.
  * 
  * @author A. Soroka
  */
 public abstract class AbstractHeuristic<SelfType extends AbstractHeuristic<SelfType, ResultType>, ResultType>
-        implements Heuristic<SelfType, ResultType> {
+		implements Heuristic<SelfType, ResultType> {
 
-    public AbstractHeuristic() {
-        reset();
-    }
+	public AbstractHeuristic() { reset(); }
 }

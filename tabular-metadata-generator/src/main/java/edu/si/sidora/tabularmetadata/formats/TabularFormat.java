@@ -45,31 +45,22 @@ public interface TabularFormat extends Provider<CSVFormat> {
     /**
      * The default format.
      * 
-     * @author A. Soroka
      * @see org.apache.commons.csv.CSVFormat#DEFAULT
      */
     public static class Default implements TabularFormat {
 
         @Override
-        public CSVFormat get() {
-            return DEFAULT;
-        }
-
+        public CSVFormat get() { return DEFAULT; }
     }
 
     /**
      * A tabular data format.
      * 
-     * @author A. Soroka
      * @see org.apache.commons.csv.CSVFormat#TDF
      */
     public static class TabSeparated implements TabularFormat {
 
         @Override
-        public CSVFormat get() {
-            return TDF;
-        }
-
+        public CSVFormat get() { return TDF; }
     }
-
 }

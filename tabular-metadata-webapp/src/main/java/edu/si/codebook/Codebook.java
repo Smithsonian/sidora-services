@@ -27,14 +27,14 @@
 
 package edu.si.codebook;
 
-import static com.googlecode.totallylazy.Sequences.zip;
 import static edu.si.codebook.Codebook.VariableType.variableType;
 import static edu.si.codebook.Codebook.VariableType.RangeType.rangeType;
 import static javax.xml.bind.annotation.XmlAccessType.FIELD;
 import static javax.xml.bind.annotation.XmlAccessType.NONE;
 
 import java.net.URI;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -44,13 +44,9 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.google.common.collect.Range;
-import com.googlecode.totallylazy.Function1;
-import com.googlecode.totallylazy.Quintuple;
-import com.googlecode.totallylazy.Sequence;
-import com.googlecode.totallylazy.numbers.Ratio;
 
-import edu.si.codebook.Codebook.VariableType;
 import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.TabularMetadata.Ratio;
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 /**
@@ -60,100 +56,91 @@ import edu.si.sidora.tabularmetadata.datatype.DataType;
  */
 @XmlAccessorType(NONE)
 @XmlRootElement
-public class Codebook
-        extends
-        Function1<Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>>, VariableType> {
+public class Codebook {
 
-    private TabularMetadata metadata;
+	private TabularMetadata metadata;
 
-    @XmlElementWrapper
-    @XmlElement(name = "variable")
-    public Sequence<VariableType> getVariables() {
-        return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
-                metadata.minMaxes(), metadata.enumeratedValues()).map(this);
-    }
+	@XmlElementWrapper
+	@XmlElement(name = "variable")
+	public List<VariableType> getVariables() {
+		List<VariableType> output = new ArrayList<>();
+		for (int i = 0; i < metadata.headerNames().size(); i++) {
+			final String name = metadata.headerNames().get(i);
+			final Ratio unparseableOverTotal = metadata.unparseablesOverTotals().get(i);
+			final DataType type = metadata.fieldTypes().get(i);
+			final Range<?> range = metadata.minMaxes().get(i).get(type);
+			final Set<String> enumeration = metadata.enumeratedValues().get(i).get(type);
+			output.add(variableType(name, unparseableOverTotal, type, range, enumeration));
+		}
+		return output;
+	}
 
-    /**
-     * Constructs a single variable description.
-     */
-    @Override
-    public VariableType call(
-            final Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>> data) {
-        final String name = data.first();
-        final Ratio unparseableOverTotal = data.second();
-        final DataType type = data.third();
-        final Range<?> range = data.fourth().get(type);
-        final Set<String> enumeration = data.fifth().get(type);
-        return variableType(name, unparseableOverTotal, type, range, enumeration);
-    }
+	public static Codebook codebook(final TabularMetadata m) {
+		final Codebook codebook = new Codebook();
+		codebook.metadata = m;
+		return codebook;
+	}
 
-    public static Codebook codebook(final TabularMetadata m) {
-        final Codebook codebook = new Codebook();
-        codebook.metadata = m;
-        return codebook;
-    }
+	/**
+	 * Serializes a single variable description.
+	 * 
+	 * @author A. Soroka
+	 */
+	@javax.xml.bind.annotation.XmlAccessorType(NONE)
+	public static class VariableType {
 
-    /**
-     * Serializes a single variable description.
-     * 
-     * @author A. Soroka
-     */
-    @javax.xml.bind.annotation.XmlAccessorType(NONE)
-    public static class VariableType {
+		private Range<?> range;
 
-        private Range<?> range;
+		@XmlElementWrapper
+		@XmlElement(name = "value")
+		public Set<String> enumeration;
 
-        @XmlElementWrapper
-        @XmlElement(name = "value")
-        public Set<String> enumeration;
+		@XmlAttribute
+		public String name;
 
-        @XmlAttribute
-        public String name;
+		@XmlAttribute
+		public URI type;
 
-        @XmlAttribute
-        public URI type;
+		private Ratio unparseableOverTotal;
 
-        private Ratio unparseableOverTotal;
+		protected static VariableType variableType(final String name, final Ratio unparseableOverTotal,
+				final DataType type, final Range<?> range, final Set<String> enumeration) {
+			final VariableType variableType = new VariableType();
+			variableType.name = name;
+			variableType.unparseableOverTotal = unparseableOverTotal;
+			variableType.type = type.uri;
+			variableType.range = range;
+			variableType.enumeration = enumeration;
+			return variableType;
+		}
 
-        protected static VariableType variableType(final String name, final Ratio unparseableOverTotal,
-                final DataType type, final Range<?> range,
-                final Set<String> enumeration) {
-            final VariableType variableType = new VariableType();
-            variableType.name = name;
-            variableType.unparseableOverTotal = unparseableOverTotal;
-            variableType.type = type.uri;
-            variableType.range = range;
-            variableType.enumeration = enumeration;
-            return variableType;
-        }
+		@XmlElement
+		String getDescription() {
+			return "[Found " + unparseableOverTotal.numerator + " values that failed to parse as " + type + " out of "
+					+ unparseableOverTotal.denominator + " values examined by automatic process.]";
+		}
 
-        @XmlElement
-        String getDescription() {
-            return "[Found " + unparseableOverTotal.numerator + " values that failed to parse as " + type +
-                    " out of " + unparseableOverTotal.denominator + " values examined by automatic process.]";
-        }
+		@XmlElement
+		public RangeType getRange() {
+			return range == null ? null : rangeType(range);
+		}
 
-        @XmlElement
-        public RangeType getRange() {
-            return range == null ? null : rangeType(range);
-        }
+		/**
+		 * Serializes the range of a single variable.
+		 * 
+		 * @author A. Soroka
+		 */
+		@javax.xml.bind.annotation.XmlAccessorType(FIELD)
+		public static class RangeType {
 
-        /**
-         * Serializes the range of a single variable.
-         * 
-         * @author A. Soroka
-         */
-        @javax.xml.bind.annotation.XmlAccessorType(FIELD)
-        public static class RangeType {
+			public String min, max;
 
-            public String min, max;
-
-            protected static RangeType rangeType(final Range<?> r) {
-                final RangeType rangeType = new RangeType();
-                rangeType.min = r.hasLowerBound() ? r.lowerEndpoint().toString() : null;
-                rangeType.max = r.hasUpperBound() ? r.upperEndpoint().toString() : null;
-                return rangeType;
-            }
-        }
-    }
+			protected static RangeType rangeType(final Range<?> r) {
+				final RangeType rangeType = new RangeType();
+				rangeType.min = r.hasLowerBound() ? r.lowerEndpoint().toString() : null;
+				rangeType.max = r.hasUpperBound() ? r.upperEndpoint().toString() : null;
+				return rangeType;
+			}
+		}
+	}
 }

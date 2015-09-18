@@ -40,15 +40,9 @@ import static org.joda.time.DateTime.now;
 import java.net.URI;
 import java.util.ArrayList;
 
-import org.junit.experimental.theories.PotentialAssignment;
-
-import com.google.common.base.Function;
-import com.googlecode.totallylazy.Callable1;
-
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 import edu.si.sidora.tabularmetadata.datatype.GeographicValue;
 import edu.si.sidora.tabularmetadata.heuristics.Heuristic;
-import edu.si.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 
 /**
  * Utilities for testing.
@@ -61,28 +55,6 @@ public abstract class TestUtilities {
         for (final Object value : values) {
             strategy.addValue(value.toString());
         }
-    }
-
-    /**
-     * Extracts the most likely type selection from a {@link TypeDeterminingHeuristic}
-     */
-    protected static final Function<TypeDeterminingHeuristic<?>, DataType> getMostLikelyType =
-            new Function<TypeDeterminingHeuristic<?>, DataType>() {
-
-                @Override
-                public DataType apply(final TypeDeterminingHeuristic<?> heuristic) {
-                    return heuristic.results();
-                }
-            };
-
-    final static <From> Callable1<From, PotentialAssignment> toPotentialAssignment() {
-        return new Callable1<From, PotentialAssignment>() {
-
-            @Override
-            public PotentialAssignment call(final From from) {
-                return PotentialAssignment.forValue(null, from);
-            }
-        };
     }
 
     /**

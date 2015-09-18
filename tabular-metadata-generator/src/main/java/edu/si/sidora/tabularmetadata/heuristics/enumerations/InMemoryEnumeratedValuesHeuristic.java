@@ -25,7 +25,6 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.heuristics.enumerations;
 
 import static com.google.common.base.Functions.constant;
@@ -47,32 +46,32 @@ import edu.si.sidora.tabularmetadata.heuristics.AbstractHeuristic;
  * 
  * @author A. Soroka
  */
-public class InMemoryEnumeratedValuesHeuristic extends
-        AbstractHeuristic<InMemoryEnumeratedValuesHeuristic, Map<DataType, Set<String>>> implements
-        EnumeratedValuesHeuristic<InMemoryEnumeratedValuesHeuristic> {
+public class InMemoryEnumeratedValuesHeuristic
+		extends AbstractHeuristic<InMemoryEnumeratedValuesHeuristic, Map<DataType, Set<String>>>
+		implements EnumeratedValuesHeuristic<InMemoryEnumeratedValuesHeuristic> {
 
-    private Multimap<DataType, String> valuesSeen;
+	private Multimap<DataType, String> valuesSeen;
 
-    @Override
-    public boolean addValue(final String lex) {
-        valuesSeen.putAll(forMap(asMap(parseableAs(lex), constant(lex))));
-        return true;
-    }
+	@Override
+	public boolean addValue(final String lex) {
+		valuesSeen.putAll(forMap(asMap(parseableAs(lex), constant(lex))));
+		return true;
+	}
 
-    @Override
-    public void reset() {
-        valuesSeen = enumKeys(DataType.class).hashSetValues().build();
-    }
+	@Override
+	public void reset() {
+		valuesSeen = enumKeys(DataType.class).linkedHashSetValues().build();
+	}
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public Map<DataType, Set<String>> results() {
-        // See: https://code.google.com/p/google-collections/issues/detail?id=118#c2
-        return (Map<DataType, Set<String>>) (Map<?, ?>) valuesSeen.asMap();
-    }
+	@Override
+	@SuppressWarnings("unchecked")
+	public Map<DataType, Set<String>> results() {
+		// See: https://code.google.com/p/google-collections/issues/detail?id=118#c2
+		return (Map<DataType, Set<String>>) (Map<?, ?>) valuesSeen.asMap();
+	}
 
-    @Override
-    public InMemoryEnumeratedValuesHeuristic get() {
-        return new InMemoryEnumeratedValuesHeuristic();
-    }
+	@Override
+	public InMemoryEnumeratedValuesHeuristic get() {
+		return new InMemoryEnumeratedValuesHeuristic();
+	}
 }

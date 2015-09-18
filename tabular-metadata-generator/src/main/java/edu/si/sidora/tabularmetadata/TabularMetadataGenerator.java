@@ -30,16 +30,15 @@ package edu.si.sidora.tabularmetadata;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterators.peekingIterator;
 import static com.google.common.collect.Lists.newArrayList;
-import static com.googlecode.totallylazy.Sequences.sequence;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.iterate;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVParser.parse;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -54,12 +53,11 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
-import com.googlecode.totallylazy.Callable1;
-import com.googlecode.totallylazy.numbers.Ratio;
 
+import edu.si.sidora.tabularmetadata.TabularMetadata.Ratio;
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 import edu.si.sidora.tabularmetadata.formats.TabularFormat;
-import edu.si.sidora.tabularmetadata.heuristics.Heuristic.Extract;
+import edu.si.sidora.tabularmetadata.heuristics.Heuristic;
 import edu.si.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import edu.si.sidora.tabularmetadata.heuristics.enumerations.LimitedEnumeratedValuesHeuristic;
 import edu.si.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
@@ -70,9 +68,8 @@ import edu.si.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
 import edu.si.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 
 /**
- * Master entry point for this API. This is the class from which all parsing
- * should initiate, via {@link #getMetadata(URL)} or
- * {@link #getMetadata(URL, Boolean)}.
+ * Master entry point for this API. This is the class from which all parsing should initiate, via
+ * {@link #getMetadata(URL)} or {@link #getMetadata(URL, Boolean)}.
  * 
  * @author A. Soroka
  */
@@ -83,8 +80,7 @@ public class TabularMetadataGenerator {
 	private CSVFormat format = DEFAULT;
 
 	/**
-	 * Default value of {@code 0} indicates no limit. See
-	 * {@link TabularScanner.scan(final int limit)}.
+	 * Default value of {@code 0} indicates no limit. See {@link TabularScanner.scan(final int limit)}.
 	 */
 	private Integer scanLimit = 0;
 
@@ -128,7 +124,7 @@ public class TabularMetadataGenerator {
 			if (hasHeaders) {
 				headerNames = newArrayList(firstLine);
 				log.debug("Found headers: {}", headerNames);
-				parser.next();
+				if (parser.hasNext()) parser.next();
 			} else {
 				headerNames = emptyHeaders(firstLine.size());
 				log.debug("Found no headers.");
@@ -142,12 +138,13 @@ public class TabularMetadataGenerator {
 			final List<EnumeratedValuesHeuristic<?>> enumStrategies = scanner.getEnumStrategies();
 
 			// extract the results for each field
-			final List<DataType> columnTypes = sequence(typeStrategies).map(new Extract<DataType>()).toList();
-			final List<Map<DataType, Range<?>>> minMaxes = sequence(rangeStrategies)
-					.map(new Extract<Map<DataType, Range<?>>>()).toList();
-			final List<Map<DataType, Set<String>>> enumValues = sequence(enumStrategies)
-					.map(new Extract<Map<DataType, Set<String>>>()).toList();
-			final List<Ratio> valuesSeen = sequence(typeStrategies).map(EXTRACT_RATIOS).toList();
+			final List<DataType> columnTypes = typeStrategies.stream().map(Heuristic::results).collect(toList());
+			final List<Map<DataType, Range<?>>> minMaxes = rangeStrategies.stream().map(Heuristic::results)
+					.collect(toList());
+			final List<Map<DataType, Set<String>>> enumValues = enumStrategies.stream().map(Heuristic::results)
+					.collect(toList());
+			final List<Ratio> valuesSeen = typeStrategies.stream()
+					.map(h -> new Ratio(h.valuesSeen() - h.parseableValuesSeen(), h.valuesSeen())).collect(toList());
 			return new TabularMetadata(headerNames, valuesSeen, columnTypes, minMaxes, enumValues);
 		} catch (final NoSuchElementException e) {
 			throw new EmptyDataFileException(dataUrl + " has no data in it!");
@@ -166,25 +163,12 @@ public class TabularMetadataGenerator {
 	}
 
 	private static final List<String> emptyHeaders(final int numFields) {
-		final List<String> headers = new ArrayList<>(numFields);
-		for (int i = 1; i <= numFields; i++) {
-			headers.add("Variable " + i);
-		}
-		return headers;
+		return iterate(1, i -> i + 1).limit(numFields).map(i -> "Variable " + i).collect(toList());
 	}
 
-	private static final Callable1<TypeDeterminingHeuristic<?>, Ratio> EXTRACT_RATIOS = new Callable1<TypeDeterminingHeuristic<?>, Ratio>() {
-
-		@Override
-		public Ratio call(final TypeDeterminingHeuristic<?> h) {
-			return new Ratio(new BigInteger(Integer.toString(h.valuesSeen() - h.parseableValuesSeen())),
-					new BigInteger(Integer.toString(h.valuesSeen())));
-		}
-	};
-
 	/**
-	 * @param scanLimit A limit to the number of rows to scan, including any
-	 *        header row that may be present. {@code 0} indicates no limit.
+	 * @param scanLimit A limit to the number of rows to scan, including any header row that may be present. {@code 0}
+	 *        indicates no limit.
 	 */
 	public void setScanLimit(final Integer scanLimit) {
 		this.scanLimit = scanLimit;

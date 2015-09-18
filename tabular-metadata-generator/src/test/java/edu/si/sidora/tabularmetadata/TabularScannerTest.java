@@ -50,7 +50,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
-import edu.si.sidora.tabularmetadata.TabularScanner;
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 import edu.si.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import edu.si.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
@@ -100,7 +99,7 @@ public class TabularScannerTest extends TestUtilities {
             testScanner.scan(0);
         }
         final List<DataType> guesses =
-                transform(testScanner.getTypeStrategies(), getMostLikelyType);
+                transform(testScanner.getTypeStrategies(), TypeDeterminingHeuristic::results);
         assertEquals("Failed to find the correct column types!", expectedResults, guesses);
     }
 
@@ -114,7 +113,7 @@ public class TabularScannerTest extends TestUtilities {
             testScanner.scan(2);
         }
         final List<DataType> guesses =
-                transform(testScanner.getTypeStrategies(), getMostLikelyType);
+                transform(testScanner.getTypeStrategies(),  TypeDeterminingHeuristic::results);
         assertEquals("Failed to find the correct column types!", expectedResults, guesses);
     }
 }

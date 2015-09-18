@@ -28,8 +28,7 @@
 
 package edu.si.sidora.tabularmetadata.heuristics;
 
-import com.google.common.base.Supplier;
-import com.googlecode.totallylazy.Function1;
+import java.util.function.Supplier;
 
 /**
  * The simple idea of a heuristic that accepts lexes and does some kind of work with them. See its subtypes for
@@ -56,12 +55,4 @@ public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, Res
      * @return the results of this heuristic's operation
      */
     ResultType results();
-
-    public static class Extract<ResultType> extends Function1<Heuristic<?, ResultType>, ResultType> {
-
-        @Override
-        public ResultType call(final Heuristic<?, ResultType> strategy) {
-            return strategy.results();
-        }
-    }
 }
