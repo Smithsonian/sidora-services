@@ -66,6 +66,8 @@ public class TabularMetadataGeneratorEndpoint {
     @Produces("text/xml")
     public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
         String fileExt = url.getFile().toLowerCase();
+
+        //Check for valid file types
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
             Fault fault = new Fault(new Exception("File Not Valid"));
             fault.setStatusCode(400);
