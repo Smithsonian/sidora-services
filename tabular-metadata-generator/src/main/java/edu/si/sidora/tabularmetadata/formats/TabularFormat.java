@@ -31,7 +31,7 @@ package edu.si.sidora.tabularmetadata.formats;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
 import static org.apache.commons.csv.CSVFormat.TDF;
 
-import javax.inject.Provider;
+import java.util.function.Supplier;
 
 import org.apache.commons.csv.CSVFormat;
 
@@ -40,7 +40,7 @@ import org.apache.commons.csv.CSVFormat;
  * 
  * @author A. Soroka
  */
-public interface TabularFormat extends Provider<CSVFormat> {
+public interface TabularFormat extends Supplier<CSVFormat> {
 
     /**
      * The default format.

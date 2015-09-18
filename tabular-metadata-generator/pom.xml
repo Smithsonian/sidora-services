@@ -11,14 +11,7 @@
 		<artifactId>tabular-metadata</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-
-	<repositories>
-		<repository>
-			<id>repo.bodar.com</id>
-			<url>http://repo.bodar.com</url>
-		</repository>
-	</repositories>
-
+	
 	<dependencies>
 
 		<dependency>

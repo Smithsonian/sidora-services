@@ -25,18 +25,15 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.heuristics.headers;
 
-import static com.google.common.collect.Iterables.all;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.slf4j.Logger;
-
-import com.google.common.base.Predicate;
 
 import edu.si.sidora.tabularmetadata.heuristics.AbstractHeuristic;
 
@@ -49,27 +46,27 @@ import edu.si.sidora.tabularmetadata.heuristics.AbstractHeuristic;
  * @param <SelfType>
  */
 public abstract class TreatsEachFieldAlikeHeaderHeuristic<SelfType extends TreatsEachFieldAlikeHeaderHeuristic<SelfType>>
-        extends AbstractHeuristic<SelfType, Boolean> implements HeaderHeuristic<SelfType> {
+		extends AbstractHeuristic<SelfType, Boolean>implements HeaderHeuristic<SelfType> {
 
-    private static final Logger log = getLogger(TreatsEachFieldAlikeHeaderHeuristic.class);
+	private static final Logger log = getLogger(TreatsEachFieldAlikeHeaderHeuristic.class);
 
-    private List<String> inputRow;
+	private List<String> inputRow;
 
-    @Override
-    public Boolean results() {
-        log.trace("Checking input row: {}", inputRow);
-        return all(inputRow, fieldTest());
-    }
+	@Override
+	public Boolean results() {
+		log.trace("Checking input row: {}", inputRow);
+		return inputRow.stream().allMatch(fieldTest());
+	}
 
-    protected abstract Predicate<? super String> fieldTest();
+	protected abstract Predicate<? super String> fieldTest();
 
-    @Override
-    public boolean addValue(final String value) {
-        return inputRow.add(value);
-    }
+	@Override
+	public boolean addValue(final String value) {
+		return inputRow.add(value);
+	}
 
-    @Override
-    public void reset() {
-        inputRow = new ArrayList<>();
-    }
+	@Override
+	public void reset() {
+		inputRow = new ArrayList<>();
+	}
 }

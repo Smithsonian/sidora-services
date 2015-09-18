@@ -36,6 +36,5 @@ import edu.si.sidora.tabularmetadata.heuristics.Heuristic;
  * 
  * @author A. Soroka
  */
-public interface HeaderHeuristic<SelfType extends HeaderHeuristic<SelfType>> extends Heuristic<SelfType, Boolean> {
-    // EMPTY
+public interface HeaderHeuristic<SelfType extends HeaderHeuristic<SelfType>> extends Heuristic<SelfType, Boolean> { // EMPTY
 }

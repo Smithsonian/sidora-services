@@ -31,10 +31,11 @@
 
 package edu.si.sidora.tabularmetadata.datatype;
 
+import static com.google.common.collect.FluentIterable.from;
 import static com.google.common.collect.ImmutableMap.builder;
 import static com.google.common.collect.Sets.newHashSet;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.orderingByHierarchy;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.parseableAs;
-import static edu.si.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
 import static java.util.Arrays.asList;
 import static java.util.EnumSet.of;
 import static org.junit.Assert.assertEquals;
@@ -45,6 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 import org.junit.Test;
 import org.junit.experimental.theories.Theories;
@@ -152,6 +154,10 @@ public class DataTypeTest {
 			assertEquals("Did not find the appropriate supertypes for" + testDatatype + "!",
 					expectedSuperTypes.get(testDatatype), result);
 		}
+	}
+
+	private static SortedSet<DataType> sortByHierarchy(final Iterable<DataType> types) {
+		return from(types).toSortedSet(orderingByHierarchy);
 	}
 
 	@Test

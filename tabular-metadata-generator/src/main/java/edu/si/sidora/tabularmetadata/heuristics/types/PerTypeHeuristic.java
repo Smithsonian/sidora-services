@@ -25,13 +25,10 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.heuristics.types;
 
-import static com.google.common.collect.Sets.filter;
-import static edu.si.sidora.tabularmetadata.datatype.DataType.sortByHierarchy;
-
-import com.google.common.base.Predicate;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.String;
+import static edu.si.sidora.tabularmetadata.datatype.DataType.orderingByHierarchy;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 
@@ -43,28 +40,20 @@ import edu.si.sidora.tabularmetadata.datatype.DataType;
  * @author A. Soroka
  * @param <SelfType>
  */
-public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfType>> extends
-        TypeCountAggregatingHeuristic<SelfType> {
+public abstract class PerTypeHeuristic<SelfType extends PerTypeHeuristic<SelfType>>
+		extends TypeCountAggregatingHeuristic<SelfType> {
 
-    @Override
-    public DataType results() {
-        return sortByHierarchy(filter(DataType.valuesSet(), candidacyPredicate)).first();
-    }
+	@Override
+	public DataType results() {
+		return DataType.valuesSet().stream().filter(this::candidacy).min(orderingByHierarchy).orElse(String);
+	}
 
-    private Predicate<DataType> candidacyPredicate = new Predicate<DataType>() {
-
-        @Override
-        public boolean apply(final DataType type) {
-            return candidacy(type);
-        }
-    };
-
-    /**
-     * Subclasses must override this method with an algorithm that uses the gathered statistics (and possibly other
-     * information) to make a determination about the most likely type of the proffered values.
-     * 
-     * @return Whether this type should be considered as a candidate for selection.
-     */
-    protected abstract boolean candidacy(final DataType type);
+	/**
+	 * Subclasses must override this method with an algorithm that uses the gathered statistics (and possibly other
+	 * information) to make a determination about the most likely type of the proffered values.
+	 * 
+	 * @return Whether this type should be considered as a candidate for selection.
+	 */
+	protected abstract boolean candidacy(final DataType type);
 
 }

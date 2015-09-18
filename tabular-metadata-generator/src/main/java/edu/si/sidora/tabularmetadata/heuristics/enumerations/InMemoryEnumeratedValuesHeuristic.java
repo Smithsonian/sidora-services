@@ -27,7 +27,6 @@
 
 package edu.si.sidora.tabularmetadata.heuristics.enumerations;
 
-import static com.google.common.base.Functions.constant;
 import static com.google.common.collect.Maps.asMap;
 import static com.google.common.collect.MultimapBuilder.enumKeys;
 import static com.google.common.collect.Multimaps.forMap;
@@ -54,7 +53,7 @@ public class InMemoryEnumeratedValuesHeuristic
 
 	@Override
 	public boolean addValue(final String lex) {
-		valuesSeen.putAll(forMap(asMap(parseableAs(lex), constant(lex))));
+		valuesSeen.putAll(forMap(asMap(parseableAs(lex), x -> lex)));
 		return true;
 	}
 

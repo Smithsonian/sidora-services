@@ -27,13 +27,13 @@
 
 package edu.si.sidora.tabularmetadata.datatype;
 
-import static com.google.common.base.Joiner.on;
 import static com.google.common.collect.Iterables.elementsEqual;
+import static com.google.common.collect.Ordering.natural;
+import static java.util.stream.Collectors.joining;
 
 import java.io.Serializable;
 import java.util.List;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.Ordering;
 
 /**
@@ -43,15 +43,13 @@ import com.google.common.collect.Ordering;
  */
 public class GeographicValue implements Comparable<GeographicValue>, Serializable {
 
-    private static final Joiner TO_STRING_HELPER = on(',');
-
     private static final long serialVersionUID = 1L;
 
     public static final byte MAXIMUM_DIMENSION = 3;
 
     public static final byte MINIMUM_DIMENSION = 2;
 
-    private static final Ordering<Iterable<Float>> ordering = Ordering.<Float> natural().lexicographical();
+    private static final Ordering<Iterable<Float>> ordering = natural().lexicographical();
 
     /**
      * The coordinates of this {@link GeographicValue}.
@@ -79,10 +77,10 @@ public class GeographicValue implements Comparable<GeographicValue>, Serializabl
         return ordering.compare(this.coordinates, o.coordinates);
     }
 
-    @Override
-    public String toString() {
-        return TO_STRING_HELPER.join(coordinates);
-    }
+	@Override
+	public String toString() {
+		return coordinates.stream().map(Object::toString).collect(joining(","));
+	}
 
     @Override
     public boolean equals(final Object o) {

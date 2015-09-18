@@ -25,7 +25,6 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.heuristics.ranges;
 
 import java.util.Map;
@@ -40,7 +39,6 @@ import edu.si.sidora.tabularmetadata.heuristics.Heuristic;
  * 
  * @author A. Soroka
  */
-public interface RangeDeterminingHeuristic<SelfType extends RangeDeterminingHeuristic<SelfType>> extends
-        Heuristic<SelfType, Map<DataType, Range<?>>> {
-    // EMPTY
+public interface RangeDeterminingHeuristic<SelfType extends RangeDeterminingHeuristic<SelfType>>
+		extends Heuristic<SelfType, Map<DataType, Range<?>>> { // EMPTY
 }

@@ -24,7 +24,6 @@
  * license terms. For a complete copy of all copyright and license terms, including
  * those of third-party libraries, please see the product release notes.
  */
- 
 
 package edu.si.sidora.tabularmetadata.heuristics.headers;
 
@@ -32,7 +31,7 @@ import static edu.si.sidora.tabularmetadata.datatype.DataType.String;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.parseableAs;
 import static java.util.Collections.singleton;
 
-import com.google.common.base.Predicate;
+import java.util.function.Predicate;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 
@@ -42,22 +41,13 @@ import edu.si.sidora.tabularmetadata.datatype.DataType;
  */
 public class DefaultHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<DefaultHeaderHeuristic> {
 
-    @Override
-    protected Predicate<? super String> fieldTest() {
-        return isOnlyString;
-    }
+	@Override
+	protected Predicate<? super String> fieldTest() {
+		return value -> parseableAs(value).equals(singleton(String));
+	}
 
-    private static final Predicate<String> isOnlyString = new Predicate<String>() {
-
-        @Override
-        public boolean apply(final String value) {
-            return parseableAs(value).equals(singleton(String));
-        }
-    };
-
-    @Override
-    public DefaultHeaderHeuristic get() {
-        return new DefaultHeaderHeuristic();
-    }
-
+	@Override
+	public DefaultHeaderHeuristic get() {
+		return new DefaultHeaderHeuristic();
+	}
 }
