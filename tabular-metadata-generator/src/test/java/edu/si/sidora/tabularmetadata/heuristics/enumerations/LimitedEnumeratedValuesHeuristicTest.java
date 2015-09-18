@@ -28,6 +28,8 @@
 
 package edu.si.sidora.tabularmetadata.heuristics.enumerations;
 
+import static edu.si.sidora.tabularmetadata.testframework.TestUtilities.addValues;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Map;
@@ -36,8 +38,6 @@ import java.util.Set;
 import org.junit.Test;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
-import edu.si.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumeratedValuesHeuristic;
-import edu.si.sidora.tabularmetadata.heuristics.enumerations.LimitedEnumeratedValuesHeuristic;
 
 public class LimitedEnumeratedValuesHeuristicTest extends
         EnumeratedValuesHeuristicTestFrame<LimitedEnumeratedValuesHeuristic> {
@@ -51,9 +51,7 @@ public class LimitedEnumeratedValuesHeuristicTest extends
     public void testLimitedScan() {
         final LimitedEnumeratedValuesHeuristic testStrategy =
                 new LimitedEnumeratedValuesHeuristic(1, new InMemoryEnumeratedValuesHeuristic());
-        for (int i = 0; i < 5; i++) {
-            testStrategy.addValue(Integer.toString(i));
-        }
+		addValues(testStrategy, asList(1, 2, 3, 4, 5));
         final Map<DataType, Set<String>> results = testStrategy.results();
         final Set<String> enumeration = results.get(DataType.String);
         assertEquals(1, enumeration.size());

@@ -25,9 +25,9 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.heuristics.types;
 
+import static java.util.stream.Stream.generate;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
@@ -36,14 +36,13 @@ import edu.si.sidora.tabularmetadata.heuristics.HeuristicTestFrame;
 import edu.si.sidora.tabularmetadata.heuristics.ValueCountingHeuristic;
 
 public abstract class ValueCountingHeuristicTestFrame<TestHeuristic extends ValueCountingHeuristic<TestHeuristic, ResultType>, ResultType>
-        extends HeuristicTestFrame<TestHeuristic, ResultType> {
+		extends HeuristicTestFrame<TestHeuristic, ResultType> {
 
-    @Test
-    public void testCountingValues() {
-        final TestHeuristic testHeuristic = newTestHeuristic();
-        for (byte i = 1; i <= 100; i++) {
-            testHeuristic.addValue("VALUE");
-        }
-        assertEquals(100, testHeuristic.valuesSeen());
-    }
+	@Test
+	public void testCountingValues() {
+		final TestHeuristic testHeuristic = newTestHeuristic();
+		final int numValues = 100;
+		generate(() -> "VALUE").limit(numValues).forEach(testHeuristic::accept);
+		assertEquals(numValues, testHeuristic.valuesSeen());
+	}
 }

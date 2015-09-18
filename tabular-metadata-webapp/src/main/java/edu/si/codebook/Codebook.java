@@ -83,8 +83,6 @@ public class Codebook {
 
 	/**
 	 * Serializes a single variable description.
-	 * 
-	 * @author A. Soroka
 	 */
 	@javax.xml.bind.annotation.XmlAccessorType(NONE)
 	public static class VariableType {
@@ -127,8 +125,6 @@ public class Codebook {
 
 		/**
 		 * Serializes the range of a single variable.
-		 * 
-		 * @author A. Soroka
 		 */
 		@javax.xml.bind.annotation.XmlAccessorType(FIELD)
 		public static class RangeType {

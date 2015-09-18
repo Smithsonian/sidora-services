@@ -44,7 +44,6 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 import edu.si.sidora.tabularmetadata.heuristics.HeuristicTestFrame;
-import edu.si.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 
 public abstract class EnumeratedValuesHeuristicTestFrame<TestHeuristic extends EnumeratedValuesHeuristic<TestHeuristic>>
         extends HeuristicTestFrame<TestHeuristic, Map<DataType, Set<String>>> {
@@ -111,13 +110,10 @@ public abstract class EnumeratedValuesHeuristicTestFrame<TestHeuristic extends E
             final Map<Set<String>, List<String>> expectedDataToTestData = data.get(type);
             for (final Set<String> expectedResults : expectedDataToTestData.keySet()) {
                 final TestHeuristic testStrategy = newTestHeuristic();
-                for (final String lex : expectedDataToTestData.get(expectedResults)) {
-                    testStrategy.addValue(lex);
-                }
+                expectedDataToTestData.get(expectedResults).forEach(testStrategy::accept);
                 final Set<String> results = testStrategy.results().get(type);
                 assertEquals(expectedResults, results);
             }
         }
     }
-
 }

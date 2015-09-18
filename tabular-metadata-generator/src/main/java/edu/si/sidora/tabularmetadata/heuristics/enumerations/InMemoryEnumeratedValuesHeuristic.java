@@ -52,7 +52,7 @@ public class InMemoryEnumeratedValuesHeuristic
 	private Multimap<DataType, String> valuesSeen;
 
 	@Override
-	public boolean addValue(final String lex) {
+	public boolean accept(final String lex) {
 		valuesSeen.putAll(forMap(asMap(parseableAs(lex), x -> lex)));
 		return true;
 	}

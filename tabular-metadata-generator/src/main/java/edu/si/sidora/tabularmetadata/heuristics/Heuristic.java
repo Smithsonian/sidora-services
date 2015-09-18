@@ -44,7 +44,7 @@ public interface Heuristic<SelfType extends Heuristic<SelfType, ResultType>, Res
      * @param lex the value to consider
      * @return whether or not to continue evaluating the lex (for use in polymorphic chains of evaluation)
      */
-    boolean addValue(final String lex);
+    boolean accept(final String lex);
 
     /**
      * Resets this heuristic to discard all gathered information.

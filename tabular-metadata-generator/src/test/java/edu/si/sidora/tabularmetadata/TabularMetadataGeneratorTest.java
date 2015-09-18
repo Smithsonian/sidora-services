@@ -68,10 +68,10 @@ import edu.si.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic
 import edu.si.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 
 @RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("rawtypes")
 public class TabularMetadataGeneratorTest {
 
-	@SuppressWarnings("rawtypes")
-	static final Range TEST_RANGE = Range.closed(0, 1);
+	private static final Range TEST_RANGE = Range.closed(0, 1);
 
 	// TODO make test data more readable
 
@@ -93,28 +93,20 @@ public class TabularMetadataGeneratorTest {
 
 	private static final byte[] testTsv = (testTsvHeaders + "\n" + testTsvRow1).getBytes();
 
-	@Mock
-	@SuppressWarnings("rawtypes")
-	private RangeDeterminingHeuristic mockRangeStrategy;
+	@Mock private RangeDeterminingHeuristic mockRangeStrategy;
 
-	@Mock
-	@SuppressWarnings("rawtypes")
-	private TypeDeterminingHeuristic mockTypeStrategy;
+	@Mock private TypeDeterminingHeuristic mockTypeStrategy;
 
-	@Mock
-	@SuppressWarnings("rawtypes")
-	private EnumeratedValuesHeuristic mockEnumStrategy;
+	@Mock private EnumeratedValuesHeuristic mockEnumStrategy;
 
-	@Mock
-	@SuppressWarnings("rawtypes")
-	private HeaderHeuristic mockHeaderHeuristic;
+	@Mock private HeaderHeuristic mockHeaderHeuristic;
 
 	@Before
 	public void setUpStrategies() {
 
-		when(mockTypeStrategy.addValue(anyString())).thenReturn(true);
-		when(mockEnumStrategy.addValue(anyString())).thenReturn(true);
-		when(mockRangeStrategy.addValue(anyString())).thenReturn(true);
+		when(mockTypeStrategy.accept(anyString())).thenReturn(true);
+		when(mockEnumStrategy.accept(anyString())).thenReturn(true);
+		when(mockRangeStrategy.accept(anyString())).thenReturn(true);
 
 		when(mockTypeStrategy.results()).thenReturn(mockDataType);
 		when(mockRangeStrategy.results()).thenReturn(testRanges);
@@ -125,11 +117,9 @@ public class TabularMetadataGeneratorTest {
 		when(mockRangeStrategy.get()).thenReturn(mockRangeStrategy);
 	}
 
-	@Mock
-	DataType mockDataType;
+	@Mock DataType mockDataType;
 
-	@Mock
-	private Map<DataType, Set<String>> mockEnumeratedValues;
+	@Mock private Map<DataType, Set<String>> mockEnumeratedValues;
 
 	@Before
 	public void setUpMockEnumeratedValues() {
@@ -139,8 +129,7 @@ public class TabularMetadataGeneratorTest {
 	private Predicate<Map<DataType, Set<String>>> matchesMockEnumeratedValues = map -> map.get(mockDataType)
 			.equals(singleton(MARKER_VALUE));
 
-	@Mock
-	private NavigableMap<DataType, Range<?>> testRanges;
+	@Mock private NavigableMap<DataType, Range<?>> testRanges;
 
 	@SuppressWarnings("unchecked")
 	@Before
@@ -311,7 +300,7 @@ public class TabularMetadataGeneratorTest {
 		}
 
 		@Override
-		public boolean addValue(final String lex) {
+		public boolean accept(final String lex) {
 			markLog.trace("Checking lex {} for marker {}", lex, marker);
 			if (lex.equals(marker)) {
 				hasMarkerBeenSeen = true;

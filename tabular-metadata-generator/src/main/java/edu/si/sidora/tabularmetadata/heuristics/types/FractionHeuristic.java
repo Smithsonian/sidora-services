@@ -65,7 +65,7 @@ public class FractionHeuristic extends PerTypeHeuristic<FractionHeuristic> {
             // there were no lexes accepted
             return true;
         }
-        log.trace("For a nonparseable fraction of {}.", nonParseableFraction);
+        log.trace("for a nonparseable fraction of {}.", nonParseableFraction);
         return nonParseableFraction <= fractionOfAllowedNonparseables;
     }
 

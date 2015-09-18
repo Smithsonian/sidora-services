@@ -78,8 +78,8 @@ public class MinimumDistanceBetweenNonparseablesHeuristic extends
     }
 
     @Override
-    public boolean addValue(final String value) {
-        if (super.addValue(value)) {
+    public boolean accept(final String value) {
+        if (super.accept(value)) {
             for (final DataType type : notParseableAs(value)) {
                 final float distanceToLastNonParseableOfThisType =
                         valuesSeen() - locationsOfLastNonparseables.get(type);

@@ -27,8 +27,8 @@
 
 package edu.si.sidora.tabularmetadata.testframework;
 
+import static edu.si.sidora.tabularmetadata.datatype.DataType.datatypes;
 import static edu.si.sidora.tabularmetadata.testframework.TestUtilities.randomValues;
-import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.iterate;
 
@@ -37,8 +37,6 @@ import java.util.List;
 import org.junit.experimental.theories.ParameterSignature;
 import org.junit.experimental.theories.ParameterSupplier;
 import org.junit.experimental.theories.PotentialAssignment;
-
-import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 public class RowsOfRandomValuesForAllTypesSupplier extends ParameterSupplier {
 
@@ -49,7 +47,7 @@ public class RowsOfRandomValuesForAllTypesSupplier extends ParameterSupplier {
 		final short valuesPerType = metadata.valuesPerType();
 		final short numRowsPerType = metadata.numRowsPerType();
 
-		return stream(DataType.values())
+		return datatypes().stream()
 				.flatMap(type -> iterate(0, i -> i + 1).limit(numRowsPerType)
 						.map(i -> randomValues(type, valuesPerType)))
 				.map(from -> PotentialAssignment.forValue(null, from)).collect(toList());

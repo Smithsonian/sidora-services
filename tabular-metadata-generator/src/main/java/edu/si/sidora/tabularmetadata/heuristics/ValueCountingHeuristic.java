@@ -52,7 +52,7 @@ public abstract class ValueCountingHeuristic<SelfType extends ValueCountingHeuri
 	private static final Logger log = getLogger(ValueCountingHeuristic.class);
 
 	@Override
-	public boolean addValue(final String value) {
+	public boolean accept(final String value) {
 		log.trace("Received new value: {}", value);
 		totalNumValues++;
 		return true;

@@ -25,7 +25,6 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.testframework;
 
 import static java.lang.Integer.MAX_VALUE;
@@ -51,83 +50,70 @@ import edu.si.sidora.tabularmetadata.heuristics.Heuristic;
  */
 public abstract class TestUtilities {
 
-    public static void addValues(final Heuristic<?, ?> strategy, final Iterable<?> values) {
-        for (final Object value : values) {
-            strategy.addValue(value.toString());
-        }
-    }
+	public static void addValues(final Heuristic<?, ?> strategy, final Iterable<?> values) {
+		values.forEach(v -> strategy.accept(v.toString()));
+	}
 
-    /**
-     * @param type a {@link DataType}
-     * @return a random value appropriate to that DataType
-     */
-    static Comparable<?> generateRandomValue(final DataType type) {
-        switch (type) {
-        case Boolean:
-            return random() > 0.5;
-        case DateTime:
-            return now().plus(round(random() * 1000000000000F));
-        case Decimal:
-            return (float) (random() - 0.5) * 10;
-        case Geographic:
-            if ((Boolean) generateRandomValue(DataType.Boolean)) {
-                return new GeographicValue(asList(
-                        (Float) generateRandomValue(DataType.Decimal),
-                        (Float) generateRandomValue(DataType.Decimal)));
-            }
-            return new GeographicValue(asList(
-                    (Float) generateRandomValue(DataType.Decimal),
-                    (Float) generateRandomValue(DataType.Decimal),
-                    (Float) generateRandomValue(DataType.Decimal)));
-        case Integer:
-            if (random() < 0.1) {
-                if ((Boolean) generateRandomValue(DataType.Boolean)) {
-                    return MAX_VALUE;
-                }
-                return MIN_VALUE;
-            }
-            return round((Float) generateRandomValue(DataType.Decimal));
-        case NonNegativeInteger:
-            if (random() < 0.2) {
-                return 0;
-            }
-            final Integer randInt = (Integer) generateRandomValue(DataType.Integer);
-            if (randInt.equals(MAX_VALUE) || randInt.equals(MIN_VALUE)) {
-                return 0;
-            }
-            return abs(randInt);
-        case PositiveInteger:
-            return (Integer) generateRandomValue(DataType.NonNegativeInteger) + 1;
-        case String:
-            return randomUUID().toString();
-        case URI:
-            return URI.create("info:" + generateRandomValue(DataType.String));
-        default:
-            throw new AssertionError("A DataType of an un-enumerated kind should never exist!");
-        }
-    }
+	/**
+	 * @param type a {@link DataType}
+	 * @return a random value appropriate to that DataType
+	 */
+	static Comparable<?> generateRandomValue(final DataType type) {
+		switch (type) {
+		case Boolean:
+			return random() > 0.5;
+		case DateTime:
+			return now().plus(round(random() * 1000000000000F));
+		case Decimal:
+			return (float) (random() - 0.5) * 10;
+		case Geographic:
+			if ((Boolean) generateRandomValue(DataType.Boolean)) { return new GeographicValue(asList(
+					(Float) generateRandomValue(DataType.Decimal), (Float) generateRandomValue(DataType.Decimal))); }
+			return new GeographicValue(asList((Float) generateRandomValue(DataType.Decimal),
+					(Float) generateRandomValue(DataType.Decimal), (Float) generateRandomValue(DataType.Decimal)));
+		case Integer:
+			if (random() < 0.1) {
+				if ((Boolean) generateRandomValue(DataType.Boolean)) { return MAX_VALUE; }
+				return MIN_VALUE;
+			}
+			return round((Float) generateRandomValue(DataType.Decimal));
+		case NonNegativeInteger:
+			if (random() < 0.2) { return 0; }
+			final Integer randInt = (Integer) generateRandomValue(DataType.Integer);
+			if (randInt.equals(MAX_VALUE) || randInt.equals(MIN_VALUE)) { return 0; }
+			return abs(randInt);
+		case PositiveInteger:
+			return (Integer) generateRandomValue(DataType.NonNegativeInteger) + 1;
+		case String:
+			return randomUUID().toString();
+		case URI:
+			return URI.create("info:" + generateRandomValue(DataType.String));
+		default:
+			throw new AssertionError("A DataType of an un-enumerated kind should never exist!");
+		}
+	}
 
-    static RandomValuesForAType randomValues(final DataType type, final short numValues) {
-        final RandomValuesForAType values = new RandomValuesForAType(numValues).withType(type);
-        for (short valueIndex = 0; valueIndex < numValues; valueIndex++) {
-            values.add(generateRandomValue(type));
-        }
-        return values;
-    }
+	static RandomValuesForAType randomValues(final DataType type, final short numValues) {
+		final RandomValuesForAType values = new RandomValuesForAType(numValues).withType(type);
+		for (short valueIndex = 0; valueIndex < numValues; valueIndex++) {
+			values.add(generateRandomValue(type));
+		}
+		return values;
+	}
 
-    public static class RandomValuesForAType extends ArrayList<Comparable<?>> {
+	public static class RandomValuesForAType extends ArrayList<Comparable<?>> {
 
-        private static final long serialVersionUID = 1L;
+		private static final long serialVersionUID = 1L;
 
-        public DataType type;
+		public DataType type;
 
-        public RandomValuesForAType(final short initCapacity) {
-            super(initCapacity);
-        }
+		public RandomValuesForAType(final short initCapacity) {
+			super(initCapacity);
+		}
 
-        public RandomValuesForAType withType(final DataType t) {
-            this.type = t;
-            return this;
-        }
-    }
+		public RandomValuesForAType withType(final DataType t) {
+			this.type = t;
+			return this;
+		}
+	}
 }

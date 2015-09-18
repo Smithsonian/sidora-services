@@ -28,8 +28,6 @@
 
 package edu.si.sidora.tabularmetadata.heuristics.enumerations;
 
-import edu.si.sidora.tabularmetadata.heuristics.enumerations.InMemoryEnumeratedValuesHeuristic;
-
 public class InMemoryEnumeratedValuesHeuristicTest extends
         EnumeratedValuesHeuristicTestFrame<InMemoryEnumeratedValuesHeuristic> {
 
@@ -37,5 +35,4 @@ public class InMemoryEnumeratedValuesHeuristicTest extends
     protected InMemoryEnumeratedValuesHeuristic newTestHeuristic() {
         return new InMemoryEnumeratedValuesHeuristic();
     }
-
 }

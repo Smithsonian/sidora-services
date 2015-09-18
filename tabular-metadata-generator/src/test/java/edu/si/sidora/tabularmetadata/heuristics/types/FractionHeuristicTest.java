@@ -25,7 +25,6 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.heuristics.types;
 
 import static edu.si.sidora.tabularmetadata.datatype.DataType.NonNegativeInteger;
@@ -45,65 +44,61 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
-import edu.si.sidora.tabularmetadata.heuristics.types.FractionHeuristic;
 import edu.si.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
 import edu.si.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 
 @RunWith(Theories.class)
 public class FractionHeuristicTest extends PerTypeHeuristicTestFrame<FractionHeuristic> {
 
-    @Override
-    protected FractionHeuristic newTestHeuristic() {
-        return new FractionHeuristic(0.2F);
-    }
+	@Override
+	protected FractionHeuristic newTestHeuristic() {
+		return new FractionHeuristic(0.2F);
+	}
 
-    @Theory
-    public void inputsWithNoUnparseableValuesShouldBeRecognizedAsTheirTrueType(@RowsOfRandomValuesForAllTypes(
-            numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
-        final FractionHeuristic testHeuristic = newTestHeuristic();
-        addValues(testHeuristic, values);
-        final DataType type = values.type;
-        if (type.equals(NonNegativeInteger)) {
-            // NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
-            assertTrue(type.equals(NonNegativeInteger) || type.equals(PositiveInteger));
-        } else {
-            assertEquals(type, testHeuristic.results());
-        }
-    }
+	@Theory
+	public void inputsWithNoUnparseableValuesShouldBeRecognizedAsTheirTrueType(
+			@RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
+		final FractionHeuristic testHeuristic = newTestHeuristic();
+		addValues(testHeuristic, values);
+		final DataType type = values.type;
+		if (type.equals(NonNegativeInteger)) {
+			// NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
+			assertTrue(testHeuristic.results().equals(NonNegativeInteger)
+					|| testHeuristic.results().equals(PositiveInteger));
+		} else {
+			assertEquals(type, testHeuristic.results());
+		}
+	}
 
-    @Theory
-    public void testThatInputsWithOnlyOneUnparseableValueShouldBeRecognizedAsTheirTrueType(
-            @RowsOfRandomValuesForAllTypes(
-                    numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
-        final FractionHeuristic testHeuristic = newTestHeuristic();
-        // A UUID could only be recognized as a String
-        values.add(randomUUID());
-        addValues(testHeuristic, values);
-        final DataType type = values.type;
-        if (type.equals(NonNegativeInteger)) {
-            // NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
-            assertTrue(type.equals(NonNegativeInteger) || type.equals(PositiveInteger));
-        } else {
-            assertEquals(type, testHeuristic.results());
-        }
-    }
+	@Theory
+	public void testThatInputsWithOnlyOneUnparseableValueShouldBeRecognizedAsTheirTrueType(
+			@RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
+		final FractionHeuristic testHeuristic = newTestHeuristic();
+		// A UUID could only be recognized as a String
+		values.add(randomUUID());
+		addValues(testHeuristic, values);
+		final DataType type = values.type;
+		if (type.equals(NonNegativeInteger)) {
+			// NonNegativeInteger and PositiveInteger differ by only one value (0); it's difficult to tell them apart
+			assertTrue(testHeuristic.results().equals(NonNegativeInteger)
+					|| testHeuristic.results().equals(PositiveInteger));
+		} else {
+			assertEquals(type, testHeuristic.results());
+		}
+	}
 
-    @Theory
-    public void testThatInputsWithHalfUnparseableValuesShouldBeNotRecognizedAsTheirTrueType(
-            @RowsOfRandomValuesForAllTypes(
-                    numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
-        // nothing cannot be recognized as a String
-        assumeThat(values.type, not(is(String)));
-
-        final FractionHeuristic testHeuristic = newTestHeuristic();
-        // A UUID could only be recognized as a String
-        final int numValues = values.size();
-        for (byte counter = 0; counter < numValues; counter++) {
-            values.add(randomUUID());
-        }
-        addValues(testHeuristic, values);
-        assertNotEquals(values.type, testHeuristic.results());
-
-    }
-
+	@Theory
+	public void testThatInputsWithHalfUnparseableValuesShouldBeNotRecognizedAsTheirTrueType(
+			@RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
+		// nothing cannot be recognized as a String
+		assumeThat(values.type, not(is(String)));
+		final FractionHeuristic testHeuristic = newTestHeuristic();
+		int size = values.size();
+		for (byte counter = 0; counter < size; counter++) {
+			// A UUID could only be recognized as a String
+			values.add(randomUUID());
+		}
+		addValues(testHeuristic, values);
+		assertNotEquals(values.type, testHeuristic.results());
+	}
 }

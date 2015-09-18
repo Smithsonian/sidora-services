@@ -48,5 +48,4 @@ public interface TypeDeterminingHeuristic<SelfType extends TypeDeterminingHeuris
      * @return number of values since most-recent reset (or initialization) that could parse as the likely type
      */
     int parseableValuesSeen();
-
 }

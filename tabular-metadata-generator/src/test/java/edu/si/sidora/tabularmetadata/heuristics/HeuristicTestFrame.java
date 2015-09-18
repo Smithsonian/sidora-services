@@ -28,11 +28,10 @@
 
 package edu.si.sidora.tabularmetadata.heuristics;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-
-import edu.si.sidora.tabularmetadata.heuristics.Heuristic;
 
 public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeuristic, ResultType>, ResultType> {
 
@@ -48,6 +47,7 @@ public abstract class HeuristicTestFrame<TestHeuristic extends Heuristic<TestHeu
     public void testGet() {
         final TestHeuristic testHeuristic = newTestHeuristic();
         assertTrue(testHeuristic.getClass() == testHeuristic.get().getClass());
+        // a strategy should produce an independent instance for a call to #get()
+        assertFalse(testHeuristic == testHeuristic.get());
     }
-
 }

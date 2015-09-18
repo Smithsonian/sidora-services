@@ -65,9 +65,9 @@ public abstract class TypeCountAggregatingHeuristic<SelfType extends TypeCountAg
 	}
 
 	@Override
-	public boolean addValue(final String lex) {
+	public boolean accept(final String lex) {
 		log.trace("Accepting lex: {}", lex);
-		if (super.addValue(lex)) {
+		if (super.accept(lex)) {
 			incrementCounts(parseableAs(lex));
 			return true;
 		}

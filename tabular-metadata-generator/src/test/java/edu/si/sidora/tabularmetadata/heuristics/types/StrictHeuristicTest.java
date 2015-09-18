@@ -36,21 +36,16 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeThat;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
 
-import edu.si.sidora.tabularmetadata.heuristics.types.StrictHeuristic;
 import edu.si.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
 import edu.si.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 
 @RunWith(Theories.class)
 public class StrictHeuristicTest extends PerTypeHeuristicTestFrame<StrictHeuristic> {
-
-    private static final Logger log = getLogger(StrictHeuristicTest.class);
 
     @Override
     protected StrictHeuristic newTestHeuristic() {
@@ -72,7 +67,6 @@ public class StrictHeuristicTest extends PerTypeHeuristicTestFrame<StrictHeurist
     @Theory
     public void inputsWithNoUnparseableValuesShouldBeRecognizedAsTheirTrueType(
             @RowsOfRandomValuesForAllTypes(numRowsPerType = 5, valuesPerType = 50) final RandomValuesForAType values) {
-        log.trace("StrictHeuristicTest chacking {}", values.type);
         final StrictHeuristic testHeuristic = newTestHeuristic();
         addValues(testHeuristic, values);
         assertEquals(values.type, testHeuristic.results());

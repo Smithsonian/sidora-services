@@ -56,8 +56,8 @@ public class RegexpHeaderHeuristic extends TreatsEachFieldAlikeHeaderHeuristic<R
 	}
 
 	@Override
-	protected Predicate<CharSequence> fieldTest() {
-		return value -> regexp.matcher(value).find();
+	protected Predicate<String> fieldTest() {
+		return regexp.asPredicate();
 	}
 
 	@Override

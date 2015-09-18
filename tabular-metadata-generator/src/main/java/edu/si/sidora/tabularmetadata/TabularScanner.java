@@ -102,9 +102,9 @@ public class TabularScanner extends AbstractIterator<CSVRecord> {
 			log.trace("Operating on row: {}", nextRecord);
 			for (final String lex : nextRecord) {
 				log.trace("Operating on lex: {}", lex);
-				final boolean rangeStrategiesShouldContinue = rangeStrategies.next().addValue(lex);
-				final boolean typeStrategiesShouldContinue = typeStrategies.next().addValue(lex);
-				final boolean enumStrategiesShouldContinue = enumStrategies.next().addValue(lex);
+				final boolean rangeStrategiesShouldContinue = rangeStrategies.next().accept(lex);
+				final boolean typeStrategiesShouldContinue = typeStrategies.next().accept(lex);
+				final boolean enumStrategiesShouldContinue = enumStrategies.next().accept(lex);
 				log.trace("Continue flag from range strategy: {}, from type strategy: {}, from enum strategy: {}.",
 						rangeStrategiesShouldContinue, typeStrategiesShouldContinue, enumStrategiesShouldContinue);
 				// if any heuristic is not done, we aren't done

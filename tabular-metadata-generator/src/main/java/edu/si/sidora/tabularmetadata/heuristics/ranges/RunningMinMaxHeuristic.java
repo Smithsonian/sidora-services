@@ -71,7 +71,7 @@ public class RunningMinMaxHeuristic extends AbstractHeuristic<RunningMinMaxHeuri
 	}
 
 	@Override
-	public boolean addValue(final String value) {
+	public boolean accept(final String value) {
 		parseableAs(value).forEach(type -> {
 			final Comparable<?> v = type.parse(value);
 			mins.merge(type, v, natural()::min);

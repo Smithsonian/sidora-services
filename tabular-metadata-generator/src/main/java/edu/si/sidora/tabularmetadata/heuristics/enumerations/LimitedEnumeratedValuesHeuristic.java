@@ -69,8 +69,8 @@ public class LimitedEnumeratedValuesHeuristic extends
     }
 
     @Override
-    public boolean addValue(final String lex) {
-        return super.addValue(lex) && valuesSeen() <= limit ? wrappedStrategy.addValue(lex) : false;
+    public boolean accept(final String lex) {
+        return super.accept(lex) && valuesSeen() <= limit ? wrappedStrategy.accept(lex) : false;
     }
 
     @Override

@@ -25,21 +25,19 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Lists.transform;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.csv.CSVFormat.DEFAULT;
-import static org.apache.commons.csv.CSVParser.parse;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.Reader;
 import java.util.List;
 
 import org.apache.commons.csv.CSVParser;
@@ -51,69 +49,64 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
+import edu.si.sidora.tabularmetadata.heuristics.Heuristic;
 import edu.si.sidora.tabularmetadata.heuristics.enumerations.EnumeratedValuesHeuristic;
 import edu.si.sidora.tabularmetadata.heuristics.ranges.RangeDeterminingHeuristic;
 import edu.si.sidora.tabularmetadata.heuristics.types.TypeDeterminingHeuristic;
 import edu.si.sidora.tabularmetadata.testframework.TestUtilities;
 
 @RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("rawtypes")
 public class TabularScannerTest extends TestUtilities {
 
-    @Mock
-    private DataType mockDataType;
+	@Mock private DataType mockDataType;
 
-    @Mock
-    @SuppressWarnings("rawtypes")
-    private RangeDeterminingHeuristic mockRangeStrategy;
+	@Mock private RangeDeterminingHeuristic mockRangeStrategy;
 
-    @Mock
-    @SuppressWarnings("rawtypes")
-    private TypeDeterminingHeuristic mockTypeStrategy;
+	@Mock private TypeDeterminingHeuristic mockTypeStrategy;
 
-    @Mock
-    @SuppressWarnings("rawtypes")
-    private EnumeratedValuesHeuristic mockEnumStrategy;
+	@Mock private EnumeratedValuesHeuristic mockEnumStrategy;
 
-    private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
+	private static final File smalltestfile = new File("src/test/resources/test-data/small-test.csv");
 
-    private static ArrayList<DataType> expectedResults;
+	private static List<DataType> expectedResults;
 
-    private static final Logger log = getLogger(TabularScannerTest.class);
+	private static final Logger log = getLogger(TabularScannerTest.class);
 
-    @Before
-    public void setUp() {
-        expectedResults = newArrayList(mockDataType, mockDataType, mockDataType, mockDataType);
-        when(mockTypeStrategy.results()).thenReturn(mockDataType);
-        when(mockTypeStrategy.get()).thenReturn(mockTypeStrategy);
-        when(mockEnumStrategy.get()).thenReturn(mockEnumStrategy);
-        when(mockRangeStrategy.get()).thenReturn(mockRangeStrategy);
-    }
+	@Before
+	public void setUp() {
+		expectedResults = asList(mockDataType, mockDataType, mockDataType, mockDataType);
+		when(mockTypeStrategy.results()).thenReturn(mockDataType);
+		when(mockTypeStrategy.get()).thenReturn(mockTypeStrategy);
+		when(mockEnumStrategy.get()).thenReturn(mockEnumStrategy);
+		when(mockRangeStrategy.get()).thenReturn(mockRangeStrategy);
+	}
 
-    @Test
-    public void testOperation() throws IOException {
-        final TabularScanner testScanner;
-        try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
-            log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner =
-                    new TabularScanner(parser.iterator(), mockTypeStrategy, mockRangeStrategy, mockEnumStrategy);
-            testScanner.scan(0);
-        }
-        final List<DataType> guesses =
-                transform(testScanner.getTypeStrategies(), TypeDeterminingHeuristic::results);
-        assertEquals("Failed to find the correct column types!", expectedResults, guesses);
-    }
+	@Test
+	public void testOperation() throws IOException {
+		try (Reader reader = new FileReader(smalltestfile);
+				final CSVParser parser = new CSVParser(reader, DEFAULT.withHeader())) {
+			log.debug("Found header map: {}", parser.getHeaderMap());
+			final TabularScanner testScanner = new TabularScanner(parser.iterator(), mockTypeStrategy,
+					mockRangeStrategy, mockEnumStrategy);
+			testScanner.scan(0);
+			final List<DataType> guesses = testScanner.getTypeStrategies().stream().map(Heuristic::results)
+					.collect(toList());
+			assertEquals("Failed to find the correct column types!", expectedResults, guesses);
+		}
+	}
 
-    @Test
-    public void testOperationWithLimitedScan() throws IOException {
-        final TabularScanner testScanner;
-        try (final CSVParser parser = parse(smalltestfile, UTF_8, DEFAULT.withHeader())) {
-            log.debug("Found header map: {}", parser.getHeaderMap());
-            testScanner =
-                    new TabularScanner(parser.iterator(), mockTypeStrategy, mockRangeStrategy, mockEnumStrategy);
-            testScanner.scan(2);
-        }
-        final List<DataType> guesses =
-                transform(testScanner.getTypeStrategies(),  TypeDeterminingHeuristic::results);
-        assertEquals("Failed to find the correct column types!", expectedResults, guesses);
-    }
+	@Test
+	public void testOperationWithLimitedScan() throws IOException {
+		try (Reader reader = new FileReader(smalltestfile);
+				final CSVParser parser = new CSVParser(reader, DEFAULT.withHeader())) {
+			log.debug("Found header map: {}", parser.getHeaderMap());
+			final TabularScanner testScanner = new TabularScanner(parser.iterator(), mockTypeStrategy,
+					mockRangeStrategy, mockEnumStrategy);
+			testScanner.scan(2);
+			final List<DataType> guesses = testScanner.getTypeStrategies().stream().map(Heuristic::results)
+					.collect(toList());
+			assertEquals("Failed to find the correct column types!", expectedResults, guesses);
+		}
+	}
 }

@@ -27,8 +27,6 @@
 
 package edu.si.sidora.tabularmetadata;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,12 +113,6 @@ public class TabularMetadata {
 	 */
 	public List<Map<DataType, Set<String>>> enumeratedValues() {
 		return enumeratedValues;
-	}
-
-	@Override
-	public String toString() {
-		return toStringHelper(this).add("headerNames", headerNames()).add("fieldTypes", fieldTypes())
-				.add("enumeratedValues", enumeratedValues()).add("minMaxes", minMaxes()).toString();
 	}
 
 	public static class Ratio {

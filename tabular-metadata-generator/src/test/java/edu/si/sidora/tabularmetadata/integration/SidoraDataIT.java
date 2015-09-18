@@ -25,11 +25,8 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-
 package edu.si.sidora.tabularmetadata.integration;
 
-import static com.google.common.base.Predicates.contains;
-import static com.google.common.collect.Iterables.all;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.DateTime;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
 import static java.util.Arrays.asList;
@@ -59,61 +56,63 @@ import edu.si.sidora.tabularmetadata.heuristics.enumerations.LimitedEnumeratedVa
 
 public class SidoraDataIT {
 
-    private static final Pattern DEFAULT_HEADER_NAME = compile("^Variable");
+	private static final Pattern DEFAULT_HEADER_NAME = compile("^Variable");
 
-    private static final String ITEST_DATA_DIR = "src/test/resources/itest-data";
+	private static final String ITEST_DATA_DIR = "src/test/resources/itest-data";
 
-    private static final URL testSIFile1, testSIFile2;
+	private static final URL testSIFile1, testSIFile2;
 
-    private static final List<URL> testFiles;
-    static {
-        final File testFileDir = new File(ITEST_DATA_DIR);
-        try {
-            testSIFile1 = new File(testFileDir, "Thompson-WMA-10B-researcher_observation.csv").toURI().toURL();
-            testSIFile2 = new File(testFileDir, "Thompson-WMA-16C-researcher_observation.csv").toURI().toURL();
-            testFiles = asList(testSIFile1, testSIFile2);
-        } catch (final MalformedURLException e) {
-            throw new AssertionError("Couldn't find test files!");
-        }
+	private static final List<URL> testFiles;
 
-    }
+	static {
+		final File testFileDir = new File(ITEST_DATA_DIR);
+		try {
+			testSIFile1 = new File(testFileDir, "Thompson-WMA-10B-researcher_observation.csv").toURI().toURL();
+			testSIFile2 = new File(testFileDir, "Thompson-WMA-16C-researcher_observation.csv").toURI().toURL();
+			testFiles = asList(testSIFile1, testSIFile2);
+		} catch (final MalformedURLException e) {
+			throw new AssertionError("Couldn't find test files!");
+		}
 
-    private static final Logger log = getLogger(SidoraDataIT.class);
+	}
 
-    private static final List<DataType> expectedTypes =
-            asList(DataType.String, DataType.String, DataType.String, DateTime,
-                    DateTime, DataType.String, DataType.String, DataType.String, DataType.String,
-                    DataType.String, PositiveInteger, DataType.String, DataType.String, DataType.String);
+	private static final Logger log = getLogger(SidoraDataIT.class);
 
-    @Test
-    public void testSIfiles() throws IOException {
-        for (final URL testFile : testFiles) {
-            testFile(testFile);
-        }
-    }
+	private static final List<DataType> expectedTypes = asList(DataType.String, DataType.String, DataType.String,
+			DateTime, DateTime, DataType.String, DataType.String, DataType.String, DataType.String, DataType.String,
+			PositiveInteger, DataType.String, DataType.String, DataType.String);
 
-    private static void testFile(final URL testFile) throws IOException {
-        final TabularMetadataGenerator testGenerator = new TabularMetadataGenerator();
-        final TabularMetadata result = testGenerator.getMetadata(testFile);
-        log.debug("Got results: {}", result);
-        assertTrue("Should have found all header names matching against '" + DEFAULT_HEADER_NAME + "'!",
-                all(result.headerNames(), contains(DEFAULT_HEADER_NAME)));
+	@Test
+	public void testSIfiles() throws IOException {
+		testFiles.forEach(SidoraDataIT::testFile);
+	}
 
-        final List<DataType> mostLikelyTypes = result.fieldTypes();
-        assertEquals("Didn't get the expected type determinations!", expectedTypes, mostLikelyTypes);
+	private static void testFile(final URL testFile) {
+		final TabularMetadataGenerator testGenerator = new TabularMetadataGenerator();
+		try {
+			final TabularMetadata result = testGenerator.getMetadata(testFile);
+			log.debug("Got results: {}", result);
+			assertTrue("Should have found all header names matching against '" + DEFAULT_HEADER_NAME + "'!",
+					result.headerNames().stream().allMatch(DEFAULT_HEADER_NAME.asPredicate()));
 
-        final List<Map<DataType, Range<?>>> minMaxes = result.minMaxes();
-        for (int i = 0; i < minMaxes.size(); i++) {
-            final DataType mostLikelyType = mostLikelyTypes.get(i);
-            log.debug("For most likely type {} got range: {}", mostLikelyType, minMaxes.get(i).get(mostLikelyType));
-        }
-        final List<Map<DataType, Set<String>>> enumerations = result.enumeratedValues();
-        for (int i = 0; i < enumerations.size(); i++) {
-            final DataType mostLikelyType = mostLikelyTypes.get(i);
-            final Set<String> enumeration = enumerations.get(i).get(mostLikelyType);
-            log.debug("For most likely type {} got enumeration: {}", mostLikelyType, enumeration);
-            // Default operation is to limit to 10 enumerated values recorded
-            assertTrue(LimitedEnumeratedValuesHeuristic.DEFAULT_LIMIT >= enumeration.size());
-        }
-    }
+			final List<DataType> mostLikelyTypes = result.fieldTypes();
+			assertEquals("Didn't get the expected type determinations!", expectedTypes, mostLikelyTypes);
+
+			final List<Map<DataType, Range<?>>> minMaxes = result.minMaxes();
+			for (int i = 0; i < minMaxes.size(); i++) {
+				final DataType mostLikelyType = mostLikelyTypes.get(i);
+				log.debug("For most likely type {} got range: {}", mostLikelyType, minMaxes.get(i).get(mostLikelyType));
+			}
+			final List<Map<DataType, Set<String>>> enumerations = result.enumeratedValues();
+			for (int i = 0; i < enumerations.size(); i++) {
+				final DataType mostLikelyType = mostLikelyTypes.get(i);
+				final Set<String> enumeration = enumerations.get(i).get(mostLikelyType);
+				log.debug("For most likely type {} got enumeration: {}", mostLikelyType, enumeration);
+				// Default operation is to limit to 10 enumerated values recorded
+				assertTrue(LimitedEnumeratedValuesHeuristic.DEFAULT_LIMIT >= enumeration.size());
+			}
+		} catch (IOException e) {
+			throw new AssertionError(e);
+		}
+	}
 }

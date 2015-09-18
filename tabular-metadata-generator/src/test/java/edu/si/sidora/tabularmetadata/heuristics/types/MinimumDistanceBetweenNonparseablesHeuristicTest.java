@@ -38,7 +38,6 @@ import org.junit.Test;
 
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 import edu.si.sidora.tabularmetadata.heuristics.HeuristicTestFrame;
-import edu.si.sidora.tabularmetadata.heuristics.types.MinimumDistanceBetweenNonparseablesHeuristic;
 
 public class MinimumDistanceBetweenNonparseablesHeuristicTest extends
         HeuristicTestFrame<MinimumDistanceBetweenNonparseablesHeuristic, DataType> {
@@ -57,15 +56,11 @@ public class MinimumDistanceBetweenNonparseablesHeuristicTest extends
     @Test
     public void testPassingAndNonpassingData() {
         final MinimumDistanceBetweenNonparseablesHeuristic testStrategy = newTestHeuristic();
-        for (final String i : passingData) {
-            testStrategy.addValue(i);
-        }
+        passingData.forEach(testStrategy::accept);
         assertEquals(
                 "Failed to accept type with nonparseable values less than or equal to the minimum distance apart!",
                 PositiveInteger, testStrategy.results());
-        for (final String i : nonPassingData) {
-            testStrategy.addValue(i);
-        }
+        nonPassingData.forEach(testStrategy::accept);
         assertEquals("Failed to reject types with nonparseable values greater than the minimum distance apart!",
                 DataType.String, testStrategy.results());
     }

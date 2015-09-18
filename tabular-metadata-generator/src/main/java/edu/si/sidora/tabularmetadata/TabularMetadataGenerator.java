@@ -112,7 +112,7 @@ public class TabularMetadataGenerator {
 			if (withHeaders == null) {
 				log.debug("Checking for the existence of headers.");
 				for (final String field : firstLine) {
-					headerStrategy.addValue(field);
+					headerStrategy.accept(field);
 				}
 				hasHeaders = headerStrategy.results();
 				headerStrategy.reset();

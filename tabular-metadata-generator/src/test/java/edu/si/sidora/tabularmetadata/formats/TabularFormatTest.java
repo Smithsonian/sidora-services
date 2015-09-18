@@ -48,5 +48,4 @@ public class TabularFormatTest {
     public void testTabFormat() {
         assertEquals(TDF, new TabSeparated().get());
     }
-
 }
