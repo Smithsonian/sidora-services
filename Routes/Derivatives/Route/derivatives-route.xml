@@ -114,6 +114,18 @@
                               retryAttemptedLogLevel="WARN"/>
         </onException>
 
+        <!--
+        <onException>
+            <exception>javax.imageio.IIOException</exception>
+            <redeliveryPolicy maximumRedeliveries="1"/>
+            <handled>
+                <constant>
+                    true
+                </constant>
+            </handled>
+        </onException>
+        -->
+
         <route id="DerivativesStartProcessing">
             <from uri="activemq:queue:sidora.apim.update"/>
             <log message="${id} Derivatives: Starting processing ..."
@@ -816,6 +828,9 @@
                     </simple>
                     <!-- Just copy it. -->
                     <to uri="fedora:addDatastream?name=PROXY_MP3&amp;type=audio/mpeg&amp;dsLabel=PROXY_MP3&amp;group=M&amp;versionable=false"/>
+                    <log message="${id} Derivatives: No processing required copying mp3 directly to PROXY_MP3."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                 </when>
                 <when>
                     <simple>
@@ -836,6 +851,9 @@
                                 ${headers.CamelExecExitValue} == 0
                             </simple>
                             <to uri="fedora:addDatastream?name=PROXY_MP3&amp;type=audio/mpeg&amp;dsLabel=PROXY_MP3&amp;group=M&amp;versionable=false"/>
+                            <log message="${id} Derivatives: Adding converted audio as mp3 to PROXY_MP3."
+                                 loggingLevel="DEBUG"
+                                 logName="edu.si.derivatives"/>
                         </when>
                         <otherwise>
                             <log message="${id} Derivatives: LAME processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
@@ -862,8 +880,22 @@
                  logName="edu.si.derivatives"/>
 
             <!-- Create a thumbnail derivative using the Thumbnailator library. -->
+            <!--
             <to uri="thumbnailator:image?keepRatio=false&amp;size=(200,150)"/>
             <to uri="fedora:addDatastream?name=TN&amp;type=image/jpg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
+            -->
+
+            <doTry>
+                <to uri="thumbnailator:image?keepRatio=true&amp;size=(200,150)"/>
+                <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
+                <doCatch>
+                    <exception>javax.imageio.IIOException</exception>
+                    <log message="${id} CameraTrapIngest: Cannot create thumbnail image corrupted."
+                         loggingLevel="WARN"
+                         logName="edu.si.derivatives"/>
+                </doCatch>
+            </doTry>
+
 
             <log message="${id} Derivatives: Finished Thumbnailator processing."
                  loggingLevel="DEBUG"

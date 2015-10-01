@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns="http://oris.si.edu/schema/v1/2015/02/28/ct/manifest"
+	xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" elementFormDefault="qualified"
+	vc:minVersion="1.1">
+	<xs:element name="CameraTrapDeployment">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="ProjectId"/>
+				<xs:element name="ProjectName"/>
+				<xs:element name="ProjectObjectives"/>
+				<xs:element name="PublishDate"/>
+				<xs:element name="ProjectOwners">
+					<xs:complexType>
+						<xs:sequence maxOccurs="unbounded">
+							<xs:element name="ProjectOwner">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="ProjectOwnerName"/>
+										<xs:element name="ProjectOwnerEmail"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="PrincipalInvestigators">
+					<xs:complexType>
+						<xs:sequence maxOccurs="unbounded">
+							<xs:element name="PrincipalInvestigator">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="PrincipalInvestigatorName"/>
+										<xs:element name="PrincipalInvestigatorEmail"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="ProjectContacts">
+					<xs:complexType>
+						<xs:sequence maxOccurs="unbounded">
+							<xs:element name="ProjectContact">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="ProjectContactName"/>
+										<xs:element name="ProjectContactEmail"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="ProjectLatitude"/>
+				<xs:element name="ProjectLongitude"/>
+				<xs:element name="CountryCode"/>
+				<xs:element name="ProjectDataAccessandUseConstraints"/>
+				<xs:element name="SubProjectId"/>
+				<xs:element name="SubProjectName"/>
+				<xs:element name="SubProjectDesign"/>
+				<xs:element name="PlotName"/>
+				<xs:element name="PlotTreatment"/>
+				<xs:element name="CameraDeploymentID"/>
+				<xs:element name="CameraSiteName"/>
+				<xs:element name="Originators">
+					<xs:complexType>
+						<xs:sequence maxOccurs="unbounded">
+							<xs:element name="Originator">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="OriginatorName"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="ProposedCameraDeploymentBeginDate"/>
+				<xs:element name="ProposedCameraDeploymentEndDate"/>
+				<xs:element name="ProposedLatitude"/>
+				<xs:element name="ProposedLongitude"/>
+				<xs:element name="CameraDeploymentBeginDate" type="xs:date"/>
+				<xs:element name="CameraDeploymentEndDate" type="xs:date"/>
+				<xs:element name="CameraDeploymentNotes"/>
+				<xs:element name="ActualLatitude"/>
+				<xs:element name="ActualLongitude"/>
+				<xs:element name="CameraFailureDetails">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="Camera Functioning"/>
+							<xs:enumeration value="Unknown Failure"/>
+							<xs:enumeration value="Wildlife Damage"/>
+							<xs:enumeration value="Vandalism/Theft"/>
+							<xs:enumeration value="Memory Card/Film Failure"/>
+							<xs:enumeration value="Camera Hardware Failure"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="Bait">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="No Bait"/>
+							<xs:enumeration value="Other Bait"/>
+							<xs:enumeration value="Acoustic"/>
+							<xs:enumeration value="Visual"/>
+							<xs:enumeration value="Meat"/>
+							<xs:enumeration value="Scent"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="BaitDescription"/>
+				<xs:element name="Feature">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="Not Entered"/>
+							<xs:enumeration value="Road, paved"/>
+							<xs:enumeration value="Road, dirt"/>
+							<xs:enumeration value="Trail, hiking/people"/>
+							<xs:enumeration value="Trail, game"/>
+							<xs:enumeration value="Road underpass/overpass/bridge"/>
+							<xs:enumeration value="Culvert"/>
+							<xs:enumeration value="Burrow"/>
+							<xs:enumeration value="Nest site"/>
+							<xs:enumeration value="Carcass"/>
+							<xs:enumeration value="Water source/Spring"/>
+							<xs:enumeration value="Fruiting tree"/>
+							<xs:enumeration value="Other"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="FeatureMethodology"/>
+				<xs:element name="AccessConstraints">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="LC"/>
+							<xs:enumeration value="NT"/>
+							<xs:enumeration value="VU"/>
+							<xs:enumeration value="EN"/>
+							<xs:enumeration value="CR"/>
+							<xs:enumeration value="EW"/>
+							<xs:enumeration value="EX"/>
+							<xs:enumeration value="DD"/>
+							<xs:enumeration value="NE"/>
+							<xs:enumeration value="US"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="CameraID"/>
+				<xs:element name="DetectionDistance"/>
+				<xs:element name="QuietPeriodSetting"/>
+				<xs:element name="ImageResolutionSetting"/>
+				<xs:element name="SensitivitySetting"> </xs:element>
+				<xs:element name="ImageSequence" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence maxOccurs="1">
+							<xs:element name="ImageSequenceId"/>
+							<xs:element name="ImageSequenceBeginTime"/>
+							<xs:element name="ImageSequenceEndTime"/>
+							<xs:element name="VolunteerIdentifications" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence maxOccurs="1">
+										<xs:element name="Identification" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:sequence>
+												<xs:element name="IUCNId"/>
+												<xs:element name="TSNId"/>
+												<xs:element name="SpeciesScientificName"/>
+												<xs:element name="SpeciesCommonName"/>
+												<xs:element name="Count"/>
+												<xs:element name="Age"/>
+												<xs:element name="Sex"/>
+												<xs:element name="IndividualId"/>
+												<xs:element name="AnimalRecognizable"/>
+												<xs:element name="IndividualAnimalNotes"/>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="ResearcherIdentifications" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence maxOccurs="1">
+										<xs:element name="Identification" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:sequence>
+												<xs:element name="IUCNId"/>
+												<xs:element name="TSNId"/>
+												<xs:element name="SpeciesScientificName"/>
+												<xs:element name="SpeciesCommonName"/>
+												<xs:element name="Count"/>
+												<xs:element name="Age"/>
+												<xs:element name="Sex"/>
+												<xs:element name="IndividualId"/>
+												<xs:element name="AnimalRecognizable"/>
+												<xs:element name="IndividualAnimalNotes"/>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Image" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="ImageId"/>
+										<xs:element name="ImageFileName"/>
+										<xs:element name="ImageDateTime"/>
+										<xs:element name="ImageOrder">
+											<xs:simpleType>
+												<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="ImageInterestRanking">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value="None"/>
+												<xs:enumeration value="Favorite"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="digitalOrigin">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="born digital"/>
+												<xs:enumeration value="reformatted digital"/>
+												<xs:enumeration value="digitized microfilm"/>
+												<xs:enumeration value="digitized other analog"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="PhotoType">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="unidentifiable"/>
+												<xs:enumeration value="staff"/>
+												<xs:enumeration value="unknown"/>
+												<xs:enumeration value="animal"/>
+												<xs:enumeration value="blank"/>
+												<xs:enumeration value="set up"/>
+												<xs:enumeration value="end"/>
+												<xs:enumeration value="start"/>
+												<xs:enumeration value="time lapse"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="PhotoTypeIdentifications">
+											<xs:complexType>
+												<xs:sequence>
+												<xs:element name="PhotoTypeIdentifiedBy"
+												maxOccurs="unbounded"/>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="RestrictionsonAccess"/>
+										<xs:element name="EmbargoPeriodEndDate"/>
+										<xs:element name="ImageUseRestrictions"/>
+										<xs:element name="ImageIdentifications" maxOccurs="1">
+											<xs:complexType>
+												<xs:sequence maxOccurs="1">
+												<xs:element name="Identification"
+												maxOccurs="unbounded">
+												<xs:complexType>
+												<xs:sequence>
+												<xs:element name="IUCNId"/>
+												<xs:element name="TSNId"/>
+												<xs:element name="SpeciesScientificName"/>
+												<xs:element name="SpeciesCommonName"/>
+												<xs:element name="Count"/>
+												<xs:element name="Age"/>
+												<xs:element name="Sex"/>
+												<xs:element name="IndividualId"/>
+												<xs:element name="AnimalRecognizable"/>
+												<xs:element name="IndividualAnimalNotes"/>
+												</xs:sequence>
+												</xs:complexType>
+												</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

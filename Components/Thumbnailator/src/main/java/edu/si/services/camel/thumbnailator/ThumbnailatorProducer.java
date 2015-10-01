@@ -53,16 +53,14 @@ public class ThumbnailatorProducer extends DefaultProducer
     @Override
     public void process(Exchange exchange) throws Exception
     {
-
         InputStream body = exchange.getIn().getBody(InputStream.class);
-
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
         try
         {
             Thumbnails.Builder<? extends InputStream> tb = Thumbnails.of(body);
 
-            //If size isn't set, there isn't anything to do.
+            // If size isn't set, there isn't anything to do?
             if (endpoint.isSizeSet())
             {
                 tb.size(endpoint.getWidth(), endpoint.getHeight()).keepAspectRatio(endpoint.isKeepRatio());
@@ -91,13 +89,12 @@ public class ThumbnailatorProducer extends DefaultProducer
                 fileName = "!";
             }//end else
 
-            log.warn(String.format("Error creating thumbnail%s", fileName), exception);
+            //log.warn(String.format("Error creating thumbnail%s", fileName), exception);
 
             throw exception;
         }//end catch
         finally
         {
-
             try
             {
                 body.close();

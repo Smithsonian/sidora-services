@@ -38,11 +38,11 @@
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
 
     <bean id="noRootObject" class="java.lang.IllegalArgumentException">
-        <argument value="CameraTrapIngest: Root object does not exist."/>
+        <argument value="WCSIngest: Root object does not exist."/>
     </bean>
 
     <bean id="noImageSequence" class="java.lang.IllegalArgumentException">
-        <argument value="CameraTrapIngest: Image sequence does not exist."/>
+        <argument value="WCSIngest: Image sequence does not exist."/>
     </bean>
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
@@ -50,9 +50,9 @@
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
 
     
-    <!-- errorHandlerRef="ctingestErrorHandler" -->
+    <!-- errorHandlerRef="wcsingestErrorHandler" -->
 
-    <camelContext id="CTIngestCamelContext"
+    <camelContext id="WCSIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result" 
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
@@ -66,7 +66,7 @@
                              location="blueprint:system.placeholder,file:${karaf.home}/etc/system.properties"/>
 
         <!--
-        <errorHandler id="ctingestErrorHandler" type="DefaultErrorHandler">
+        <errorHandler id="wcsingestErrorHandler" type="DefaultErrorHandler">
             <redeliveryPolicy maximumRedeliveries="20"
                               retryAttemptedLogLevel="WARN"
                               backOffMultiplier="2"
@@ -106,11 +106,11 @@
         </onException>
         -->
 
-        <route id="CameraTrapStartProcessing">
-            <from uri="file:Process?delay=9000&amp;moveFailed=Error_CamelTrap&amp;delete=true&amp;maxMessagesPerPoll=1"/>
-            <log message="${id} CameraTrapIngest: Starting Camera Trap processing ..."
+        <route id="WCSStartProcessing">
+            <from uri="file:ProcessWCS?delay=9000&amp;moveFailed=Error-WCS&amp;delete=true&amp;maxMessagesPerPoll=1"/>
+            <log message="${id} WCSIngest: Starting WCS processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <!-- Needed for the Velocity tools. -->
             <setHeader headerName="esc">
@@ -122,10 +122,10 @@
                 <constant>6000</constant>
             </delay>
 
-            <log message="${id} CameraTrapIngest: Starting Extraction"/>
-            <to uri="extractor:extract?location=CameraTrapData"/>
-            <log message="${id} CameraTrapIngest: Finished Extraction"/>
-            <log message="${id} CameraTrapIngest: AbsolutePath - ${header.CamelFileAbsolutePath}"
+            <log message="${id} WCSIngest: Starting Extraction"/>
+            <to uri="extractor:extract?location=WCSData"/>
+            <log message="${id} WCSIngest: Finished Extraction"/>
+            <log message="${id} WCSIngest: AbsolutePath - ${header.CamelFileAbsolutePath}"
                  loggingLevel="WARN"/>
 
             <threads poolSize="3" maxPoolSize="5">
@@ -134,13 +134,13 @@
                     <simple>deployment_manifest.xml</simple>
                 </transform>
                 <to uri="reader:file?type=text"/>
-                <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
+                <to uri="validator:file:Input/schemas/WCSDeploymentManifest.xsd"/>
 
                 <!-- Add Schematron validation. -->
                 <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
                 <!--
                 <to uri="schematron:///opt/sidora/servicemix/Input/schemas/DeploymentManifest2014.sch"/>
-                <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
+                <log message="${id} WCSIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"/>
                 -->
 
@@ -151,30 +151,29 @@
                     </simple>
                 </setHeader>
                 <to uri="direct:validatePackage"/>
-
                 <!-- Process the deployment -->
                 <to uri="direct:processPackage"/>
 
             </threads>
 
-            <log message="${id} CameraTrapIngest: Finished Camera Trap processing!"
+            <log message="${id} WCSIngest: Finished WCS processing!"
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapValidatePackage">
+        <route id="WCSValidatePackage">
             <from uri="direct:validatePackage"/>
-            <log message="${id} CameraTrapIngest: Starting Package validation ..."
+            <log message="${id} WCSIngest: Starting Package validation ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <split>
                 <xpath headerName="ManifestXML">
                     //ImageFileName/text()
                 </xpath>
-                <log message="${id} CameraTrapIngest: Split Resource - ${body}"
+                <log message="${id} WCSIngest: Split Resource - ${body}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.ctingest"/>
+                     logName="edu.si.wcsingest"/>
                 <setHeader headerName="ImageFileName">
                     <simple resultType="java.lang.String">
                         ${body}
@@ -185,41 +184,41 @@
                         //ImageFileName[text()=$ImageFileName]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                     </xpath>
                 </setHeader>
-                <log message="${id} CameraTrapIngest: ImageSequenceID - ${header.ImageSequenceID}"
+                <log message="${id} WCSIngest: ImageSequenceID - ${header.ImageSequenceID}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.ctingest"/>
+                     logName="edu.si.wcsingest"/>
                 <!-- This throws a java.io.FileNotFoundException if the file does not exist. -->
                 <to uri="reader:file"/>
-                <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                <log message="${id} WCSIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.ctingest"/>
+                     logName="edu.si.wcsingest"/>
                 <!-- We should check the image count to see if it exactly matches the image file count. -->
             </split>
 
-            <log message="${id} CameraTrapIngest: Finished Package validation."
+            <log message="${id} WCSIngest: Finished Package validation."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapProcessPackage">
+        <route id="WCSProcessPackage">
             <from uri="direct:processPackage"/>
-            <log message="${id} CameraTrapIngest: Starting Package processing..."
+            <log message="${id} WCSIngest: Starting Package processing..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <to uri="direct:processParents"/>
             <to uri="direct:processSite"/>
 
-            <log message="${id} CameraTrapIngest: Finished Package processing."
+            <log message="${id} WCSIngest: Finished Package processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapProcessSite">
+        <route id="WCSProcessSite">
             <from uri="direct:processSite"/>
-            <log message="${id} CameraTrapIngest: Starting Site processing... "
+            <log message="${id} WCSIngest: Starting Site processing... "
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <!-- Stash the parent PID which could be a Plot or a Sub-project. -->
             <setHeader headerName="ParentPID">
@@ -233,13 +232,13 @@
                 </xpath>
             </setHeader>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-            <log message="${id} CameraTrapIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
+            <log message="${id} WCSIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-            <log message="${id} CameraTrapIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
+            <log message="${id} WCSIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -251,45 +250,43 @@
                 <to uri="direct:processResources"/>
             </multicast>
 
-            <log message="${id} CameraTrapIngest: Finished Site processing."
+            <log message="${id} WCSIngest: Finished Site processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapAddManifestDataStream">
+        <route id="WCSAddManifestDataStream">
             <from uri="direct:addManifestDataStream"/>
-            <log message="${id} CameraTrapIngest: Starting Manifest processing ..."
+            <log message="${id} WCSIngest: Starting Manifest processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <to uri="fedora:addDatastream?name=MANIFEST&amp;type=text/xml&amp;group=M&amp;dsLabel=MANIFEST"/>
 
-            <log message="${id} CameraTrapIngest: Finished Manifest processing."
+            <log message="${id} WCSIngest: Finished Manifest processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapAddFGDCDataStream">
+        <route id="WCSAddFGDCDataStream">
             <from uri="direct:addFGDCDataStream"/>
-            <log message="${id} CameraTrapIngest: Starting FGDC processing ..."
+            <log message="${id} WCSIngest: Starting FGDC processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
-            <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
-            <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
-            <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
+            <to uri="xslt:file:Input/xslt/ManifestDeployment.xsl?saxon=true"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
 
-            <log message="${id} CameraTrapIngest: Finished FGDC processing."
+            <log message="${id} WCSIngest: Finished FGDC processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapProcessResources">
+        <route id="WCSProcessResources">
             <from uri="direct:processResources"/>
-            <log message="${id} CameraTrapIngest: Starting resource processing ..."
+            <log message="${id} WCSIngest: Starting resource processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <setHeader headerName="SitePID">
                 <simple>
@@ -301,35 +298,44 @@
                     count(//ImageFileName)
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
+            <log message="${id} WCSIngest: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
                 <xpath headerName="ManifestXML">
                     //ImageFileName/text()
                 </xpath>
-                <log message="${id} CameraTrapIngest: Split Resource - ${body}"
+                <log message="${id} WCSIngest: Split Resource - ${body}"
                      loggingLevel="INFO"
-                     logName="edu.si.ctingest"/>
+                     logName="edu.si.wcsingest"/>
                 <setBody>
                     <simple resultType="java.lang.String">
                         ${body}
                     </simple>
                 </setBody>
                 <to uri="direct:addImageResource"/>
-                <log message="${id} CameraTrapIngest: Created Image Resource - ${body}."
+                <log message="${id} WCSIngest: Created Image Resource - ${body}."
                      loggingLevel="DEBUG"
-                     logName="edu.si.ctingest"/>
-                <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                     logName="edu.si.wcsingest"/>
+                <log message="${id} WCSIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
-                     logName="edu.si.ctingest"/>
+                     logName="edu.si.wcsingest"/>
             </split>
 
-            <!-- There is only one observation resource of each kine and all the observations are aggregated. -->
-            <to uri="direct:addResearcherResource"/>
-            <to uri="direct:addVolunteerResource"/>
+            <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
+            <!-- Researcher is required for WCS. -->
+            <to uri="direct:addResearcherObservationResource"/>
+            <!-- Volunteer is optional for WCS. -->
+            <filter>
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    boolean(//VolunteerIdentifications/Identification/IUCNId/text()[1])
+                </xpath>
+                <to uri="direct:addVolunteerObservationResource"/>
+            </filter>
+            <!-- Image is required for WCS. -->
+            <to uri="direct:addImageResource"/>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
@@ -339,49 +345,42 @@
                 </simple>
             </recipientList>
 
-            <log message="${id} CameraTrapIngest: Finished resource processing."
+            <log message="${id} WCSIngest: Finished resource processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapAddImageResource" trace="true">
+        <route id="WCSAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
-            <log message="${id} CameraTrapIngest: Started Image processing ..."
+            <log message="${id} WCSIngest: Started Image processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
+            <!--
             <setHeader headerName="ImageID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
                 </xpath>
             </setHeader>
+            -->
+            <!-- Spelled this way for the MODS XSLT parameter. -->
+            <setHeader headerName="imageid">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
+                </xpath>
+            </setHeader>
+
             <!-- Image Sequence ID used in MODS datastream. -->
+            <!--
             <setHeader headerName="ImageSequenceID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                 </xpath>
             </setHeader>
-            <!--
-            <setHeader headerName="ImageSequenceIndex">
-                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
-                    count(//Image/ImageId[.=$ImageID]/../preceding-sibling::Image)
-                </xpath>
-            </setHeader>
-            -->
-            <!--
-            <setHeader headerName="ImageSequenceIndex">
-                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
-                    substring-after($ImageID,concat($ImageSequenceID,'i'))
-                </xpath>
-            </setHeader>
-            -->
-            <!--
-                This is a fix to deal with a change made to the backlog CT ImageID format.  It will fail if there are
-                two or more 'i' characters in the ImageID.
             -->
             <setHeader headerName="ImageSequenceIndex">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
-                    substring-after($ImageID,'i')
+                    //ImageFileName[text()=$in:body]/parent::Image/ImageOrder/text()
                 </xpath>
             </setHeader>
             <choice>
@@ -390,33 +389,35 @@
                         ${header.ImageSequenceIndex} == ''
                     </simple>
                     <!-- Stop processing this deployment. -->
-                    <log message="${id} CameraTrapIngest: Image sequence does not exist."
+                    <log message="${id} WCSIngest: Image sequence does not exist."
                          loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <throwException ref="noImageSequence"/>
                 </when>
             </choice>
 
+            <!--
             <setHeader headerName="ImageSequenceCount">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
                     count(//Image[../ImageSequenceId=$ImageSequenceID])
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
+            <log message="${id} WCSIngest: Label - ${body}  ImageID - ${header.imageid}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrapIngest: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
+                 logName="edu.si.wcsingest"/>
+            <log message="${id} WCSIngest: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
+            -->
             <to uri="reader:file"/>
             <recipientList>
                 <simple>
-                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.ImageID}
+                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}
                 </simple>
             </recipientList>
             <recipientList>
                 <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.ImageID}&amp;versionable=false
+                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false
                 </simple>
             </recipientList>
             <!--<multicast>-->
@@ -438,29 +439,29 @@
                     </simple>
                     <log message="${id} Derivatives: Found JPEG."
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
                     <log message="${id} Derivatives: Found non-JPEG Image."
                          loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished Image processing."
+            <log message="${id} WCSIngest: Finished Image processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapAddResearcherResource">
-            <from uri="direct:addResearcherResource"/>
-            <log message="${id} CameraTrapIngest: Starting Researcher's data processing ..."
+        <route id="WCSAddResearcherObservationResource">
+            <from uri="direct:addResearcherObservationResource"/>
+            <log message="${id} WCSIngest: Starting Researcher Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
-            <!-- When there are Researcher observations. -->
+            <!-- For Researcher observations. -->
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -469,14 +470,17 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Researcher%20Observations"/>
             <log message="Research Observation Resource PID - ${header.CamelFedoraPid}"
                     loggingLevel="DEBUG"
-                    logName="edu.si.ctingest"/>
+                    logName="edu.si.wcsingest"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
-            <to uri="xslt:file:Input/xslt/researcher.xsl"/>
+                 logName="edu.si.wcsingest"/>
+            <to uri="xslt:file:Input/xslt/ResearcherObservation.xsl"/>
+            <log message="Researcher Observations - \n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
             <transform>
                 <xpath>
                     //researcher/text()
@@ -491,18 +495,30 @@
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
-            <log message="${id} CameraTrapIngest: Finished Researcher's data processing."
+            <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
+            <setBody>
+                <simple>
+                    ${header.ManifestXML}
+                </simple>
+            </setBody>
+            <to uri="xslt:file:Input/xslt/ManifestResearcherObservation.xsl?saxon=true"/>
+            <log message="${id} WCSIngest: FGDC XML -\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+            <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
+
+            <log message="${id} WCSIngest: Finished Researcher Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapAddVolunteerResource">
-            <from uri="direct:addVolunteerResource"/>
-            <log message="${id} CameraTrapIngest: Starting Volunteer's data processing ..."
+        <route id="WCSAddVolunteerObservationResource">
+            <from uri="direct:addVolunteerObservationResource"/>
+            <log message="${id} WCSIngest: Starting Volunteer Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
-            <!-- When there are Volunteer observations. -->
+            <!-- For Volunteer observations. -->
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -511,22 +527,25 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Volunteer%20Observations"/>
             <log message="Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
+            <to uri="xslt:file:Input/xslt/VolunteerObservation.xsl"/>
+            <log message="Volunteer Observations - \n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
             <transform>
                 <xpath>
-                    //researcher/text()
+                    //volunteer/text()
                 </xpath>
             </transform>
             <recipientList>
@@ -538,16 +557,85 @@
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
-            <log message="${id} CameraTrapIngest: Finished Volunteer's data processing."
+            <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
+            <setBody>
+                <simple>
+                    ${header.ManifestXML}
+                </simple>
+            </setBody>
+            <to uri="xslt:file:Input/xslt/ManifestVolunteerObservation.xsl?saxon=true"/>
+            <log message="${id} WCSIngest: FGDC XML -\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+            <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
+
+            <log message="${id} WCSIngest: Finished Volunteer Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapAddFITSDataStream">
-            <from uri="direct:addFITSDataStream"/>
-            <log message="${id} CameraTrapIngest: Started processing FITS ..."
+        <route id="WCSAddImageObservationResource">
+            <from uri="direct:addImageObservationResource"/>
+            <log message="${id} WCSIngest: Starting Image Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
+
+            <!-- For Image observations. -->
+            <setBody>
+                <simple>
+                    ${header.ManifestXML}
+                </simple>
+            </setBody>
+            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Image%20Observations"/>
+            <log message="Image Observation Resource PID - ${header.CamelFedoraPid}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+            <setHeader headerName="PIDAggregation">
+                <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
+            </setHeader>
+            <log message="Aggregation: ${header.PIDAggregation}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+            <to uri="xslt:file:Input/xslt/ImageObservation.xsl"/>
+            <log message="Image Observations - \n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+            <transform>
+                <xpath>
+                    //image/text()
+                </xpath>
+            </transform>
+            <recipientList>
+                <simple>
+                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"
+                </simple>
+            </recipientList>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+
+            <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
+            <setBody>
+                <simple>
+                    ${header.ManifestXML}
+                </simple>
+            </setBody>
+            <to uri="xslt:file:Input/xslt/ManifestImageObservation.xsl?saxon=true"/>
+            <log message="${id} WCSIngest: FGDC XML -\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+            <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
+
+            <log message="${id} WCSIngest: Finished Image Observation data processing."
+                 loggingLevel="INFO"
+                 logName="edu.si.wcsingest"/>
+        </route>
+
+        <route id="WCSAddFITSDataStream">
+            <from uri="direct:addFITSDataStream"/>
+            <log message="${id} WCSIngest: Started processing FITS ..."
+                 loggingLevel="INFO"
+                 logName="edu.si.wcsingest"/>
 
             <recipientList>
                 <simple>
@@ -562,63 +650,65 @@
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
-                        <log message="${id} CameraTrapIngest: FITS MIME: ${header.FITSmimeType}"
+                        <log message="${id} WCSIngest: FITS MIME: ${header.FITSmimeType}"
                              loggingLevel="DEBUG"
-                             logName="edu.si.ctingest"/>
+                             logName="edu.si.wcsingest"/>
                     </setHeader>
-                    <log message="${id} CameraTrapIngest: Exec FITS. BODY: ${body}"
+                    <log message="${id} WCSIngest: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
-                    <log message="${id} CameraTrapIngest: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
+                    <log message="${id} WCSIngest: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
                          loggingLevel="ERROR"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing FITS."
+            <log message="${id} WCSIngest: Finished processing FITS."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapAddMODSDataStream">
+        <route id="WCSAddMODSDataStream">
             <from uri="direct:addMODSDataStream"/>
-            <log message="${id} CameraTrapIngest: Started processing MODS ..."
+            <log message="${id} WCSIngest: Started processing MODS ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
+                 logName="edu.si.wcsingest"/>
 
             <!-- Get the FITS XML and use XPATH to get the created date from it. -->
+            <!--
             <setHeader headerName="FITSCreatedDate">
                 <xpath logNamespaces="false" resultType="java.lang.String">
                     //fits:fileinfo/fits:created[@toolname="Exiftool"]
                 </xpath>
             </setHeader>
-            
-            <!--
             <log message="MODS FITS Created Date - ${header.FITSCreatedDate}"/>
             -->
 
             <!-- TODO - The Image ID has .JPG appended and we may want to make this consistent. -->
-            <to uri="velocity:file:Input/templates/CTImageResourceMODSTemplate.vsl"/>
+            <!-- Add a MODS datastream for concept metadata. -->
+            <setBody>
+                <simple>
+                    ${header.ManifestXML}
+                </simple>
+            </setBody>
+            <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
+            <log message="${id} WCSIngest: MODS XML -\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
-            <log message="${id} CameraTrapIngest: Finished processing MODS."
+            <log message="${id} WCSIngest: Finished processing MODS."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapCreateThumbnailImage">
+        <route id="WCSCreateThumbnailImage">
             <from uri="direct:createThumbnail"/>
-            <log message="${id} CameraTrapIngest: Started creating thumbnail ..."
+            <log message="${id} WCSIngest: Started creating thumbnail ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <!--
             <onException>
@@ -631,7 +721,6 @@
                 </continued>
                 <stop/>
             </onException>
-
             -->
 
             <doTry>
@@ -639,39 +728,39 @@
                 <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
                 <doCatch>
                     <exception>javax.imageio.IIOException</exception>
-                    <log message="${id} CameraTrapIngest: Cannot create thumbnail image corrupted."
+                    <log message="${id} WCSIngest: Cannot create thumbnail image corrupted."
                          loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                 </doCatch>
             </doTry>
 
-            <log message="${id} CameraTrapIngest: Finished creating thumbnail."
+            <log message="${id} WCSIngest: Finished creating thumbnail."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapCreateArchivalImage">
+        <route id="WCSCreateArchivalImage">
             <from uri="direct:createArchivalImage"/>
-            <log message="${id} CameraTrapIngest: Started creating archival image ..."
+            <log message="${id} WCSIngest: Started creating archival image ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <!--
                 NOTE: This is planned to be a JPEG 2000 but we are not doing it yet.
             <to uri="thumbnailator:image?quality=80%&amp;size=(2048,1536)"/>
-            <to uri="file://CameraTrapOutput/resample"/>
+            <to uri="file://WCSOutput/resample"/>
             -->
 
-            <log message="${id} CameraTrapIngest: Finished creating archival image."
+            <log message="${id} WCSIngest: Finished creating archival image."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapProcessParents">
+        <route id="WCSProcessParents">
             <from uri="direct:processParents"/>
-            <log message="${id} CameraTrapIngest: Started processing parents ..."
+            <log message="${id} WCSIngest: Started processing parents ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <setBody>
                 <simple>
@@ -685,9 +774,9 @@
                     <simple>
                         ${body} == 'true'
                     </simple>
-                    <log message="${id} CameraTrapIngest: Root object exists."
+                    <log message="${id} WCSIngest: Root object exists."
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             {{si.ct.root}}
@@ -695,7 +784,13 @@
                     </setHeader>
                     <!-- Add the parents if needed. -->
                     <to uri="direct:processProject"/>
-                    <to uri="direct:processSubproject"/>
+                    <!-- Subproject is optional for WCS. -->
+                    <filter>
+                        <xpath resultType="java.lang.String" headerName="ManifestXML">
+                            boolean(//SubProjectName/text()[1])
+                        </xpath>
+                        <to uri="direct:processSubproject"/>
+                    </filter>
                     <!-- Plot is optional. -->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
@@ -706,26 +801,26 @@
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
-                    <log message="${id} CameraTrapIngest: Root object does not exist."
+                    <log message="${id} WCSIngest: Root object does not exist."
                          loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <throwException ref="noRootObject"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing parents."
+            <log message="${id} WCSIngest: Finished processing parents."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapFindObject">
+        <route id="WCSFindObject">
             <from uri="direct:findObject"/>
-            <log message="${id} CameraTrapIngest: Started find object ..."
+            <log message="${id} WCSIngest: Started find object ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-            <log message="${id} CameraTrapIngest: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
+                 logName="edu.si.wcsingest"/>
+            <log message="${id} WCSIngest: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <!--
             <transform>
@@ -757,22 +852,22 @@
                     }
                 </simple>
             </setBody>
-            <log message="${id} CameraTrapIngest: Project Parent - ${body}"
+            <log message="${id} WCSIngest: Project Parent - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
-            <log message="${id} CameraTrapIngest: Query Result - ${body}"
+            <log message="${id} WCSIngest: Query Result - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <!-- Count the results. If greater than one warn about duplicate parents. -->
             <choice>
                 <when>
                     <xpath>
                         count(/ri:sparql/ri:results/ri:result) > 1
                     </xpath>
-                    <log message="${id} CameraTrapIngest: Warning - Duplicate parents."
+                    <log message="${id} WCSIngest: Warning - Duplicate parents."
                          loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                 </when>
             </choice>
             <setBody>
@@ -781,16 +876,16 @@
                 </xpath>
             </setBody>
 
-            <log message="${id} CameraTrapIngest: Finished find object."
+            <log message="${id} WCSIngest: Finished find object."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapFindObjectByPIDPredicate">
+        <route id="WCSFindObjectByPIDPredicate">
             <from uri="direct:findObjectByPIDPredicate"/>
-            <log message="${id} CameraTrapIngest: Started find object by PID ..."
+            <log message="${id} WCSIngest: Started find object by PID ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
             <!-- Return true in the body if the object exists for the PID, false if not. -->
             <setBody>
@@ -801,13 +896,13 @@
                     }
                 </simple>
             </setBody>
-            <log message="${id} CameraTrapIngest: Find Query - ${body}"
+            <log message="${id} WCSIngest: Find Query - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
-            <log message="${id} CameraTrapIngest: Find Query Result - ${body}"
+            <log message="${id} WCSIngest: Find Query Result - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <setBody>
                 <xpath logNamespaces="false" resultType="java.lang.String">
                     /ri:sparql/ri:results/ri:result[1]/ri:k0/text()
@@ -815,24 +910,18 @@
             </setBody>
             <log message="Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
 
-            <log message="${id} CameraTrapIngest: Finished find object by PID."
+            <log message="${id} WCSIngest: Finished find object by PID."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
-        <route id="CameraTrapProcessPlot">
+        <route id="WCSProcessPlot">
             <from uri="direct:processPlot"/>
-            <log message="${id} CameraTrapIngest: Started processing plot ..."
+            <log message="${id} WCSIngest: Started processing plot ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
+                 logName="edu.si.wcsingest"/>
 
             <!-- Look for the plot (its optional). -->
             <setBody>
@@ -845,18 +934,18 @@
                     ${body}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id} WCSIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrapIngest: Plot does not exist"
+                    <log message="${id} WCSIngest: Plot does not exist"
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <!-- Stash the sub-project PID. -->
                     <setHeader headerName="ParentPID">
                         <simple>
@@ -870,14 +959,20 @@
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT sub-project to the child CT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <to uri="velocity:file:Input/templates/CTPlotFGDC-CTPlotTemplate.vsl"/>
+                    <!-- Add an EAC-CPF datastream for concept metadata. -->
+                    <setBody>
+                        <simple>
+                            ${header.ManifestXML}
+                        </simple>
+                    </setBody>
+                    <to uri="xslt:file:Input/xslt/ManifestPlot.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-CTPlot%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <!-- Return the existing plot as the current object. -->
-                    <log message="${id} CameraTrapIngest: Plot already exists - ${body}."
+                    <log message="${id} WCSIngest: Plot already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -886,22 +981,16 @@
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing plot."
+            <log message="${id} WCSIngest: Finished processing plot."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapProcessSubproject">
+        <route id="WCSProcessSubproject">
             <from uri="direct:processSubproject"/>
-            <log message="${id} CameraTrapIngest: Started processing subproject ..."
+            <log message="${id} WCSIngest: Started processing subproject ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
+                 logName="edu.si.wcsingest"/>
 
             <!-- Look for the sub-project. -->
             <setBody>
@@ -914,18 +1003,18 @@
                     ${body}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id} WCSIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrapIngest: Sub-project does not exist"
+                    <log message="${id} WCSIngest: Sub-project does not exist"
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <!-- Stash the Project PID. -->
                     <setHeader headerName="ParentPID">
                         <simple>
@@ -939,14 +1028,20 @@
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT project to the child CT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <to uri="velocity:file:Input/templates/CTPlotFGDC-ResearchTemplate.vsl"/>
+                    <!-- Add an EAC-CPF datastream for concept metadata. -->
+                    <setBody>
+                        <simple>
+                            ${header.ManifestXML}
+                        </simple>
+                    </setBody>
+                    <to uri="xslt:file:Input/xslt/ManifestSubproject.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-Research%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <!-- Return the existing sub-project as the current object. -->
-                    <log message="${id} CameraTrapIngest: Sub-project already exists - ${body}."
+                    <log message="${id} WCSIngest: Sub-project already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -955,22 +1050,16 @@
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing subproject."
+            <log message="${id} WCSIngest: Finished processing subproject."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
         
-        <route id="CameraTrapProcessProject">
+        <route id="WCSProcessProject">
             <from uri="direct:processProject"/>
-            <log message="${id} CameraTrapIngest: Started processing project ..."
+            <log message="${id} WCSIngest: Started processing project ..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
+                 logName="edu.si.wcsingest"/>
 
             <!-- Look for the project. -->
             <setBody>
@@ -983,18 +1072,18 @@
                     ${body}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
+            <log message="${id} WCSIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
             <to uri="direct:findObject"/>
             <choice>
                 <when>
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrapIngest: Project does not exist."
+                    <log message="${id} WCSIngest: Project does not exist."
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <!-- Create CT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project. -->
@@ -1002,14 +1091,20 @@
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT root object to the child CT project. -->
                     <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <to uri="velocity:file:Input/templates/CTProjectEAC-CPFTemplate.vsl"/>
+                    <!-- Add an EAC-CPF datastream for concept metadata. -->
+                    <setBody>
+                        <simple>
+                            ${header.ManifestXML}
+                        </simple>
+                    </setBody>
+                    <to uri="xslt:file:Input/xslt/ManifestProject.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <!-- Return the existing project as the current object. -->
-                    <log message="${id} CameraTrapIngest: Project already exists - ${body}."
+                    <log message="${id} WCSIngest: Project already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.ctingest"/>
+                         logName="edu.si.wcsingest"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1018,9 +1113,9 @@
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing project."
+            <log message="${id} WCSIngest: Finished processing project."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
+                 logName="edu.si.wcsingest"/>
         </route>
 
     </camelContext>
