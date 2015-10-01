@@ -6,7 +6,7 @@
 
     <parent>
         <artifactId>tabular-metadata-cxf-services</artifactId>
-        <groupId>com.jbirkhimer.sidora</groupId>
+        <groupId>edu.si.sidora</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 

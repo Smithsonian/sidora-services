@@ -26,7 +26,7 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package com.jbirkhimer.sidora.tabularmetadata.webapp.integration;
+package edu.si.sidora.tabularmetadata.webapp.integration;
 
 import com.google.common.io.Resources;
 import org.apache.cxf.jaxrs.client.WebClient;

@@ -26,26 +26,31 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package com.jbirkhimer.sidora.tabularmetadata.webapp;
+package edu.si.sidora.tabularmetadata.smx.spring;
 
-import com.asoroka.sidora.excel2tabular.ExcelToTabular;
-import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
-import edu.si.codebook.Codebook;
-import org.apache.cxf.interceptor.Fault;
+import static edu.si.codebook.Codebook.codebook;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 
-import static edu.si.codebook.Codebook.codebook;
+import com.asoroka.sidora.excel2tabular.ExcelToTabular;
+import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
+
+import edu.si.codebook.Codebook;
+import org.apache.cxf.interceptor.Fault;
 
 /**
- * Created by Jason Birkhimer on 7/14/2015.
+ *
+ * @author A. Soroka
+ * @author Jason Birkhimer
+ *
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {
@@ -55,6 +60,11 @@ public class TabularMetadataGeneratorEndpoint {
 
     @Inject
     private TabularMetadataGenerator generator;
+
+    public TabularMetadataGeneratorEndpoint() {
+        generator = new TabularMetadataGenerator();
+        translator = new ExcelToTabular();
+    }
 
     @GET
     @Path("/")

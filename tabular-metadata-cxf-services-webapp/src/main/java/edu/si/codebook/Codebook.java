@@ -53,6 +53,8 @@ import static javax.xml.bind.annotation.XmlAccessType.NONE;
  * Constructs an SI-schema XML serialization of a precis of metadata results.
  * 
  * @author A. Soroka
+ * @author Jason Birkhimer
+ *
  */
 @XmlAccessorType(NONE)
 @XmlRootElement
@@ -67,7 +69,7 @@ public class Codebook
     public String title, description, creator, date, identifier;
 
     @XmlElementWrapper
-    @XmlElement(name = "variable", namespace = "urn:si.edu/codebook#")
+    @XmlElement(name = "variable"/*, namespace = "urn:si.edu/codebook#"*/)
     public Sequence<VariableType> getVariables() {
         return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
                 metadata.minMaxes(), metadata.enumeratedValues()).map(this);

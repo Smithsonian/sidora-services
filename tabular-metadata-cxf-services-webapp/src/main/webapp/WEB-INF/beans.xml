@@ -45,11 +45,10 @@
     
     <jaxrs:server address="/">
         <jaxrs:serviceBeans>
-            <bean id="jaxrsResource" class="com.jbirkhimer.sidora.tabularmetadata.webapp.TabularMetadataGeneratorEndpoint"/>
+            <bean id="jaxrsResource" class="edu.si.sidora.tabularmetadata.webapp.TabularMetadataGeneratorEndpoint"/>
         </jaxrs:serviceBeans>
-
         <jaxrs:providers>
-            <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+            <!--<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
                 <property name="marshallerProperties">
                     <util:map id="marshallerPropertiesMap">
                         <entry key="jaxb.formatted.output">
@@ -57,7 +56,34 @@
                         </entry>
                     </util:map>
                 </property>
-            </bean>
+            </bean>-->
+
+            <!--<bean id="xsltProvider" class="org.apache.cxf.jaxrs.provider.XSLTJaxbProvider">
+                &lt;!&ndash;<property name="outTemplate" value="classpath:/WEB-INF/xslt/codebook-stylesheet.xsl"/>&ndash;&gt;
+                <property name="supportJaxbOnly" value="true"/>
+            </bean>-->
+
+            <ref bean="xsltProviders"/>
+
         </jaxrs:providers>
     </jaxrs:server>
+
+    <util:list id="xsltProviders">
+        <ref bean="xsltProvider"/>
+    </util:list>
+    <util:map id="outTemplates">
+        <entry key="application/xml" value="classpath:/WEB-INF/xslt/codebook-stylesheet.xsl"/>
+        <entry key="text/xml" value="classpath:/WEB-INF/xslt/codebook-stylesheet.xsl"/>
+    </util:map>
+    <util:list id="outClassNames">
+        <value>edu.si.codebook.Codebook</value>
+    </util:list>
+    <bean id="xsltProvider" class="org.apache.cxf.jaxrs.provider.XSLTJaxbProvider">
+        <!--<property name="resolver" ref="uriResolver"/>-->
+        <property name="outMediaTemplates" ref="outTemplates"/>
+        <property name="outClassNames" ref="outClassNames"/>
+    </bean>
+    <!--<bean id="uriResolver" class="org.apache.cxf.systest.jaxrs.URIResolverImpl"/>-->
+
+
 </beans>

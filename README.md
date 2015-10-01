@@ -74,9 +74,13 @@ Find the `Path to local Maven repository...` section and add the following line
 `${user.home}/.m2/repository` should be the absolute path to your local Maven
 repository for example `/home/user_home/.m2/repository`
 
+**NOTE:**
+The user which Servicemix is running under must also have permissions set to access
+the repository defined by the `org.ops4j.pax.url.mvn.localRepository` variable. 
+
 ###Add the Tabular Data feature repository to ServiceMix:
 
-`karaf@root> features:addurl mvn:com.jbirkhimer.sidora/tabular-metadata-cxf-services/1.0-SNAPSHOT/xml/features`
+`karaf@root> features:addurl mvn:edu.si.sidora/tabular-metadata-cxf-services/1.0-SNAPSHOT/xml/features`
 
 ###Check that the feature has been added to ServiceMix:
 

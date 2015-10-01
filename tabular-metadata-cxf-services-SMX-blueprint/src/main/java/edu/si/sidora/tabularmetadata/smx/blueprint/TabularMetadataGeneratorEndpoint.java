@@ -26,7 +26,7 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package com.jbirkhimer.sidora.tabularmetadata.smx.blueprint;
+package edu.si.sidora.tabularmetadata.smx.blueprint;
 
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
 import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
@@ -45,7 +45,10 @@ import java.net.URL;
 import static edu.si.codebook.Codebook.codebook;
 
 /**
- * Created by Jason Birkhimer on 7/14/2015.
+ *
+ * @author A. Soroka
+ * @author Jason Birkhimer
+ *
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {

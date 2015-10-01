@@ -26,28 +26,30 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package com.jbirkhimer.sidora.tabularmetadata.smx.spring;
+package edu.si.sidora.tabularmetadata.webapp;
 
-import static edu.si.codebook.Codebook.codebook;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
+import com.asoroka.sidora.excel2tabular.ExcelToTabular;
+import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
+import edu.si.codebook.Codebook;
+import org.apache.cxf.interceptor.Fault;
+import org.apache.cxf.jaxrs.ext.xml.XSLTTransform;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 
-import com.asoroka.sidora.excel2tabular.ExcelToTabular;
-import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
-
-import edu.si.codebook.Codebook;
-import org.apache.cxf.interceptor.Fault;
+import static edu.si.codebook.Codebook.codebook;
 
 /**
- * Created by Jason Birkhimer on 7/14/2015.
+ *
+ * @author A. Soroka
+ * @author Jason Birkhimer
+ *
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {
@@ -58,14 +60,10 @@ public class TabularMetadataGeneratorEndpoint {
     @Inject
     private TabularMetadataGenerator generator;
 
-    public TabularMetadataGeneratorEndpoint() {
-        generator = new TabularMetadataGenerator();
-        translator = new ExcelToTabular();
-    }
-
     @GET
     @Path("/")
-    @Produces("text/xml")
+    @Produces({"application/xml", "text/xml"})
+    //@XSLTTransform(value= "../../codebook-stylesheet.xsl", mediaTypes = {"text/xml"}/*, type = XSLTTransform.TransformType.BOTH*/)
     public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
         String fileExt = url.getFile().toLowerCase();
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
