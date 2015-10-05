@@ -28,22 +28,20 @@
 
 package edu.si.codebook;
 
-import edu.si.sidora.tabularmetadata.TabularMetadata;
-import edu.si.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Function1;
 import com.googlecode.totallylazy.Quintuple;
 import com.googlecode.totallylazy.Sequence;
 import com.googlecode.totallylazy.numbers.Ratio;
 import edu.si.codebook.Codebook.VariableType;
+import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 import javax.xml.bind.annotation.*;
-import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
 import static com.googlecode.totallylazy.Sequences.zip;
-import static edu.si.codebook.Codebook.CodebookMeta.codebookMeta;
 import static edu.si.codebook.Codebook.VariableType.RangeType.rangeType;
 import static edu.si.codebook.Codebook.VariableType.variableType;
 import static javax.xml.bind.annotation.XmlAccessType.FIELD;
@@ -69,7 +67,7 @@ public class Codebook
     public String title, description, creator, date, identifier;
 
     @XmlElementWrapper
-    @XmlElement(name = "variable"/*, namespace = "urn:si.edu/codebook#"*/)
+    @XmlElement(name = "variable")
     public Sequence<VariableType> getVariables() {
         return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
                 metadata.minMaxes(), metadata.enumeratedValues()).map(this);
@@ -101,7 +99,18 @@ public class Codebook
      * @author A. Soroka
      */
     @XmlAccessorType(NONE)
-    @XmlType(propOrder = {"label", "description", "enumeration", "projection", "datum", "format", "range", "uom", "valueForMissingValue", "dateFormat"})
+    @XmlType(propOrder = {
+            "label",
+            "description",
+            "enumeration",
+            "projection",
+            "datum",
+            "format",
+            "range",
+            "uom",
+            "valueForMissingValue",
+            "dateFormat"
+    })
     public static class VariableType {
 
         private Range<?> range;

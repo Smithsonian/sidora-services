@@ -29,10 +29,9 @@
 package edu.si.sidora.tabularmetadata.webapp;
 
 import com.asoroka.sidora.excel2tabular.ExcelToTabular;
-import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
 import edu.si.codebook.Codebook;
+import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
 import org.apache.cxf.interceptor.Fault;
-import org.apache.cxf.jaxrs.ext.xml.XSLTTransform;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -40,16 +39,15 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
 import static edu.si.codebook.Codebook.codebook;
 
 /**
- *
  * @author A. Soroka
  * @author Jason Birkhimer
- *
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {
@@ -63,18 +61,20 @@ public class TabularMetadataGeneratorEndpoint {
     @GET
     @Path("/")
     @Produces({"application/xml", "text/xml"})
-    //@XSLTTransform(value= "../../codebook-stylesheet.xsl", mediaTypes = {"text/xml"}/*, type = XSLTTransform.TransformType.BOTH*/)
-    public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
-        String fileExt = url.getFile().toLowerCase();
+    public Codebook getCodebook(
+            @QueryParam("url") final URL url,
+            @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
+        URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+        URL urlDecoded = new URL(uri.toASCIIString());
+        String fileExt = urlDecoded.getFile().toLowerCase();
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
             Fault fault = new Fault(new Exception("File Not Valid"));
             fault.setStatusCode(400);
             throw fault;
         } else if (fileExt.endsWith(".xls") || fileExt.endsWith(".xlsx")) {
-            final URL xlsUrl = translator.process(url).get(0).toURI().toURL();
+            URL xlsUrl = translator.process(urlDecoded).get(0).toURI().toURL();
             return codebook(generator.getMetadata(xlsUrl, hasHeaders));
         }
-
-        return codebook(generator.getMetadata(url, hasHeaders));
+        return codebook(generator.getMetadata(urlDecoded, hasHeaders));
     }
 }
