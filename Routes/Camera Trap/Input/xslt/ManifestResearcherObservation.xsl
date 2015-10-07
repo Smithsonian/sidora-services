@@ -36,7 +36,7 @@
                             <origin><xsl:value-of select="OriginatorName"></xsl:value-of></origin>
                         </xsl:for-each>
                         <pubdate></pubdate>
-                        <title><xsl:text>Camera Site:  </xsl:text><xsl:value-of select="CameraSiteName"></xsl:value-of><xsl:text> Researcher Observations</xsl:text></title>
+                        <title><xsl:text>Camera Site:  </xsl:text><xsl:value-of select="CameraSiteName"></xsl:value-of><xsl:text> Researcher Sequence Observations</xsl:text></title>
                         <geoform>tabular digital data</geoform>
                         <othercit></othercit>
                     </citeinfo>
@@ -61,7 +61,7 @@
                 <keywords>
                     <theme>
                         <themekt>None</themekt>
-                        <themekey>Camera Trap Observations</themekey>
+                        <themekey>Researcher Sequence Observations</themekey>
                     </theme>
                 </keywords>
                 <taxonomy>

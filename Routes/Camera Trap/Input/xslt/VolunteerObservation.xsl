@@ -10,7 +10,7 @@
                 <xsl:variable name="var2_cur" select="."/>
                 <xsl:for-each select="ImageSequence">
                     <xsl:variable name="var1_cur" select="."/>
-                    <xsl:for-each select="ResearcherIdentifications/Identification">
+                    <xsl:for-each select="VolunteerIdentifications/Identification">
                         <xsl:text>Volunteer,</xsl:text>
                         <xsl:value-of select="string($var2_cur/CameraDeploymentID)"/><xsl:text>,</xsl:text>
                         <xsl:value-of select="string($var1_cur/ImageSequenceId)"/><xsl:text>,</xsl:text>

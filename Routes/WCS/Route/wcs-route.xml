@@ -335,7 +335,7 @@
                 <to uri="direct:addVolunteerObservationResource"/>
             </filter>
             <!-- Image is required for WCS. -->
-            <to uri="direct:addImageResource"/>
+            <to uri="direct:addImageObservationResource"/>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
@@ -486,6 +486,7 @@
                     //researcher/text()
                 </xpath>
             </transform>
+            <convertBodyTo type="java.lang.String"/>
             <recipientList>
                 <simple>
                     fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"
@@ -548,6 +549,7 @@
                     //volunteer/text()
                 </xpath>
             </transform>
+            <convertBodyTo type="java.lang.String"/>
             <recipientList>
                 <simple>
                     fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"
@@ -605,6 +607,7 @@
                     //image/text()
                 </xpath>
             </transform>
+            <convertBodyTo type="java.lang.String"/>
             <recipientList>
                 <simple>
                     fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"

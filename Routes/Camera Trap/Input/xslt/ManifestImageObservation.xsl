@@ -42,7 +42,7 @@
                     </citeinfo>
                 </citation>
                 <descript>
-                    <abstract>Image Observations</abstract>
+                    <abstract></abstract>
                     <purpose></purpose>
                 </descript>
                 <timeperd>
@@ -61,7 +61,7 @@
                 <keywords>
                     <theme>
                         <themekt>None</themekt>
-                        <themekey>Camera Trap Observations</themekey>
+                        <themekey>Image Observations</themekey>
                     </theme>
                 </keywords>
                 <taxonomy>

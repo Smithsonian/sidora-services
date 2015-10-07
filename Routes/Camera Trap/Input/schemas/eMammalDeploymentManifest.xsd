@@ -168,8 +168,26 @@
 												<xs:element name="SpeciesScientificName"/>
 												<xs:element name="SpeciesCommonName"/>
 												<xs:element name="Count"/>
-												<xs:element name="Age"/>
-												<xs:element name="Sex"/>
+												<xs:element name="Age">
+												<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="Juvenile"/>
+												<xs:enumeration value="Adult"/>
+												<xs:enumeration value="Unknown"/>
+												</xs:restriction>
+												</xs:simpleType>
+												</xs:element>
+												<xs:element name="Sex">
+												<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="Male"/>
+												<xs:enumeration value="Female"/>
+												<xs:enumeration value="Unknown"/>
+												</xs:restriction>
+												</xs:simpleType>
+												</xs:element>
 												<xs:element name="IndividualId"/>
 												<xs:element name="AnimalRecognizable"/>
 												<xs:element name="IndividualAnimalNotes"/>
@@ -190,8 +208,26 @@
 												<xs:element name="SpeciesScientificName"/>
 												<xs:element name="SpeciesCommonName"/>
 												<xs:element name="Count"/>
-												<xs:element name="Age"/>
-												<xs:element name="Sex"/>
+												<xs:element name="Age">
+												<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="Juvenile"/>
+												<xs:enumeration value="Adult"/>
+												<xs:enumeration value="Unknown"/>
+												</xs:restriction>
+												</xs:simpleType>
+												</xs:element>
+												<xs:element name="Sex">
+												<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="Male"/>
+												<xs:enumeration value="Female"/>
+												<xs:enumeration value="Unknown"/>
+												</xs:restriction>
+												</xs:simpleType>
+												</xs:element>
 												<xs:element name="IndividualId"/>
 												<xs:element name="AnimalRecognizable"/>
 												<xs:element name="IndividualAnimalNotes"/>
@@ -272,8 +308,26 @@
 												<xs:element name="SpeciesScientificName"/>
 												<xs:element name="SpeciesCommonName"/>
 												<xs:element name="Count"/>
-												<xs:element name="Age"/>
-												<xs:element name="Sex"/>
+												<xs:element name="Age">
+												<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="Juvenile"/>
+												<xs:enumeration value="Adult"/>
+												<xs:enumeration value="Unknown"/>
+												</xs:restriction>
+												</xs:simpleType>
+												</xs:element>
+												<xs:element name="Sex">
+												<xs:simpleType>
+												<xs:restriction base="xs:string">
+												<xs:enumeration value=""/>
+												<xs:enumeration value="Male"/>
+												<xs:enumeration value="Female"/>
+												<xs:enumeration value="Unknown"/>
+												</xs:restriction>
+												</xs:simpleType>
+												</xs:element>
 												<xs:element name="IndividualId"/>
 												<xs:element name="AnimalRecognizable"/>
 												<xs:element name="IndividualAnimalNotes"/>
