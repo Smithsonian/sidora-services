@@ -29,7 +29,7 @@
 
 <features name="tabular-metadata-servicemix-features">
     <feature name="tabular-metadata-blueprint" version="1.0-SNAPSHOT" resolver="(obr)">
-        <feature version="3.0.2">cxf</feature>
+        <feature version="3.0.5">cxf</feature>
         <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.11.RELEASE_1</bundle>
         <bundle dependency="true">mvn:commons-codec/commons-codec/1.9</bundle>
         <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>
@@ -38,7 +38,7 @@
         <bundle>mvn:edu.si.sidora/tabular-metadata-cxf-services-SMX-blueprint/1.0-SNAPSHOT</bundle>
     </feature>
     <feature name="tabular-metadata-spring" version="1.0-SNAPSHOT" resolver="(obr)">
-        <feature version="3.0.2">cxf</feature>
+        <feature version="3.0.5">cxf</feature>
         <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.11.RELEASE_1</bundle>
         <bundle dependency="true">mvn:commons-codec/commons-codec/1.9</bundle>
         <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>

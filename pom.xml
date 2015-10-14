@@ -46,7 +46,7 @@
 
     <properties>
         <java.version>1.7</java.version>
-        <cxf.version>3.0.2</cxf.version>
+        <cxf.version>3.0.5</cxf.version>
         <spring.version>3.2.11.RELEASE</spring.version>
         <jaxb.api.version>2.2</jaxb.api.version>
         <servicemix.specs.version>2.5.0</servicemix.specs.version>
