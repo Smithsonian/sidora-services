@@ -39,6 +39,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -68,18 +69,17 @@ public class TabularMetadataGeneratorEndpoint {
     @Path("/")
     @Produces("text/xml")
     public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
-        String fileExt = url.getFile().toLowerCase();
-
-        //Check for valid file types
+        URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+        URL urlDecoded = new URL(uri.toASCIIString());
+        String fileExt = urlDecoded.getFile().toLowerCase();
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
             Fault fault = new Fault(new Exception("File Not Valid"));
             fault.setStatusCode(400);
             throw fault;
         } else if (fileExt.endsWith(".xls") || fileExt.endsWith(".xlsx")) {
-            final URL xlsUrl = translator.process(url).get(0).toURI().toURL();
+            URL xlsUrl = translator.process(urlDecoded).get(0).toURI().toURL();
             return codebook(generator.getMetadata(xlsUrl, hasHeaders));
         }
-
-        return codebook(generator.getMetadata(url, hasHeaders));
+        return codebook(generator.getMetadata(urlDecoded, hasHeaders));
     }
 }

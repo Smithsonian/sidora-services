@@ -61,9 +61,7 @@ public class TabularMetadataGeneratorEndpoint {
     @GET
     @Path("/")
     @Produces({"application/xml", "text/xml"})
-    public Codebook getCodebook(
-            @QueryParam("url") final URL url,
-            @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
+    public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
         URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
         URL urlDecoded = new URL(uri.toASCIIString());
         String fileExt = urlDecoded.getFile().toLowerCase();

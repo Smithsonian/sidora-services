@@ -43,6 +43,7 @@
         <jaxrs:features>
             <cxf:logging/>
         </jaxrs:features>
+
         <jaxrs:serviceBeans>
             <ref bean="jaxrsResource"/>
         </jaxrs:serviceBeans>
@@ -53,7 +54,8 @@
     </jaxrs:server>
 
     <bean id="metadataGeneratorExcel" class="com.asoroka.sidora.excel2tabular.ExcelToTabular"/>
-    <bean id="metadataGenerator" class="edu.si.sidora.tabularmetadata.TabularMetadataGenerator"/>
+    <bean id="metadataGenerator" class="edu.si.sidora.tabularmetadata.TabularMetadataGenerator"/>.
+
     <bean id="jaxrsResource" class="edu.si.sidora.tabularmetadata.smx.spring.TabularMetadataGeneratorEndpoint"/>
     <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
         <property name="marshallerProperties">
