@@ -130,19 +130,23 @@
 
             <threads poolSize="3" maxPoolSize="5">
 
+                <!--If there is an issue with staging large archives we can can 'slow' down the route with delay below. -->
+                <delay>
+                    <constant>1000</constant>
+                </delay>
+
                 <transform>
                     <simple>deployment_manifest.xml</simple>
                 </transform>
                 <to uri="reader:file?type=text"/>
+                <log message="${id} WCSIngest: Body - ${body}" loggingLevel="WARN"/>
                 <to uri="validator:file:Input/schemas/WCSDeploymentManifest.xsd"/>
 
                 <!-- Add Schematron validation. -->
                 <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
-                <!--
                 <to uri="schematron:///opt/sidora/servicemix/Input/schemas/DeploymentManifest2014.sch"/>
                 <log message="${id} WCSIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"/>
-                -->
 
                 <!-- Add image count and filename check. -->
                 <setHeader headerName="ManifestXML">

@@ -45,11 +45,16 @@
         <argument value="CameraTrapIngest: Image sequence does not exist."/>
     </bean>
 
+    <bean id="validationFailure" class="java.lang.IllegalArgumentException">
+        <argument value="CameraTrapIngest: Schematron validation failed."/>
+    </bean>
+
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
 
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
 
-    
+    <bean id="saxonFactory" class="net.sf.saxon.TransformerFactoryImpl"/>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="CTIngestCamelContext"
@@ -134,22 +139,37 @@
                     <simple>deployment_manifest.xml</simple>
                 </transform>
                 <to uri="reader:file?type=text"/>
-                <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
 
-                <!-- Add Schematron validation. -->
-                <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
-                <!--
-                <to uri="schematron:///opt/sidora/servicemix/Input/schemas/DeploymentManifest2014.sch"/>
-                <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                     loggingLevel="INFO"/>
-                -->
-
-                <!-- Add image count and filename check. -->
                 <setHeader headerName="ManifestXML">
                     <simple>
                         ${body}
                     </simple>
                 </setHeader>
+
+                <!-- Validate against the XSD. -->
+                <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
+
+                <!-- Add Schematron validation. -->
+                <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
+                <!-- <to uri="schematron:///opt/sidora/smx/Input/schemas/DeploymentManifest2014.sch"/> -->
+                <to uri="schematron:file:Input/schemas/DeploymentManifest2014.sch"/>
+                <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
+                     loggingLevel="INFO"/>
+                <choice>
+                    <when>
+                        <simple>${in.header.CamelSchematronValidationStatus} == 'FAILED'</simple>
+                        <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
+                             loggingLevel="WARN"/>
+                        <log message="${id} CameraTrapIngest: Schematron Validation Report -\n ${header.CamelSchematronValidationReport}"
+                             loggingLevel="WARN"/>
+                        <throwException ref="validationFailure"/>
+                    </when>
+                    <otherwise>
+                        <log message="${id} CameraTrapIngest: Schematron validation succeeded."/>
+                    </otherwise>
+                </choice>
+
+                <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
                 <!-- Process the deployment -->
@@ -794,6 +814,7 @@
 
             <!-- Return true in the body if the object exists for the PID, false if not. -->
             <setBody>
+                <!-- ASK FROM &lt;#ri&gt; -->
                 <simple>
                     ASK FROM &lt;#ri&gt;
                     {

@@ -29,6 +29,10 @@ package edu.si.services.camel.reader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -41,6 +45,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The Reader producer.
  *
+ * @author ddavis
  * @author jshingler
  * @version 1.0
  */
@@ -68,9 +73,13 @@ public class ReaderProducer extends DefaultProducer
         Message out = exchange.getOut();
         if ("text".equalsIgnoreCase(this.endpoint.getType()))
         {
-            Scanner din = new Scanner(file).useDelimiter("\\Z");
-            out.setBody(din.next(), String.class);
-            din.close();
+            //Scanner din = new Scanner(file, "UTF-8").useDelimiter("\\Z");
+            //out.setBody(din.next(), String.class);
+            //din.close();
+
+            Path filePath = file.toPath();
+            byte[] encoded = Files.readAllBytes(filePath);
+            out.setBody(new String(encoded, StandardCharsets.UTF_8), String.class);
         }
         else
         {
