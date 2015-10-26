@@ -193,7 +193,10 @@ public class DataTypeTest {
 
 	@Test
 	public void testBadGeographies() {
-		String testValue = "23, 23, 23, 23";
+		String testValue = "Absolom, Absolom!";
+		assertFalse("Accepted a two-string-valued tuple as geographic coordinates!",
+				parseableAs(testValue).contains(DataType.Geographic));
+		testValue = "23, 23, 23, 23";
 		assertFalse("Accepted a four-valued tuple as geographic coordinates!",
 				parseableAs(testValue).contains(DataType.Geographic));
 		testValue = "23";
