@@ -29,6 +29,7 @@
 package edu.si.sidora.tabularmetadata.smx.spring;
 
 import static edu.si.codebook.Codebook.codebook;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -46,6 +47,7 @@ import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
 
 import edu.si.codebook.Codebook;
 import org.apache.cxf.interceptor.Fault;
+import org.slf4j.Logger;
 
 /**
  *
@@ -55,6 +57,8 @@ import org.apache.cxf.interceptor.Fault;
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {
+
+    private static final Logger log = getLogger(TabularMetadataGeneratorEndpoint.class);
 
     @Inject
     private ExcelToTabular translator;
@@ -71,17 +75,40 @@ public class TabularMetadataGeneratorEndpoint {
     @Path("/")
     @Produces("text/xml")
     public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
+
+        log.info("Parsing Started...");
+        log.debug("QueryParams :: url: {}, hasHeaders: {}", url, hasHeaders);
+
         URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
         URL urlDecoded = new URL(uri.toASCIIString());
         String fileExt = urlDecoded.getFile().toLowerCase();
+
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
-            Fault fault = new Fault(new Exception("File Not Valid"));
+
+            log.info("Parsing Failed! Invalid File Type '{}'!", fileExt);
+
+            Fault fault = new Fault(new Exception("File '" + urlDecoded.getFile() + "' Not A Valid File Type!" ));
             fault.setStatusCode(400);
+
+            log.info("Parsing Finished...");
+
             throw fault;
+
         } else if (fileExt.endsWith(".xls") || fileExt.endsWith(".xlsx")) {
+
+            log.info("Parsing Excel file {}", urlDecoded.getFile());
+
             URL xlsUrl = translator.process(urlDecoded).get(0).toURI().toURL();
+
+            log.info("Parsing Finished...");
+
             return codebook(generator.getMetadata(xlsUrl, hasHeaders));
         }
+
+        log.info("Parsing CSV file {}", urlDecoded.getFile());
+        log.info("Parsing Finished...");
+
         return codebook(generator.getMetadata(urlDecoded, hasHeaders));
+
     }
 }

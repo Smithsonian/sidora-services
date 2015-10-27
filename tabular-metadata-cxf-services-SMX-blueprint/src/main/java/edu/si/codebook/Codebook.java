@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.googlecode.totallylazy.Sequences.zip;
+import static edu.si.codebook.Codebook.VariableType.EnumerationList.enumerationList;
 import static edu.si.codebook.Codebook.VariableType.RangeType.rangeType;
 import static edu.si.codebook.Codebook.VariableType.variableType;
 import static javax.xml.bind.annotation.XmlAccessType.FIELD;
@@ -95,8 +96,6 @@ public class Codebook
 
     /**
      * Serializes a single variable description.
-     *
-     * @author A. Soroka
      */
     @XmlAccessorType(NONE)
     @XmlType(propOrder = {
@@ -114,12 +113,16 @@ public class Codebook
 
         private Range<?> range;
 
-        @XmlElementWrapper
+        protected Set<String> enumeration;
+
+        public String vocabulary;
+
+        /*@XmlElementWrapper
         @XmlElement(name = "value")
-        public Set<String> enumeration;
+        public Set<String> enumeration;*/
 
         @XmlAttribute
-        public String name, type, vocabulary;
+        public String name, type;
 
         private Ratio unparseableOverTotal;
 
@@ -128,6 +131,16 @@ public class Codebook
 
         @XmlElement(defaultValue = "--", nillable = true)
         public String valueForMissingValue;
+
+        @XmlElement
+        public EnumerationList getEnumeration() {
+            return enumerationList(enumeration, vocabulary);
+        }
+
+        @XmlElement
+        public RangeType getRange() {
+            return range == null ? null : rangeType(range);
+        }
 
         protected static VariableType variableType(final String name, final Ratio unparseableOverTotal,
                                                    final DataType type, final Range<?> range,
@@ -165,15 +178,29 @@ public class Codebook
             return type;
         }
 
-        @XmlElement
-        public RangeType getRange() {
-            return range == null ? null : rangeType(range);
+        /**
+         * Serializes the list of enumeration values.
+         */
+        @XmlAccessorType(FIELD)
+        public static class EnumerationList {
+
+            @XmlAttribute
+            public String vocabulary;
+
+
+            @XmlElement(name = "value")
+            public Set<String> enumeration;
+
+            protected static EnumerationList enumerationList(final Set<String> enumeration, final String vocabulary) {
+                final EnumerationList enumerationList = new EnumerationList();
+                enumerationList.enumeration = enumeration;
+                enumerationList.vocabulary = vocabulary;
+                return enumerationList;
+            }
         }
 
         /**
          * Serializes the range of a single variable.
-         *
-         * @author A. Soroka
          */
         @XmlAccessorType(FIELD)
         public static class RangeType {
@@ -188,7 +215,6 @@ public class Codebook
             }
         }
     }
-
 
     @XmlAccessorType(FIELD)
     @XmlType(propOrder = {"title", "description", "creator", "date", "identifier"},
