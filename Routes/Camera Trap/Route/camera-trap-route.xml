@@ -150,8 +150,7 @@
                 <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
 
                 <!-- Add Schematron validation. -->
-                <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
-                <!-- <to uri="schematron:///opt/sidora/smx/Input/schemas/DeploymentManifest2014.sch"/> -->
+                <!--
                 <to uri="schematron:file:Input/schemas/DeploymentManifest2014.sch"/>
                 <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"/>
@@ -168,6 +167,7 @@
                         <log message="${id} CameraTrapIngest: Schematron validation succeeded."/>
                     </otherwise>
                 </choice>
+                -->
 
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>

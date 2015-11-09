@@ -96,6 +96,7 @@
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
 
+
         <!--
         <errorHandler id="derivativesErrorHandler" type="DefaultErrorHandler">
             <redeliveryPolicy maximumRedeliveries="20"
@@ -292,7 +293,7 @@
 
             <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
             <to uri="file://staging/"/>
-            <log message="${id} Derivatives: Staged file. BODY: ${body}"
+            <log message="${id} Derivatives: Staged file Name: ${header.CamelFileNameProduced}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
@@ -895,7 +896,6 @@
                          logName="edu.si.derivatives"/>
                 </doCatch>
             </doTry>
-
 
             <log message="${id} Derivatives: Finished Thumbnailator processing."
                  loggingLevel="DEBUG"
