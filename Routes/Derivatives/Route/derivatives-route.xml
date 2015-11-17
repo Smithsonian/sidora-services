@@ -252,6 +252,17 @@
                     <to uri="direct:processDerivativesAudio"/>
                 </when>
 
+                <when> <!-- If sp_videoCModel, and the DSID is "OBJ" - process the video file." -->
+                    <spel>
+                        #{request.headers[ContentModels].contains('info:fedora/islandora:sp_videoCModel') and
+                          request.headers[DSID] == 'OBJ'}
+                    </spel>
+                    <log message="${id} Derivatives: Found Video."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                    <to uri="direct:processDerivativesVideo"/>
+                </when>
+
                 <otherwise> <!-- No supported content model was found. -->
                     <log message="${id} Derivatives: No message processing required."/>
                 </otherwise>
@@ -958,6 +969,355 @@
             </choice>
 
             <log message="${id} Derivatives: Finished Thumbnail Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesProcessVideo">
+            <from uri="direct:processDerivativesVideo"/>
+            <log message="${id} Derivatives: Started Video processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Get the MIME type from the datastream profile. -->
+            <!-- We should try the getDatastream more than once if it fails. -->
+            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <log message="${id} Derivatives: Video Datastream Metadata. BODY: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <setHeader headerName="dsMIME">
+                <xpath resultType="java.lang.String">
+                    /fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()
+                </xpath>
+            </setHeader>
+
+            <log message="${id} Derivatives: Video Datastream Metadata. MIME: ${header.dsMIME}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Get the Video from the FDO. -->
+            <!-- We should try the getDatastreamDissemination more than once if it fails. -->
+            <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <log message="Got The Video OBJ from Fedora......."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <to uri="file://staging/"/>
+            <log message="${id} Derivatives: Staged video file. BODY: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <setBody>
+                <simple>
+                    ${headers.CamelFileNameProduced}
+                </simple>
+            </setBody>
+
+            <choice>
+                <!-- If the OBJ datastream contains a supported video format : OGG, MP4, MOV, QT, M4V, AVI, MKV -->
+                <when>
+
+                    <simple>
+                        ${header.dsMIME} == 'video/mp4'
+                    </simple>
+
+                    <to uri="reader:file"/>
+
+                    <!-- Just copy it and create thumbnail. -->
+                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+                    <to uri="direct:processDerivativesVideoThumbnailTimePosition"/>
+                    <to uri="direct:processDerivativesVideoThumbnail"/>
+
+                    <log message="${id} Derivatives: No Video processing required copying mp4 directly to MP4."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                </when>
+                <when>
+
+                    <simple>
+                        ${header.dsMIME} == 'video/quicktime' ||
+                        ${header.dsMIME} == 'video/avi' ||
+                        ${header.dsMIME} == 'video/x-matroska'
+                    </simple>
+
+                    <!-- Make an MP4 derivative and TN. -->
+                    <!-- Create a video derivative and thumbnail using ffmpeg. -->
+                    <to uri="direct:processDerivativesVideoFFMPEG"/>
+                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+                    <to uri="direct:processDerivativesVideoThumbnailTimePosition"/>
+                    <to uri="direct:processDerivativesVideoThumbnail"/>
+
+                    <!--For Testing Dont Delete the Temp File -->
+                    <recipientList> <!-- Delete the temporary file. Note: This approach is Unix specific. -->
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.mp4
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete video working file. Filename: ${headers.CamelFileNameProduced}.mp4"
+                                 loggingLevel="WARN"/>
+                            <!-- We also want to proactively tell monitoring -->
+                        </when>
+                    </choice>
+
+                </when>
+
+                <when>
+
+                    <simple>
+                        ${header.dsMIME} == 'audio/mp4' ||
+                        ${header.dsMIME} == 'audio/ogg' ||
+                        ${header.dsMIME} == 'audio/m4a'
+                    </simple>
+
+                    <!-- Make an MP4 derivative and TN. -->
+                    <!-- Create a audio derivative using ffmpeg and MP4. -->
+                    <to uri="direct:processDerivativesVideoFFMPEG"/>
+                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+
+                    <!-- Create a audio thumbnail TN. -->
+                    <setBody>
+                        <simple>
+                            Input/video-thumbnails/audio-video.png
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=TN&amp;type=video/jpg&amp;dsLabel=TN&amp;group=M&amp;versionable=false"/>
+                    <!--For Testing Dont Delete the Temp File -->
+                    <recipientList> <!-- Delete the temporary file. Note: This approach is Unix specific. -->
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.mp4
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete video working file. Filename: ${headers.CamelFileNameProduced}.mp4"
+                                 loggingLevel="WARN"/>
+                            <!-- We also want to proactively tell monitoring -->
+                        </when>
+                    </choice>
+
+                </when>
+                <otherwise>
+                    <setBody>
+                        <simple>
+                            Input/video-thumbnails/video_unknown.png
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=TN&amp;type=video/jpg&amp;dsLabel=TN&amp;group=M&amp;versionable=false"/>
+                    <log message="${id} An unsupported video file type was found: ${header.dsMIME}."
+                         loggingLevel="WARN"/>
+                </otherwise>
+            </choice>
+
+            <!-- Delete the temporary video file. Note: This approach is Unix specific. -->
+            <recipientList>
+                <simple>
+                    exec:rm?args=-f ${header.CamelFileNameProduced}
+                </simple>
+            </recipientList>
+            <choice>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} != 0
+                    </simple>
+                    <log message="${id} Derivatives: Unable to delete video working file. Filename: ${headers.CamelFileNameProduced}"
+                         loggingLevel="WARN"/>
+                    <!-- We also want to proactively tell monitoring -->
+                </when>
+            </choice>
+
+            <log message="${id} Finished Derivatives Video processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesProcessVideoFFMPEG">
+            <from uri="direct:processDerivativesVideoFFMPEG"/>
+            <log message="${id} Derivatives: Started Video FFMPEG processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Make an MP4 derivative. -->
+            <!-- Create a video derivative using ffmpeg. -->
+            <recipientList>
+                <simple>
+                    exec:/usr/local/bin/ffmpeg?args=-i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec libfdk_aac -ab 128k -ac 2 -async 1 ${header.CamelFileNameProduced}.mp4&amp;useStderrOnEmptyStdout=true
+                </simple>
+            </recipientList>
+
+            <choice>
+                <!-- If ffmpeg processing succeeded? Store a MP4 datastream on the FDO. -->
+                <when>
+
+                    <simple>
+                        ${headers.CamelExecExitValue} == 0
+                    </simple>
+
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.mp4
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+
+                    <log message="${id} Derivatives: Converted Video to mp4."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                </when>
+                <otherwise>
+                    <log message="${id} Derivatives: FFMPEG processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} Finished Derivatives Video FFMPEG processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesProcessVideoThumbnailTimePosition">
+            <from uri="direct:processDerivativesVideoThumbnailTimePosition"/>
+            <log message="${id} Derivatives: Started Video thumbnail time position processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <recipientList>
+                <simple>
+                    exec:/usr/local/bin/ffprobe?args=-v error -select_streams v:0 -show_entries stream=duration -of compact=print_section=0:nokey=1 ${header.CamelFileNameProduced}&amp;useStderrOnEmptyStdout=true
+                </simple>
+            </recipientList>
+
+            <convertBodyTo type="java.lang.String" charset="utf-8"/>
+            <transform>
+                <simple>${body.replace("'\n'", " / 2\n")}</simple>  <!-- the newline after the 2 needs to be there for the /usr/bin/bc exec command -->
+            </transform>
+
+            <!-- If ffprobe processing succeeded? -->
+            <!-- Then find the middle of the video using /usr/bin/bc and Store video time position for thumbnail in header. -->
+            <choice>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} == 0
+                    </simple>
+
+                    <to uri="exec:/usr/bin/bc?args="/>
+                    <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+                    <transform>
+                        <simple>${body.replace("'\n'", "")}</simple>
+                    </transform>
+
+                    <!-- If ffprobe and /usr/bin/bc processing succeeded? -->
+                    <!-- Store video time position for thumbnail in header. -->
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} == 0
+                            </simple>
+
+                            <setHeader headerName="videoThumbnailTimePosition">
+                                <simple>${body}</simple>
+                            </setHeader>
+
+                            <log message="${id} Derivatives: Adding video time position for thumbnail at ${header.videoThumbnailTimePosition}sec. to header."
+                                 loggingLevel="DEBUG"
+                                 logName="edu.si.derivatives"/>
+                        </when>
+                        <otherwise>
+                            <log message="${id} Derivatives: Video thumbnail time position /usr/bin/bc calculation failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                                 loggingLevel="ERROR"/>
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise>
+                    <log message="${id} Derivatives: Video thumbnail time position processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+            <log message="${id} Finished Derivatives Video thumbnail time position processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesProcessVideoThumbnail">
+            <from uri="direct:processDerivativesVideoThumbnail"/>
+            <log message="${id} Derivatives: Started Video Thumbnail processing..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Make an TN datastream. -->
+            <!-- Create a video thumbnail using ffmpeg. -->
+            <recipientList>
+                <simple>
+                    exec:/usr/local/bin/ffmpeg?args=-ss ${header.videoThumbnailTimePosition} -i ${header.CamelFileNameProduced} -vf thumbnail -frames:v 1 ${header.CamelFileNameProduced}-TN.jpg&amp;useStderrOnEmptyStdout=true
+                </simple>
+                <!--exec:/usr/local/bin/ffmpeg?args=-ss ${header.videoThumbnailTimePosition} -i ${header.CamelFileNameProduced} -vcodec mjpeg -vframes 1 -an -f rawvideo ${header.CamelFileNameProduced}-TN.jpg&amp;useStderrOnEmptyStdout=true-->
+                <!-- alt command that picks the best image for a thumbnail "ffmpeg ffmpeg -i - -vf thumbnail -frames:v 1 -" -->
+            </recipientList>
+
+            <choice>
+                <!-- If ffmpeg thumbnail processing succeeded? Store an MP4 datastream on the FDO. -->
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} == 0
+                    </simple>
+
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}-TN.jpg
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+
+                    <to uri="fedora:addDatastream?name=TN&amp;type=video/jpg&amp;dsLabel=TN&amp;group=M&amp;versionable=false"/>
+
+                    <log message="${id} Derivatives: Adding Video Thumbnail To TN."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                </when>
+                <otherwise>
+
+                    <!-- creating video thumbnail failed set the thumbnail to the default video thumbnail -->
+                    <setBody>
+                        <simple>
+                            Input/video-thumbnails/video.png
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=TN&amp;type=video/jpg&amp;dsLabel=TN&amp;group=M&amp;versionable=false"/>
+
+                    <log message="${id} Derivatives: Video Thumbnail Processing Failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+
+            <!-- Delete the temporary video file. Note: This approach is Unix specific. -->
+            <recipientList>
+                <simple>
+                    exec:rm?args=-f ${header.CamelFileNameProduced}-TN.jpg
+                </simple>
+            </recipientList>
+            <choice>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} != 0
+                    </simple>
+                    <log message="${id} Derivatives: Unable to delete Thumbnail working file. Filename: ${headers.CamelFileNameProduced}-TN.jpg4"
+                         loggingLevel="WARN"/>
+                    <!-- We also want to proactively tell monitoring -->
+                </when>
+            </choice>
+
+            <log message="${id} Finished Video Thumbnail processing."
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
         </route>
