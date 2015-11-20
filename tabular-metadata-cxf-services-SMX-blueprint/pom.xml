@@ -34,6 +34,7 @@
         <artifactId>tabular-metadata-cxf-services</artifactId>
         <groupId>edu.si.sidora</groupId>
         <version>1.0-SNAPSHOT</version>
+        <!--<relativePath>../pom.xml</relativePath>-->
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -43,10 +44,15 @@
     <packaging>bundle</packaging>
 
     <properties>
-        <cxf.version>3.0.5</cxf.version>
-        <spring.version>3.2.11.RELEASE</spring.version>
+        <!--<cxf.version>${cxf.version}</cxf.version>-->
+
         <jaxb.api.version>2.2</jaxb.api.version>
+
+        <javax.inject.version>1.0.0</javax.inject.version>
         <servicemix.specs.version>2.5.0</servicemix.specs.version>
+        <slf4j.version>1.7.12</slf4j.version>
+        <spring.version>3.2.14.RELEASE_1</spring.version>
+
     </properties>
 
     <dependencies>
@@ -69,7 +75,7 @@
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>com.springsource.javax.inject</artifactId>
-            <version>1.0.0</version>
+            <version>${javax.inject.version}</version>
         </dependency>
 
         <!-- testing -->
