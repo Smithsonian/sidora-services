@@ -76,13 +76,12 @@
         <maven-eclipse-plugin.version>2.9</maven-eclipse-plugin.version>
         <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
         <jetty-plugin-version>9.2.10.v20150310</jetty-plugin-version>
-        <jetty-runner-groupId>org.eclipse.jetty</jetty-runner-groupId>
+        <jacoco.version>0.7.5.201505241946</jacoco.version>
     </properties>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
@@ -142,8 +141,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
-
 </project>

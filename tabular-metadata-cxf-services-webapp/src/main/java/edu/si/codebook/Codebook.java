@@ -29,19 +29,15 @@
 package edu.si.codebook;
 
 import com.google.common.collect.Range;
-import com.googlecode.totallylazy.Function1;
-import com.googlecode.totallylazy.Quintuple;
-import com.googlecode.totallylazy.Sequence;
-import com.googlecode.totallylazy.numbers.Ratio;
-import edu.si.codebook.Codebook.VariableType;
 import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.TabularMetadata.Ratio;
 import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 import javax.xml.bind.annotation.*;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
-import static com.googlecode.totallylazy.Sequences.zip;
 import static edu.si.codebook.Codebook.VariableType.EnumerationList.enumerationList;
 import static edu.si.codebook.Codebook.VariableType.RangeType.rangeType;
 import static edu.si.codebook.Codebook.VariableType.variableType;
@@ -58,26 +54,39 @@ import static javax.xml.bind.annotation.XmlAccessType.NONE;
 @XmlAccessorType(NONE)
 @XmlRootElement
 @XmlType(propOrder = {"title", "description", "creator", "date", "identifier", "variables"})
-public class Codebook
-        extends
-        Function1<Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>>, VariableType> {
+public class Codebook {
 
     private TabularMetadata metadata;
 
     @XmlElement(namespace = "http://purl.org/dc/terms/", nillable = true)
     public String title, description, creator, date, identifier;
 
-    @XmlElementWrapper
+    /*@XmlElementWrapper
     @XmlElement(name = "variable")
     public Sequence<VariableType> getVariables() {
         return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
                 metadata.minMaxes(), metadata.enumeratedValues()).map(this);
+    }*/
+
+    @XmlElementWrapper
+    @XmlElement(name = "variable")
+    public List<VariableType> getVariables() {
+        List<VariableType> output = new ArrayList<>();
+        for (int i = 0; i < metadata.headerNames().size(); i++) {
+            final String name = metadata.headerNames().get(i);
+            final Ratio unparseableOverTotal = metadata.unparseablesOverTotals().get(i);
+            final DataType type = metadata.fieldTypes().get(i);
+            final Range<?> range = metadata.minMaxes().get(i).get(type);
+            final Set<String> enumeration = metadata.enumeratedValues().get(i).get(type);
+            output.add(variableType(name, unparseableOverTotal, type, range, enumeration));
+        }
+        return output;
     }
 
     /**
      * Constructs a single variable description.
      */
-    @Override
+    /*@Override
     public VariableType call(
             final Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>> data) {
         final String name = data.first();
@@ -86,7 +95,7 @@ public class Codebook
         final Range<?> range = data.fourth().get(type);
         final Set<String> enumeration = data.fifth().get(type);
         return variableType(name, unparseableOverTotal, type, range, enumeration);
-    }
+    }*/
 
     public static Codebook codebook(final TabularMetadata m) {
         final Codebook codebook = new Codebook();

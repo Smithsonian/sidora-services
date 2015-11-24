@@ -28,13 +28,12 @@
 
 package edu.si.codebook;
 
-import edu.si.sidora.tabularmetadata.TabularMetadata;
-import edu.si.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
-import com.googlecode.totallylazy.Sequence;
-import com.googlecode.totallylazy.numbers.Ratio;
 import edu.si.codebook.Codebook.VariableType;
 import edu.si.codebook.Codebook.VariableType.RangeType;
+import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.TabularMetadata.Ratio;
+import edu.si.sidora.tabularmetadata.datatype.DataType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,18 +41,16 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static edu.si.codebook.Codebook.codebook;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.Geographic;
 import static edu.si.sidora.tabularmetadata.datatype.DataType.PositiveInteger;
-import static com.google.common.collect.Sets.newHashSet;
-import static edu.si.codebook.Codebook.codebook;
-import static java.math.BigInteger.ONE;
-import static java.math.BigInteger.TEN;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static java.util.Collections.singleton;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -62,7 +59,7 @@ public class CodebookTest {
     @Mock
     private TabularMetadata emptyMetadata, metadata;
 
-    private static final Ratio testRatio = new Ratio(ONE, TEN);
+    private static final Ratio testRatio = new Ratio(1, 10);
 
     private static final DataType TEST_DATATYPE = PositiveInteger;
 
@@ -82,25 +79,25 @@ public class CodebookTest {
         when(metadata.fieldTypes()).thenReturn(asList(TEST_DATATYPE));
         when(metadata.minMaxes()).thenReturn(asList(minmaxes));
         when(metadata.enumeratedValues()).thenReturn(asList(enumerations));
-        enumerations.put(TEST_DATATYPE, newHashSet(""));
+        enumerations.put(TEST_DATATYPE, singleton(""));
     }
 
     @Test
     public void testOneVariableMetadata() {
         minmaxes.put(PositiveInteger, Range.all());
-        final Sequence<VariableType> variables = codebook(metadata).getVariables();
-        assertEquals("HEADER", variables.first().name);
-        assertEquals(newHashSet(""), variables.first().enumeration);
-        assertEquals(PositiveInteger.uri, variables.first().type);
-        assertTrue(variables.first().getRange().max == null);
-        assertTrue(variables.first().getRange().min == null);
+        final List<VariableType> variables = codebook(metadata).getVariables();
+        assertEquals("HEADER", variables.get(0).name);
+        assertEquals(singleton(""), variables.get(0).enumeration);
+        assertEquals(PositiveInteger, variables.get(0).type);
+        assertNull(variables.get(0).getRange().max);
+        assertNull(variables.get(0).getRange().min);
         assertEquals(1, variables.size());
     }
 
     @Test
     public void testOneVariableMetadataWithRange() {
         minmaxes.put(TEST_DATATYPE, Range.closed(1, 10));
-        final VariableType variable = codebook(metadata).getVariables().first();
+        final VariableType variable = codebook(metadata).getVariables().get(0);
         final RangeType range = variable.getRange();
         assertEquals("1", range.min);
         assertEquals("10", range.max);
@@ -109,7 +106,7 @@ public class CodebookTest {
     @Test
     public void testOneVariableMetadataWithNullRange() {
         minmaxes.put(Geographic, null);
-        final Sequence<VariableType> variables = codebook(metadata).getVariables();
-        assertTrue(variables.first().getRange() == null);
+        final List<VariableType> variables = codebook(metadata).getVariables();
+        assertNull(variables.get(0).getRange());
     }
 }
