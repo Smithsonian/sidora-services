@@ -8,13 +8,13 @@
           <property key="Import-Package" value="javax.wsdl,javax.xml.bind,javax.xml.bind.annotation,javax.ws.rs,javax.ws.rs.core,org.apache.commons.httpclient,org.apache.commons.httpclient.methods,org.springframework.beans.factory.config,*;resolution:=optional" />
           <property key="Export-Package" value="edu.si.sidora.tabularmetadata*,com.asoroka.sidora.excel2tabular*,edu.si.codebook*,com.googlecode.totallylazy*,org.joda.time*,org.joda.convert*,javax.inject,org.apache.commons.csv" />
           <property key="Bundle-Name" value="SMX OSGi Spring CXF service for Tabular Metadata Generator" />
-          <property key="Include-Resource" value="META-INF/spring/beans.xml=$MODULE_DIR$/src/main/resources/META-INF/spring/beans.xml" />
+          <property key="Include-Resource" value="log4j.properties=$MODULE_DIR$/src/main/resources/log4j.properties,META-INF/spring/beans.xml=$MODULE_DIR$/src/main/resources/META-INF/spring/beans.xml" />
         </additionalProperties>
         <additionalJARContents />
       </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7" inherit-compiler-output="false">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/target/classes" />
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
@@ -40,14 +40,14 @@
     <orderEntry type="library" name="Maven: stax:stax-api:1.0.1" level="project" />
     <orderEntry type="library" name="Maven: dom4j:dom4j:1.6.1" level="project" />
     <orderEntry type="library" name="Maven: xml-apis:xml-apis:1.0.b2" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.cxf:cxf-rt-frontend-jaxrs:3.0.5" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.cxf:cxf-core:3.0.5" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.cxf:cxf-rt-frontend-jaxrs:3.0.6" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.cxf:cxf-core:3.0.6" level="project" />
     <orderEntry type="library" name="Maven: org.codehaus.woodstox:woodstox-core-asl:4.4.1" level="project" />
     <orderEntry type="library" name="Maven: org.codehaus.woodstox:stax2-api:3.1.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.ws.xmlschema:xmlschema-core:2.2.1" level="project" />
     <orderEntry type="library" name="Maven: javax.ws.rs:javax.ws.rs-api:2.0.1" level="project" />
     <orderEntry type="library" name="Maven: javax.annotation:javax.annotation-api:1.2" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.cxf:cxf-rt-transports-http:3.0.5" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.cxf:cxf-rt-transports-http:3.0.6" level="project" />
     <orderEntry type="library" name="Maven: javax.inject:com.springsource.javax.inject:1.0.0" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-log4j12:1.7.12" level="project" />
     <orderEntry type="library" name="Maven: log4j:log4j:1.2.17" level="project" />

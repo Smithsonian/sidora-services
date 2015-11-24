@@ -28,22 +28,20 @@
 
 package edu.si.codebook;
 
-import edu.si.sidora.tabularmetadata.TabularMetadata;
-import edu.si.sidora.tabularmetadata.datatype.DataType;
 import com.google.common.collect.Range;
 import com.googlecode.totallylazy.Function1;
 import com.googlecode.totallylazy.Quintuple;
 import com.googlecode.totallylazy.Sequence;
 import com.googlecode.totallylazy.numbers.Ratio;
 import edu.si.codebook.Codebook.VariableType;
+import edu.si.sidora.tabularmetadata.TabularMetadata;
+import edu.si.sidora.tabularmetadata.datatype.DataType;
 
 import javax.xml.bind.annotation.*;
-import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
 import static com.googlecode.totallylazy.Sequences.zip;
-import static edu.si.codebook.Codebook.CodebookMeta.codebookMeta;
 import static edu.si.codebook.Codebook.VariableType.EnumerationList.enumerationList;
 import static edu.si.codebook.Codebook.VariableType.RangeType.rangeType;
 import static edu.si.codebook.Codebook.VariableType.variableType;

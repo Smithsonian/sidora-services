@@ -15,22 +15,22 @@
     <description>SMX OSGi Spring CXF service for developing metadata from tabular data files.</description>
     <packaging>bundle</packaging>
 
-    <properties>
+    <!--<properties>
         <cxf.version>3.0.5</cxf.version>
         <spring.version>3.2.11.RELEASE</spring.version>
         <jaxb.api.version>2.2</jaxb.api.version>
         <servicemix.specs.version>2.5.0</servicemix.specs.version>
-    </properties>
+    </properties>-->
 
     <repositories>
         <repository>
-            <id>repository.springsource.com.release</id>
-            <name>SpringSource OBR - Release</name>
+            <id>com.springsource.repository.bundles.release</id>
+            <name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>
             <url>http://repository.springsource.com/maven/bundles/release</url>
         </repository>
         <repository>
-            <id>repository.springsource.com.external</id>
-            <name>SpringSource OBR - External</name>
+            <id>com.springsource.repository.bundles.external</id>
+            <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
             <url>http://repository.springsource.com/maven/bundles/external</url>
         </repository>
     </repositories>
@@ -56,14 +56,14 @@
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>com.springsource.javax.inject</artifactId>
-            <version>1.0.0</version>
+            <version>${javax-inject.bundle.version}</version>
         </dependency>
 
         <!-- logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.12</version>
+            <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
 
@@ -72,7 +72,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.5.4</version>
+                <version>${maven-bundle-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>

@@ -44,14 +44,6 @@
         <module>tabular-metadata-cxf-services-SMX-camel</module>
     </modules>
 
-    <properties>
-        <java.version>1.7</java.version>
-        <cxf.version>3.0.6</cxf.version>
-        <spring.version>3.2.11.RELEASE</spring.version>
-        <jaxb.api.version>2.2</jaxb.api.version>
-        <servicemix.specs.version>2.5.0</servicemix.specs.version>
-    </properties>
-
     <repositories>
         <repository>
             <id>com.springsource.repository.bundles.release</id>
@@ -65,11 +57,34 @@
         </repository>
     </repositories>
 
+    <properties>
+        <java.version>1.8</java.version>
+        <!--<spring.version>4.2.0.RELEASE</spring.version>-->
+        <cxf.version>3.0.6</cxf.version>
+        <spring.version>3.2.14.RELEASE</spring.version>
+        <jaxb.api.version>2.2</jaxb.api.version>
+        <servicemix.specs.version>2.5.0</servicemix.specs.version>
+        <javax-inject.bundle.version>1.0.0</javax-inject.bundle.version>
+        <google.guava.version>15.0</google.guava.version>
+        <slf4j.version>1.7.12</slf4j.version>
+        <commons-httpclient.bundle.version>3.1_7</commons-httpclient.bundle.version>
+        <commons-codec.bundle.version>1.10</commons-codec.bundle.version>
+        <build-helper-maven-plugin-version>1.8</build-helper-maven-plugin-version>
+        <maven-resources-plugin-version>2.6</maven-resources-plugin-version>
+        <maven-compiler-plugin.version>3.2</maven-compiler-plugin.version>
+        <maven-bundle-plugin.version>3.0.0</maven-bundle-plugin.version>
+        <maven-eclipse-plugin.version>2.9</maven-eclipse-plugin.version>
+        <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
+        <jetty-plugin-version>9.2.10.v20150310</jetty-plugin-version>
+        <jetty-runner-groupId>org.eclipse.jetty</jetty-runner-groupId>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -82,7 +97,7 @@
             <!-- deploy feature repositories -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.4.3</version>
+                <version>${maven-resources-plugin-version}</version>
                 <inherited>false</inherited>
                 <executions>
                     <execution>
@@ -106,7 +121,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.9.1</version>
+                <version>${build-helper-maven-plugin-version}</version>
                 <inherited>false</inherited>
                 <executions>
                     <execution>

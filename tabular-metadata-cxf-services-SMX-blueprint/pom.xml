@@ -43,8 +43,8 @@
     <description>SMX OSGi Blueprint CXF service for developing metadata from tabular data files.</description>
     <packaging>bundle</packaging>
 
-    <properties>
-        <!--<cxf.version>${cxf.version}</cxf.version>-->
+    <!--<properties>
+        &lt;!&ndash;<cxf.version>${cxf.version}</cxf.version>&ndash;&gt;
 
         <jaxb.api.version>2.2</jaxb.api.version>
 
@@ -53,7 +53,20 @@
         <slf4j.version>1.7.12</slf4j.version>
         <spring.version>3.2.14.RELEASE_1</spring.version>
 
-    </properties>
+    </properties>-->
+
+    <repositories>
+        <repository>
+            <id>com.springsource.repository.bundles.release</id>
+            <name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>
+            <url>http://repository.springsource.com/maven/bundles/release</url>
+        </repository>
+        <repository>
+            <id>com.springsource.repository.bundles.external</id>
+            <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
+            <url>http://repository.springsource.com/maven/bundles/external</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -75,21 +88,22 @@
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>com.springsource.javax.inject</artifactId>
-            <version>${javax.inject.version}</version>
+            <version>${javax-inject.bundle.version}</version>
+            <!--<version>1.0.0</version>-->
         </dependency>
 
         <!-- testing -->
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5</version>
+            <groupId>org.apache.servicemix.bundles</groupId>
+            <artifactId>org.apache.servicemix.bundles.commons-httpclient</artifactId>
+            <version>${commons-httpclient.bundle.version}</version>
         </dependency>
 
         <!-- logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.12</version>
+            <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
 
@@ -98,7 +112,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.5.4</version>
+                <version>${maven-bundle-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
