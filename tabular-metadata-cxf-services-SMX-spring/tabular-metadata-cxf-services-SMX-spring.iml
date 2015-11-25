@@ -8,7 +8,7 @@
           <property key="Import-Package" value="javax.wsdl,javax.xml.bind,javax.xml.bind.annotation,javax.ws.rs,javax.ws.rs.core,org.apache.commons.httpclient,org.apache.commons.httpclient.methods,org.springframework.beans.factory.config,*;resolution:=optional" />
           <property key="Export-Package" value="edu.si.sidora.tabularmetadata*,com.asoroka.sidora.excel2tabular*,edu.si.codebook*,com.googlecode.totallylazy*,org.joda.time*,org.joda.convert*,javax.inject,org.apache.commons.csv" />
           <property key="Bundle-Name" value="SMX OSGi Spring CXF service for Tabular Metadata Generator" />
-          <property key="Include-Resource" value="log4j.properties=$MODULE_DIR$/src/main/resources/log4j.properties,META-INF/spring/beans.xml=$MODULE_DIR$/src/main/resources/META-INF/spring/beans.xml" />
+          <property key="Include-Resource" value="META-INF/spring/beans.xml=$MODULE_DIR$/src/main/resources/META-INF/spring/beans.xml,log4j.properties=$MODULE_DIR$/src/main/resources/log4j.properties" />
         </additionalProperties>
         <additionalJARContents />
       </configuration>
@@ -20,7 +20,6 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

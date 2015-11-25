@@ -99,6 +99,13 @@
             <version>${commons-httpclient.bundle.version}</version>
         </dependency>
 
+        <!-- testing -->
+        <!--<dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5</version>
+        </dependency>-->
+
         <!-- logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -133,7 +140,7 @@
                             edu.si.sidora.tabularmetadata*,
                             com.asoroka.sidora.excel2tabular*,
                             edu.si.codebook*,
-                            com.googlecode.totallylazy*,
+                            <!--com.googlecode.totallylazy*,-->
                             org.joda.time*,
                             org.joda.convert*,
                             javax.inject,

@@ -42,10 +42,10 @@
     <name>Web service for tabular metadata extraction</name>
     <description>Web service for developing metadata from tabular data files.</description>
 
-	<!--<properties>
-		<cxf.version>3.1.2</cxf.version>
+	<properties>
+		<!--<cxf.version>3.1.2</cxf.version>-->
 		<spring.version>4.2.1.RELEASE</spring.version>
-	</properties>-->
+	</properties>
 
     <!--<repositories>
         <repository>
