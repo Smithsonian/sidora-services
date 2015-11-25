@@ -65,7 +65,7 @@
         <jaxb.api.version>2.2</jaxb.api.version>
         <servicemix.specs.version>2.5.0</servicemix.specs.version>
         <javax-inject.bundle.version>1.0.0</javax-inject.bundle.version>
-        <google.guava.version>15.0</google.guava.version>
+        <google.guava.version>18.0</google.guava.version>
         <slf4j.version>1.7.12</slf4j.version>
         <commons-httpclient.bundle.version>3.1_7</commons-httpclient.bundle.version>
         <commons-codec.bundle.version>1.10</commons-codec.bundle.version>
