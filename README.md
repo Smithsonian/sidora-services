@@ -22,6 +22,10 @@
 
 `cd tabular-metadata`
 
+For Java 8 chenge to the Java8 branch
+
+`git checkout Java8`
+
 `mvn clean install -DskipTests=true`
 
 ####tabular-metadata-cxf-services:
@@ -29,6 +33,10 @@
 `git clone https://github.com/jbirkhimer/tabular-metadata-cxf-services.git`
 
 `cd tabular-metadata-cxf-services`
+
+For Java 8 chenge to the Java8 branch
+
+`git checkout Java8`
 
 `mvn clean install -DskipTests=true`
 
@@ -62,6 +70,8 @@ the tabular data service quick and easy. Each feature enables you to use
 a single command to install the example bundle and any bundles that the
 example depends on.
 
+
+
 ###Add your local Maven repository to `org.ops4j.pax.url.mvn.cfg`:
 
 Edit the `org.ops4j.pax.url.mvn.cfg` file located in `[SERVICEMIX_HOME]/etc/`
@@ -93,6 +103,32 @@ the repository defined by the `org.ops4j.pax.url.mvn.localRepository` variable.
 ###Check that the tabular data service was created and is active:
 
 `karaf@root> list | grep Tabular`
+
+###Permission problems when using local maven repo as users other than fedora
+After doing the above `mvn clean install -DskipTests=true` commands for each project
+
+Then trying to do the following from SMX to install the tabular data feature from maven repo
+
+`karaf@root> feature:repo-add mvn:edu.si.sidora/tabular-metadata-cxf-services/1.0-SNAPSHOT/xml/features`
+
+you get permissions issues if you build the project in your local maven repo (not fedora user) and
+Servicemix is running under another user (ie. fedora)
+
+A workaround to still be able to create the Tabular Data Servicemix feature you will need to change to the fedora user
+
+and build the projects to the fedora users maven repo (ie. /home/fedora/.m2/repository)
+
+change to the fedora user
+
+`sudo su - fedora` 
+
+you are now the fedora user and all the commands for building the projects from above are the same except for maven 
+
+which is:
+
+mvn => `/usr/local/apache-maven/apache-maven-3.3.3/bin/mvn` 
+
+MAKE SURE TO LOGOUT OF FEDORA USER WHEN DONE BUILDING
 
 
 ##Testing the Tabular Data Service:
