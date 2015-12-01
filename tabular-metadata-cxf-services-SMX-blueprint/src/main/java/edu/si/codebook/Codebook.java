@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-
 import static edu.si.codebook.Codebook.VariableType.EnumerationList.enumerationList;
 import static edu.si.codebook.Codebook.VariableType.RangeType.rangeType;
 import static edu.si.codebook.Codebook.VariableType.variableType;
@@ -63,13 +62,6 @@ public class Codebook {
     @XmlElement(namespace = "http://purl.org/dc/terms/", nillable = true)
     public String title, description, creator, date, identifier;
 
-    /*@XmlElementWrapper
-    @XmlElement(name = "variable")
-    public Sequence<VariableType> getVariables() {
-        return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
-                metadata.minMaxes(), metadata.enumeratedValues()).map(this);
-    }*/
-
     @XmlElementWrapper
     @XmlElement(name = "variable")
     public List<VariableType> getVariables() {
@@ -84,20 +76,6 @@ public class Codebook {
         }
         return output;
     }
-
-    /**
-     * Constructs a single variable description.
-     */
-    /*@Override
-    public VariableType call(
-            final Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>> data) {
-        final String name = data.first();
-        final Ratio unparseableOverTotal = data.second();
-        final DataType type = data.third();
-        final Range<?> range = data.fourth().get(type);
-        final Set<String> enumeration = data.fifth().get(type);
-        return variableType(name, unparseableOverTotal, type, range, enumeration);
-    }*/
 
     public static Codebook codebook(final TabularMetadata m) {
         final Codebook codebook = new Codebook();
@@ -127,10 +105,6 @@ public class Codebook {
         protected Set<String> enumeration;
 
         public String vocabulary;
-
-        /*@XmlElementWrapper
-        @XmlElement(name = "value")
-        public Set<String> enumeration;*/
 
         @XmlAttribute
         public String name, type;

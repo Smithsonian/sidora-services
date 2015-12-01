@@ -28,10 +28,11 @@
 
 package edu.si.codebook;
 
-import com.google.common.collect.Range;
 import edu.si.sidora.tabularmetadata.TabularMetadata;
 import edu.si.sidora.tabularmetadata.TabularMetadata.Ratio;
 import edu.si.sidora.tabularmetadata.datatype.DataType;
+import com.google.common.collect.Range;
+
 
 import javax.xml.bind.annotation.*;
 import java.util.ArrayList;
@@ -61,13 +62,6 @@ public class Codebook {
     @XmlElement(namespace = "http://purl.org/dc/terms/", nillable = true)
     public String title, description, creator, date, identifier;
 
-    /*@XmlElementWrapper
-    @XmlElement(name = "variable")
-    public Sequence<VariableType> getVariables() {
-        return zip(metadata.headerNames(), metadata.unparseablesOverTotals(), metadata.fieldTypes(),
-                metadata.minMaxes(), metadata.enumeratedValues()).map(this);
-    }*/
-
     @XmlElementWrapper
     @XmlElement(name = "variable")
     public List<VariableType> getVariables() {
@@ -83,20 +77,6 @@ public class Codebook {
         return output;
     }
 
-    /**
-     * Constructs a single variable description.
-     */
-    /*@Override
-    public VariableType call(
-            final Quintuple<String, Ratio, DataType, Map<DataType, Range<?>>, Map<DataType, Set<String>>> data) {
-        final String name = data.first();
-        final Ratio unparseableOverTotal = data.second();
-        final DataType type = data.third();
-        final Range<?> range = data.fourth().get(type);
-        final Set<String> enumeration = data.fifth().get(type);
-        return variableType(name, unparseableOverTotal, type, range, enumeration);
-    }*/
-
     public static Codebook codebook(final TabularMetadata m) {
         final Codebook codebook = new Codebook();
         codebook.metadata = m;
@@ -107,7 +87,17 @@ public class Codebook {
      * Serializes a single variable description.
      */
     @XmlAccessorType(NONE)
-    @XmlType(propOrder = {"label", "description", "enumeration", "projection", "datum", "format", "range", "uom", "valueForMissingValue", "dateFormat"})
+    @XmlType(propOrder = {
+            "label",
+            "description",
+            "enumeration",
+            "projection",
+            "datum",
+            "format",
+            "range",
+            "uom",
+            "valueForMissingValue",
+            "dateFormat"})
     public static class VariableType {
 
         private Range<?> range;
@@ -115,10 +105,6 @@ public class Codebook {
         protected Set<String> enumeration;
 
         public String vocabulary;
-
-        /*@XmlElementWrapper
-        @XmlElement(name = "value")
-        public Set<String> enumeration;*/
 
         @XmlAttribute
         public String name, type;
@@ -165,13 +151,13 @@ public class Codebook {
         private static String getType(String type) {
 
             switch (type) {
-                case "decimal" :
+                case "decimal":
                     type = "numeric";
-                case "integer" :
+                case "integer":
                     type = "numeric";
-                case "positiveinteger" :
+                case "positiveinteger":
                     type = "numeric";
-                case "nonNegativeinteger" :
+                case "nonNegativeinteger":
                     type = "numeric";
             }
             return type;
@@ -215,9 +201,9 @@ public class Codebook {
         }
     }
 
-
     @XmlAccessorType(FIELD)
-    @XmlType(propOrder = {"title", "description", "creator", "date", "identifier"}, namespace = "http://purl.org/dc/terms/")
+    @XmlType(propOrder = {"title", "description", "creator", "date", "identifier"},
+            namespace = "http://purl.org/dc/terms/")
     public static class CodebookMeta {
 
         public String title, description, creator, date, identifier;
