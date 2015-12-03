@@ -39,9 +39,6 @@
 
     <modules>
         <module>tabular-metadata-cxf-services-SMX-blueprint</module>
-        <module>tabular-metadata-cxf-services-SMX-spring</module>
-        <module>tabular-metadata-cxf-services-webapp</module>
-        <module>tabular-metadata-cxf-services-SMX-camel</module>
     </modules>
 
     <repositories>
