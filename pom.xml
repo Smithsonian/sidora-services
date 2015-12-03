@@ -61,11 +61,11 @@
         <java.version>1.8</java.version>
         <!--<spring.version>4.2.0.RELEASE</spring.version>-->
         <cxf.version>3.0.6</cxf.version>
-        <spring.version>3.2.14.RELEASE</spring.version>
+        <spring.version>3.2.14.RELEASE_1</spring.version>
         <jaxb.api.version>2.2</jaxb.api.version>
         <servicemix.specs.version>2.5.0</servicemix.specs.version>
         <javax-inject.bundle.version>1.0.0</javax-inject.bundle.version>
-        <google.guava.version>15.0</google.guava.version>
+        <google.guava.version>18.0</google.guava.version>
         <slf4j.version>1.7.12</slf4j.version>
         <commons-httpclient.bundle.version>3.1_7</commons-httpclient.bundle.version>
         <commons-codec.bundle.version>1.10</commons-codec.bundle.version>
@@ -76,13 +76,12 @@
         <maven-eclipse-plugin.version>2.9</maven-eclipse-plugin.version>
         <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
         <jetty-plugin-version>9.2.10.v20150310</jetty-plugin-version>
-        <jetty-runner-groupId>org.eclipse.jetty</jetty-runner-groupId>
+        <jacoco.version>0.7.5.201505241946</jacoco.version>
     </properties>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
@@ -142,8 +141,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
-
 </project>

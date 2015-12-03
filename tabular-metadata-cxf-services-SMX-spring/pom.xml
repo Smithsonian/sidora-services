@@ -15,26 +15,6 @@
     <description>SMX OSGi Spring CXF service for developing metadata from tabular data files.</description>
     <packaging>bundle</packaging>
 
-    <!--<properties>
-        <cxf.version>3.0.5</cxf.version>
-        <spring.version>3.2.11.RELEASE</spring.version>
-        <jaxb.api.version>2.2</jaxb.api.version>
-        <servicemix.specs.version>2.5.0</servicemix.specs.version>
-    </properties>-->
-
-    <repositories>
-        <repository>
-            <id>com.springsource.repository.bundles.release</id>
-            <name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/release</url>
-        </repository>
-        <repository>
-            <id>com.springsource.repository.bundles.external</id>
-            <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/external</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
             <groupId>com.asoroka.sidora</groupId>

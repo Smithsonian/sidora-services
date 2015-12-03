@@ -48,8 +48,10 @@ import static edu.si.codebook.Codebook.codebook;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
+ *
  * @author A. Soroka
  * @author Jason Birkhimer
+ *
  */
 @Path("/")
 public class TabularMetadataGeneratorEndpoint {
@@ -62,9 +64,14 @@ public class TabularMetadataGeneratorEndpoint {
     @Inject
     private TabularMetadataGenerator generator;
 
+    public TabularMetadataGeneratorEndpoint() {
+        generator = new TabularMetadataGenerator();
+        translator = new ExcelToTabular();
+    }
+
     @GET
     @Path("/")
-    @Produces({"application/xml", "text/xml"})
+    @Produces("text/xml")
     public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders) throws IOException, URISyntaxException {
 
         log.info("Parsing Started...");
@@ -76,7 +83,7 @@ public class TabularMetadataGeneratorEndpoint {
 
         if (!fileExt.endsWith(".csv") && !fileExt.endsWith(".xls") && !fileExt.endsWith(".xlsx")) {
 
-            log.info("Parsing Failed! Invalid File Type '{}'!", urlDecoded.getFile());
+            log.info("Parsing Failed! Invalid File Type '{}'!", fileExt);
 
             Fault fault = new Fault(new Exception("File '" + urlDecoded.getFile() + "' Not A Valid File Type!" ));
             fault.setStatusCode(400);

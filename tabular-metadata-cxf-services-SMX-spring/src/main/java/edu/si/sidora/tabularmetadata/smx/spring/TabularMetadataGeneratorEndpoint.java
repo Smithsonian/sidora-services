@@ -28,26 +28,24 @@
 
 package edu.si.sidora.tabularmetadata.smx.spring;
 
-import static edu.si.codebook.Codebook.codebook;
-import static org.slf4j.LoggerFactory.getLogger;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import com.asoroka.sidora.excel2tabular.ExcelToTabular;
+import edu.si.codebook.Codebook;
+import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
+import org.apache.cxf.interceptor.Fault;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
-import com.asoroka.sidora.excel2tabular.ExcelToTabular;
-import edu.si.sidora.tabularmetadata.TabularMetadataGenerator;
-
-import edu.si.codebook.Codebook;
-import org.apache.cxf.interceptor.Fault;
-import org.slf4j.Logger;
+import static edu.si.codebook.Codebook.codebook;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  *
@@ -109,6 +107,5 @@ public class TabularMetadataGeneratorEndpoint {
         log.info("Parsing Finished...");
 
         return codebook(generator.getMetadata(urlDecoded, hasHeaders));
-
     }
 }

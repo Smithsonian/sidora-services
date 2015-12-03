@@ -27,14 +27,13 @@
   ~ those of third-party libraries, please see the product release notes.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>tabular-metadata-cxf-services</artifactId>
         <groupId>edu.si.sidora</groupId>
         <version>1.0-SNAPSHOT</version>
-        <!--<relativePath>../pom.xml</relativePath>-->
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -42,31 +41,6 @@
     <name>SMX OSGi Blueprint CXF service for Tabular Metadata Generator</name>
     <description>SMX OSGi Blueprint CXF service for developing metadata from tabular data files.</description>
     <packaging>bundle</packaging>
-
-    <!--<properties>
-        &lt;!&ndash;<cxf.version>${cxf.version}</cxf.version>&ndash;&gt;
-
-        <jaxb.api.version>2.2</jaxb.api.version>
-
-        <javax.inject.version>1.0.0</javax.inject.version>
-        <servicemix.specs.version>2.5.0</servicemix.specs.version>
-        <slf4j.version>1.7.12</slf4j.version>
-        <spring.version>3.2.14.RELEASE_1</spring.version>
-
-    </properties>-->
-
-    <repositories>
-        <repository>
-            <id>com.springsource.repository.bundles.release</id>
-            <name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/release</url>
-        </repository>
-        <repository>
-            <id>com.springsource.repository.bundles.external</id>
-            <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/external</url>
-        </repository>
-    </repositories>
 
     <dependencies>
         <dependency>
@@ -89,7 +63,6 @@
             <groupId>javax.inject</groupId>
             <artifactId>com.springsource.javax.inject</artifactId>
             <version>${javax-inject.bundle.version}</version>
-            <!--<version>1.0.0</version>-->
         </dependency>
 
         <!-- testing -->
@@ -115,6 +88,7 @@
                 <version>${maven-bundle-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
+                    <obrRepository>/home/fedora/.m2/repository</obrRepository>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Description>${project.description}</Bundle-Description>
@@ -133,7 +107,7 @@
                             edu.si.sidora.tabularmetadata*,
                             com.asoroka.sidora.excel2tabular*,
                             edu.si.codebook*,
-                            com.googlecode.totallylazy*,
+                            <!--com.googlecode.totallylazy*,-->
                             org.joda.time*,
                             org.joda.convert*,
                             javax.inject,
@@ -144,6 +118,4 @@
             </plugin>
         </plugins>
     </build>
-
-
 </project>
