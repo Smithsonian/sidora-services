@@ -1,0 +1,4 @@
+"Animal count","Animal color","isMammal","DateSeen"
+1,"Red","True","2014-10-2"
+3,"Blue","True","2014-10-3"
+4,"Green","False","2014-10-4"
