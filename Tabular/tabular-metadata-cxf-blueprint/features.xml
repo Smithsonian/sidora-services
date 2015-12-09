@@ -37,13 +37,4 @@
         <bundle dependency="true">mvn:com.google.guava/guava/${google.guava.version}</bundle>
         <bundle>mvn:edu.si.sidora/tabular-metadata-cxf-services-SMX-blueprint/${version}</bundle>
     </feature>
-    <feature name="tabular-metadata-spring" version="${version}" resolver="(obr)">
-        <feature version="${cxf.version}">cxf</feature>
-        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/${spring.version}</bundle>
-        <bundle dependency="true">mvn:commons-codec/commons-codec/${commons-codec.bundle.version}</bundle>
-        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/${commons-httpclient.bundle.version}</bundle>
-        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/3.11_1</bundle>
-        <bundle dependency="true">mvn:com.google.guava/guava/${google.guava.version}</bundle>
-        <bundle>mvn:edu.si.sidora/tabular-metadata-cxf-services-SMX-spring/${version}</bundle>
-    </feature>
 </features>
