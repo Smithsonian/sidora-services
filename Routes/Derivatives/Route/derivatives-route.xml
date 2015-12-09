@@ -1160,7 +1160,7 @@
             <!-- Create a video derivative using ffmpeg. -->
             <recipientList>
                 <simple>
-                    exec:/usr/local/bin/ffmpeg?args=-i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec libfdk_aac -ab 128k -ac 2 -async 1 ${header.CamelFileNameProduced}.mp4&amp;useStderrOnEmptyStdout=true
+                    exec:/usr/local/bin/ffmpeg?args=-nostats -nostdin -i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec libfdk_aac -ab 128k -ac 2 -async 1 ${header.CamelFileNameProduced}.mp4
                 </simple>
             </recipientList>
 
