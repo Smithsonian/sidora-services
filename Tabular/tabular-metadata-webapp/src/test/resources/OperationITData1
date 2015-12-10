@@ -1,0 +1,37 @@
+<codebook xmlns="urn:si.edu/codebook#">
+    <variables>
+        <variable name="NAME" type="http://www.w3.org/2001/XMLSchema#string">
+            <enumeration>
+                <value>Kirk</value>
+                <value>McCoy</value>
+            </enumeration>
+            <description>[Found 0 values that failed to parse as http://www.w3.org/2001/XMLSchema#string out of 2 values examined by automatic process.]</description>
+            <range>
+                <min>Kirk</min>
+                <max>McCoy</max>
+            </range>
+        </variable>
+        <variable name="RANK" type="http://www.w3.org/2001/XMLSchema#string">
+            <enumeration>
+                <value>Admiral</value>
+                <value>Doctor</value>
+            </enumeration>
+            <description>[Found 0 values that failed to parse as http://www.w3.org/2001/XMLSchema#string out of 2 values examined by automatic process.]</description>
+            <range>
+                <min>Admiral</min>
+                <max>Doctor</max>
+            </range>
+        </variable>
+        <variable name="SERIAL NUMBER" type="http://www.w3.org/2001/XMLSchema#positiveInteger">
+            <enumeration>
+                <value>002</value>
+                <value>567</value>
+            </enumeration>
+            <description>[Found 0 values that failed to parse as http://www.w3.org/2001/XMLSchema#positiveInteger out of 2 values examined by automatic process.]</description>
+            <range>
+                <min>2</min>
+                <max>567</max>
+            </range>
+        </variable>
+    </variables>
+</codebook>
