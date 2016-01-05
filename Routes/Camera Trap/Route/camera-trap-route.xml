@@ -55,11 +55,13 @@
 
     <bean id="saxonFactory" class="net.sf.saxon.TransformerFactoryImpl"/>
 
+    <bean id="deploymentPkgValidator" class="edu.si.services.beans.cameratrap.DeploymentPackageValidator"/>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="CTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
-                  xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result" 
+                  xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   trace="false">
 
@@ -168,7 +170,12 @@
                     </otherwise>
                 </choice>
                 -->
-
+                <setHeader headerName="ImageCount">
+                    <xpath resultType="java.lang.Integer">
+                        count(//ImageFileName)
+                    </xpath>
+                </setHeader>
+                <to uri="bean:deploymentPkgValidator?method=validateImageCount"/>
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
@@ -220,7 +227,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapProcessPackage">
             <from uri="direct:processPackage"/>
             <log message="${id} CameraTrapIngest: Starting Package processing..."
@@ -234,7 +241,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapProcessSite">
             <from uri="direct:processSite"/>
             <log message="${id} CameraTrapIngest: Starting Site processing... "
@@ -275,7 +282,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapAddManifestDataStream">
             <from uri="direct:addManifestDataStream"/>
             <log message="${id} CameraTrapIngest: Starting Manifest processing ..."
@@ -288,7 +295,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapAddFGDCDataStream">
             <from uri="direct:addFGDCDataStream"/>
             <log message="${id} CameraTrapIngest: Starting FGDC processing ..."
@@ -304,7 +311,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapProcessResources">
             <from uri="direct:processResources"/>
             <log message="${id} CameraTrapIngest: Starting resource processing ..."
@@ -363,7 +370,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
             <log message="${id} CameraTrapIngest: Started Image processing ..."
@@ -620,7 +627,7 @@
                     //fits:fileinfo/fits:created[@toolname="Exiftool"]
                 </xpath>
             </setHeader>
-            
+
             <!--
             <log message="MODS FITS Created Date - ${header.FITSCreatedDate}"/>
             -->
@@ -669,7 +676,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapCreateArchivalImage">
             <from uri="direct:createArchivalImage"/>
             <log message="${id} CameraTrapIngest: Started creating archival image ..."
@@ -686,7 +693,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapProcessParents">
             <from uri="direct:processParents"/>
             <log message="${id} CameraTrapIngest: Started processing parents ..."
@@ -737,7 +744,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapFindObject">
             <from uri="direct:findObject"/>
             <log message="${id} CameraTrapIngest: Started find object ..."
@@ -911,7 +918,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapProcessSubproject">
             <from uri="direct:processSubproject"/>
             <log message="${id} CameraTrapIngest: Started processing subproject ..."
@@ -980,7 +987,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-        
+
         <route id="CameraTrapProcessProject">
             <from uri="direct:processProject"/>
             <log message="${id} CameraTrapIngest: Started processing project ..."
