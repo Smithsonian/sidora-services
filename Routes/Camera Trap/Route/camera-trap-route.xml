@@ -63,7 +63,8 @@
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
-                  trace="false">
+                  trace="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.1.xsd">
 
         <!--
           The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
@@ -170,12 +171,6 @@
                     </otherwise>
                 </choice>
                 -->
-                <setHeader headerName="ImageCount">
-                    <xpath resultType="java.lang.Integer">
-                        count(//ImageFileName)
-                    </xpath>
-                </setHeader>
-                <to uri="bean:deploymentPkgValidator?method=validateImageCount"/>
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
@@ -194,6 +189,24 @@
             <log message="${id} CameraTrapIngest: Starting Package validation ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+
+            <setHeader headerName="ResourceFileType">
+                <simple resultType="java.lang.String">
+                    .JPG, .JPEG
+                </simple>
+            </setHeader>
+            <setHeader headerName="ResourceCount">
+                <xpath resultType="java.lang.Integer">
+                    count(//ImageFileName)
+                </xpath>
+            </setHeader>
+            <to uri="bean:deploymentPkgValidator?method=validateResourceCount"/>
+            <!--  Keeping the validator result in the header to allow the rest of the validation to go through and raise exception at the end of route. -->
+            <setHeader headerName="ValidateResourceCountResult">
+                <simple resultType="java.lang.Integer">
+                    ${body}
+                </simple>
+            </setHeader>
 
             <split>
                 <xpath headerName="ManifestXML">
@@ -222,7 +235,19 @@
                      logName="edu.si.ctingest"/>
                 <!-- We should check the image count to see if it exactly matches the image file count. -->
             </split>
-
+            <!-- This throws custom exception when the resource count validator was unsuccessful. -->
+            <choice>
+                <when>
+                    <simple>${header.ValidateResourceCountResult} == '0'</simple>
+                    <throwException exceptionType="edu.si.services.beans.cameratrap.DeploymentPackageException"
+                                    message="The resource counts do not match - extra resource(s) found in the file system than manifest"/>
+                </when>
+                <when>
+                    <simple>${header.ValidateResourceCountResult} == '-1'</simple>
+                    <throwException exceptionType="edu.si.services.beans.cameratrap.DeploymentPackageException"
+                                    message="The resource counts do not match - less resource(s) found in the file system than manifest"/>
+                </when>
+            </choice>
             <log message="${id} CameraTrapIngest: Finished Package validation."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
