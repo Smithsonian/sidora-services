@@ -28,6 +28,12 @@
 
 package edu.si.sidora.tabularmetadata.heuristics.headers;
 
+import edu.si.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
+import edu.si.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
+
 import static edu.si.sidora.tabularmetadata.datatype.DataType.String;
 import static edu.si.sidora.tabularmetadata.testframework.TestUtilities.addValues;
 import static org.hamcrest.CoreMatchers.is;
@@ -35,14 +41,6 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
-
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
-
-import edu.si.sidora.tabularmetadata.heuristics.headers.DefaultHeaderHeuristic;
-import edu.si.sidora.tabularmetadata.testframework.RowsOfRandomValuesForAllTypes;
-import edu.si.sidora.tabularmetadata.testframework.TestUtilities.RandomValuesForAType;
 
 @RunWith(Theories.class)
 public class DefaultHeaderHeuristicTest extends HeaderHeuristicTestFrame<DefaultHeaderHeuristic> {

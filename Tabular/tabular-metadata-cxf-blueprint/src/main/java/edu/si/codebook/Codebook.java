@@ -200,22 +200,4 @@ public class Codebook {
             }
         }
     }
-
-    @XmlAccessorType(FIELD)
-    @XmlType(propOrder = {"title", "description", "creator", "date", "identifier"},
-            namespace = "http://purl.org/dc/terms/")
-    public static class CodebookMeta {
-
-        public String title, description, creator, date, identifier;
-
-        protected static CodebookMeta codebookMeta() {
-            final CodebookMeta codebookMeta = new CodebookMeta();
-            codebookMeta.title = "Codebook 20150824 1445";
-            codebookMeta.description = "Preview generated...";
-            codebookMeta.creator = "Jason Birkhimer";
-            codebookMeta.date = "Todays Date";
-            codebookMeta.identifier = "Identifier";
-            return codebookMeta;
-        }
-    }
 }
