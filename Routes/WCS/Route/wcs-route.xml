@@ -140,11 +140,11 @@
                 </transform>
                 <to uri="reader:file?type=text"/>
                 <log message="${id} WCSIngest: Body - ${body}" loggingLevel="WARN"/>
-                <to uri="validator:file:Input/schemas/WCSDeploymentManifest.xsd"/>
+                <to uri="validator:file:Input/schemas/Unified_WCSDeploymentManifest.xsd"/>
 
                 <!-- Add Schematron validation. -->
-                <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/DeploymentManifest2014.sch"/> -->
-                <!-- <to uri="schematron:///opt/sidora/servicemix/Input/schemas/DeploymentManifest2014.sch"/>
+                <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/Unified_WCSDeploymentManifest.sch"/> -->
+                <!-- <to uri="schematron:///opt/sidora/servicemix/Input/schemas/Unified_WCSDeploymentManifest.sch"/>
                 <log message="${id} WCSIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"/> -->
 
