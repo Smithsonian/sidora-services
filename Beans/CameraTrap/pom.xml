@@ -44,6 +44,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <camel.version>2.14.1</camel.version>
+        <activemq.version>5.12.1</activemq.version>
         <slf4j.version>1.7.6</slf4j.version>
         <log4j.version>1.2.17</log4j.version>
     </properties>
@@ -56,42 +57,6 @@
             <version>${camel.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!--
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-saxon</artifactId>
-            <version>${camel.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        -->
-
-        <!--
-        <dependency>
-            <groupId>net.sf.saxon</groupId>
-            <artifactId>Saxon-HE</artifactId>
-            <version>9.6.0-5</version>
-            <type>bundle</type>
-        </dependency>
-        -->
-
-        <!--
-        <dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.saxon</artifactId>
-            <version>9.5.1-5_1</version>
-            <scope>provided</scope>
-        </dependency>
-        -->
-
-        <!--
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>maven-bundle-plugin</artifactId>
-            <version>2.5.4</version>
-            <type>maven-plugin</type>
-        </dependency>
-        -->
 
         <!-- Logging -->
         <dependency>
@@ -120,6 +85,19 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
             <version>${camel.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-camel</artifactId>
+            <version>${activemq.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-pool</artifactId>
+            <version>${activemq.version}</version>
             <scope>test</scope>
         </dependency>
 

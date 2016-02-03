@@ -63,6 +63,8 @@
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
+                  xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
+                  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                   trace="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.1.xsd">
 
@@ -177,6 +179,16 @@
                 <!-- Process the deployment -->
                 <to uri="direct:processPackage"/>
 
+                <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
+                <log message="${id} CameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
+                     loggingLevel="INFO"
+                     logName="edu.si.ctingest"/>
+                <delay>
+                    <constant>6000</constant>
+                </delay>
+                <!-- Validate image count and check filenames. -->
+                <to uri="direct:validateIngest"/>
+
             </threads>
 
             <log message="${id} CameraTrapIngest: Finished Camera Trap processing!"
@@ -249,6 +261,67 @@
                 </when>
             </choice>
             <log message="${id} CameraTrapIngest: Finished Package validation."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapValidateIngest">
+            <from uri="direct:validateIngest"/>
+
+            <log message="${id} CameraTrapIngest: Starting Post validation ..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <!-- RELS-EXT Resource reference count for validation.  The number includes the observation resource objs-->
+            <setHeader headerName="RelsExtResourceCount">
+                <xpath resultType="java.lang.String">
+                    count(/rdf:RDF/rdf:Description/fedora:hasResource)
+                </xpath>
+            </setHeader>
+            <to uri="direct:validatePostResourceCount"/>
+
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${headers.SitePID}
+                </simple>
+            </setHeader>
+            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
+
+            <!-- Configurable max redelivery attempt for the Resource OBJ RI search validation-->
+            <setHeader headerName="ValidationMaxRedeliveryAttempt">
+                <simple resultType="java.lang.Integer">
+                    5
+                </simple>
+            </setHeader>
+
+            <split streaming="true">
+                <xtokenize>//fedora:hasResource</xtokenize>
+                <!-- Stashing the PID in the header in case of RI search redelivery attempts for later use-->
+                <setHeader headerName="ValidationPID">
+                    <xpath resultType="java.lang.String">
+                        //fedora:hasResource/@rdf:resource/substring-after(., 'info:fedora/')
+                    </xpath>
+                </setHeader>
+                <!-- Counter to track the number of retry attempts for RI search validation-->
+                <setHeader headerName="ValidationRedeliveryCounter">
+                    <simple resultType="java.lang.Integer">
+                        0
+                    </simple>
+                </setHeader>
+                <!-- Configurable delay for each Resource OBJ RI search validation attempts-->
+                <setHeader headerName="ValidationRedeliveryDelay">
+                    <simple resultType="java.lang.Integer">
+                        2000
+                    </simple>
+                </setHeader>
+
+                <to uri="direct:validateFedoraResource"/>
+                <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                     loggingLevel="INFO"
+                     logName="edu.si.ctingest"/>
+            </split>
+
+            <log message="${id} CameraTrapIngest: Finished Post validation"
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
@@ -543,6 +616,10 @@
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
+            <setHeader headerName="ResourceCount">
+                <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
             <log message="${id} CameraTrapIngest: Finished Researcher's data processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -589,6 +666,10 @@
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+
+            <setHeader headerName="ResourceCount">
+                <simple>${header.ResourceCount}++</simple>
+            </setHeader>
 
             <log message="${id} CameraTrapIngest: Finished Volunteer's data processing."
                  loggingLevel="INFO"
