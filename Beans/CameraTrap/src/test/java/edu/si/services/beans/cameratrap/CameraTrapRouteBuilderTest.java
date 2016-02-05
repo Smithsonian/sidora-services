@@ -140,7 +140,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         int camelFileParent = 10002002;
         int validationRedeliveryCounter = 1;
         int validationMaxRedeliveryAttempt = 10;
-        String validationPID = "ct:100";
+        String validationPID = "test:100";
 
         //using adviceWith to mock the activemq component for testing purpose
         context.getRouteDefinitions().get(1).adviceWith(context, new AdviceWithRouteBuilder() {
