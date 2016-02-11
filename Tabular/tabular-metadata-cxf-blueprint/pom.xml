@@ -131,7 +131,7 @@
                 <version>${maven-bundle-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <obrRepository>/home/fedora/.m2/repository</obrRepository>
+                    <obrRepository>~/.m2/repository</obrRepository>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Description>${project.description}</Bundle-Description>
