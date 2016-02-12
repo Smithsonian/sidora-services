@@ -67,13 +67,13 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         int relsExtResourceCount = 103;
 
         //using adviceWith to mock the activemq component for testing purpose
-        context.getRouteDefinitions().get(0).adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("CameraTrapValidatePostResourceCount").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                mockEndpoints("activemq:queue*");
+                //find all activemq endoints to mock:activemq endpoint
+                mockEndpointsAndSkip("activemq:queue*");
             }
         });
-
         //expected message body response
         mockActiveMQEndpoint.expectedBodiesReceived(String.format("Deployment Package ID - %s, Message - " +
                 "Post Resource Count validation failed.  Expected %s but found %s", camelFileParent, resourceCount, relsExtResourceCount));
@@ -106,7 +106,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         String toSendBody = "some message";
 
         //using adviceWith to added mock endpoint with the id anchor for testing purpose
-        context.getRouteDefinitions().get(0).adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("CameraTrapValidatePostResourceCount").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("ValidatePostResourceCountWhenBlock").after().to("mock:result");
@@ -143,10 +143,13 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         String validationPID = "test:100";
 
         //using adviceWith to mock the activemq component for testing purpose
-        context.getRouteDefinitions().get(1).adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("CameraTrapValidateFedoraResource").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                mockEndpoints("activemq:queue*");
+                //find all activemq endoints to mock:activemq endpoint
+                mockEndpointsAndSkip("activemq:queue*");
+
+                //replacing the first to definition to mock; for sending a message to query the Fedora RI
                 weaveByType(ToDefinition.class).selectFirst().replace().to("mock:result");
             }
         });
