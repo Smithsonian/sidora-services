@@ -35,7 +35,7 @@
         </encoder>
     </appender>
     
-    <logger name="com.asoroka" additivity="false" level="DEBUG">
+    <logger name="edu.si" additivity="false" level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </logger>
     <root additivity="false" level="WARN">

@@ -8,11 +8,11 @@
 
 ##Install projects to local maven repository:
 
-####excel2tabular:
+####excel2tabular-translator:
 
-`git clone https://github.com/ocymum/excel2tabular.git`
+`git clone https://github.com/Smithsonian/sidora-services.git`
 
-`cd excel2tabular`
+`cd sidora-services/Tabular`
 
 `mvn clean install -DskipTests=true`
 

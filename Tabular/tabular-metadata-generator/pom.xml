@@ -11,7 +11,7 @@
 	<artifactId>tabular-metadata-generator</artifactId>
 	<packaging>bundle</packaging>
 
-	<name>Tabular Metadata Generator</name>
+	<name>SI :: Services :: Tabular :: Tabular Metadata Generator</name>
 	<description>Core machinery for developing metadata from tabular data files.</description>
 
 	<dependencies>

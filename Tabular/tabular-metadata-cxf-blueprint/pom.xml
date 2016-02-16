@@ -42,7 +42,7 @@
     <artifactId>tabular-metadata-cxf-services-SMX-blueprint</artifactId>
     <packaging>bundle</packaging>
 
-    <name>SMX OSGi Blueprint CXF service for Tabular Metadata Generator</name>
+    <name>SI :: Services :: Tabular :: CXF Tabular Metadata Generator</name>
     <description>SMX OSGi Blueprint CXF service for developing metadata from tabular data files.</description>
 
     <properties>
@@ -74,7 +74,7 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.asoroka.sidora</groupId>
+            <groupId>edu.si.sidora</groupId>
             <artifactId>excel2tabular-translator</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
@@ -124,8 +124,6 @@
                             *;resolution:=optional
                         </Import-Package>
                         <Export-Package>
-                            <!--edu.si.sidora.tabularmetadata*,-->
-                            <!--com.asoroka.sidora.excel2tabular*,-->
                             edu.si.codebook*,
                             org.joda.time*,
                             org.joda.convert*,

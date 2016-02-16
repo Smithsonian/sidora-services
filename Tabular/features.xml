@@ -35,7 +35,7 @@
         <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/${commons-httpclient.bundle.version}</bundle>
         <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/${apache-poi.version}</bundle>
         <bundle dependency="true">mvn:com.google.guava/guava/${google.guava.version}</bundle>
-        <bundle dependency="true">mvn:com.asoroka.sidora/excel2tabular-translator/0.0.1-SNAPSHOT</bundle>
+        <bundle dependency="true">mvn:edu.si.sidora/excel2tabular-translator/0.0.1-SNAPSHOT</bundle>
         <bundle dependency="true">mvn:edu.si.sidora/tabular-metadata-generator/${version}</bundle>
         <bundle>mvn:edu.si.sidora/tabular-metadata-cxf-services-SMX-blueprint/${version}</bundle>
     </feature>

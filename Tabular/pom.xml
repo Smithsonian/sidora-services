@@ -10,11 +10,12 @@
 	<artifactId>tabular-metadata</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<name>Tabular Metadata Generation Facilities</name>
+	<name>SI :: Services :: Tabular</name>
 
 	<description>Simple utilities for developing metadata from tabular data files.</description>
 
 	<modules>
+		<module>excel2tabular-translator</module>
 		<module>tabular-metadata-generator</module>
 		<module>tabular-metadata-cxf-blueprint</module>
 	</modules>
@@ -193,7 +194,6 @@
 						</excludes>
 						<properties>
 							<name>${project.artifactId}</name>
-							<year>${project.copyrightYear}</year>
 							<holder>${project.organization.name}</holder>
 						</properties>
 						<encoding>UTF-8</encoding>
