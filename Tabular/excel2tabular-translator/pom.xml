@@ -1,18 +1,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>excel2tabular-translator</artifactId>
 
-	<parent>
-		<groupId>com.asoroka.sidora</groupId>
-		<artifactId>excel2tabular</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
-	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.asoroka.sidora</groupId>
+	<artifactId>excel2tabular-translator</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
 
 	<packaging>bundle</packaging>
 
 	<name>Excel To Tabular Data Translator</name>
 	<description>Simple transformation from Excel spreadsheets to tabular data files, e.g. CSV or TSV.</description>
+
+	<developers>
+		<developer>
+			<id>ocymum</id>
+			<name>A. Soroka</name>
+			<email>ocymum@gmail.com</email>
+			<timezone>-5</timezone>
+		</developer>
+	</developers>
 
 	<properties>
 		<powermock.version>1.6.0</powermock.version>
@@ -47,6 +53,7 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
+			<version>1.1.2</version>
 		</dependency>
 
 		<!-- testing -->
@@ -68,6 +75,8 @@
 			<version>1.55</version>
 			<scope>test</scope>
 		</dependency>
+
+
 	</dependencies>
 
 	<build>
@@ -80,6 +89,11 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.2</version>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
