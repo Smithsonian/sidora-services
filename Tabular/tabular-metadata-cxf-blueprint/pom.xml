@@ -33,12 +33,17 @@
 
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>edu.si.sidora</groupId>
+        <artifactId>tabular-metadata</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
     <artifactId>tabular-metadata-cxf-services-SMX-blueprint</artifactId>
-    <name>SMX OSGi Blueprint CXF service for Tabular Metadata Generator</name>
-    <description>SMX OSGi Blueprint CXF service for developing metadata from tabular data files.</description>
     <packaging>bundle</packaging>
-    <groupId>edu.si.sidora</groupId>
-    <version>1.0-SNAPSHOT</version>
+
+    <name>SI :: Services :: Tabular :: CXF Tabular Metadata Generator</name>
+    <description>SMX OSGi Blueprint CXF service for developing metadata from tabular data files.</description>
 
     <properties>
         <java.version>1.8</java.version>
@@ -54,7 +59,7 @@
         <commons-codec.bundle.version>1.10</commons-codec.bundle.version>
         <build-helper-maven-plugin-version>1.8</build-helper-maven-plugin-version>
         <maven-resources-plugin-version>2.6</maven-resources-plugin-version>
-        <maven-compiler-plugin.version>3.2</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
         <maven-bundle-plugin.version>3.0.0</maven-bundle-plugin.version>
         <maven-eclipse-plugin.version>2.9</maven-eclipse-plugin.version>
         <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
@@ -62,76 +67,48 @@
         <jacoco.version>0.7.5.201505241946</jacoco.version>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>com.springsource.repository.bundles.release</id>
-            <name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/release</url>
-        </repository>
-        <repository>
-            <id>com.springsource.repository.bundles.external</id>
-            <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/external</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
-            <groupId>com.asoroka.sidora</groupId>
+            <groupId>edu.si.sidora</groupId>
             <artifactId>tabular-metadata-generator</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.asoroka.sidora</groupId>
+            <groupId>edu.si.sidora</groupId>
             <artifactId>excel2tabular-translator</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-            <version>${cxf.version}</version>
         </dependency>
+
         <!-- dependency injection -->
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>com.springsource.javax.inject</artifactId>
-            <version>${javax-inject.bundle.version}</version>
         </dependency>
+
         <!-- testing -->
         <dependency>
             <groupId>org.apache.servicemix.bundles</groupId>
             <artifactId>org.apache.servicemix.bundles.commons-httpclient</artifactId>
-            <version>${commons-httpclient.bundle.version}</version>
         </dependency>
 
         <!-- logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin.version}</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <compilerArgs>
-                        <compilerArg>-Xlint:unchecked</compilerArg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>${maven-bundle-plugin.version}</version>
-                <extensions>true</extensions>
                 <configuration>
-                    <obrRepository>~/.m2/repository</obrRepository>
+                    <obrRepository>~/fedora/.m2/repository</obrRepository>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Description>${project.description}</Bundle-Description>
@@ -147,10 +124,7 @@
                             *;resolution:=optional
                         </Import-Package>
                         <Export-Package>
-                            edu.si.sidora.tabularmetadata*,
-                            com.asoroka.sidora.excel2tabular*,
                             edu.si.codebook*,
-                            <!--com.googlecode.totallylazy*,-->
                             org.joda.time*,
                             org.joda.convert*,
                             javax.inject,

@@ -8,42 +8,26 @@
 
 ##Install projects to local maven repository:
 
-####excel2tabular:
+####excel2tabular-translator:
 
-`git clone https://github.com/ocymum/excel2tabular.git`
+`git clone https://github.com/Smithsonian/sidora-services.git`
 
-`cd excel2tabular`
+`cd sidora-services/Tabular`
 
 `mvn clean install -DskipTests=true`
 
 ####tabular-metadata:
 
-`git clone https://github.com/ocymum/tabular-metadata.git`
+`git clone https://github.com/Smithsonian/sidora-services.git`
 
-`cd tabular-metadata`
-
-`mvn clean install -DskipTests=true`
-
-####tabular-metadata-cxf-services:
-
-`git clone https://github.com/jbirkhimer/tabular-metadata-cxf-services.git`
-
-`cd tabular-metadata-cxf-services`
+`cd sidora-services/Tabular`
 
 `mvn clean install -DskipTests=true`
 
 
 ##There are several options for deploying the Tabular Data Service:
 
-1. Deploy to ServiceMix
-
-    a. using blueprint implementation
-    
-    b. using spring implementation
-    
-    c. using camel implementation [not currently available]
-
-2. Deploy to Tomcat or Jetty
+1. Deploy to ServiceMix using blueprint implementation
 
 ##Deploying to ServiceMix:
 
@@ -80,26 +64,26 @@ the repository defined by the `org.ops4j.pax.url.mvn.localRepository` variable.
 
 ###Add the Tabular Data feature repository to ServiceMix:
 
-`karaf@root> features:addurl mvn:edu.si.sidora/tabular-metadata-cxf-services/1.0-SNAPSHOT/xml/features`
+`karaf@root> feature:repo-add mvn:edu.si.sidora/tabular-metadata/0.0.1-SNAPSHOT/xml/features`
 
 ###Check that the feature has been added to ServiceMix:
 
-`karaf@root> features:list | grep tabular-metadata`
+`karaf@root> feature:list | grep tabular-metadata`
 
-###Start either the `tabular-metadata-blueprint` or `tabular-metadata-spring` CXF service:
+###Start the `tabular-metadata-blueprint` CXF service:
 
 `karaf@root> features:install tabular-metadata-blueprint`
 
 ###Check that the tabular data service was created and is active:
 
-`karaf@root> list | grep Tabular`
+`karaf@root> list | grep tabular`
 
 ###Permission problems when using local maven repo as users other than fedora
 After doing the above `mvn clean install -DskipTests=true` commands for each project
 
 Then trying to do the following from SMX to install the tabular data feature from maven repo
 
-`karaf@root> feature:repo-add mvn:edu.si.sidora/tabular-metadata-cxf-services/1.0-SNAPSHOT/xml/features`
+`karaf@root> feature:repo-add mvn:edu.si.sidora/tabular-metadata/0.0.1-SNAPSHOT/xml/features`
 
 you get permissions issues if you build the project in your local maven repo (not fedora user) and
 Servicemix is running under another user (ie. fedora)
@@ -142,18 +126,3 @@ b. Use shell config commands, for example:
    `config:edit org.apache.cxf.osgi`
    `config:propset org.apache.cxf.servlet.context /super`
    `config:update`
-
-
-##Deploying to Tomcat:
-
-`cd /tabular-metadata-cxf-services/tabular-metadata-cxf-services-webapp/target`
-
-copy `codebook.war` to `$TOMCAT_HOME/webapps`
-
-##Testing the Tabular Data Service WebApp:
-
-There is only one way to use it: send a GET (with browser or command-line tool) to:
-
-`http://localhost:8080/codebook/?url=[URL-of-my-tabular-data-file]`
-
-The URL can be a `file:///[path-to-csv,-xls,-or-xlsx-file]` URL for convenience.

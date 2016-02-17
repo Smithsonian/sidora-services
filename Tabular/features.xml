@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ Copyright 2015 Smithsonian Institution.
   ~
@@ -22,26 +21,22 @@
   ~ otherwise, even if any of the parties has been warned of the possibility of
   ~ such loss or damage.
   ~
+  ~
   ~ This distribution includes several third-party libraries, each with their own
   ~ license terms. For a complete copy of all copyright and license terms, including
   ~ those of third-party libraries, please see the product release notes.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-    <name>SI :: Services</name>
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>edu.si.services</groupId>
-    <artifactId>services</artifactId>
-    <version>1.0</version>
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>Components</module>
-        <module>Beans</module>
-        <module>Tabular</module>
-    </modules>    
-    
-</project>
+<features name="tabular-metadata-servicemix-features" xmlns="http://karaf.apache.org/xmlns/features/v1.0.0">
+    <feature name="tabular-metadata-blueprint" version="${version}" resolver="(obr)">
+        <feature version="${cxf.version}">cxf</feature>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/${spring.version}</bundle>
+        <bundle dependency="true">mvn:commons-codec/commons-codec/${commons-codec.bundle.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/${commons-httpclient.bundle.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/${apache-poi.version}</bundle>
+        <bundle dependency="true">mvn:com.google.guava/guava/${google.guava.version}</bundle>
+        <bundle dependency="true">mvn:edu.si.sidora/excel2tabular-translator/0.0.1-SNAPSHOT</bundle>
+        <bundle dependency="true">mvn:edu.si.sidora/tabular-metadata-generator/${version}</bundle>
+        <bundle>mvn:edu.si.sidora/tabular-metadata-cxf-services-SMX-blueprint/${version}</bundle>
+    </feature>
+</features>
