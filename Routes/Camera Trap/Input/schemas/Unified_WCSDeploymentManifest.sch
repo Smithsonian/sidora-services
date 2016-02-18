@@ -37,6 +37,13 @@
         </iso:rule>
     </iso:pattern>
     
+    <pattern id="unique-projectId-check">
+        <rule context="CameraTrapDeployment">
+            <iso:assert
+                test="if (SubProjectId = ProjectId) then false() else true()">Project Id and Sub-Project Id must be unique</iso:assert>
+        </rule>
+    </pattern>
+
     <iso:pattern id="required-fields-check-Owner">
         <iso:rule context="CameraTrapDeployment/ProjectOwners/ProjectOwner/ProjectOwnerName">
             <iso:assert
