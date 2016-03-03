@@ -33,6 +33,8 @@
     xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
     <!-- OSGI blueprint property placeholder -->
+    <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
+        as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="reload">
         <cm:default-properties>
             <cm:property name="si.ct.wcs.dryrun" value="false"/>
@@ -57,6 +59,9 @@
 
     <bean id="cameraTrapStaticStore" class="edu.si.services.beans.cameratrap.CameraTrapStaticStore"/>
     <!-- errorHandlerRef="wcsingestErrorHandler" -->
+
+    <!-- processsor used during fedora findObject redelivery attempts to check for in-flight process-->
+    <bean id="inFlightCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightCheckProcessor"/>
 
     <camelContext id="WCSIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -103,12 +108,12 @@
                               retryAttemptedLogLevel="WARN"/>
         </onException>
 
-        <onException useOriginalMessage="true">
+        <onException useOriginalMessage="true" onRedeliveryRef="inFlightCheckProcessor">
             <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
                               redeliveryDelay="1000"
-                              maximumRedeliveries="3"
+                              maximumRedeliveries="5"
                               retryAttemptedLogLevel="WARN"
                               retriesExhaustedLogLevel="WARN"
                               logExhaustedMessageHistory="false"/>
@@ -872,6 +877,8 @@
                         </xpath>
                         <to uri="direct:processPlot"/>
                     </filter>
+                    <!-- Clean up parent ID(s) from the static storage to unlock the wait for follow-on ingestions with same parent identifiers. -->
+                    <to uri="bean:cameraTrapStaticStore?method=removeParentIdsByDeploymentId(${header.CamelFileParent})"/>
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
@@ -955,7 +962,6 @@
                     <simple>
                         ${body} == ''
                     </simple>
-                    <to uri="bean:cameraTrapStaticStore?method=addParentId(${header.DeploymentParentId})"/>
                     <!-- Throw custom exception to trigger re-try attempts on search -->
                     <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
                                     message="The fedora object not found"/>
@@ -1038,7 +1044,6 @@
             <log message="${id} WCSIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="edu.si.wcsingest"/>
-            <to uri="direct:checkParentInFlight"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
@@ -1075,7 +1080,6 @@
                     <log message="${id} WCSIngest: Plot already exists - ${body}."
                          loggingLevel="DEBUG"
                          logName="edu.si.wcsingest"/>
-                    <to uri="bean:cameraTrapStaticStore?method=removeParentId(${header.DeploymentParentId})"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1115,7 +1119,6 @@
             <log message="${id} WCSIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="edu.si.wcsingest"/>
-            <to uri="direct:checkParentInFlight"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
@@ -1152,7 +1155,6 @@
                     <log message="${id} WCSIngest: Sub-project already exists - ${body}."
                          loggingLevel="DEBUG"
                          logName="edu.si.wcsingest"/>
-                    <to uri="bean:cameraTrapStaticStore?method=removeParentId(${header.DeploymentParentId})"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1192,7 +1194,6 @@
             <log message="${id} WCSIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="DEBUG"
                  logName="edu.si.wcsingest"/>
-            <to uri="direct:checkParentInFlight"/>
             <to uri="direct:findObject"/>
             <choice>
                 <when>
@@ -1223,7 +1224,6 @@
                     <log message="${id} WCSIngest: Project already exists - ${body}."
                          loggingLevel="DEBUG"
                          logName="edu.si.wcsingest"/>
-                    <to uri="bean:cameraTrapStaticStore?method=removeParentId(${header.DeploymentParentId})"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1233,34 +1233,6 @@
             </choice>
 
             <log message="${id} WCSIngest: Finished processing project."
-                 loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
-        </route>
-
-        <route id="WCSCheckParentInFlight">
-            <from uri="direct:checkParentInFlight"/>
-            <log message="${id} WCSIngest: Started checking in-flight parent object ..."
-                 loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
-
-            <choice>
-                <when>
-                    <simple>
-                        ${bean:cameraTrapStaticStore?method=containsParentId(${header.DeploymentParentId})} == true
-                    </simple>
-                    <log message="${id} WCSIngest: Adding delay to allow potential in-flight parent object: ${header.DeploymentParentId} to process"
-                         loggingLevel="WARN"
-                         logName="edu.si.wcsingest"/>
-                    <!-- The following delay is relative to the max total timeout for fedora search redelivery to exhaust -->
-                    <!-- i.e.) If the redelivery policy allow max 3 redeliveries, 1000 delay, and exponential backoff enabled then
-                            the following delay should be set greater than 7000 (1000 + 1000*2 + 1000*2*2) for the in-flight check to work properly-->
-                    <delay>
-                        <constant>10000</constant>
-                    </delay>
-                </when>
-            </choice>
-
-            <log message="${id} WCSIngest: Finished checking in-flight parent object ."
                  loggingLevel="INFO"
                  logName="edu.si.wcsingest"/>
         </route>

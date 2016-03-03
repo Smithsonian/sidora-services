@@ -29,8 +29,9 @@ package edu.si.services.beans.cameratrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Intended to be used as a bean with static variable(s) to store information cross deployments
@@ -44,8 +45,8 @@ public class CameraTrapStaticStore {
 
     private static final Logger log = LoggerFactory.getLogger(CameraTrapStaticStore.class);
 
-    //Set used to hold non-duplicate parent IDs
-    private static final Set<String> inFlightParentIds = new HashSet<>(0);
+    //map used to hold parent ID information and the owner of the parent ID(s) to correlate during multi-thread processing
+    private static final Map<String, String> inFlightParentIds = new HashMap<>(0);
 
     /**
      * Wrapper method to check parent ID exists in the static data structure that holds the in-flight parent IDs
@@ -53,19 +54,20 @@ public class CameraTrapStaticStore {
      * @param parentId parent object identifier such as ProjectId or SubProjectId from the deployment manifest
      * @return true or false
      */
-    public boolean containsParentId(String parentId){
+    public synchronized boolean containsParentId(String parentId) {
         log.debug("The static store contains following parent IDs: " + inFlightParentIds.toString());
-        return inFlightParentIds.contains(parentId);
+        return inFlightParentIds.containsKey(parentId);
     }
 
     /**
      * Wrapper method to add parent ID to the static data structure that holds the in-flight parent IDs
      *
      * @param parentId parent object identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param deploymentId deployment package ID; this information used to determine who is the owner of the in-flight parent ID(s)
      */
-    public synchronized void addParentId(String parentId){
-        log.debug("Adding parent Id: " + parentId);
-        inFlightParentIds.add(parentId);
+    public synchronized void addParentId(String parentId, String deploymentId){
+        log.debug("Adding parent Id: " + parentId );
+        inFlightParentIds.put(parentId, deploymentId);
     }
 
     /**
@@ -81,9 +83,28 @@ public class CameraTrapStaticStore {
     /**
      * Wrapper method to retrieve the static data structure that holds the in-flight parent IDs
      *
-     * @return contains the parent object identifier(s) in a set
+     * @return contains the parent object identifier(s) in a map
      */
-    public static Set<String> getInFlightParentIds() {
+    public synchronized Map<String, String> getInFlightParentIds() {
         return inFlightParentIds;
+    }
+
+    /**
+     * Removes all ParentIds based on the passed i deploymentId.  (Reverse look up on the data structure map)
+     *
+     * @param deploymentId deployment package ID; mainly the package directory name used during the ingestion process
+     */
+    public synchronized void removeParentIdsByDeploymentId(String deploymentId) {
+
+        final Iterator<Map.Entry<String, String>> iterator = inFlightParentIds.entrySet().iterator();
+        while(iterator.hasNext())
+        {
+            Map.Entry<String, String> entry = iterator.next();
+            if(entry.getValue().equals(deploymentId))
+            {
+                //removes parentId from the storage
+                iterator.remove();
+            }
+        }
     }
 }
