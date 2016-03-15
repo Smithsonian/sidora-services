@@ -89,6 +89,7 @@ public class InFlightCheckProcessor implements Processor{
         //wait if there is another process running for the same parent identifier
         while(parentInProcess){
             log.debug("Current thread waiting due to in-flight process: " + parentId);
+            //change sleeping behavior event driven or configurable
             Thread.sleep(2000);
             parentInProcess = cameraTrapStaticStore.containsParentId(parentId);
 
