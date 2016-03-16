@@ -1233,15 +1233,96 @@
             </setHeader>
 
             <!-- Start EAC-CPF Validation -->
-            <to uri="direct:Validate_EAC-CPF_fields"/>
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ProjectPID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the EAC-CPF datastream from the project parent -->
+            <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    EAC-CPF Latitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@latitude, //CameraTrapDeployment/ActualLatitude/text()
+                    EAC-CPF Longitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@longitude, //CameraTrapDeployment/ActualLongitude/text()
+                    EAC-CPF PublishDate, //eac:eac-cpf/eac:control/eac:localControl/eac:date, //*[@PublishDate]
+                    EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
+                </simple>
+            </setBody>
+            <!--<to uri="direct:Validate_EAC-CPF_fields"/>-->
+            <to uri="direct:ValidateDatastreamFieldList"/>
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
             <!-- Start FGDC Validation -->
-            <to uri="direct:Validate_FGDC_Fields"/>
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.SitePID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the FGDC datastream from the project parent -->
+            <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
+                    FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
+                    FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
+                </simple>
+            </setBody>
+            <!--<to uri="direct:Validate_FGDC_Fields"/>-->
+            <to uri="direct:ValidateDatastreamFieldList"/>
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
             <!-- Start MODS Validation -->
-            <to uri="direct:ValidateMODSFields"/>
+            <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ImageSequenceIdValidationPID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the MOD datastream -->
+            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream  to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()
+                </simple>
+            </setBody>
+            <!--<to uri="direct:ValidateMODSFields"/>-->
+            <to uri="direct:ValidateDatastreamFieldList"/>
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
             <!-- Start Researcher CSV Validation -->
@@ -1293,6 +1374,24 @@
                 <!-- Send Validation Errors to activemq, email, persistent dB, or Splunk! -->
                 <to uri="activemq:queue:ct..validation.error"/>
             </aggregate>
+        </route>
+
+        <!-- Validate the provided datastream and field list -->
+        <route id="ValidateDatastreamFieldList">
+            <from uri="direct:ValidateDatastreamFieldList"/>
+            <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <split streaming="true" strategyRef="validationErrorMessageAggregationStrategy">
+                <tokenize token="\r\n|\n" xml="false" trim="true" />
+                <!-- Use a bean for validation because xpathbuilder is need -->
+                <to uri="bean:ValidationBean?method=validateField"/>
+            </split>
+
+            <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Metadata Fields List Complete..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
         </route>
 
         <!-- Validate EAC-CPF fields -->
