@@ -6,14 +6,12 @@ import org.apache.camel.builder.xml.XPathBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-
 /**
  * Created by jbirkhimer on 3/10/16.
  */
-public class PostValidationBean {
+public class ValidationBean {
 
-    private static final Logger log = LoggerFactory.getLogger(PostValidationBean.class);
+    private static final Logger log = LoggerFactory.getLogger(ValidationBean.class);
     static final private String CT_LOG_NAME = "edu.si.ctingest";
     String fieldName = null;
     String camelFileParent = null;

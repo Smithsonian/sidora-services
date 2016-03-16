@@ -57,7 +57,7 @@
 
     <bean id="deploymentPkgValidator" class="edu.si.services.beans.cameratrap.DeploymentPackageValidator"/>
 
-    <bean id="postValidationBean" class="edu.si.services.beans.cameratrap.PostValidationBean"/>
+    <bean id="ValidationBean" class="edu.si.services.beans.cameratrap.ValidationBean"/>
 
     <bean id="validationErrorMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.ValidationErrorMessageAggregationStrategy"/>
 
@@ -346,7 +346,7 @@
             </split>
 
             <!-- Validate Ingest Datastream Metadata Fields -->
-            <to uri="direct:postValidateIngest"/>
+            <to uri="direct:validateDatastreamFields"/>
 
             <log message="${id} CameraTrapIngest: Finished Post validation"
                  loggingLevel="INFO"
@@ -647,6 +647,12 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
+            <setHeader headerName="ResearcherCSVPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} CameraTrapIngest: Finished Researcher's data processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -696,6 +702,12 @@
 
             <setHeader headerName="ResourceCount">
                 <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="VolunteerCSVPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
             </setHeader>
 
             <log message="${id} CameraTrapIngest: Finished Volunteer's data processing."
@@ -1206,43 +1218,63 @@
         <!-- =================================================================================================================== -->
 
 
-        <!-- Validate Post Ingest Datastream Metadata Fields -->
-        <route id="CameraTrapPostValidateIngest">
-            <from uri="direct:postValidateIngest"/>
-            <log message="${header.jasonLog} (0) CameraTrapPostValidateIngest: Starting post ingest validation ..."
-                 loggingLevel="WARN"
+        <!-- Validate Ingest Datastream Metadata Fields -->
+        <route id="CameraTrapValidateDatastreamFields">
+            <from uri="direct:validateDatastreamFields"/>
+            <log message="${id} CameraTrapValidateDatastreamFields: Starting Datastream Fields Validation ..."
+                 loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <!--<log message="${header.jasonLog} (0) \n$Body:\n${body}"
-                 loggingLevel="WARN"
-                 logName="edu.si.ctingest"/>-->
-
+            <!-- Set the header for error message aggregation -->
             <setHeader headerName="ValidationErrors">
                 <simple>
                     ValidationErrors
                 </simple>
             </setHeader>
 
-            <to uri="direct:postValidate_EAC-CPF_fields"/>
+            <!-- Start EAC-CPF Validation -->
+            <to uri="direct:Validate_EAC-CPF_fields"/>
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
-            <to uri="direct:postValidate_FGDC_Fields"/>
+            <!-- Start FGDC Validation -->
+            <to uri="direct:Validate_FGDC_Fields"/>
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
-            <to uri="direct:postValidateMODSFields"/>
-            <!--<to uri="direct:validationErrorMessageAggregationStrategy"/>-->
+            <!-- Start MODS Validation -->
+            <to uri="direct:ValidateMODSFields"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
+            <!-- Start Researcher CSV Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ResearcherCSVPID}
+                </simple>
+            </setHeader>
+
+            <to uri="direct:ValidateCSVFields"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+
+            <!-- Start Volunteer CSV Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.VolunteerCSVPID}
+                </simple>
+            </setHeader>
+            
+            <to uri="direct:ValidateCSVFields"/>
+
+            <!-- Notify the aggregator to complete aggregation -->
             <setHeader headerName="ValidationComplete">
                 <simple>
                     true
                 </simple>
             </setHeader>
+
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
-            <!--<log message="${header.jasonLog} (END) CameraTrapPostValidateIngest:\nBody:\n${body}\nHeaders:\n${headers}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>-->
-
+            <log message="${id} CameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
         </route>
 
         <!-- Validation Error Message Aggregation Strategy -->
@@ -1255,18 +1287,19 @@
                 <completionPredicate>
                     <simple>${header.ValidationComplete} == 'true'</simple>
                 </completionPredicate>
-                <log message="PostValidationAggregationMessage:[END]\nBody:\n${body}"
+                <log message="ValidationERRORAggregationMessage:\nBody:\n${body}"
                      loggingLevel="ERROR"
                      logName="edu.si.ctingest"/>
-                <to uri="activemq:queue:ct.post.validation.error"/>
+                <!-- Send Validation Errors to activemq, email, persistent dB, or Splunk! -->
+                <to uri="activemq:queue:ct..validation.error"/>
             </aggregate>
         </route>
 
-        <!-- Post Validate EAC-CPF fields -->
-        <route id="CameraTrapPostValidate_EAC-CPF_Fields">
-            <from uri="direct:postValidate_EAC-CPF_fields"/>
+        <!-- Validate EAC-CPF fields -->
+        <route id="CameraTrapValidate_EAC-CPF_Fields">
+            <from uri="direct:Validate_EAC-CPF_fields"/>
 
-            <log message="${id} CameraTrapValidate_EAC-CPF_Fields: Starting Post Ingest Validation of EAC-CPF Metadata Fields..."
+            <log message="${id} CameraTrapValidate_EAC-CPF_Fields: Starting Validation of EAC-CPF Metadata Fields..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -1281,7 +1314,7 @@
 
             <convertBodyTo type="java.lang.String"/>
 
-            <!-- Store the current datastream  to be used in the validation bean -->
+            <!-- Store the current datastream to be used in the validation bean -->
             <setHeader headerName="datastreamValidationXML">
                 <simple>
                     ${body}
@@ -1290,33 +1323,29 @@
 
             <!-- the comma separated list of xpath's and field names to be validated -->
             <setBody>
-                <simple>
+                <simple trim="true">
                     EAC-CPF Latitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@latitude, //CameraTrapDeployment/ActualLatitude/text()
-EAC-CPF Longitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@longitude, //CameraTrapDeployment/ActualLongitude/text()
-EAC-CPF PublishDate, //eac:eac-cpf/eac:control/eac:localControl/eac:date, //*[@PublishDate]
-EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
+                    EAC-CPF Longitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@longitude, //CameraTrapDeployment/ActualLongitude/text()
+                    EAC-CPF PublishDate, //eac:eac-cpf/eac:control/eac:localControl/eac:date, //*[@PublishDate]
+                    EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
                 </simple>
             </setBody>
 
             <split streaming="true" strategyRef="validationErrorMessageAggregationStrategy">
                 <tokenize token="\r\n|\n" xml="false" trim="true" />
-                <to uri="bean:postValidationBean?method=validateField"/>
+                <to uri="bean:ValidationBean?method=validateField"/>
             </split>
 
-            <log message="${header.jasonLog} (EAC END) \nBody:\n${body}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
-
-            <log message="${id} CameraTrapValidate_EAC-CPF_Fields: Finished EAC-CPF Post validation..."
+            <log message="${id} CameraTrapValidate_EAC-CPF_Fields: EAC-CPF Metadata Fields Validation Complete..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
-        <!--Post Validate FGDC Fields-->
-        <route id="CameraTrapPostValidateFGDCFields">
-            <from uri="direct:postValidate_FGDC_Fields"/>
+        <!-- Validate FGDC Fields-->
+        <route id="CameraTrapValidateFGDCFields">
+            <from uri="direct:Validate_FGDC_Fields"/>
 
-            <log message="${id} ValidateFGDCFields: Starting Post Ingest Validation of FGDC Metadata Fields..."
+            <log message="${id} ValidateFGDCFields: Starting Validation of FGDC Metadata Fields..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -1331,7 +1360,7 @@ EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac
 
             <convertBodyTo type="java.lang.String"/>
 
-            <!-- Store the current datastream  to be used in the validation bean -->
+            <!-- Store the current datastream to be used in the validation bean -->
             <setHeader headerName="datastreamValidationXML">
                 <simple>
                     ${body}
@@ -1340,28 +1369,28 @@ EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac
 
             <!-- the comma separated list of xpath's and field names to be validated -->
             <setBody>
-                <simple>
+                <simple trim="true">
                     FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
-FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
-FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
+                    FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
+                    FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
                 </simple>
             </setBody>
 
             <split streaming="true" strategyRef="validationErrorMessageAggregationStrategy">
                 <tokenize token="\r\n|\n" xml="false" trim="true" />
-                <to uri="bean:postValidationBean?method=validateField"/>
+                <to uri="bean:ValidationBean?method=validateField"/>
             </split>
 
-            <log message="${id} ValidateFGDCFields: Finished FGDC Post validation"
+            <log message="${id} ValidateFGDCFields: FGDC Metadata Fields Validation Complete..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
-        <!-- Post Validate MODS Fields -->
-        <route id="CameraTrapPostValidateMODS_Fields">
-            <from uri="direct:postValidateMODSFields"/>
+        <!-- Validate MODS Fields -->
+        <route id="CameraTrapValidateMODS_Fields">
+            <from uri="direct:ValidateMODSFields"/>
 
-            <log message="${id} CameraTrapPostValidateMODS_Fields: Starting Post Ingest Validation of MODS Metadata Fields..."
+            <log message="${id} CameraTrapValidateMODS_Fields: Starting Validation of MODS Metadata Fields..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -1386,17 +1415,85 @@ FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //C
 
             <!-- the comma separated list of xpath's and field names to be validated -->
             <setBody>
-                <simple>
+                <simple trim="true">
                     MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()
                 </simple>
             </setBody>
 
             <split streaming="true" strategyRef="validationErrorMessageAggregationStrategy">
                 <tokenize token="\r\n|\n" xml="false" trim="true" />
-                <to uri="bean:postValidationBean?method=validateField"/>
+                <to uri="bean:ValidationBean?method=validateField"/>
             </split>
 
-            <log message="${id} CameraTrapPostValidateMODS_Fields: Finished MODS Post validation..."
+            <log message="${id} CameraTrapValidateMODS_Fields: MODS Metadata Fields Validation Complete..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <!-- Validate CSV Fields -->
+        <route id="CameraTrapValidateCSVFields">
+            <from uri="direct:ValidateCSVFields"/>
+
+            <log message="${id} CameraTrapValidateCSVFields: Starting Validation of CSV Metadata Fields..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>            
+
+            <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
+            <convertBodyTo type="java.lang.String"/>
+
+            <unmarshal>
+                <csv delimiter=","/>
+            </unmarshal>
+
+            <split streaming="true" strategyRef="validationErrorMessageAggregationStrategy">
+                <!-- Process each record in the csv -->
+                <simple>${body}</simple>
+
+                <!-- Store the ImageSequence "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime" for the current csv record being processed -->
+                <setHeader headerName="CSVImageSequenceRecord">
+                    <simple>${body[2]},${body[3]},${body[4]}</simple>
+                </setHeader>
+
+                <!-- Increment the CamelSplitIndex for xpath on Manifest -->
+                <setHeader headerName="xpathIndex">
+                    <simple>
+                        ${property.CamelSplitIndex}++
+                    </simple>
+                </setHeader>
+
+                <choice>
+                    <when>
+                        <!-- Check that the ImageSequence csv record (i.e "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime") matches the ImageSequence record from the manifest -->
+                        <xpath resultType="java.lang.String" headerName="ManifestXML" >
+                            $in:CSVImageSequenceRecord = string-join((//CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceId, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceBeginTime, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceEndTime), ',')
+                        </xpath>
+
+                        <log message="${id} CameraTrapValidateCSVFields: CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches the manifest validation passed ..."
+                             loggingLevel="INFO"
+                             logName="edu.si.ctingest"/>
+
+                        <setBody>
+                            <simple>
+                                passed
+                            </simple>
+                        </setBody>
+                    </when>
+                    <otherwise>
+                        <!-- The CSV ImageSequence record does not match the manifest -->
+                        <setBody>
+                            <simple>
+                                Deployment Package ID - ${header.CamelFileParent}, Message - CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches Manifest validation failed.
+                                Expected ${header.ManifestFields} but found ${header.CSVFields}.
+                            </simple>
+                        </setBody>
+                        <log message="${id} CameraTrapValidateCSVFields: ${body}"
+                             loggingLevel="ERROR"
+                             logName="edu.si.ctingest"/>
+                    </otherwise>
+                </choice>
+            </split>
+
+            <log message="${id} CameraTrapValidateCSVFields: CSV Metadata Fields Validation Complete..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
