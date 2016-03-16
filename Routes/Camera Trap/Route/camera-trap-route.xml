@@ -193,21 +193,6 @@
                     <constant>6000</constant>
                 </delay>
 
-                <!-- ================================================================= -->
-
-                <setHeader headerName="jasonLog">
-                    <simple>
-                        === JASON ===
-                    </simple>
-                </setHeader>
-
-                <!-- ================================================================= -->
-
-                <log message="${header.jasonLog} ((((((((((((((((going to validateIngest)))))))))))))))\n$Body:\n${body}\n\nHeaders:\n${headers}"
-                     loggingLevel="WARN"
-                     logName="edu.si.ctingest"/>
-
-
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validateIngest"/>
 
@@ -1212,9 +1197,6 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
-
-        <!-- =================================================================================================================== -->
-
 
         <!-- Validate Ingest Datastream Metadata Fields -->
         <route id="CameraTrapValidateDatastreamFields">
