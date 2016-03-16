@@ -41,6 +41,7 @@
     <modules>
         <module>Components</module>
         <module>Beans</module>
+        <module>Tabular</module>
     </modules>    
     
 </project>

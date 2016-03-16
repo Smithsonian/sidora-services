@@ -1,28 +1,27 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>tabular-metadata-generator</artifactId>
-	<name>Tabular Metadata Generator</name>
-
-	<description>Core machinery for developing metadata from tabular data files.</description>
 
 	<parent>
-		<groupId>com.asoroka.sidora</groupId>
+		<groupId>edu.si.sidora</groupId>
 		<artifactId>tabular-metadata</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	
-	<dependencies>
 
+	<artifactId>tabular-metadata-generator</artifactId>
+	<packaging>bundle</packaging>
+
+	<name>SI :: Services :: Tabular :: Tabular Metadata Generator</name>
+	<description>Core machinery for developing metadata from tabular data files.</description>
+
+	<dependencies>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-csv</artifactId>
-			<version>1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>joda-time</groupId>
 			<artifactId>joda-time</artifactId>
-			<version>2.8.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
@@ -72,14 +71,6 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>com.github.github</groupId>
-				<artifactId>site-maven-plugin</artifactId>
-				<configuration>
-					<merge>true</merge>
-					<path>${project.version}/${project.artifactId}</path>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

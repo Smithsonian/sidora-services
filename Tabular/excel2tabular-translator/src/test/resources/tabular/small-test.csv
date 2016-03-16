@@ -1,0 +1,4 @@
+Animal counts,Animal color,Animal size,IsMammal,Confused calculation
+1,Red,Big,true,#VALUE!
+3,Blue,Little,false,#VALUE!
+4,Green,Tiny,true,#VALUE!
