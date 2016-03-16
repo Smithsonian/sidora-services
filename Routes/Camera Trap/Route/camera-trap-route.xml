@@ -60,6 +60,7 @@
     <bean id="postValidationBean" class="edu.si.services.beans.cameratrap.PostValidationBean"/>
 
     <bean id="postValidationAggregatorStrategy" class="edu.si.services.beans.cameratrap.PostValidationAggregationStrategy"/>
+    <bean id="validationDatastreamAggregatorStrategy" class="edu.si.services.beans.cameratrap.ValidationDatastreamAggregationStrategy"/>
 
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
@@ -1207,6 +1208,12 @@
                 </otherwise>
             </choice>
 
+            <setHeader headerName="ProjectPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} CameraTrapIngest: Finished processing project."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -1226,9 +1233,30 @@
                  loggingLevel="WARN"
                  logName="edu.si.ctingest"/>-->
 
+            <setHeader headerName="ValidationErrors">
+                <simple>
+                    ValidationErrors
+                </simple>
+            </setHeader>
+
             <to uri="direct:postValidate_EAC-CPF_fields"/>
+            <to uri="direct:postValidationAggregationStrategy"/>
+
             <to uri="direct:postValidate_FGDC_Fields"/>
-            <to uri="direct:postValidateMODSFields"/>
+
+            <!--<to uri="direct:postValidationAggregationStrategy"/>-->
+
+            <setHeader headerName="ValidationComplete">
+                <simple>
+                    true
+                </simple>
+            </setHeader>
+            <to uri="direct:postValidationAggregationStrategy"/>
+
+            <!--<to uri="direct:postValidateMODSFields"/>-->
+
+
+
 
             <!--<log message="${header.jasonLog} (END) CameraTrapPostValidateIngest:\nBody:\n${body}\nHeaders:\n${headers}"
                  loggingLevel="DEBUG"
@@ -1236,54 +1264,21 @@
 
         </route>
 
-        <!-- Helper Route to get the Parent Project PID -->
-        <route id="CameraTrapPostValidate_GetParentProjectHelperRoute">
-            <from uri="direct:postValidate_GetParentProjectHelperRoute"/>
-
-            <log message="${header.jasonLog} (0) CameraTrapPostValidate_GetParentProjectHelperRoute: Getting Project Parent..."
-                 loggingLevel="WARN"
-                 logName="edu.si.ctingest"/>
-
-            <setBody>
-                <simple>
-                    ${header.CamelFedoraLabel}
-                </simple>
-            </setBody>
-
-            <log message="${header.jasonLog} (1) CameraTrapPostValidate_GetParentProjectHelperRoute: CamelFedoraLabel - ${header.CamelFedoraLabel}"
-                 loggingLevel="WARN"
-                 logName="edu.si.ctingest"/>
-
-            <to uri="direct:findObject"/>
-
-            <choice>
-                <when>
-                    <simple>
-                        ${body} == ''
-                    </simple>
-                    <log message="${header.jasonLog} (2 DNE) CameraTrapPostValidate_GetParentProjectHelperRoute: ${header.CamelFedoraLabel} Project does not exist."
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-
-                </when>
-                <otherwise>
-                    <!-- Return the existing project as the current object. -->
-                    <log message="${header.jasonLog} (2) CameraTrapPostValidate_GetParentProjectHelperRoute: ${header.CamelFedoraLabel} Project exists - ${body}."
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-
-                    <!-- Store Parent Project PID -->
-                    <setHeader headerName="CamelFedoraPid">
-                        <simple>
-                            ${body}
-                        </simple>
-                    </setHeader>
-
-                    <log message="${header.jasonLog} (3) CameraTrapPostValidate_GetParentProjectHelperRoute: Getting Project Parent..."
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-                </otherwise>
-            </choice>
+        <!-- Validation Error Message Aggregation Strategy -->
+        <route id="PostValidationAggregationStrategy">
+            <from uri="direct:postValidationAggregationStrategy"/>
+            <aggregate strategyRef="validationDatastreamAggregatorStrategy" eagerCheckCompletion="true">
+                <correlationExpression>
+                    <simple>header.ValidationErrors</simple>
+                </correlationExpression>
+                <completionPredicate>
+                    <simple>${header.ValidationComplete} == 'true'</simple>
+                </completionPredicate>
+                <log message="PostValidationAggregationMessage:[END]\nBody:\n${body}"
+                     loggingLevel="ERROR"
+                     logName="edu.si.ctingest"/>
+                <to uri="activemq:queue:ct.post.validation.error"/>
+            </aggregate>
         </route>
 
         <!-- Post Validate EAC-CPF fields -->
@@ -1294,22 +1289,11 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <!-- Set up to get the EAC-CPF datastream from the parent project -->
-            <!-- Look for the project. -->
-            <setHeader headerName="CamelFedoraLabel">
-                <xpath resultType="java.lang.String" headerName="ManifestXML">
-                    //ProjectName
-                </xpath>
-            </setHeader>
-
             <setHeader headerName="CamelFedoraPid">
                 <simple>
-                    {{si.ct.root}}
+                    ${header.ProjectPID}
                 </simple>
             </setHeader>
-
-            <!-- Use the Helper Route to  get the Parent Project PID -->
-            <to uri="direct:postValidate_GetParentProjectHelperRoute"/>
 
             <!-- Get the EAC-CPF datastream from the project parent -->
             <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut"/>
@@ -1322,101 +1306,27 @@
                 </simple>
             </setHeader>
 
-            <!-- Now check the EAC-CPF Latitude Field -->
-            <setHeader headerName="FieldName">
-                <simple>
-                    EAC-CPF Latitude
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="validationXpaths">
-                <simple>
-                    //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@latitude, //CameraTrapDeployment/ActualLatitude/text()
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postValidationBean?method=validateField"/>
-
-            <to uri="direct:postValidationAggregationStrategy"/>
-
-            <!-- Now check the EAC-CPF Longitude Field -->
-            <setHeader headerName="FieldName">
-                <simple>
-                    EAC-CPF Longitude
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="validationXpaths">
-                <simple>
-                    //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@longitude, //CameraTrapDeployment/ActualLongitude/text()
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postValidationBean?method=validateField"/>
-
-            <to uri="direct:postValidationAggregationStrategy"/>
-
-            <!-- Now check the EAC-CPF PublishDate Field -->
-            <setHeader headerName="FieldName">
-                <simple>
-                    EAC-CPF PublishDate
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="validationXpaths">
-                <simple>
-                    //eac:eac-cpf/eac:control/eac:localControl/eac:date, //*[@PublishDate]
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postValidationBean?method=validateField"/>
-
-            <to uri="direct:postValidationAggregationStrategy"/>
-
-            <!-- Now check the EAC-CPF ProjectDataAccessandUseConstraints Field -->
-            <setHeader headerName="FieldName">
-                <simple>
-                    EAC-CPF ProjectDataAccessandUseConstraints
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="validationXpaths">
-                <simple>
-                    //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postValidationBean?method=validateField"/>
-            <to uri="direct:postValidationAggregationStrategy"/>
-
             <setBody>
                 <simple>
-                    post ingest validation complete
+                    EAC-CPF Latitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@latitude, //CameraTrapDeployment/ActualLatitude/text()
+EAC-CPF Longitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@longitude, //CameraTrapDeployment/ActualLongitude/text()
+EAC-CPF PublishDate, //eac:eac-cpf/eac:control/eac:localControl/eac:date, //*[@PublishDate]
+EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
                 </simple>
             </setBody>
 
-            <to uri="direct:postValidationAggregationStrategy"/>
+            <split streaming="true" strategyRef="validationDatastreamAggregatorStrategy">
+                <tokenize token="\r\n|\n" xml="false" trim="true" />
+                <to uri="bean:postValidationBean?method=validateField"/>
+            </split>
+
+            <log message="${header.jasonLog} (EAC END) \nBody:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.ctingest"/>
 
             <log message="${id} CameraTrapValidate_EAC-CPF_Fields: Finished EAC-CPF Post validation..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-        </route>
-
-        <route id="PostValidationAggregationStrategy">
-            <from uri="direct:postValidationAggregationStrategy"/>
-            <aggregate strategyRef="postValidationAggregatorStrategy">
-                <correlationExpression>
-                    <simple>header.validationStatusMessage</simple>
-                </correlationExpression>
-                <completionPredicate>
-                    <simple>${body} contains 'post ingest validation complete'</simple>
-                </completionPredicate>
-
-                <log message="PostValidationAggregationMessage:\n ${body}"
-                     loggingLevel="INFO"
-                     logName="edu.si.ctingest"/>
-                <to uri="activemq:queue:ct.post.validation.error"/>
-            </aggregate>
         </route>
 
         <!--Post Validate FGDC Fields-->
@@ -1427,26 +1337,11 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <!-- Set up to get the FGDC datastream -->
-            <!-- Look for the project Site. -->
-            <setHeader headerName="CamelFedoraLabel">
-                <xpath resultType="java.lang.String" headerName="ManifestXML">
-                    //CameraSiteName
-                </xpath>
-            </setHeader>
-
-            <log message="${id} ValidateFGDCFields: CamelFedoraPid:\n${header.CamelFedoraPid}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
-
             <setHeader headerName="CamelFedoraPid">
                 <simple>
                     ${header.SitePID}
                 </simple>
             </setHeader>
-
-            <!-- Use the Helper Route to  get the Parent Project PID -->
-            <to uri="direct:postValidate_GetParentProjectHelperRoute"/>
 
             <!-- Get the FGDC datastream from the project parent -->
             <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut"/>
@@ -1459,270 +1354,22 @@
                 </simple>
             </setHeader>
 
-            <log message="${id} ValidateFGDCFields: Body:\n${body}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.ctingest"/>
-
-            <!-- Now check the FGDC CameraDeploymentID Field -->
-            <setHeader headerName="FieldName">
-                <simple>
-                    FGDC CameraDeploymentID
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="validationXpaths">
-                <simple>
-                    //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postValidationBean?method=validateField"/>
-
-            <to uri="direct:postValidationAggregationStrategy"/>
-
-            <!-- Now check the FGDC Bait Field -->
-            <setHeader headerName="FieldName">
-                <simple>
-                    FGDC Bait
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="validationXpaths">
-                <simple>
-                    //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postValidationBean?method=validateField"/>
-
-            <to uri="direct:postValidationAggregationStrategy"/>
-
-            <!-- Now check the FGDC Feature Field -->
-            <setHeader headerName="FieldName">
-                <simple>
-                    FGDC Feature
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="validationXpaths">
-                <simple>
-                    //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postValidationBean?method=validateField"/>
-
             <setBody>
                 <simple>
-                    post ingest validation complete
+                    FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
+                    FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
+                    FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
                 </simple>
             </setBody>
 
-            <to uri="direct:postValidationAggregationStrategy"/>
+            <split streaming="true" strategyRef="validationDatastreamAggregatorStrategy">
+                <tokenize token="\r\n|\n" xml="false" trim="true" />
+                <to uri="bean:postValidationBean?method=validateField"/>
+            </split>
 
-            <!--<split streaming="true">
-                <xtokenize>//metadata</xtokenize>
-
-                &lt;!&ndash; Validate FGDC CameraDeploymentId&ndash;&gt;
-                <choice>
-                    <when>
-                        &lt;!&ndash; Validate that the FGDC CameraDeploymentID exists &ndash;&gt;
-                        <xpath resultType="java.lang.String">
-                            exists(//metadata/idinfo/citation/citeinfo/othercit/text())
-                        </xpath>
-
-                        <setHeader headerName="CameraDeploymentId">
-                            <xpath resultType="java.lang.String">
-                                //metadata/idinfo/citation/citeinfo/othercit/text()
-                            </xpath>
-                        </setHeader>
-
-                        <setHeader headerName="ManifestCameraDeploymentId">
-                            <xpath resultType="java.lang.String" headerName="ManifestXML">
-                                //CameraTrapDeployment/CameraDeploymentID/text()
-                            </xpath>
-                        </setHeader>
-
-                        <log message="${id} ValidateFGDCFields: FGDC CameraDeploymentId exists validation passed..."
-                             loggingLevel="INFO"
-                             logName="edu.si.ctingest"/>
-
-                        <choice>
-                            <when>
-                                &lt;!&ndash; Now Validate that the FGDC CameraDeploymentID matches the Manifest &ndash;&gt;
-                                <simple>
-                                    ${header.CameraDeploymentId} == ${header.ManifestCameraDeploymentId}
-                                </simple>
-
-                                <log message="${id} ValidateFGDCFields: FGDC CameraDeploymentId matches the manifest validation passed..."
-                                     loggingLevel="INFO"
-                                     logName="edu.si.ctingest"/>
-                            </when>
-                            <otherwise>
-                                &lt;!&ndash; The FGDC CameraDeploymentID does not match the manifest &ndash;&gt;
-                                <log message="${id} ValidateFGDCFields: FGDC CameraDeploymentId equals Manifest validation failed - sending msg to queue"
-                                     loggingLevel="WARN"
-                                     logName="edu.si.ctingest"/>
-                                <setBody>
-                                    <simple>
-                                        Deployment Package ID - ${header.CamelFileParent}, Message - FGDC CameraDeploymentId equals validation failed.
-                                        Expected ${header.ManifestCameraDeploymentId} but found ${header.CameraDeploymentId}.
-                                    </simple>
-                                </setBody>
-                                <to uri="activemq:queue:ct.post.validation.error"/>
-                            </otherwise>
-                        </choice>
-                    </when>
-                    <otherwise>
-                        &lt;!&ndash; The FGDC CameraDeploymentID does not exist &ndash;&gt;
-                        <log message="${id} ValidateFGDCFields: FGDC CameraDeploymentId exists validation failed - sending msg to queue"
-                             loggingLevel="WARN"
-                             logName="edu.si.ctingest"/>
-                        <setBody>
-                            <simple>
-                                Deployment Package ID - ${header.CamelFileParent}, Message - FGDC CameraDeploymentId exists validation failed. Expected ${header.ManifestCameraDeploymentId} but found FGDC CameraDeploymentId does not exist.
-                            </simple>
-                        </setBody>
-                        <to uri="activemq:queue:ct.post.validation.error"/>
-                    </otherwise>
-                </choice>
-
-                &lt;!&ndash; Validate FGDC Bait Field &ndash;&gt;
-                <choice>
-                    <when>
-                        &lt;!&ndash; Validate that FGDC Bait exists &ndash;&gt;
-                        &lt;!&ndash;<simple>
-                            ${header.BaitExist} == 'true'
-                        </simple>&ndash;&gt;
-                        <xpath resultType="java.lang.String">
-                            exists(//metadata/dataqual/lineage/method[1]/methodid/methkey/text())
-                        </xpath>
-
-                        <setHeader headerName="Bait">
-                            <xpath resultType="java.lang.String">
-                                //metadata/dataqual/lineage/method[1]/methodid/methkey/text()
-                            </xpath>
-                        </setHeader>
-
-                        <setHeader headerName="ManifestBait">
-                            <xpath resultType="java.lang.String" headerName="ManifestXML">
-                                //CameraTrapDeployment/Bait/text()
-                            </xpath>
-                        </setHeader>
-
-                        <log message="${id} ValidateFGDCFields: FGDC Bait exists validation passed..."
-                             loggingLevel="INFO"
-                             logName="edu.si.ctingest"/>
-
-                        <choice>
-                            <when>
-                                &lt;!&ndash; Now Validate that the FGDC Bait matches the Manifest &ndash;&gt;
-                                <simple>
-                                    ${header.Bait} == ${header.ManifestBait}
-                                </simple>
-
-                                <log message="${id} ValidateFGDCFields: FGDC Bait matches the manifest validation passed..."
-                                     loggingLevel="INFO"
-                                     logName="edu.si.ctingest"/>
-                            </when>
-                            <otherwise>
-                                &lt;!&ndash; FGDC Bait does not match the Manifest &ndash;&gt;
-                                <log message="${id} ValidateFGDCFields: FGDC Bait equals Manifest validation failed - sending msg to queue"
-                                     loggingLevel="WARN"
-                                     logName="edu.si.ctingest"/>
-                                <setBody>
-                                    <simple>
-                                        Deployment Package ID - ${header.CamelFileParent}, Message - FGDC Bait equals validation failed.
-                                        Expected ${header.ManifestBait} but found ${header.Bait}.
-                                    </simple>
-                                </setBody>
-                                <to uri="activemq:queue:ct.post.validation.error"/>
-                            </otherwise>
-                        </choice>
-                    </when>
-                    <otherwise>
-                        &lt;!&ndash; The FGDC Bait does not exist &ndash;&gt;
-                        <log message="${id} ValidateFGDCFields: FGDC Bait exists validation failed - sending msg to queue"
-                             loggingLevel="WARN"
-                             logName="edu.si.ctingest"/>
-                        <setBody>
-                            <simple>
-                                Deployment Package ID - ${header.CamelFileParent}, Message - FGDC Bait exists validation failed.
-                                Expected ${header.ManifestBait} but found FGDC Bait does not exist.
-                            </simple>
-                        </setBody>
-                        <to uri="activemq:queue:ct.post.validation.error"/>
-                    </otherwise>
-                </choice>
-
-                &lt;!&ndash; Validate FGDC Feature Field &ndash;&gt;
-                <choice>
-                    <when>
-                        &lt;!&ndash; Validate that the FGDC Feature Exists &ndash;&gt;
-                        &lt;!&ndash;<simple>
-                            ${header.FeatureExist} == 'true'
-                        </simple>&ndash;&gt;
-                        <xpath resultType="java.lang.String">
-                            exists(//metadata/dataqual/lineage/method[2]/methodid/methkey/text())
-                        </xpath>
-
-                        <setHeader headerName="Feature">
-                            <xpath resultType="java.lang.String">
-                                //metadata/dataqual/lineage/method[2]/methodid/methkey/text()
-                            </xpath>
-                        </setHeader>
-
-                        <setHeader headerName="ManifestFeature">
-                            <xpath resultType="java.lang.String" headerName="ManifestXML">
-                                //CameraTrapDeployment/Feature/text()
-                            </xpath>
-                        </setHeader>
-
-                        <log message="${id} ValidateFGDCFields: FGDC Feature exists validation passed..."
-                             loggingLevel="INFO"
-                             logName="edu.si.ctingest"/>
-
-                        <choice>
-                            <when>
-                                &lt;!&ndash; Now Validate the FGDC Feature matches the Manifest &ndash;&gt;
-                                <simple>
-                                    ${header.Feature} == ${header.ManifestFeature}
-                                </simple>
-
-                                <log message="${id} ValidateFGDCFields: FGDC Feature matches the manifest validation passed..."
-                                     loggingLevel="INFO"
-                                     logName="edu.si.ctingest"/>
-                            </when>
-                            <otherwise>
-                                &lt;!&ndash; The FGDC Feature does not match the Manifest &ndash;&gt;
-                                <log message="${id} ValidateFGDCFields: FGDC Feature equals Manifest validation failed - sending msg to queue"
-                                     loggingLevel="WARN"
-                                     logName="edu.si.ctingest"/>
-                                <setBody>
-                                    <simple>
-                                        Deployment Package ID - ${header.CamelFileParent}, Message - FGDC Feature equals validation failed.
-                                        Expected ${header.ManifestFeature} but found ${header.Feature}.
-                                    </simple>
-                                </setBody>
-                                <to uri="activemq:queue:ct.post.validation.error"/>
-                            </otherwise>
-                        </choice>
-                    </when>
-                    <otherwise>
-                        &lt;!&ndash; The FGDC Feature does not exist &ndash;&gt;
-                        <log message="${id} ValidateFGDCFields: FGDC Feature exists validation failed - sending msg to queue"
-                             loggingLevel="WARN"
-                             logName="edu.si.ctingest"/>
-                        <setBody>
-                            <simple>
-                                Deployment Package ID - ${header.CamelFileParent}, Message - FGDC Feature exists validation failed.
-                                Expected ${header.ManifestFeature} but found FGDC Feature does not exist.
-                            </simple>
-                        </setBody>
-                        <to uri="activemq:queue:ct.post.validation.error"/>
-                    </otherwise>
-                </choice>
-            </split>-->
+            <log message="${header.jasonLog} (FGDC END) \nBody:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.ctingest"/>
 
             <log message="${id} ValidateFGDCFields: Finished FGDC Post validation"
                  loggingLevel="INFO"

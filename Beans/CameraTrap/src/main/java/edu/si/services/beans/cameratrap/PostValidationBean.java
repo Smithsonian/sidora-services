@@ -29,29 +29,12 @@ public class PostValidationBean {
         camelFileParent = exchange.getIn().getHeader("CamelFileParent", String.class);
 
         String datastreamXML = exchange.getIn().getHeader("datastreamValidationXML", String.class);
-        fieldName = exchange.getIn().getHeader("FieldName", String.class);
-        String[] validationXpaths = exchange.getIn().getHeader("validationXpaths", String.class).split(",");
 
-        //log.debug(CT_LOG_NAME + ": " + "datastreamXML body = " + datastreamXML);
-        //log.debug(CT_LOG_NAME + ": " + "validationXpaths header = " + Arrays.toString(validationXpaths));
-        //log.debug(CT_LOG_NAME + ": " + "validationXpaths = " + Arrays.toString(validationXpaths));
+        String[] validationList = exchange.getIn().getBody(String.class).split(",");
 
-        String datastreamXpath = validationXpaths[0];
-        String manifestXpath = validationXpaths[1];
-        String datastreamFieldExistsXpath = "exists(" + datastreamXpath + ")";
-
-        String datastreamFieldExists = XPathBuilder
-                .xpath(datastreamFieldExistsXpath, String.class)
-                //.namespace("eac", "urn:isbn:1-931666-33-4")
-                .namespaces(ns)
-                .evaluate(exchange.getContext(), datastreamXML, String.class);
-
-        log.debug(CT_LOG_NAME + ": " + "datastreamFieldExists = " + datastreamFieldExists + ":");
-
-        //Set the datastreamFieldExists
-        //exchange.getIn().setHeader("datastreamFieldExists", datastreamFieldExists);
-
-        //log.debug(CT_LOG_NAME + ": " + "datastreamFieldExists header = " + exchange.getIn().getHeader("datastreamFieldExists", String.class));
+        fieldName = validationList[0];
+        String datastreamXpath = validationList[1];
+        String manifestXpath = validationList[2];
 
         //Set the manifestField
         String manifestField = XPathBuilder
@@ -60,47 +43,28 @@ public class PostValidationBean {
                         exchange.getIn().getHeader("ManifestXML"),
                         String.class);
 
-        //exchange.getIn().setHeader("manifestField", manifestField);
-
-        log.debug(CT_LOG_NAME + ": " + "manifestField = " + manifestField + ":");
-
         //Set the datastreamField
-        if (datastreamFieldExists.equals("true")) {
-
-            //Set the datastreamField
-            String datastreamField = XPathBuilder
-                    .xpath(datastreamXpath)
-                    //.namespace("eac", "urn:isbn:1-931666-33-4")
-                    .namespaces(ns)
-                    .evaluate(exchange.getContext(), datastreamXML);
-
-            //exchange.getIn().setHeader("datastreamField", datastreamField);
-
-            log.info(CT_LOG_NAME + ": " + fieldName + " Field exists validation passed");
-
-            fieldMatchesManifest(datastreamField, manifestField);
-
-        } else {
-            message = "Deployment Package ID - " + camelFileParent
-                    + ", Message - " + fieldName + " Field validation failed.\n"
-                    +"Expected " + manifestField + " but found the" + fieldName + " Field does not exist.";
-            log.info(CT_LOG_NAME + ": " + message);
-        }
-
-        exchange.getIn().setHeader("validationStatusMessage", "PostValidationErrors");
-        exchange.getIn().setBody(message);
-
-    }
-
-    private void fieldMatchesManifest(String datastreamField, String manifestField) {
+        String datastreamField = XPathBuilder
+                .xpath(datastreamXpath)
+                        //.namespace("eac", "urn:isbn:1-931666-33-4")
+                .namespaces(ns)
+                .evaluate(exchange.getContext(), datastreamXML);
 
         if (datastreamField.equals(manifestField)) {
+            message = "passed";
+
             log.info(CT_LOG_NAME + ": " + fieldName + " Field matches the Manifest Field. Validation passed...");
+
         } else {
             message = "Deployment Package ID - " + camelFileParent
-                    + ", Message - " + fieldName + " Field validation failed.\n"
+                    + ", Message - " + fieldName + " Field validation failed."
                     + "Expected " + manifestField + " but found " +datastreamField + ".";
-            log.info(CT_LOG_NAME + ": " + message);
+
+                    log.info(CT_LOG_NAME + ": " + message);
         }
+
+        //exchange.getIn().setHeader("ValidationErrors", "ValidationErrors");
+        exchange.getIn().setBody(message);
+
     }
 }
