@@ -57,10 +57,20 @@
 
     <bean id="deploymentPkgValidator" class="edu.si.services.beans.cameratrap.DeploymentPackageValidator"/>
 
+    <bean id="postIngestionValidator" class="edu.si.services.beans.cameratrap.PostIngestionValidator"/>
+
+    <bean id="fcrepoConfiguration" class="edu.si.services.camel.fcrepo.FcrepoConfiguration">
+        <property name="fedoraHost" value="${si.fedora.host}"/>
+        <property name="authUsername" value="${si.fedora.user}"/>
+        <property name="authPassword" value="${si.fedora.password}"/>
+    </bean>
+
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="CTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
+                  xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
@@ -272,6 +282,21 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
+            <to uri="direct:validatePostIngestResourceCount"/>
+
+            <to uri="direct:validateDatastreams"/>
+
+            <log message="${id} CameraTrapIngest: Finished Post validation"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapValidatePostIngestResourceCount">
+            <from uri="direct:validatePostIngestResourceCount"/>
+            <log message="${id} CameraTrapIngest: Starting Post Ingestion Resource Count validations..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
             <!-- RELS-EXT Resource reference count for validation.  The number includes the observation resource objs-->
             <setHeader headerName="RelsExtResourceCount">
                 <xpath resultType="java.lang.String">
@@ -321,7 +346,71 @@
                      logName="edu.si.ctingest"/>
             </split>
 
-            <log message="${id} CameraTrapIngest: Finished Post validation"
+            <log message="${id} CameraTrapIngest: Finished Post Ingestion Resource Count validations."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapValidateDatastreams">
+            <from uri="direct:validateDatastreams"/>
+            <log message="${id} CameraTrapIngest: Starting Datastream validations..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <to uri="direct:validateDeploymentObjectDatastreams"/>
+
+            <log message="${id} CameraTrapIngest: Finished Datastream validations."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapValidateDeploymentObjectDatastreams">
+            <from uri="direct:validateDeploymentObjectDatastreams"/>
+            <log message="${id} CameraTrapIngest: Starting Deployment Object Datastream validations..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <simple>
+                    GET
+                </simple>
+            </setHeader>
+
+            <toD uri="fcrepo:objects/${header.SitePID}/datastreams?format=xml"/>
+            <convertBodyTo type="java.lang.String" charset="utf-8"/>
+
+            <setHeader headerName="FedoraDatastreamIDsFound">
+                <xpath resultType="java.lang.String">
+                    string-join(//objDatastreams:datastream/@dsid,',')
+                </xpath>
+            </setHeader>
+
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, MANIFEST, FGDC, RELS-EXT
+                </simple>
+            </setHeader>
+
+            <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
+
+            <choice>
+                <when>
+                    <simple>${body} == false</simple>
+                    <setBody>
+                        <simple>
+                            Deployment Package ID - ${header.CamelFileParent}, Message - Deployment Object Datastreams validation failed
+                        </simple>
+                    </setBody>
+
+                    <log message="${id} CameraTrapIngest: Deployment Object Datastreams validation failed - ${body}"
+                         loggingLevel="WARN"
+                         logName="edu.si.ctingest"/>
+
+                    <to uri="activemq:queue:ct.post.validation.error"/>
+                </when>
+            </choice>
+
+            <log message="${id} CameraTrapIngest: Finished Deployment Object Datastream validations."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
