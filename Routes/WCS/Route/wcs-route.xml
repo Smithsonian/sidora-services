@@ -113,7 +113,7 @@
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
                               redeliveryDelay="1000"
-                              maximumRedeliveries="5"
+                              maximumRedeliveries="7"
                               retryAttemptedLogLevel="WARN"
                               retriesExhaustedLogLevel="WARN"
                               logExhaustedMessageHistory="false"/>
