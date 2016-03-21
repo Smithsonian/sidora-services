@@ -145,12 +145,13 @@ public class FcrepoProducer extends DefaultProducer {
             log.debug("Inside getRequestUrl() - original endPoint URI is: " + fcrepoEndpoint.getEndpointUri());
 
             //removing fcrepo scheme so the endpoint uri can be appended to the base fedora host url for rest api
-            String updatedFcrepoEndpoint = fcrepoEndpoint.getEndpointUri().replaceFirst("fcrepo://", "");
-            log.debug("Inside getRequestUrl() - updated endPoint URI is: " + updatedFcrepoEndpoint);
-            sb.append(updatedFcrepoEndpoint);
+            sb.append(fcrepoEndpoint.getEndpointUri().replaceFirst("fcrepo://", ""));
         }
 
-        return sb.toString();
+        String updatedRequestURL = sb.toString();
+        log.debug("Inside getRequestUrl() - updated endPoint URI is: " + updatedRequestURL);
+
+        return updatedRequestURL;
     }
 
     /**

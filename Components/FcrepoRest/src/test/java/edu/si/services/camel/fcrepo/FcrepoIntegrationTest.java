@@ -158,13 +158,10 @@ public class FcrepoIntegrationTest extends CamelTestSupport {
      * @return RouteBuilder
      */
     @Override
-    protected RouteBuilder createRouteBuilder()
-    {
-        return new RouteBuilder()
-        {
+    protected RouteBuilder createRouteBuilder() {
+        return new RouteBuilder() {
             @Override
-            public void configure()
-            {
+            public void configure() {
                 from("direct:testFcrepoComponent")
                         .routeId("testFcrepoComponentRoute")
                         .toD("fcrepo:objects/${header.SitePID}/datastreams?format=xml")

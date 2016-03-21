@@ -78,14 +78,14 @@ public class PostIngestionValidatorTest extends CamelTestSupport {
         boolean result;
 
         //single element test
-        dataStreamTypesToCheck = "OBJ,TN";
-        foundDatastreams = "OBJ,TN";
+        dataStreamTypesToCheck = "OBJ";
+        foundDatastreams = "OBJ";
         result = validator.validateDatastreamExists(dataStreamTypesToCheck, foundDatastreams);
         assertEquals(result, true);
 
         //multiple elements test
-        dataStreamTypesToCheck = "OBJ";
-        foundDatastreams = "OBJ";
+        dataStreamTypesToCheck = "OBJ,TN";
+        foundDatastreams = "OBJ,TN";
         result = validator.validateDatastreamExists(dataStreamTypesToCheck, foundDatastreams);
         assertEquals(result, true);
 

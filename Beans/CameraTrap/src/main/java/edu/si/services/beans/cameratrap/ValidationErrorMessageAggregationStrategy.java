@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ValidationErrorMessageAggregationStrategy implements AggregationStrategy{
 
-    final Logger log = LoggerFactory.getLogger(ValidationBean.class);
+    final Logger log = LoggerFactory.getLogger(ValidationErrorMessageAggregationStrategy.class);
 
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
 
