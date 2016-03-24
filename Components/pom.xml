@@ -43,6 +43,7 @@
         <module>Reader</module>
         <module>Extractor</module>
         <module>FedoraRepo</module>
+        <module>FcrepoRest</module>
     </modules>    
     
 </project>

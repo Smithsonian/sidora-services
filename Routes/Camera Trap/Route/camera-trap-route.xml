@@ -59,13 +59,15 @@
 
     <bean id="postIngestionValidator" class="edu.si.services.beans.cameratrap.PostIngestionValidator"/>
 
+    <bean id="cameraTrapValidationMessage" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessage"/>
+
     <bean id="fcrepoConfiguration" class="edu.si.services.camel.fcrepo.FcrepoConfiguration">
         <property name="fedoraHost" value="${si.fedora.host}"/>
         <property name="authUsername" value="${si.fedora.user}"/>
         <property name="authPassword" value="${si.fedora.password}"/>
     </bean>
 
-    <bean id="validationErrorMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.ValidationErrorMessageAggregationStrategy"/>
+    <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
 
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
@@ -365,30 +367,127 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <to uri="direct:validateProjectObjectDatastreams"/>
+            <!-- Validate Project Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Project
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ProjectPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, EAC-CPF, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
 
+            <!-- Validate Plot Object datastreams -->
             <choice>
                 <when>
                     <header>PlotPID</header>
-                    <to uri="direct:validatePlotObjectDatastreams"/>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            Plot
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.PlotPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, EAC-CPF, RELS-EXT
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
                 </when>
             </choice>
 
-            <to uri="direct:validateDeploymentObjectDatastreams"/>
+            <!-- Validate Deployment Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Deployment
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.SitePID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, MANIFEST, FGDC, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
 
-            <to uri="direct:validateImageResourceObjectDatastreams"/>
-            <to uri="direct:validateResearcherObservationObjectDatastreams"/>
-            <to uri="direct:validateVolunteerObservationObjectDatastreams"/>
+            <!-- Validate Image Resource Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Image Resource
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ImageResourcePID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, TN, RELS-EXT, FITS, MODS
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Researcher Observation Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Researcher Observation
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ResearcherObservationPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, CSV, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Volunteer Observation Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Volunteer Observation
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.VolunteerObservationPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, CSV, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
 
             <log message="${id} CameraTrapIngest: Finished Datastream validations."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
-
-        <route id="CameraTrapValidateProjectObjectDatastreams">
-            <from uri="direct:validateProjectObjectDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting Project Object Datastream validations..."
+        <route id="CameraTrapValidateObjectDatastreams">
+            <from uri="direct:validateObjectDatastreams"/>
+            <log message="${id} CameraTrapIngest: Starting ${header.ValidationDatastreamObjectType} Object Datastream validations..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -398,18 +497,12 @@
                 </simple>
             </setHeader>
 
-            <toD uri="fcrepo:objects/${header.ProjectPID}/datastreams?format=xml"/>
+            <toD uri="fcrepo:objects/${header.ValidationDatastreamObjectPID}/datastreams?format=xml"/>
 
             <setHeader headerName="FedoraDatastreamIDsFound">
                 <xpath resultType="java.lang.String">
                     string-join(//objDatastreams:datastream/@dsid,',')
                 </xpath>
-            </setHeader>
-
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, EAC-CPF, RELS-EXT
-                </simple>
             </setHeader>
 
             <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
@@ -419,259 +512,26 @@
                     <simple>${body} == false</simple>
                     <setBody>
                         <simple>
-                            Deployment Package ID - ${header.CamelFileParent}, Message - Project Object Datastreams validation failed
+                            Deployment Package ID - ${header.CamelFileParent}, Message - ${header.ValidationDatastreamObjectType} Object Datastreams validation failed
                         </simple>
                     </setBody>
 
-                    <log message="${id} CameraTrapIngest: Project Object Datastreams validation failed - ${body}"
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-
-                    <to uri="activemq:queue:ct.post.validation.error"/>
-                </when>
-            </choice>
-
-            <log message="${id} CameraTrapIngest: Finished Deployment Object Datastream validations."/>
-        </route>
-
-        <route id="CameraTrapValidatePlotObjectDatastreams">
-            <from uri="direct:validatePlotObjectDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting Plot Object Datastream validations..."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <setHeader headerName="CamelHttpMethod">
-                <simple>
-                    GET
-                </simple>
-            </setHeader>
-
-            <toD uri="fcrepo:objects/${header.PlotPID}/datastreams?format=xml"/>
-
-            <setHeader headerName="FedoraDatastreamIDsFound">
-                <xpath resultType="java.lang.String">
-                    string-join(//objDatastreams:datastream/@dsid,',')
-                </xpath>
-            </setHeader>
-
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, EAC-CPF, RELS-EXT
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
-
-            <choice>
-                <when>
-                    <simple>${body} == false</simple>
-                    <setBody>
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                            '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
+                    <setHeader headerName="ValidationErrors">
                         <simple>
-                            Deployment Package ID - ${header.CamelFileParent}, Message - Plot Object Datastreams validation failed
+                            ValidationErrors
                         </simple>
-                    </setBody>
+                    </setHeader>
 
-                    <log message="${id} CameraTrapIngest: Plot Object Datastreams validation failed - ${body}"
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
                          loggingLevel="WARN"
                          logName="edu.si.ctingest"/>
-
-                    <to uri="activemq:queue:ct.post.validation.error"/>
                 </when>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished Deployment Object Datastream validations."/>
-        </route>
-
-        <route id="CameraTrapValidateDeploymentObjectDatastreams">
-            <from uri="direct:validateDeploymentObjectDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting Deployment Object Datastream validations..."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <setHeader headerName="CamelHttpMethod">
-                <simple>
-                    GET
-                </simple>
-            </setHeader>
-
-            <toD uri="fcrepo:objects/${header.SitePID}/datastreams?format=xml"/>
-
-            <setHeader headerName="FedoraDatastreamIDsFound">
-                <xpath resultType="java.lang.String">
-                    string-join(//objDatastreams:datastream/@dsid,',')
-                </xpath>
-            </setHeader>
-
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, MANIFEST, FGDC, RELS-EXT
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
-
-            <choice>
-                <when>
-                    <simple>${body} == false</simple>
-                    <setBody>
-                        <simple>
-                            Deployment Package ID - ${header.CamelFileParent}, Message - Deployment Object Datastreams validation failed
-                        </simple>
-                    </setBody>
-
-                    <log message="${id} CameraTrapIngest: Deployment Object Datastreams validation failed - ${body}"
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-
-                    <to uri="activemq:queue:ct.post.validation.error"/>
-                </when>
-            </choice>
-
-            <log message="${id} CameraTrapIngest: Finished Deployment Object Datastream validations." />
-        </route>
-
-        <route id="CameraTrapValidateImageResourceObjectDatastreams">
-            <from uri="direct:validateImageResourceObjectDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting Image Resource Object Datastream validations..."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <setHeader headerName="CamelHttpMethod">
-                <simple>
-                    GET
-                </simple>
-            </setHeader>
-
-            <toD uri="fcrepo:objects/${header.ImageResourcePID}/datastreams?format=xml"/>
-
-            <setHeader headerName="FedoraDatastreamIDsFound">
-                <xpath resultType="java.lang.String">
-                    string-join(//objDatastreams:datastream/@dsid,',')
-                </xpath>
-            </setHeader>
-
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, OBJ, TN, RELS-EXT, FITS, MODS
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
-
-            <choice>
-                <when>
-                    <simple>${body} == false</simple>
-                    <setBody>
-                        <simple>
-                            Deployment Package ID - ${header.CamelFileParent}, Message - Image Resource Object Datastreams validation failed
-                        </simple>
-                    </setBody>
-
-                    <log message="${id} CameraTrapIngest: Image Resource Object Datastreams validation failed - ${body}"
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-
-                    <to uri="activemq:queue:ct.post.validation.error"/>
-                </when>
-            </choice>
-
-            <log message="${id} CameraTrapIngest: Finished Image Resource Object Datastream validations." />
-        </route>
-
-        <route id="CameraTrapValidateResearcherObservationObjectDatastreams">
-            <from uri="direct:validateResearcherObservationObjectDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting Researcher Observation Object Datastream validations..."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <setHeader headerName="CamelHttpMethod">
-                <simple>
-                    GET
-                </simple>
-            </setHeader>
-
-            <toD uri="fcrepo:objects/${header.ResearcherObservationPID}/datastreams?format=xml"/>
-
-            <setHeader headerName="FedoraDatastreamIDsFound">
-                <xpath resultType="java.lang.String">
-                    string-join(//objDatastreams:datastream/@dsid,',')
-                </xpath>
-            </setHeader>
-
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, OBJ, CSV, RELS-EXT
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
-
-            <choice>
-                <when>
-                    <simple>${body} == false</simple>
-                    <setBody>
-                        <simple>
-                            Deployment Package ID - ${header.CamelFileParent}, Message - Researcher Observation Object Datastreams validation failed
-                        </simple>
-                    </setBody>
-
-                    <log message="${id} CameraTrapIngest: Researcher Observation Object Datastreams validation failed - ${body}"
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-
-                    <to uri="activemq:queue:ct.post.validation.error"/>
-                </when>
-            </choice>
-
-            <log message="${id} CameraTrapIngest: Finished Researcher Observation Object Datastream validations." />
-        </route>
-
-        <route id="CameraTrapValidateVolunteerObservationObjectDatastreams">
-            <from uri="direct:validateVolunteerObservationObjectDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting Volunteer Observation Object Datastream validations..."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <setHeader headerName="CamelHttpMethod">
-                <simple>
-                    GET
-                </simple>
-            </setHeader>
-
-            <toD uri="fcrepo:objects/${header.VolunteerObservationPID}/datastreams?format=xml"/>
-
-            <setHeader headerName="FedoraDatastreamIDsFound">
-                <xpath resultType="java.lang.String">
-                    string-join(//objDatastreams:datastream/@dsid,',')
-                </xpath>
-            </setHeader>
-
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, OBJ, CSV, RELS-EXT
-                </simple>
-            </setHeader>
-
-            <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
-
-            <choice>
-                <when>
-                    <simple>${body} == false</simple>
-                    <setBody>
-                        <simple>
-                            Deployment Package ID - ${header.CamelFileParent}, Message - Volunteer Observation Object Datastreams validation failed
-                        </simple>
-                    </setBody>
-
-                    <log message="${id} CameraTrapIngest: Volunteer Observation Object Datastreams validation failed - ${body}"
-                         loggingLevel="WARN"
-                         logName="edu.si.ctingest"/>
-
-                    <to uri="activemq:queue:ct.post.validation.error"/>
-                </when>
-            </choice>
-
-            <log message="${id} CameraTrapIngest: Finished Image Resource Object Datastream validations." />
+            <log message="${id} CameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."/>
         </route>
 
         <route id="CameraTrapProcessPackage">
@@ -1685,7 +1545,7 @@
         <!-- Validation Error Message Aggregation Strategy -->
         <route id="ValidationErrorMessageAggregationStrategy">
             <from uri="direct:validationErrorMessageAggregationStrategy"/>
-            <aggregate strategyRef="validationErrorMessageAggregationStrategy" eagerCheckCompletion="true">
+            <aggregate strategyRef="cameraTrapValidationMessageAggregationStrategy" eagerCheckCompletion="true">
                 <correlationExpression>
                     <simple>header.ValidationErrors</simple>
                 </correlationExpression>
@@ -1707,7 +1567,7 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <split streaming="true" strategyRef="validationErrorMessageAggregationStrategy">
+            <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
                 <tokenize token="\r\n|\n" xml="false" trim="true" />
                 <!-- Use a bean for validation because xpathbuilder is need -->
                 <to uri="bean:postIngestionValidator?method=validateField"/>
@@ -1733,7 +1593,7 @@
                 <csv delimiter=","/>
             </unmarshal>
 
-            <split streaming="true" strategyRef="validationErrorMessageAggregationStrategy">
+            <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
                 <!-- Process each record in the csv -->
                 <simple>${body}</simple>
 
@@ -1760,11 +1620,7 @@
                              loggingLevel="INFO"
                              logName="edu.si.ctingest"/>
 
-                        <setBody>
-                            <simple>
-                                passed
-                            </simple>
-                        </setBody>
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Validation Passed', true)"/>
                     </when>
                     <otherwise>
                         <!-- The CSV ImageSequence record does not match the manifest -->
@@ -1777,6 +1633,7 @@
                         <log message="${id} CameraTrapValidateCSVFields: ${body}"
                              loggingLevel="ERROR"
                              logName="edu.si.ctingest"/>
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
                     </otherwise>
                 </choice>
             </split>

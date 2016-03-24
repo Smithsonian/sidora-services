@@ -55,10 +55,10 @@ public class CameraTrapRouteBuilder extends RouteBuilder {
                     .id("ValidatePostResourceCountWhenBlock")
                 .otherwise()
                     .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} CameraTrapIngest: Post Resource Count validation failed - sending msg to queue")
-                    //Prepare the message body with deployment ID and validation failed message to the queue
-                    .setBody(simple("Deployment Package ID - ${header.CamelFileParent}, Message - Post Resource Count validation failed.  " +
-                            "Expected ${header.ResourceCount} but found ${header.RelsExtResourceCount}"))
-                    .to("activemq:queue:ct.post.validation.error")
+                    .setHeader("ValidationErrors", simple("ValidationErrors"))
+                    .to("bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Post Resource Count validation failed. " +
+                            "Expected ${header.ResourceCount} but found ${header.RelsExtResourceCount}', false)")
+                    .to("direct:validationErrorMessageAggregationStrategy")
             .endChoice();
 
         //CameraTrapValidateFedoraResource route for Fedora RI resource search validation
@@ -77,10 +77,10 @@ public class CameraTrapRouteBuilder extends RouteBuilder {
                          //Checks if the redelivery attempts has reached the max
                         .when(simple("${header.ValidationRedeliveryCounter} >= ${header.ValidationMaxRedeliveryAttempt}"))
                             .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} CameraTrapIngest: Fedora RI search validation failed - sending msg to queue")
-                            //Prepare the message body with deployment ID, PID, message to the queue
-                            .setBody(simple("Deployment Package ID - ${header.CamelFileParent}, Resource PID - ${header.ValidationPID}, " +
-                                    "Message - Fedora RI Search validation failed"))
-                            .to("activemq:queue:ct.post.validation.error")
+                            .setHeader("ValidationErrors", simple("ValidationErrors"))
+                            .to("bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, '${header.ValidationPID}', " +
+                                    "'Fedora RI Search validation failed', false)")
+                            .to("direct:validationErrorMessageAggregationStrategy")
                         //The redelivery attempts has not reached the max and re-retry searching the Fedora RI for the PID.
                         .otherwise()
                             //Increment the redelivery counter

@@ -32,6 +32,7 @@ import org.apache.camel.Expression;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.model.ToDefinition;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Test;
@@ -49,37 +50,41 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
     @EndpointInject(uri = "mock:result")
     private MockEndpoint mockEndpoint;
 
-    @EndpointInject(uri = "mock:activemq:queue:ct.post.validation.error")
-    private MockEndpoint mockActiveMQEndpoint;
+    @EndpointInject(uri = "mock:direct:validationErrorMessageAggregationStrategy")
+    private MockEndpoint mockAggregationStrategyEndpoint;
 
+    CameraTrapValidationMessage cameraTrapValidationMessage = new CameraTrapValidationMessage();
     /**
      * Testing post ingestion validation route where the RELS-EXT resource object reference count
-     * compared to the expected ingested resource count.  When the validation fails, activemq is expected to receive a message
-     * with Deployment Package ID, and the validation failed message
+     * compared to the expected ingested resource count.  When the validation fails, aggregation strategy endpoint
+     * is expected to receive a message with Deployment Package ID, and the validation failed message
      *
      * @throws Exception
      */
     @Test
     public void testValidatePostResourceCountFailRoute() throws Exception {
 
-        int camelFileParent = 10002000;
+        String camelFileParent = "10002000";
         int resourceCount = 100;
         int relsExtResourceCount = 103;
 
-        //using adviceWith to mock the activemq component for testing purpose
+        //using adviceWith to mock the dependencies for testing purpose
         context.getRouteDefinition("CameraTrapValidatePostResourceCount").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //find all activemq endoints to mock:activemq endpoint
-                mockEndpointsAndSkip("activemq:queue*");
+                mockEndpointsAndSkip("direct:validationErrorMessageAggregationStrategy*");
             }
         });
-        //expected message body response
-        mockActiveMQEndpoint.expectedBodiesReceived(String.format("Deployment Package ID - %s, Message - " +
-                "Post Resource Count validation failed.  Expected %s but found %s", camelFileParent, resourceCount, relsExtResourceCount));
 
-        //expect the queue to get invoked once
-        mockActiveMQEndpoint.expectedMessageCount(1);
+        //creating a new messageBean that is expected from the test route
+        CameraTrapValidationMessage.MessageBean messageBean = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+                String.format("Post Resource Count validation failed. Expected %s but found %s", resourceCount, relsExtResourceCount), false);
+
+        //expected message body response
+        mockAggregationStrategyEndpoint.expectedBodiesReceived(messageBean);
+
+        //expect the endpoint to get invoked once
+        mockAggregationStrategyEndpoint.expectedMessageCount(1);
 
         //setting up expected headers before sending message to test route
         Map<String, Object> headers = new HashMap<>();
@@ -129,7 +134,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
     /**
      * Testing post ingestion validation route to check whether the resource object is found in the Fedora RI.
      * If the object is not found then the message gets routed back to try redelivery based on the configurable values.
-     * When the redelivery exhausts, the message gets sent to activemq queue for reporting purpose.  This test method
+     * When the redelivery exhausts, the message gets sent to aggregation strategy endpoint for reporting purpose.  This test method
      * utilizes mock endpoints and mock behaviors to simulate external system like fedora repo.
      *
      * @throws Exception
@@ -137,20 +142,18 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
     @Test
     public void testValidateFedoraResourceRedeliverAndFailRoute() throws Exception {
 
-        int camelFileParent = 10002002;
+        String camelFileParent = "10002002";
         int validationRedeliveryCounter = 1;
         int validationMaxRedeliveryAttempt = 10;
         String validationPID = "test:100";
 
-        //using adviceWith to mock the activemq component for testing purpose
+        //using adviceWith to mock the dependencies for testing purpose
         context.getRouteDefinition("CameraTrapValidateFedoraResource").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //find all activemq endoints to mock:activemq endpoint
-                mockEndpointsAndSkip("activemq:queue*");
-
                 //replacing the first to definition to mock; for sending a message to query the Fedora RI
                 weaveByType(ToDefinition.class).selectFirst().replace().to("mock:result");
+                mockEndpointsAndSkip("direct:validationErrorMessageAggregationStrategy*");
             }
         });
         //mocking the fedora search response and always returning as false
@@ -162,12 +165,15 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
             }
         });
 
-        //expected message body response
-        mockActiveMQEndpoint.expectedBodiesReceived(String.format("Deployment Package ID - %s, Resource PID - %s, " +
-                "Message - Fedora RI Search validation failed", camelFileParent, validationPID));
+        //creating a new messageBean that is expected from the test route
+        CameraTrapValidationMessage.MessageBean messageBean = cameraTrapValidationMessage.createValidationMessage(camelFileParent, validationPID,
+                "Fedora RI Search validation failed", false);
 
-        //expect the queue to get invoked once
-        mockActiveMQEndpoint.expectedMessageCount(1);
+        //expected message body response
+        mockAggregationStrategyEndpoint.expectedBodiesReceived(messageBean);
+
+        //expect the endpoint to get invoked once
+        mockAggregationStrategyEndpoint.expectedMessageCount(1);
 
         //setting up expected headers before sending message to test route
         Map<String, Object> headers = new HashMap<>();
@@ -177,11 +183,26 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         headers.put("ValidationPID", validationPID);
         template.sendBodyAndHeaders("direct:validateFedoraResource", "body text", headers);
 
-        //queue should be triggered when the maxRedeliveryAttempt is at max since
+
+        //the endpoint should be invoked when the maxRedeliveryAttempt is at max since
         //the fedora search response is always returning false in this scenario
-        mockActiveMQEndpoint.expectedHeaderReceived("ValidationRedeliveryCounter", validationMaxRedeliveryAttempt);
+        mockAggregationStrategyEndpoint.expectedHeaderReceived("ValidationRedeliveryCounter", validationMaxRedeliveryAttempt);
 
         assertMockEndpointsSatisfied();
+    }
+
+    /**
+     * Registering the cameraTrapValidationMessage bean
+     *
+     * @return JndiRegistry
+     * @throws Exception
+     */
+    @Override
+    protected JndiRegistry createRegistry() throws Exception {
+        JndiRegistry jndi = super.createRegistry();
+        jndi.bind("cameraTrapValidationMessage", cameraTrapValidationMessage);
+
+        return jndi;
     }
 
     /**

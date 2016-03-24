@@ -34,7 +34,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.si.services.camel</groupId>
-    <artifactId>fcrepo-rest</artifactId>
+    <artifactId>FcrepoRest</artifactId>
     <packaging>bundle</packaging>
     <version>1.0.0</version>
 
