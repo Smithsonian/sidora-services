@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Smithsonian Institution.
+ * Copyright 2015-2016 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -67,8 +67,9 @@ public class CameraTrapValidationMessageAggregationStrategy implements Aggregati
                 List<CameraTrapValidationMessage.MessageBean> messages = new ArrayList<>();
 
                 //only add validation failed messages  to the bucket
-                if (!messageBean.getValidationSuccess())
+                if (!messageBean.getValidationSuccess()){
                     messages.add(messageBean);
+                }
                 newExchange.getIn().setBody(messages);
             }
 
@@ -90,8 +91,9 @@ public class CameraTrapValidationMessageAggregationStrategy implements Aggregati
             CameraTrapValidationMessage.MessageBean message = (CameraTrapValidationMessage.MessageBean)newExchangeBodyObject;
 
             //only add validation failed messages to the bucket
-            if (!((CameraTrapValidationMessage.MessageBean) newExchangeBodyObject).getValidationSuccess())
+            if (!((CameraTrapValidationMessage.MessageBean) newExchangeBodyObject).getValidationSuccess()) {
                 validationMessages.add(message);
+            }
         }
 
         //add list of validation messages to the existing bucket.  this is used in inner aggregation logic such as in splitter EIPs
