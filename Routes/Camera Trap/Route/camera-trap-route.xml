@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2015 Smithsonian Institution.
+  ~ Copyright 2015-2016 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -57,6 +57,11 @@
 
     <bean id="deploymentPkgValidator" class="edu.si.services.beans.cameratrap.DeploymentPackageValidator"/>
 
+    <bean id="cameraTrapStaticStore" class="edu.si.services.beans.cameratrap.CameraTrapStaticStore"/>
+
+    <!-- processsor used during fedora findObject redelivery attempts to check for in-flight process-->
+    <bean id="inFlightCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightCheckProcessor"/>
+
     <bean id="postIngestionValidator" class="edu.si.services.beans.cameratrap.PostIngestionValidator"/>
 
     <bean id="cameraTrapValidationMessage" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessage"/>
@@ -98,6 +103,7 @@
                               useExponentialBackOff="true"/>
         </errorHandler>
         -->
+        <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
 
@@ -117,6 +123,20 @@
                               redeliveryDelay="1000"
                               maximumRedeliveries="5"
                               retryAttemptedLogLevel="WARN"/>
+        </onException>
+
+        <onException useOriginalMessage="true" onRedeliveryRef="inFlightCheckProcessor">
+            <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
+            <redeliveryPolicy useExponentialBackOff="true"
+                              backOffMultiplier="2"
+                              redeliveryDelay="1000"
+                              maximumRedeliveries="7"
+                              retryAttemptedLogLevel="WARN"
+                              retriesExhaustedLogLevel="WARN"
+                              logExhaustedMessageHistory="false"/>
+            <continued>
+                <constant>true</constant>
+            </continued>
         </onException>
 
         <!--
@@ -288,6 +308,12 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
+            <setHeader headerName="ValidationErrors">
+                <simple>
+                    ValidationErrors
+                </simple>
+            </setHeader>
+
             <to uri="direct:validatePostIngestResourceCount"/>
 
             <!-- validate datastreams exists for various object types -->
@@ -322,35 +348,36 @@
             </setHeader>
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
 
-            <!-- Configurable max redelivery attempt for the Resource OBJ RI search validation-->
-            <setHeader headerName="ValidationMaxRedeliveryAttempt">
-                <simple resultType="java.lang.Integer">
-                    5
-                </simple>
-            </setHeader>
-
             <split streaming="true">
                 <xtokenize>//fedora:hasResource</xtokenize>
-                <!-- Stashing the PID in the header in case of RI search redelivery attempts for later use-->
-                <setHeader headerName="ValidationPID">
+                <!-- Stashing the resource object PID in the header in case of RI search redelivery attempts for later use-->
+                <setHeader headerName="ValidationResourceObjectPID">
                     <xpath resultType="java.lang.String">
                         //fedora:hasResource/@rdf:resource/substring-after(., 'info:fedora/')
                     </xpath>
                 </setHeader>
-                <!-- Counter to track the number of retry attempts for RI search validation-->
-                <setHeader headerName="ValidationRedeliveryCounter">
-                    <simple resultType="java.lang.Integer">
-                        0
-                    </simple>
-                </setHeader>
-                <!-- Configurable delay for each Resource OBJ RI search validation attempts-->
-                <setHeader headerName="ValidationRedeliveryDelay">
-                    <simple resultType="java.lang.Integer">
-                        2000
-                    </simple>
-                </setHeader>
 
-                <to uri="direct:validateFedoraResource"/>
+                <setBody>
+                    <simple resultType="java.lang.String">
+                        ${header.ValidationResourceObjectPID}
+                    </simple>
+                </setBody>
+
+                <to uri="direct:findObjectByPIDPredicate"/>
+
+                <choice>
+                    <when>
+                        <simple>${body} == false</simple>
+
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${header.ValidationResourceObjectPID}
+                            ,'Fedora RI Search validation failed', ${body})"/>
+                        <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                        <log message="${id} CameraTrapIngest: Fedora RI search validation failed"
+                             loggingLevel="WARN"
+                             logName="edu.si.ctingest"/>
+                    </when>
+                </choice>
+
                 <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
@@ -499,36 +526,39 @@
 
             <toD uri="fcrepo:objects/${header.ValidationDatastreamObjectPID}/datastreams?format=xml"/>
 
-            <setHeader headerName="FedoraDatastreamIDsFound">
-                <xpath resultType="java.lang.String">
-                    string-join(//objDatastreams:datastream/@dsid,',')
-                </xpath>
-            </setHeader>
-
-            <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
-
             <choice>
                 <when>
-                    <simple>${body} == false</simple>
-                    <setBody>
-                        <simple>
-                            Deployment Package ID - ${header.CamelFileParent}, Message - ${header.ValidationDatastreamObjectType} Object Datastreams validation failed
-                        </simple>
-                    </setBody>
+                    <simple>${header.CamelHttpResponseCode} == 200</simple>
 
-                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
-                            '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
-                    <setHeader headerName="ValidationErrors">
-                        <simple>
-                            ValidationErrors
-                        </simple>
+                    <setHeader headerName="FedoraDatastreamIDsFound">
+                        <xpath resultType="java.lang.String">
+                            string-join(//objDatastreams:datastream/@dsid,',')
+                        </xpath>
                     </setHeader>
 
+                    <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
+
+                    <choice>
+                        <when>
+                            <simple>${body} == false</simple>
+                            <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                                    '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
+                            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                            <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
+                                 loggingLevel="WARN"
+                                 logName="edu.si.ctingest"/>
+                        </when>
+                    </choice>
+                </when>
+
+                <otherwise>
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                            '${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation', false)"/>
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
-                    <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
+                    <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
                          loggingLevel="WARN"
                          logName="edu.si.ctingest"/>
-                </when>
+                </otherwise>
             </choice>
 
             <log message="${id} CameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."/>
@@ -1069,6 +1099,8 @@
                         </xpath>
                         <to uri="direct:processPlot"/>
                     </filter>
+                    <!-- Clean up parent ID(s) from the static storage to unlock the wait for follow-on ingestions with same parent identifiers. -->
+                    <to uri="bean:cameraTrapStaticStore?method=removeParentIdsByDeploymentId(${header.CamelFileParent})"/>
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
@@ -1084,7 +1116,7 @@
                  logName="edu.si.ctingest"/>
         </route>
 
-        <route id="CameraTrapFindObject">
+        <route id="CameraTrapFindObject" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObject"/>
             <log message="${id} CameraTrapIngest: Started find object ..."
                  loggingLevel="INFO"
@@ -1147,12 +1179,22 @@
                 </xpath>
             </setBody>
 
+            <choice>
+                <when>
+                    <simple>
+                        ${body} == ''
+                    </simple>
+                    <!-- Throw custom exception to trigger re-try attempts on search -->
+                    <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
+                                    message="The fedora object not found"/>
+                </when>
+            </choice>
             <log message="${id} CameraTrapIngest: Finished find object."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
-        <route id="CameraTrapFindObjectByPIDPredicate">
+        <route id="CameraTrapFindObjectByPIDPredicate" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObjectByPIDPredicate"/>
             <log message="${id} CameraTrapIngest: Started find object by PID ..."
                  loggingLevel="INFO"
@@ -1180,6 +1222,16 @@
                     /ri:sparql/ri:results/ri:result[1]/ri:k0/text()
                 </xpath>
             </setBody>
+            <choice>
+                <when>
+                    <simple>
+                        ${body} == false
+                    </simple>
+                    <!-- Throw custom exception to trigger re-try attempts on search -->
+                    <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
+                                    message="The fedora object not found"/>
+                </when>
+            </choice>
             <log message="Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
@@ -1208,6 +1260,12 @@
                 </xpath>
             </setBody>
             <setHeader headerName="CamelFedoraLabel">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+            <!-- stash parent identifier to be used for the in-flight parent process checks. -->
+            <setHeader headerName="DeploymentParentId">
                 <simple>
                     ${body}
                 </simple>
@@ -1287,6 +1345,12 @@
                     ${body}
                 </simple>
             </setHeader>
+            <!-- stash subproject identifier to be used for the in-flight parent process checks. -->
+            <setHeader headerName="DeploymentParentId">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //SubProjectId
+                </xpath>
+            </setHeader>
             <log message="${id} CameraTrapIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
@@ -1356,6 +1420,12 @@
                     ${body}
                 </simple>
             </setHeader>
+            <!-- stash project identifier to be used for the in-flight parent process checks. -->
+            <setHeader headerName="DeploymentParentId">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //ProjectId
+                </xpath>
+            </setHeader>
             <log message="${id} CameraTrapIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
@@ -1408,13 +1478,6 @@
             <log message="${id} CameraTrapValidateDatastreamFields: Starting Datastream Fields Validation ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
-
-            <!-- Set the header for error message aggregation -->
-            <setHeader headerName="ValidationErrors">
-                <simple>
-                    ValidationErrors
-                </simple>
-            </setHeader>
 
             <!-- Start EAC-CPF Validation -->
             <setHeader headerName="CamelFedoraPid">
