@@ -64,6 +64,9 @@ public class ExtractorProducer extends DefaultProducer
         Message in = exchange.getIn();
         File inBody = in.getBody(File.class);
 
+        LOG.debug("===CamelFileName:===\n" + exchange.getIn().getHeaders());
+        LOG.debug("CamelFileName: " + exchange.getIn().getHeader("CamelFileName") + " <====================");
+
         File outFolder = new File(this.endpoint.getLocation());
         List<File> org;
         if (outFolder.exists())

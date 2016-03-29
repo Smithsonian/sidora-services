@@ -31,6 +31,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -59,7 +61,9 @@ public class ExtractorComponentTest extends CamelTestSupport
     @Test
     public void testZipExtractor() throws Exception
     {
-        testExtractor("p1d246-test-zip.zip");
+        //testExtractor("p1d246-test-zip.zip");
+        //testExtractor("p1d246-test-zip.zip", false);
+        testExtractor("ECU-001-D0001.zip", false);
     }
 
     @Test
@@ -109,6 +113,7 @@ public class ExtractorComponentTest extends CamelTestSupport
         }
     }
 
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception
     {
@@ -118,7 +123,9 @@ public class ExtractorComponentTest extends CamelTestSupport
             public void configure()
             {
                 from("direct:start")
+                        .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
                         .to("extractor:extract?location=TestData")
+                        .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
                         .to("mock:result");
             }
         };
@@ -132,7 +139,7 @@ public class ExtractorComponentTest extends CamelTestSupport
         msgCount = 0;
     }
 
-    @AfterClass
+    /*@AfterClass
     public static void afterClass()
     {
         try
@@ -143,5 +150,14 @@ public class ExtractorComponentTest extends CamelTestSupport
         {
             Logger.getLogger(ExtractorComponentTest.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }*/
+
+    @Override
+    public void setUp() throws Exception {
+        deleteDirectory("TestData");
+        super.setUp();
+        template.sendBodyAndHeader("file://target/files", "Hello World", Exchange.FILE_NAME, "ECU-001-D0001.zip");
+        //template.sendBodyAndHeader("file://target/files", "Bye World", Exchange.FILE_NAME, "report2.txt");
+        //template.sendBodyAndHeader("file://target/files/2008", "2008 Report", Exchange.FILE_NAME, "report2008.txt");
     }
 }
