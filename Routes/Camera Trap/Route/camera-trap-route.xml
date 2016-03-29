@@ -1621,7 +1621,7 @@
                      loggingLevel="ERROR"
                      logName="edu.si.ctingest"/>
                 <!-- Send Validation Errors to activemq, email, persistent dB, or Splunk! -->
-                <to uri="activemq:queue:ct.post.validation.error"/>
+                <!--<to uri="activemq:queue:ct.post.validation.error"/>-->
             </aggregate>
         </route>
 
