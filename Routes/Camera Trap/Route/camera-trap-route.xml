@@ -1101,6 +1101,8 @@
                     </filter>
                     <!-- Clean up parent ID(s) from the static storage to unlock the wait for follow-on ingestions with same parent identifiers. -->
                     <to uri="bean:cameraTrapStaticStore?method=removeParentIdsByDeploymentId(${header.CamelFileParent})"/>
+                    <!-- Clean stashed header that could potentially lock for inflight check during post validations-->
+                    <removeHeader headerName="DeploymentParentId"/>
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
