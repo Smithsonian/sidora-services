@@ -92,6 +92,7 @@ public class PostIngestionValidator {
 
         String fieldName;
         String camelFileParent;
+        String message;
 
         camelFileParent = exchange.getIn().getHeader("CamelFileParent", String.class);
 
@@ -117,20 +118,21 @@ public class PostIngestionValidator {
                 .namespaces(ns)
                 .evaluate(exchange.getContext(), datastreamXML);
 
-        CameraTrapValidationMessage validationMessage = new CameraTrapValidationMessage();
-        CameraTrapValidationMessage.MessageBean messageBean;
         if (datastreamField.equals(manifestField)) {
-            messageBean = validationMessage.createValidationMessage(camelFileParent, "Validation Passed", true);
+            message = "passed";
+
             log.info("Inside validateField(): " + fieldName + " Field matches the Manifest Field. Validation passed...");
 
         } else {
-            String messageStr = "Deployment Package ID - " + camelFileParent
-                    + ", Message - " + fieldName + " Field validation failed."
+            message = "Deployment Package ID - " + camelFileParent
+                    + ", Message - " + fieldName + " Field validation failed. "
                     + "Expected " + manifestField + " but found " +datastreamField + ".";
-            messageBean = validationMessage.createValidationMessage(camelFileParent, messageStr, false);
-            log.info("Inside validateField(): " + messageStr);
+
+            log.info("Inside validateField(): " + message);
         }
 
-        exchange.getIn().setBody(messageBean);
+        //exchange.getIn().setHeader("ValidationErrors", "ValidationErrors");
+        exchange.getIn().setBody(message);
+
     }
 }

@@ -1424,7 +1424,7 @@
             </setHeader>
 
             <!-- Get the EAC-CPF datastream from the project parent -->
-            <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut" id="getEAC-CPFDatastream"/>
 
             <convertBodyTo type="java.lang.String"/>
 
@@ -1445,8 +1445,8 @@
                 </simple>
             </setBody>
             <!--<to uri="direct:Validate_EAC-CPF_fields"/>-->
-            <to uri="direct:ValidateDatastreamFieldList"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:ValidateDatastreamFieldList" id="validateEAC-CPFDatastreamField"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateEAC-CPF"/>
 
             <!-- Start FGDC Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1456,7 +1456,7 @@
             </setHeader>
 
             <!-- Get the FGDC datastream from the project parent -->
-            <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut" id="getFGDCDatastream"/>
 
             <convertBodyTo type="java.lang.String"/>
 
@@ -1477,7 +1477,7 @@
             </setBody>
             <!--<to uri="direct:Validate_FGDC_Fields"/>-->
             <to uri="direct:ValidateDatastreamFieldList"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateFGDC"/>
 
             <!-- Start MODS Validation -->
             <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
@@ -1487,8 +1487,8 @@
                 </simple>
             </setHeader>
 
-            <!-- Get the MOD datastream -->
-            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut"/>
+            <!-- Get the MODS datastream -->
+            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
 
             <convertBodyTo type="java.lang.String"/>
 
@@ -1507,7 +1507,7 @@
             </setBody>
             <!--<to uri="direct:ValidateMODSFields"/>-->
             <to uri="direct:ValidateDatastreamFieldList"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
 
             <!-- Start Researcher CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1516,8 +1516,8 @@
                 </simple>
             </setHeader>
 
-            <to uri="direct:ValidateCSVFields"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:ValidateCSVFields" id="validateResearcherObservationCSV"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateResearcher"/>
 
             <!-- Start Volunteer CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1525,8 +1525,8 @@
                     ${header.VolunteerObservationPID}
                 </simple>
             </setHeader>
-            
-            <to uri="direct:ValidateCSVFields"/>
+
+            <to uri="direct:ValidateCSVFields" id="validateVolunteerObservationCSV"/>
 
             <!-- Notify the aggregator to complete aggregation -->
             <setHeader headerName="ValidationComplete">
@@ -1535,7 +1535,7 @@
                 </simple>
             </setHeader>
 
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateVolunteer"/>
 
             <log message="${id} CameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
                  loggingLevel="INFO"
@@ -1584,7 +1584,7 @@
 
             <log message="${id} CameraTrapValidateCSVFields: Starting Validation of CSV Metadata Fields..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>            
+                 logName="edu.si.ctingest"/>
 
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String"/>
