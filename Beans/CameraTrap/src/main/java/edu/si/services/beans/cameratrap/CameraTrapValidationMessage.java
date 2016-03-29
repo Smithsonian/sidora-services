@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Smithsonian Institution.
+ * Copyright 2015-2016 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -134,8 +134,12 @@ public class CameraTrapValidationMessage implements Serializable{
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
             MessageBean that = (MessageBean) o;
             return Objects.equals(deploymentID, that.deploymentID) &&
                     Objects.equals(resourceID, that.resourceID) &&

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Smithsonian Institution.
+ * Copyright 2015-2016 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -24,6 +24,7 @@
  * license terms. For a complete copy of all copyright and license terms, including
  * those of third-party libraries, please see the product release notes.
  */
+
 package edu.si.services.beans.cameratrap;
 
 import org.apache.camel.EndpointInject;
@@ -129,66 +130,6 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         assertEquals(mockEndpoint.getReceivedExchanges().get(0).getIn().getBody().toString(), toSendBody);
         mockEndpoint.expectedHeaderReceived("CamelFileParent", camelFileParent);
         mockEndpoint.assertIsSatisfied();
-    }
-
-    /**
-     * Testing post ingestion validation route to check whether the resource object is found in the Fedora RI.
-     * If the object is not found then the message gets routed back to try redelivery based on the configurable values.
-     * When the redelivery exhausts, the message gets sent to aggregation strategy endpoint for reporting purpose.  This test method
-     * utilizes mock endpoints and mock behaviors to simulate external system like fedora repo.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testValidateFedoraResourceRedeliverAndFailRoute() throws Exception {
-
-        String camelFileParent = "10002002";
-        int validationRedeliveryCounter = 1;
-        int validationMaxRedeliveryAttempt = 10;
-        String validationPID = "test:100";
-
-        //using adviceWith to mock the dependencies for testing purpose
-        context.getRouteDefinition("CameraTrapValidateFedoraResource").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                //replacing the first to definition to mock; for sending a message to query the Fedora RI
-                weaveByType(ToDefinition.class).selectFirst().replace().to("mock:result");
-                mockEndpointsAndSkip("direct:validationErrorMessageAggregationStrategy*");
-            }
-        });
-        //mocking the fedora search response and always returning as false
-        mockEndpoint.returnReplyBody(new Expression() {
-            @Override
-            public <T> T evaluate(Exchange exchange, Class<T> type) {
-                String body = "false";
-                return (T) body;
-            }
-        });
-
-        //creating a new messageBean that is expected from the test route
-        CameraTrapValidationMessage.MessageBean messageBean = cameraTrapValidationMessage.createValidationMessage(camelFileParent, validationPID,
-                "Fedora RI Search validation failed", false);
-
-        //expected message body response
-        mockAggregationStrategyEndpoint.expectedBodiesReceived(messageBean);
-
-        //expect the endpoint to get invoked once
-        mockAggregationStrategyEndpoint.expectedMessageCount(1);
-
-        //setting up expected headers before sending message to test route
-        Map<String, Object> headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
-        headers.put("ValidationRedeliveryCounter", validationRedeliveryCounter);
-        headers.put("ValidationMaxRedeliveryAttempt", validationMaxRedeliveryAttempt);
-        headers.put("ValidationPID", validationPID);
-        template.sendBodyAndHeaders("direct:validateFedoraResource", "body text", headers);
-
-
-        //the endpoint should be invoked when the maxRedeliveryAttempt is at max since
-        //the fedora search response is always returning false in this scenario
-        mockAggregationStrategyEndpoint.expectedHeaderReceived("ValidationRedeliveryCounter", validationMaxRedeliveryAttempt);
-
-        assertMockEndpointsSatisfied();
     }
 
     /**
