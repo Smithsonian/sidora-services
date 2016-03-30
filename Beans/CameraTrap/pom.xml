@@ -70,14 +70,14 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
-            <!--<scope>test</scope>-->
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>${log4j.version}</version>
-            <!--<scope>test</scope>-->
+            <scope>test</scope>
         </dependency>
 
         <!-- Testing -->
@@ -139,6 +139,7 @@
             <groupId>org.apache.servicemix.bundles</groupId>
             <artifactId>org.apache.servicemix.bundles.velocity-tools</artifactId>
             <version>2.0_1</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -164,55 +165,6 @@
             <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-csv</artifactId>
-            <version>${camel.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-groovy</artifactId>
-            <version>${camel.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-velocity</artifactId>
-            <version>${camel.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.velocity-tools</artifactId>
-            <version>2.0_1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-saxon</artifactId>
-            <version>${camel.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-schematron</artifactId>
-            <version>${camel.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-exec</artifactId>
-            <version>${camel.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-spring</artifactId>
-            <version>${camel.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
@@ -238,58 +190,19 @@
     <build>
         <defaultGoal>install</defaultGoal>
 
-        <resources>
-            <resource>
-                <directory>../../Routes/Camera Trap</directory>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-        </resources>
-
         <testResources>
             <!-- don't forget to specify the default test resources directory -->
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
 
-            <!-- add the Routes directory -->
+            <!-- add the Camera Trap Routes directory -->
             <testResource>
                 <directory>../../Routes/Camera Trap</directory>
             </testResource>
         </testResources>
 
         <plugins>
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <additionalClasspathElements>
-                        <additionalClasspathElement>../../Routes/Camera Trap</additionalClasspathElement>
-                    </additionalClasspathElements>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.10</version>
-                <executions>
-                    <execution>
-                        <id>add-test-resource</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-resource</goal>
-                        </goals>
-                        <configuration>
-                            <resources>
-                                <resource>
-                                    <directory>../../Routes/Camera Trap</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -327,7 +240,6 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-
                         <Bundle-SymbolicName>edu.si.services.beans.cameratrap</Bundle-SymbolicName>
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
@@ -335,20 +247,6 @@
                     </instructions>
                 </configuration>
             </plugin>
-
-            <!-- Allows the routes to be run via 'mvn camel:run' -->
-            <!--<plugin>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-maven-plugin</artifactId>
-                <version>${camel.version}</version>
-                <configuration>
-                    <useBlueprint>true</useBlueprint>
-                    <trace>true</trace>
-                    &lt;!&ndash;<applicationContextUri>Routes/Camera Trap/Route/camera-trap-route.xml</applicationContextUri>&ndash;&gt;
-                    &lt;!&ndash; Enabling classpath logging can be verbose and noisy, disable if necessary &ndash;&gt;
-                    <logClasspath>true</logClasspath>
-                </configuration>
-            </plugin>-->
 
         </plugins>
     </build>

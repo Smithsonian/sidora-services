@@ -1501,6 +1501,7 @@
             </setHeader>
 
             <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- Validation xpaths for newer manifest ( see jira ticket SID-618 )
             <setBody>
                 <simple trim="true">
                     EAC-CPF Latitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@latitude, //CameraTrapDeployment/ActualLatitude/text()
@@ -1509,8 +1510,16 @@
                     EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
                 </simple>
             </setBody>
+            -->
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    EAC-CPF ProjectName, //eac:eac-cpf/eac:cpfDescription/eac:identity/eac:nameEntry[1]/eac:part, //CameraTrapDeployment/ProjectName/text()
+                </simple>
+            </setBody>
             <!--<to uri="direct:Validate_EAC-CPF_fields"/>-->
-            <to uri="direct:ValidateDatastreamFieldList" id="validateEAC-CPFDatastreamField"/>
+            <to uri="direct:ValidateDatastreamFieldList"/>
             <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateEAC-CPF"/>
 
             <!-- Start FGDC Validation -->
@@ -1536,8 +1545,8 @@
             <setBody>
                 <simple trim="true">
                     FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
-                    FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
-                    FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
+FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
+FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
                 </simple>
             </setBody>
             <!--<to uri="direct:Validate_FGDC_Fields"/>-->
@@ -1674,11 +1683,17 @@
                     </simple>
                 </setHeader>
 
+                <setHeader headerName="ManifestFields">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                        string-join((//CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceId, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceBeginTime, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceEndTime), ',')
+                    </xpath>
+                </setHeader>
+
                 <choice>
                     <when>
                         <!-- Check that the ImageSequence csv record (i.e "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime") matches the ImageSequence record from the manifest -->
                         <xpath resultType="java.lang.String" headerName="ManifestXML" >
-                            $in:CSVImageSequenceRecord = string-join((//CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceId, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceBeginTime, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceEndTime), ',')
+                            $in:CSVImageSequenceRecord = $in:ManifestFields
                         </xpath>
 
                         <log message="${id} CameraTrapValidateCSVFields: CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches the manifest validation passed ..."
@@ -1691,10 +1706,12 @@
                         <!-- The CSV ImageSequence record does not match the manifest -->
                         <setBody>
                             <simple>
-                                Deployment Package ID - ${header.CamelFileParent}, Message - CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches Manifest validation failed.
-                                Expected ${header.ManifestFields} but found ${header.CSVFields}.
+                                CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches Manifest validation failed.
                             </simple>
                         </setBody>
+                        <transform>
+                            <simple>${body}\nExpected ${header.ManifestFields} but found ${header.CSVImageSequenceRecord}.</simple>
+                        </transform>
                         <log message="${id} CameraTrapValidateCSVFields: ${body}"
                              loggingLevel="ERROR"
                              logName="edu.si.ctingest"/>
