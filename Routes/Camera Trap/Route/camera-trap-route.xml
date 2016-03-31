@@ -60,7 +60,7 @@
     <bean id="cameraTrapStaticStore" class="edu.si.services.beans.cameratrap.CameraTrapStaticStore"/>
 
     <!-- processsor used during fedora findObject redelivery attempts to check for in-flight process-->
-    <bean id="inFlightCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightCheckProcessor"/>
+    <bean id="inFlightConceptCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightConceptCheckProcessor"/>
 
     <bean id="postIngestionValidator" class="edu.si.services.beans.cameratrap.PostIngestionValidator"/>
 
@@ -125,7 +125,7 @@
                               retryAttemptedLogLevel="WARN"/>
         </onException>
 
-        <onException useOriginalMessage="true" onRedeliveryRef="inFlightCheckProcessor">
+        <onException useOriginalMessage="true" onRedeliveryRef="inFlightConceptCheckProcessor">
             <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
@@ -1099,10 +1099,8 @@
                         </xpath>
                         <to uri="direct:processPlot"/>
                     </filter>
-                    <!-- Clean up parent ID(s) from the static storage to unlock the wait for follow-on ingestions with same parent identifiers. -->
-                    <to uri="bean:cameraTrapStaticStore?method=removeParentIdsByDeploymentId(${header.CamelFileParent})"/>
                     <!-- Clean stashed header that could potentially lock for inflight check during post validations-->
-                    <removeHeader headerName="DeploymentParentId"/>
+                    <removeHeader headerName="DeploymentConceptId"/>
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
@@ -1267,7 +1265,7 @@
                 </simple>
             </setHeader>
             <!-- stash parent identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentParentId">
+            <setHeader headerName="DeploymentConceptId">
                 <simple>
                     ${body}
                 </simple>
@@ -1348,7 +1346,7 @@
                 </simple>
             </setHeader>
             <!-- stash subproject identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentParentId">
+            <setHeader headerName="DeploymentConceptId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //SubProjectId
                 </xpath>
@@ -1423,7 +1421,7 @@
                 </simple>
             </setHeader>
             <!-- stash project identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentParentId">
+            <setHeader headerName="DeploymentConceptId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //ProjectId
                 </xpath>
@@ -1620,8 +1618,6 @@
                 <log message="ValidationERRORAggregationMessage:\nBody:\n${body}"
                      loggingLevel="ERROR"
                      logName="edu.si.ctingest"/>
-                <!-- Send Validation Errors to activemq, email, persistent dB, or Splunk! -->
-                <!--<to uri="activemq:queue:ct.post.validation.error"/>-->
             </aggregate>
         </route>
 
@@ -1705,6 +1701,59 @@
 
             <log message="${id} CameraTrapValidateCSVFields: CSV Metadata Fields Validation Complete..."
                  loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapInFlightConceptStatusPolling">
+            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Starting the In-Flight Concept process status check..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.ctingest"/>
+
+            <to uri="bean:cameraTrapStaticStore?method=getInFlightConceptIds()"/>
+            <split>
+                <simple>${body.keySet}</simple>
+                <to uri="bean:cameraTrapStaticStore?method=getConceptInformationById(${body})"/>
+
+                <setHeader headerName="CamelFedoraPid">
+                    <simple>
+                        ${body.parentObjectPid}
+                    </simple>
+                </setHeader>
+                <setHeader headerName="CamelFileParent">
+                    <simple>
+                        ${body.deploymentId}
+                    </simple>
+                </setHeader>
+                <setHeader headerName="ConceptId">
+                    <simple>
+                        ${body.conceptId}
+                    </simple>
+                </setHeader>
+                <setBody>
+                    <simple>
+                        ${body.conceptLabel}
+                    </simple>
+                </setBody>
+
+                <to uri="direct:findObject" />
+
+                <choice>
+                    <when>
+                        <simple>
+                            ${body} != ''
+                        </simple>
+                        <log message="${id} CameraTrapInFlightConceptStatusPolling: Concept object: ${header.ConceptId} found from RI.. removing it from the In-Flight data structure... "
+                             loggingLevel="DEBUG"
+                             logName="edu.si.ctingest"/>
+                        <to uri="bean:cameraTrapStaticStore?method=removeConceptId(${header.ConceptId})"/>
+                    </when>
+                </choice>
+
+            </split>
+
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Finished the In-Flight Concept process status check."
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>
 
