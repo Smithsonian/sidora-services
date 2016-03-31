@@ -190,6 +190,7 @@
     <build>
         <defaultGoal>install</defaultGoal>
 
+        <!-- Copy test resources to output folder target/test-classes -->
         <testResources>
             <!-- don't forget to specify the default test resources directory -->
             <testResource>
