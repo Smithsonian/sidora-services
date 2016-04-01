@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Smithsonian Institution.
+ * Copyright 2015-2016 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -24,6 +24,7 @@
  * license terms. For a complete copy of all copyright and license terms, including
  * those of third-party libraries, please see the product release notes.
  */
+
 package edu.si.services.beans.cameratrap;
 
 import org.apache.camel.BeanInject;
@@ -34,43 +35,51 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Camel Processor used in the Camera Trap routes during onException to check for in-flight concept object creation for the
+ * multithreaded processing to avoid duplicate concept object being created in Fedora Repository
  *
  * @author parkjohn
  */
-public class InFlightCheckProcessor implements Processor{
+public class InFlightConceptCheckProcessor implements Processor{
 
-    private static final Logger log = LoggerFactory.getLogger(InFlightCheckProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(InFlightConceptCheckProcessor.class);
 
     @BeanInject
     private CameraTrapStaticStore cameraTrapStaticStore;
 
     /**
      * This method is called during the Fedora find object operation redelivery attempts to check if there is an existing in-flight
-     * process for the given parentId and the deployment ID.  The deployment ID information is used to determine
-     * which deployment is currently processing the parent objects.  The other deployment processes should wait
-     * while the initial deployment is finishing up the first parent object creation.
+     * process for the given conceptId and the deployment ID.  The deployment ID information is used to determine
+     * which deployment is currently processing the concept object(s).  The other deployment processes should wait
+     * while the initial deployment is finishing up the first concept object(s) creation.
 
-     * @param exchange camel message exchange; requires DeploymentParentId and CamelFileParent set in the headers
+     * @param exchange camel message exchange; requires CamelFileParent, DeploymentConceptId, CamelFedoraLabel and CamelFedoraPid from the headers
+     *                 for the inFlightCheck to add the concept information to the static storage
      * @throws InterruptedException
      */
     @Override
     public void process(Exchange exchange) throws InterruptedException {
         Message in = exchange.getIn();
-        String parentId = in.getHeader("DeploymentParentId", String.class);
+
         String deploymentId = in.getHeader("CamelFileParent", String.class);
+        String conceptId = in.getHeader("DeploymentConceptId", String.class);
+        String conceptLabel = in.getHeader("CamelFedoraLabel", String.class);
+        String parentObjectPid = in.getHeader("CamelFedoraPid", String.class);
 
         //check if CamelFileParent is set in the header
         if (deploymentId == null || deploymentId.length()==0){
             throw new IllegalArgumentException("CamelFileParent not found");
         }
 
-        if (parentId!=null && !cameraTrapStaticStore.containsParentId(parentId)){
-            cameraTrapStaticStore.addParentId(parentId, deploymentId);
+        if (conceptId!=null && conceptLabel!=null
+                && parentObjectPid!=null && !cameraTrapStaticStore.containsConceptId(conceptId)){
+            DeploymentConceptInformation conceptInformation = new DeploymentConceptInformation(deploymentId, conceptId, conceptLabel, parentObjectPid);
+            cameraTrapStaticStore.addConceptId(conceptId, conceptInformation);
         }
 
-        String lockOwner = cameraTrapStaticStore.getInFlightParentIds().get(parentId);
-        if (!deploymentId.equals(lockOwner)){
-            waitWhileProcessing(parentId);
+        DeploymentConceptInformation lockOwner = cameraTrapStaticStore.getInFlightConceptIds().get(conceptId);
+        if (lockOwner!=null && !deploymentId.equals(lockOwner.getDeploymentId())){
+            waitWhileProcessing(conceptId);
         }
 
     }
@@ -78,20 +87,20 @@ public class InFlightCheckProcessor implements Processor{
     /**
      * Checks the current status of in-flight static storage and uses while loop to enforce wait on the current thread if necessary
      *
-     * @param parentId parent object identifier such as ProjectId or SubProjectId from the deployment manifest and it is used
-     *                 to determine whether there is an existing in-flight process for the same parent identifier
+     * @param conceptId concept object identifier from the parent hierarchy such as the ProjectId or SubProjectId from the deployment manifest
+     *                  and it is used to determine whether there is an existing in-flight process for the same concept identifier
      * @throws InterruptedException
      */
-    private synchronized void waitWhileProcessing(String parentId) throws InterruptedException {
+    private synchronized void waitWhileProcessing(String conceptId) throws InterruptedException {
 
-        boolean parentInProcess = cameraTrapStaticStore.containsParentId(parentId);
+        boolean conceptInProcess = cameraTrapStaticStore.containsConceptId(conceptId);
 
-        //wait if there is another process running for the same parent identifier
-        while(parentInProcess){
-            log.debug("Current thread waiting due to in-flight process: " + parentId);
+        //wait if there is another process running for the same concept identifier
+        while(conceptInProcess){
+            log.debug("Current thread waiting due to in-flight process: " + conceptId);
             //change sleeping behavior event driven or configurable
-            Thread.sleep(2000);
-            parentInProcess = cameraTrapStaticStore.containsParentId(parentId);
+            Thread.sleep(6000);
+            conceptInProcess = cameraTrapStaticStore.containsConceptId(conceptId);
 
         }
     }

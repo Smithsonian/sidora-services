@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Smithsonian Institution.
+ * Copyright 2015-2016 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -25,36 +25,37 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.beans.cameratrap;
+package edu.si.services.camel.fcrepo;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 /**
- * Created by jbirkhimer on 3/10/16.
+ * Unit testing for the FcrepoProducer class.
+ *
+ * @author parkjohn
  */
-public class ValidationErrorMessageAggregationStrategy implements AggregationStrategy{
+@RunWith(MockitoJUnitRunner.class)
+public class FcrepoProducerTest {
 
-    final Logger log = LoggerFactory.getLogger(ValidationBean.class);
+    private static final String TEST_ENDPOINT_URI = "fcrepo:foo/endpoint";
 
-    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+    /**
+     * Test producer constructor for a given endpoint
+     *
+     */
+    @Test
+    public void testProducerConstr() {
+        final FcrepoComponent mockComponent = mock(FcrepoComponent.class);
+        FcrepoEndpoint testEndpoint = new FcrepoEndpoint(TEST_ENDPOINT_URI, mockComponent);
+        FcrepoProducer testProducer = new FcrepoProducer(testEndpoint);
 
-        if (oldExchange == null) {
-            return newExchange;
-        }
-
-        String oldBody = oldExchange.getIn().getBody(String.class);
-        String newBody = newExchange.getIn().getBody(String.class);
-
-        //Filter out the passed validation messages
-        if (!oldBody.equals("passed") && !newBody.equals("passed")) {
-            oldExchange.getIn().setBody(oldBody + ", " + newBody);
-        } else if (oldBody.equals("passed") && !newBody.equals("passed")) {
-            oldExchange.getIn().setBody(newBody);
-        }
-
-        return oldExchange;
+        assertEquals(testEndpoint, testProducer.getEndpoint());
+        assertEquals(TEST_ENDPOINT_URI, testProducer.getEndpoint().getEndpointUri());
     }
+
 }
