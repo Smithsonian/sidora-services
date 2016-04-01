@@ -1706,15 +1706,25 @@
 
         <route id="CameraTrapInFlightConceptStatusPolling">
             <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
-            <log message="${id} CameraTrapInFlightConceptStatusPolling: Starting the In-Flight Concept process status check..."
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
 
+            <!-- retrieve the collection of concept identifiers from the storage-->
             <to uri="bean:cameraTrapStaticStore?method=getInFlightConceptIds()"/>
             <split>
                 <simple>${body.keySet}</simple>
+                <!-- retrieve the concept information from the storage; such as the deployment id, concept label etc-->
                 <to uri="bean:cameraTrapStaticStore?method=getConceptInformationById(${body})"/>
 
+                <!-- stash concept identifier so we can remove it from the storage if the concept is found in the RI -->
+                <setHeader headerName="ConceptId">
+                    <simple>
+                        ${body.conceptId}
+                    </simple>
+                </setHeader>
+
+                <!-- set required headeers and body for the find object operation to function -->
                 <setHeader headerName="CamelFedoraPid">
                     <simple>
                         ${body.parentObjectPid}
@@ -1725,11 +1735,6 @@
                         ${body.deploymentId}
                     </simple>
                 </setHeader>
-                <setHeader headerName="ConceptId">
-                    <simple>
-                        ${body.conceptId}
-                    </simple>
-                </setHeader>
                 <setBody>
                     <simple>
                         ${body.conceptLabel}
@@ -1738,12 +1743,13 @@
 
                 <to uri="direct:findObject" />
 
+                <!-- if concept is found in RI, we can safely remove from the storage to release the wait lock -->
                 <choice>
                     <when>
                         <simple>
                             ${body} != ''
                         </simple>
-                        <log message="${id} CameraTrapInFlightConceptStatusPolling: Concept object: ${header.ConceptId} found from RI.. removing it from the In-Flight data structure... "
+                        <log message="${id} CameraTrapInFlightConceptStatusPolling: Concept object: ${header.ConceptId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
                              logName="edu.si.ctingest"/>
                         <to uri="bean:cameraTrapStaticStore?method=removeConceptId(${header.ConceptId})"/>
@@ -1752,7 +1758,7 @@
 
             </split>
 
-            <log message="${id} CameraTrapInFlightConceptStatusPolling: Finished the In-Flight Concept process status check."
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>

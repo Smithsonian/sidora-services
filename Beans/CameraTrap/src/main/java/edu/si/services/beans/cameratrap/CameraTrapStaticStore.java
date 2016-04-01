@@ -35,7 +35,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Intended to be used as a bean with static variable(s) to store information cross deployments
+ * Intended to be used as a singleton bean to store information across multiple deployments
  * during the multi-threaded Camera Trap ingest processes.  For example, we use this bean to hold
  * concept hierarchical (Project, SubProject, Plot) object identifiers to determine whether delay is needed
  * to avoid duplicate concept object being created.
@@ -47,21 +47,21 @@ public class CameraTrapStaticStore {
     private static final Logger log = LoggerFactory.getLogger(CameraTrapStaticStore.class);
 
     //map used to hold concept ID information and the owner of the concept ID(s) to correlate during multi-thread processing
-    private static final Map<String, DeploymentConceptInformation> inFlightConceptIds = new HashMap<>(0);
+    private final Map<String, DeploymentConceptInformation> inFlightConceptIds = new HashMap<>(0);
 
     /**
-     * Wrapper method to check concept ID exists in the static data structure that holds the in-flight concept IDs
+     * Wrapper method to check concept ID exists in the data structure that holds the in-flight concept IDs
      *
      * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
      * @return true or false
      */
     public synchronized boolean containsConceptId(String conceptId) {
-        log.debug("The static store contains following concept IDs: " + inFlightConceptIds.toString());
+        log.debug("The cameratrap store contains following concept IDs: " + inFlightConceptIds.toString());
         return inFlightConceptIds.containsKey(conceptId);
     }
 
     /**
-     * Wrapper method to add concept ID to the static data structure that holds the in-flight concept IDs
+     * Wrapper method to add concept ID to the data structure that holds the in-flight concept IDs
      *
      * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
      * @param conceptInformation deployment package ID; this information used to determine who is the owner of the in-flight concept ID(s)
@@ -72,7 +72,7 @@ public class CameraTrapStaticStore {
     }
 
     /**
-     * Wrapper method to remove concept ID from the static data structure that holds the in-flight concept IDs
+     * Wrapper method to remove concept ID from the data structure that holds the in-flight concept IDs
      *
      * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
      */
@@ -82,7 +82,7 @@ public class CameraTrapStaticStore {
     }
 
     /**
-     * Wrapper method to get the value from the static data structure that holds the DeploymentConceptInformation
+     * Wrapper method to get the value from the data structure that holds the DeploymentConceptInformation
      *
      * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
      */
@@ -91,7 +91,7 @@ public class CameraTrapStaticStore {
     }
 
     /**
-     * Wrapper method to retrieve the static data structure that holds the in-flight concept IDs
+     * Wrapper method to retrieve the data structure that holds the in-flight concept IDs
      *
      * @return contains the concept object identifier(s) in a map
      */
