@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipFile;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -62,7 +63,7 @@ public class ExtractorComponentTest extends CamelTestSupport
     public void testZipExtractor() throws Exception
     {
         //testExtractor("p1d246-test-zip.zip");
-        //testExtractor("p1d246-test-zip.zip", false);
+        testExtractor("p1d246-test-zip.zip", false);
         testExtractor("ECU-001-D0001.zip", false);
     }
 
@@ -85,6 +86,34 @@ public class ExtractorComponentTest extends CamelTestSupport
 
         File file = new File(this.getClass().getResource("/" + archive).toURI());
 
+
+        /**
+         * TODO - Need a better test to see if the directory is there or not and handle the zip archive accordingly
+         * the current zip archives only contain the deployment-manifest.xml and jpg images
+         * while the other archives formats contain the deployment_manifest.xml and jpg images withing a directory
+         *
+         * deploymentPkg.zip
+         *      - deployment_manifest.xml
+         *      - image1.jpg
+         *      - imageX.jpg
+         *
+         *  deploymentPkg.tar(.gz)
+         *      - deploymentPkg_Dir
+         *          - deployment_manifest.xml
+         *          - image1.jpg
+         *          - imageX.jpg
+         *
+         *  The code has been updated to correctly extract the current zip archives that we are getting without the directory
+         *  However, we should have a better test to see if the directory is there or not and handle the zip archive accordingly
+         *
+         */
+
+        ZipFile zipfile = new ZipFile(file);
+
+        //zipfile.getEntry()
+
+        int numElem = zipfile.size();
+
         template.sendBody("direct:start", file);
 
         assertMockEndpointsSatisfied();
@@ -96,19 +125,19 @@ public class ExtractorComponentTest extends CamelTestSupport
         {
             assertNotNull("Results should not be null", body);
             assertTrue("Results should be a directory", body.isDirectory());
-            assertEquals("Parent directory should be 'TestData'", "TestData", body.getParentFile().getName());
-            assertEquals("Directory should contain 4 elements", 4, body.list().length);
+            assertEquals("Parent directory should be 'TestCameraTrapData'", "TestCameraTrapData", body.getParentFile().getName());
+            assertEquals("Directory should contain " + numElem + " elements", numElem, body.list().length);
         }
         catch (Exception ex)
         {
-            delete = true;
+            //delete = true;
             throw ex;
         }
         finally
         {
             if (delete && body != null && body.isDirectory())
             {
-                FileUtils.deleteDirectory(body);
+                //FileUtils.deleteDirectory(body);
             }
         }
     }
@@ -124,7 +153,7 @@ public class ExtractorComponentTest extends CamelTestSupport
             {
                 from("direct:start")
                         .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
-                        .to("extractor:extract?location=TestData")
+                        .to("extractor:extract?location=TestCameraTrapData")
                         .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
                         .to("mock:result");
             }
@@ -144,7 +173,7 @@ public class ExtractorComponentTest extends CamelTestSupport
     {
         try
         {
-            FileUtils.deleteDirectory(new File("TestData"));
+            FileUtils.deleteDirectory(new File("TestCameraTrapData"));
         }
         catch (IOException ex)
         {
@@ -154,7 +183,7 @@ public class ExtractorComponentTest extends CamelTestSupport
 
     @Override
     public void setUp() throws Exception {
-        deleteDirectory("TestData");
+        //deleteDirectory("TestCameraTrapData");
         super.setUp();
         template.sendBodyAndHeader("file://target/files", "Hello World", Exchange.FILE_NAME, "ECU-001-D0001.zip");
         //template.sendBodyAndHeader("file://target/files", "Bye World", Exchange.FILE_NAME, "report2.txt");

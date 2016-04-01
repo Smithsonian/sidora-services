@@ -51,6 +51,7 @@ public class ExtractorProducer extends DefaultProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractorProducer.class);
     private final ExtractorEndpoint endpoint;
+    private boolean isZipArchive;
 
     public ExtractorProducer(ExtractorEndpoint endpoint)
     {
@@ -63,20 +64,9 @@ public class ExtractorProducer extends DefaultProducer
     {
         Message in = exchange.getIn();
         File inBody = in.getBody(File.class);
-
-        LOG.debug("===CamelFileName:===\n" + exchange.getIn().getHeaders());
-        LOG.debug("CamelFileName: " + exchange.getIn().getHeader("CamelFileName") + " <====================");
-
         File outFolder = new File(this.endpoint.getLocation());
-        List<File> org;
-        if (outFolder.exists())
-        {
-            org = Arrays.asList(outFolder.listFiles());
-        }
-        else
-        {
-            org = Collections.emptyList();
-        }
+
+        //Create a string array of filename and extension(s)
         String[] split = inBody.getName().split("\\.");
         if (split.length < 2)
         {
@@ -89,17 +79,63 @@ public class ExtractorProducer extends DefaultProducer
         //      is a complete hack!!! It works and handles the edge cases but can
         //      be more robust.
         Archiver archiver = getArchiver(split);
+
+        if (archiver.getFilenameExtension().equalsIgnoreCase(".zip")) {
+            outFolder = new File(outFolder, split[0]);
+            isZipArchive = true;
+            log.debug("New Zip outFolder = {}", outFolder.getPath());
+        }
+
+        //List of original files
+        List<File> org;
+
+        //If the outFolder exists store the list of files before extracting the archive
+        if (outFolder.exists())
+        {
+            org = Arrays.asList(outFolder.listFiles());
+        }
+        else
+        {
+            org = Collections.emptyList();
+        }
+
+        //Extract the archive
         archiver.extract(inBody, outFolder);
 
+        //Store the list of files in the outFolder after extracting the archive
         List<File> mod = new ArrayList<File>(Arrays.asList(outFolder.listFiles()));
 
+        //Remove the original files from before extracting the archive from the list of files after extracting the archive
         mod.removeAll(org);
 
         File file = outFolder;
 
+        //If list of modified files is empty after removing the list of original files ???
         if (mod.isEmpty())
         {
-            File temp = new File(outFolder, split[0]);
+            /**
+             * TODO - Need a better test to see if the directory is there or not and handle the zip archive accordingly
+             * the current zip archives only contain the deployment-manifest.xml and jpg images
+             * while the other archives formats contain the deployment_manifest.xml and jpg images withing a directory
+             *
+             * deploymentPkg.zip
+             *      - deployment_manifest.xml
+             *      - image1.jpg
+             *      - imageX.jpg
+             *
+             *  deploymentPkg.tar(.gz)
+             *      - deploymentPkg_Dir
+             *          - deployment_manifest.xml
+             *          - image1.jpg
+             *          - imageX.jpg
+             *
+             *  The code has been updated to correctly extract the current zip archives that we are getting without the directory
+             *  However, we should have a better test to see if the directory is there or not and handle the zip archive accordingly
+             *
+             */
+            File temp = (isZipArchive ? outFolder : new File(outFolder, split[0]));
+            //File temp = new File(outFolder, split[0]);
+
             if (temp.exists())
             {
                 file = temp;
