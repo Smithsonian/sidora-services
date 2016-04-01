@@ -37,8 +37,8 @@ import java.util.Map;
 /**
  * Intended to be used as a bean with static variable(s) to store information cross deployments
  * during the multi-threaded Camera Trap ingest processes.  For example, we use this bean to hold
- * parent hierarchical (Project, SubProject, Plot) object identifiers to determine whether delay is needed
- * to avoid duplicate parent object being created.
+ * concept hierarchical (Project, SubProject, Plot) object identifiers to determine whether delay is needed
+ * to avoid duplicate concept object being created.
  *
  * @author parkjohn
  */
@@ -46,66 +46,76 @@ public class CameraTrapStaticStore {
 
     private static final Logger log = LoggerFactory.getLogger(CameraTrapStaticStore.class);
 
-    //map used to hold parent ID information and the owner of the parent ID(s) to correlate during multi-thread processing
-    private static final Map<String, String> inFlightParentIds = new HashMap<>(0);
+    //map used to hold concept ID information and the owner of the concept ID(s) to correlate during multi-thread processing
+    private static final Map<String, DeploymentConceptInformation> inFlightConceptIds = new HashMap<>(0);
 
     /**
-     * Wrapper method to check parent ID exists in the static data structure that holds the in-flight parent IDs
+     * Wrapper method to check concept ID exists in the static data structure that holds the in-flight concept IDs
      *
-     * @param parentId parent object identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
      * @return true or false
      */
-    public synchronized boolean containsParentId(String parentId) {
-        log.debug("The static store contains following parent IDs: " + inFlightParentIds.toString());
-        return inFlightParentIds.containsKey(parentId);
+    public synchronized boolean containsConceptId(String conceptId) {
+        log.debug("The static store contains following concept IDs: " + inFlightConceptIds.toString());
+        return inFlightConceptIds.containsKey(conceptId);
     }
 
     /**
-     * Wrapper method to add parent ID to the static data structure that holds the in-flight parent IDs
+     * Wrapper method to add concept ID to the static data structure that holds the in-flight concept IDs
      *
-     * @param parentId parent object identifier such as ProjectId or SubProjectId from the deployment manifest
-     * @param deploymentId deployment package ID; this information used to determine who is the owner of the in-flight parent ID(s)
+     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param conceptInformation deployment package ID; this information used to determine who is the owner of the in-flight concept ID(s)
      */
-    public synchronized void addParentId(String parentId, String deploymentId){
-        log.debug("Adding parent Id: " + parentId );
-        inFlightParentIds.put(parentId, deploymentId);
+    public synchronized void addConceptId(String conceptId, DeploymentConceptInformation conceptInformation){
+        log.debug("Adding concept Id: " + conceptId );
+        inFlightConceptIds.put(conceptId, conceptInformation);
     }
 
     /**
-     * Wrapper method to remove parent ID from the static data structure that holds the in-flight parent IDs
+     * Wrapper method to remove concept ID from the static data structure that holds the in-flight concept IDs
      *
-     * @param parentId parent object identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
      */
-    public synchronized void removeParentId(String parentId){
-        log.debug("Removing parent Id: " + parentId);
-        inFlightParentIds.remove(parentId);
+    public synchronized void removeConceptId(String conceptId){
+        log.debug("Removing concept Id: " + conceptId);
+        inFlightConceptIds.remove(conceptId);
     }
 
     /**
-     * Wrapper method to retrieve the static data structure that holds the in-flight parent IDs
+     * Wrapper method to get the value from the static data structure that holds the DeploymentConceptInformation
      *
-     * @return contains the parent object identifier(s) in a map
+     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
      */
-    public synchronized Map<String, String> getInFlightParentIds() {
-        return inFlightParentIds;
+    public synchronized DeploymentConceptInformation getConceptInformationById(String conceptId){
+        return inFlightConceptIds.get(conceptId);
     }
 
     /**
-     * Removes all ParentIds based on the passed i deploymentId.  (Reverse look up on the data structure map)
+     * Wrapper method to retrieve the static data structure that holds the in-flight concept IDs
+     *
+     * @return contains the concept object identifier(s) in a map
+     */
+    public synchronized Map<String, DeploymentConceptInformation> getInFlightConceptIds() {
+        return inFlightConceptIds;
+    }
+
+    /**
+     * Removes all Concept Ids based on the passed in deploymentId.  (Reverse look up on the data structure map)
      *
      * @param deploymentId deployment package ID; mainly the package directory name used during the ingestion process
      */
-    public synchronized void removeParentIdsByDeploymentId(String deploymentId) {
+    public synchronized void removeConceptIdsByDeploymentId(String deploymentId) {
 
-        final Iterator<Map.Entry<String, String>> iterator = inFlightParentIds.entrySet().iterator();
+        final Iterator<Map.Entry<String, DeploymentConceptInformation>> iterator = inFlightConceptIds.entrySet().iterator();
         while(iterator.hasNext())
         {
-            Map.Entry<String, String> entry = iterator.next();
-            if(entry.getValue().equals(deploymentId))
+            Map.Entry<String, DeploymentConceptInformation> entry = iterator.next();
+            if(entry.getValue().getDeploymentId().equals(deploymentId))
             {
-                //removes parentId from the storage
+                //removes conceptId from the storage
                 iterator.remove();
             }
         }
     }
+
 }
