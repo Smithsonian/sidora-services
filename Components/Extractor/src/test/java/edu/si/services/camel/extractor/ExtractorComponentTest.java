@@ -63,7 +63,7 @@ public class ExtractorComponentTest extends CamelTestSupport
     public void testZipExtractor() throws Exception
     {
         //testExtractor("p1d246-test-zip.zip");
-        testExtractor("p1d246-test-zip.zip", false);
+        //testExtractor("p1d246-test-zip.zip", false);
         testExtractor("ECU-001-D0001.zip", false);
     }
 

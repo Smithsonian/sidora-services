@@ -74,16 +74,19 @@ public class ExtractorProducer extends DefaultProducer
             throw new Exception();
         }
 
+        LOG.debug("Split Name: {}", split);
+
         //FIXME: Change to stream extraction so that can get the name of compressed
         //      folder. Right not determining the folder that is withing the archive
         //      is a complete hack!!! It works and handles the edge cases but can
         //      be more robust.
         Archiver archiver = getArchiver(split);
 
+        //If a zip archive add the filename to the outFolder path to be extracted to and set isZipArchive true
         if (archiver.getFilenameExtension().equalsIgnoreCase(".zip")) {
             outFolder = new File(outFolder, split[0]);
             isZipArchive = true;
-            log.debug("New Zip outFolder = {}", outFolder.getPath());
+            LOG.debug("New Zip outFolder = {}", outFolder.getPath());
         }
 
         //List of original files
@@ -99,14 +102,21 @@ public class ExtractorProducer extends DefaultProducer
             org = Collections.emptyList();
         }
 
+
+        LOG.debug("ORG: {}", org);
+
         //Extract the archive
         archiver.extract(inBody, outFolder);
 
         //Store the list of files in the outFolder after extracting the archive
         List<File> mod = new ArrayList<File>(Arrays.asList(outFolder.listFiles()));
 
+        LOG.debug("mod before remove org (outFolder.listFiles): {}", mod);
+
         //Remove the original files from before extracting the archive from the list of files after extracting the archive
         mod.removeAll(org);
+
+        LOG.debug("mod after remove org: {}", mod);
 
         File file = outFolder;
 
@@ -136,15 +146,24 @@ public class ExtractorProducer extends DefaultProducer
             File temp = (isZipArchive ? outFolder : new File(outFolder, split[0]));
             //File temp = new File(outFolder, split[0]);
 
+            LOG.debug("temp file when mod is empty: {}", temp);
+
             if (temp.exists())
             {
                 file = temp;
+                LOG.debug("file when mod is empty and temp exists: {}", temp);
+            } else {
+                LOG.debug("file when when mod is empty and temp does NOT exist: {}", temp);
             }
+
         }
         else if (mod.size() == 1)
         {
             file = mod.get(0);
+            LOG.debug("file when mod size == 1: {}", file);
         }
+
+        LOG.debug("final file to use: {}", file);
 
         Map<String, Object> headers = in.getHeaders();
 
@@ -152,6 +171,7 @@ public class ExtractorProducer extends DefaultProducer
         if (file.getParentFile() != null)
         {
             parent = file.getParentFile().getName();
+            LOG.debug("parent when file.getParent NOT null (file.getParentFile): {}", file.getParentFile());
         }
 
         headers.put("CamelFileLength", file.length());
