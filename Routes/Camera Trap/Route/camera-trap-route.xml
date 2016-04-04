@@ -79,6 +79,7 @@
     <camelContext id="CTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
+                  xmlns:findObjects="http://www.fedora.info/definitions/1/0/types/"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
@@ -357,22 +358,18 @@
                     </xpath>
                 </setHeader>
 
-                <setBody>
-                    <simple resultType="java.lang.String">
-                        ${header.ValidationResourceObjectPID}
-                    </simple>
-                </setBody>
-
-                <to uri="direct:findObjectByPIDPredicate"/>
+                <toD uri="fcrepo:objects?query=pid%7E${header.ValidationResourceObjectPID}&amp;pid=true&amp;resultFormat=xml"/>
 
                 <choice>
                     <when>
-                        <simple>${body} == false</simple>
+                        <xpath resultType="java.lang.String">
+                            not(//findObjects:objectFields/findObjects:pid/text())
+                        </xpath>
 
                         <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${header.ValidationResourceObjectPID}
-                            ,'Fedora RI Search validation failed', ${body})"/>
+                            ,'Resource Object not found from Fedora Repository', ${body})"/>
                         <to uri="direct:validationErrorMessageAggregationStrategy"/>
-                        <log message="${id} CameraTrapIngest: Fedora RI search validation failed"
+                        <log message="${id} CameraTrapIngest: Resource Object not found from Fedora Repository"
                              loggingLevel="WARN"
                              logName="edu.si.ctingest"/>
                     </when>

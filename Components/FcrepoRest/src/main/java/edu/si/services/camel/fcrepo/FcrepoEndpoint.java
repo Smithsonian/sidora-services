@@ -41,6 +41,10 @@ import org.apache.camel.impl.DefaultEndpoint;
 class FcrepoEndpoint extends DefaultEndpoint {
 
     private String format;
+    private String query;
+    private String pid;
+    private String resultFormat;
+
     private final FcrepoConfiguration fcrepoConfiguration;
 
     public FcrepoEndpoint(String uri, FcrepoComponent component) {
@@ -99,6 +103,60 @@ class FcrepoEndpoint extends DefaultEndpoint {
      */
     public void setFormat(String format) {
         this.format = format;
+    }
+
+    /**
+     * Fedora query parameter getter
+     *
+     * @return query
+     */
+    public String getQuery() {
+        return query;
+    }
+
+    /**
+     * Fedora query parameter setter - ex) query=pid%7Esi:121909
+     *
+     * @param query
+     */
+    public void setQuery(String query) {
+        this.query = query;
+    }
+
+    /**
+     * Fedora pid parameter getter
+     *
+     * @return pid
+     */
+    public String getPid() {
+        return pid;
+    }
+
+    /**
+     * Fedora pid parameter setter - ex) pid=true for findObjects REST API
+     *
+     * @param pid
+     */
+    public void setPid(String pid) {
+        this.pid = pid;
+    }
+
+    /**
+     * Fedora resultFormat parameter getter
+     *
+     * @return resultFormat
+     */
+    public String getResultFormat() {
+        return resultFormat;
+    }
+
+    /**
+     * Fedora resultFormat parameter setter - ex) resultFormat=xml
+     *
+     * @param resultFormat
+     */
+    public void setResultFormat(String resultFormat) {
+        this.resultFormat = resultFormat;
     }
 
     /**

@@ -163,7 +163,7 @@ public class FcrepoProducer extends DefaultProducer {
     private FcrepoHttpMethodEnum getHttpMethodEnum(final Exchange exchange) {
         FcrepoHttpMethodEnum method = exchange.getIn().getHeader(Exchange.HTTP_METHOD, FcrepoHttpMethodEnum.class);
 
-        log.debug("Inside getHttpMethod() - HTTP Method from the exchange is: "+ method.toString());
+        log.debug("Inside getHttpMethod() - HTTP Method from the exchange is: "+ method);
 
         if (method == null) {
             return FcrepoHttpMethodEnum.GET;

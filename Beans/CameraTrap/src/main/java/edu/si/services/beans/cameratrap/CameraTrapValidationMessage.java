@@ -42,16 +42,16 @@ public class CameraTrapValidationMessage implements Serializable{
     /**
      * Creates a new MessageBean object with the three parameters
      *
-     * @param deploymentID deployment package identifier such as the name from the deployment zip package
+     * @param deploymentId deployment package identifier such as the name from the deployment zip package
      * @param message validation results
      * @param validationSuccess boolean flag to indicate the validation status
      * @return new MessageBean object which holds the validation result information
      */
-    public MessageBean createValidationMessage(String deploymentID, String message, Boolean validationSuccess) {
+    public MessageBean createValidationMessage(String deploymentId, String message, Boolean validationSuccess) {
 
         MessageBean messageBean = new MessageBean();
 
-        messageBean.setDeploymentID(deploymentID);
+        messageBean.setDeploymentId(deploymentId);
         messageBean.setMessage(message);
         messageBean.setValidationSuccess(validationSuccess);
 
@@ -60,19 +60,19 @@ public class CameraTrapValidationMessage implements Serializable{
 
     /**
      * Creates a new MessageBean object with the four parameters
-     * @param deploymentID deployment package identifier such as the name from the deployment zip package
-     * @param resourceID resource identifier used to determine
+     * @param deploymentId deployment package identifier such as the name from the deployment zip package
+     * @param resourceObjectPid resource identifier used to determine
      * @param message validation results
      * @param validationSuccess boolean flag to indicate the validation status
      * @return new MessageBean object which holds the validation result information
      */
-    public MessageBean createValidationMessage(String deploymentID, String resourceID, String message, Boolean validationSuccess) {
+    public MessageBean createValidationMessage(String deploymentId, String resourceObjectPid, String message, Boolean validationSuccess) {
 
         MessageBean messageBean = new MessageBean();
 
-        messageBean.setDeploymentID(deploymentID);
+        messageBean.setDeploymentId(deploymentId);
         messageBean.setMessage(message);
-        messageBean.setResourceID(resourceID);
+        messageBean.setResourceObjectPid(resourceObjectPid);
         messageBean.setValidationSuccess(validationSuccess);
 
         return messageBean;
@@ -85,25 +85,25 @@ public class CameraTrapValidationMessage implements Serializable{
      */
     public class MessageBean implements Serializable {
 
-        private String deploymentID;
-        private String resourceID;
+        private String deploymentId;
+        private String resourceObjectPid;
         private String message;
         private Boolean isValidationSuccess;
 
-        public String getDeploymentID() {
-            return deploymentID;
+        public String getDeploymentId() {
+            return deploymentId;
         }
 
-        public void setDeploymentID(String deploymentID) {
-            this.deploymentID = deploymentID;
+        public void setDeploymentId(String deploymentId) {
+            this.deploymentId = deploymentId;
         }
 
-        public String getResourceID() {
-            return resourceID;
+        public String getResourceObjectPid() {
+            return resourceObjectPid;
         }
 
-        public void setResourceID(String resourceID) {
-            this.resourceID = resourceID;
+        public void setResourceObjectPid(String resourceObjectPid) {
+            this.resourceObjectPid = resourceObjectPid;
         }
 
         public String getMessage() {
@@ -125,8 +125,8 @@ public class CameraTrapValidationMessage implements Serializable{
         @Override
         public String toString() {
             return "MessageBean{" +
-                    "deploymentID='" + deploymentID + '\'' +
-                    ", resourceID='" + resourceID + '\'' +
+                    "deploymentId='" + deploymentId + '\'' +
+                    ", resourceObjectPid='" + resourceObjectPid + '\'' +
                     ", message='" + message + '\'' +
                     ", isValidationSuccess=" + isValidationSuccess +
                     '}';
@@ -141,15 +141,15 @@ public class CameraTrapValidationMessage implements Serializable{
                 return false;
             }
             MessageBean that = (MessageBean) o;
-            return Objects.equals(deploymentID, that.deploymentID) &&
-                    Objects.equals(resourceID, that.resourceID) &&
+            return Objects.equals(deploymentId, that.deploymentId) &&
+                    Objects.equals(resourceObjectPid, that.resourceObjectPid) &&
                     Objects.equals(message, that.message) &&
                     Objects.equals(isValidationSuccess, that.isValidationSuccess);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(deploymentID, resourceID, message, isValidationSuccess);
+            return Objects.hash(deploymentId, resourceObjectPid, message, isValidationSuccess);
         }
     }
 }
