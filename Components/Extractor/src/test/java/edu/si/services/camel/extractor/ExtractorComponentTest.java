@@ -27,13 +27,6 @@
 
 package edu.si.services.camel.extractor;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.zip.ZipFile;
-
-import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -42,11 +35,21 @@ import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.rauschig.jarchivelib.ArchiveEntry;
+import org.rauschig.jarchivelib.ArchiveStream;
+import org.rauschig.jarchivelib.Archiver;
+import org.rauschig.jarchivelib.ArchiverFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ExtractorComponentTest extends CamelTestSupport
 {
 
     //TODO: Add more test!!! Need to make sure that Producer finds the correct new folder if there are multiple folders initially
+    //currently we assume that the archive contains one or no compressed directory.
     @Test
     public void testTarballExtractor() throws Exception
     {
@@ -63,8 +66,8 @@ public class ExtractorComponentTest extends CamelTestSupport
     public void testZipExtractor() throws Exception
     {
         //testExtractor("p1d246-test-zip.zip");
-        //testExtractor("p1d246-test-zip.zip", false);
-        testExtractor("ECU-001-D0001.zip", false);
+        testExtractor("p1d246-test-zip.zip"); //zip with compressed directory
+        testExtractor("ECU-001-D0001.zip"); //zip without compressed directory
     }
 
     @Test
@@ -86,33 +89,7 @@ public class ExtractorComponentTest extends CamelTestSupport
 
         File file = new File(this.getClass().getResource("/" + archive).toURI());
 
-
-        /**
-         * TODO - Need a better test to see if the directory is there or not and handle the zip archive accordingly
-         * the current zip archives only contain the deployment-manifest.xml and jpg images
-         * while the other archives formats contain the deployment_manifest.xml and jpg images withing a directory
-         *
-         * deploymentPkg.zip
-         *      - deployment_manifest.xml
-         *      - image1.jpg
-         *      - imageX.jpg
-         *
-         *  deploymentPkg.tar(.gz)
-         *      - deploymentPkg_Dir
-         *          - deployment_manifest.xml
-         *          - image1.jpg
-         *          - imageX.jpg
-         *
-         *  The code has been updated to correctly extract the current zip archives that we are getting without the directory
-         *  However, we should have a better test to see if the directory is there or not and handle the zip archive accordingly
-         *
-         */
-
-        ZipFile zipfile = new ZipFile(file);
-
-        //zipfile.getEntry()
-
-        int numElem = zipfile.size();
+        int numFiles = countFilesInArchive(file);
 
         template.sendBody("direct:start", file);
 
@@ -126,20 +103,53 @@ public class ExtractorComponentTest extends CamelTestSupport
             assertNotNull("Results should not be null", body);
             assertTrue("Results should be a directory", body.isDirectory());
             assertEquals("Parent directory should be 'TestCameraTrapData'", "TestCameraTrapData", body.getParentFile().getName());
-            assertEquals("Directory should contain " + numElem + " elements", numElem, body.list().length);
+            assertEquals("Directory should contain " + numFiles + " elements", numFiles, body.list().length);
+
+            log.debug("Result body is not null: {}", (body != null));
+            log.debug("Result body should be a directory: {}", body.isDirectory());
+            log.debug("Result body parent File is: {}", body.getParentFile().getName());
+            log.debug("Num of files in archive: {}, Num of files in result body: {}", numFiles, body.list().length);
         }
         catch (Exception ex)
         {
-            //delete = true;
+            delete = true;
             throw ex;
         }
         finally
         {
             if (delete && body != null && body.isDirectory())
             {
-                //FileUtils.deleteDirectory(body);
+                FileUtils.deleteDirectory(body);
             }
         }
+    }
+
+    private int countFilesInArchive(File archiveTestFile) {
+        int numFiles = 0;
+        //ZipFile zipfile = new ZipFile(file);
+
+        //numElem = (int) zipfile.stream().filter(zipEntry -> !zipEntry.isDirectory()).count();
+
+        //zipfile.close();
+
+        Archiver archiver = ArchiverFactory.createArchiver(archiveTestFile);
+        log.debug("Testing Archive type: {}", archiver.getFilenameExtension());
+
+        try (ArchiveStream archiveStream = archiver.stream(archiveTestFile)) {
+            ArchiveEntry entry;
+
+            //Cont the number of files filtering out directories
+            while ((entry = archiveStream.getNextEntry()) != null) {
+                //don't count directories
+                if (!entry.isDirectory()) {
+                    numFiles++;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return numFiles;
     }
 
 
@@ -168,7 +178,7 @@ public class ExtractorComponentTest extends CamelTestSupport
         msgCount = 0;
     }
 
-    /*@AfterClass
+    @AfterClass
     public static void afterClass()
     {
         try
@@ -179,14 +189,5 @@ public class ExtractorComponentTest extends CamelTestSupport
         {
             Logger.getLogger(ExtractorComponentTest.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }*/
-
-    @Override
-    public void setUp() throws Exception {
-        //deleteDirectory("TestCameraTrapData");
-        super.setUp();
-        template.sendBodyAndHeader("file://target/files", "Hello World", Exchange.FILE_NAME, "ECU-001-D0001.zip");
-        //template.sendBodyAndHeader("file://target/files", "Bye World", Exchange.FILE_NAME, "report2.txt");
-        //template.sendBodyAndHeader("file://target/files/2008", "2008 Report", Exchange.FILE_NAME, "report2008.txt");
     }
 }

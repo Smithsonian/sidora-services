@@ -27,19 +27,18 @@
 
 package edu.si.services.camel.extractor;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultProducer;
+import org.rauschig.jarchivelib.ArchiveEntry;
+import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.Map;
 
 /**
  * The Extractor producer.
@@ -51,7 +50,6 @@ public class ExtractorProducer extends DefaultProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractorProducer.class);
     private final ExtractorEndpoint endpoint;
-    private boolean isZipArchive;
 
     public ExtractorProducer(ExtractorEndpoint endpoint)
     {
@@ -64,115 +62,64 @@ public class ExtractorProducer extends DefaultProducer
     {
         Message in = exchange.getIn();
         File inBody = in.getBody(File.class);
+
+        //Location to extract to
         File outFolder = new File(this.endpoint.getLocation());
+
+        //File path for the exchange body
+        File file = null;
 
         //Create a string array of filename and extension(s)
         String[] split = inBody.getName().split("\\.");
         if (split.length < 2)
         {
-            LOG.error("Improperly formatted file not. No, file extension found for " + inBody.getName());
+            LOG.error("Improperly formatted file. No, file extension found for " + inBody.getName());
             throw new Exception();
         }
 
-        LOG.debug("Split Name: {}", split);
+        LOG.debug("inBody archive file name and extension(s): {}", split);
 
-        //FIXME: Change to stream extraction so that can get the name of compressed
-        //      folder. Right not determining the folder that is withing the archive
-        //      is a complete hack!!! It works and handles the edge cases but can
-        //      be more robust.
-        Archiver archiver = getArchiver(split);
+        //The ArchiveFactory can detect archive types based on file extensions and hand you the correct Archiver.
+        Archiver archiver = ArchiverFactory.createArchiver(inBody);
+        LOG.debug("Archive type: {}", archiver.getFilenameExtension());
 
-        //If a zip archive add the filename to the outFolder path to be extracted to and set isZipArchive true
-        if (archiver.getFilenameExtension().equalsIgnoreCase(".zip")) {
-            outFolder = new File(outFolder, split[0]);
-            isZipArchive = true;
-            LOG.debug("New Zip outFolder = {}", outFolder.getPath());
-        }
+        //Stream the archive rather then extracting directly to the file system.
+        ArchiveStream archiveStream = archiver.stream(inBody);
+        ArchiveEntry entry;
 
-        //List of original files
-        List<File> org;
+        String compressedFolder = null;
 
-        //If the outFolder exists store the list of files before extracting the archive
-        if (outFolder.exists())
-        {
-            org = Arrays.asList(outFolder.listFiles());
-        }
-        else
-        {
-            org = Collections.emptyList();
-        }
+        //Extract each archive entry and check for the existence of a compressed folder otherwise create one
+        while ((entry = archiveStream.getNextEntry()) != null) {
+            LOG.debug("ArchiveStream Current Entry Name = {}, isDirectory = {}", entry.getName(), entry.isDirectory());
 
-
-        LOG.debug("ORG: {}", org);
-
-        //Extract the archive
-        archiver.extract(inBody, outFolder);
-
-        //Store the list of files in the outFolder after extracting the archive
-        List<File> mod = new ArrayList<File>(Arrays.asList(outFolder.listFiles()));
-
-        LOG.debug("mod before remove org (outFolder.listFiles): {}", mod);
-
-        //Remove the original files from before extracting the archive from the list of files after extracting the archive
-        mod.removeAll(org);
-
-        LOG.debug("mod after remove org: {}", mod);
-
-        File file = outFolder;
-
-        //If list of modified files is empty after removing the list of original files ???
-        if (mod.isEmpty())
-        {
-            /**
-             * TODO - Need a better test to see if the directory is there or not and handle the zip archive accordingly
-             * the current zip archives only contain the deployment-manifest.xml and jpg images
-             * while the other archives formats contain the deployment_manifest.xml and jpg images withing a directory
-             *
-             * deploymentPkg.zip
-             *      - deployment_manifest.xml
-             *      - image1.jpg
-             *      - imageX.jpg
-             *
-             *  deploymentPkg.tar(.gz)
-             *      - deploymentPkg_Dir
-             *          - deployment_manifest.xml
-             *          - image1.jpg
-             *          - imageX.jpg
-             *
-             *  The code has been updated to correctly extract the current zip archives that we are getting without the directory
-             *  However, we should have a better test to see if the directory is there or not and handle the zip archive accordingly
-             *
-             */
-            File temp = (isZipArchive ? outFolder : new File(outFolder, split[0]));
-            //File temp = new File(outFolder, split[0]);
-
-            LOG.debug("temp file when mod is empty: {}", temp);
-
-            if (temp.exists())
-            {
-                file = temp;
-                LOG.debug("file when mod is empty and temp exists: {}", temp);
-            } else {
-                LOG.debug("file when when mod is empty and temp does NOT exist: {}", temp);
+            //Check for a compressed folder
+            if (entry.isDirectory()) {
+                log.debug("Found Directory '{}' in archive!", entry.getName());
+                compressedFolder = entry.getName(); //Get the name of the compressed folder
+                file = new File(outFolder, compressedFolder); //update the file path to be returned on exchange body
+            } else if (compressedFolder == null) {
+                compressedFolder = split[0]; //Set the missing compressed folder name
+                log.warn("No directory found in archive, Set directory '{}' to extract to!", compressedFolder);
+                outFolder = new File(outFolder, compressedFolder); //Update the outFolder location to extract files to
+                file = outFolder; //update the file path to be returned on exchange body
             }
-
-        }
-        else if (mod.size() == 1)
-        {
-            file = mod.get(0);
-            LOG.debug("file when mod size == 1: {}", file);
+            entry.extract(outFolder); //extract the file
         }
 
-        LOG.debug("final file to use: {}", file);
+        archiveStream.close();
 
-        Map<String, Object> headers = in.getHeaders();
+        LOG.debug("File path to be returned on exchange body: {}", file);
 
         String parent = null;
+
         if (file.getParentFile() != null)
         {
             parent = file.getParentFile().getName();
-            LOG.debug("parent when file.getParent NOT null (file.getParentFile): {}", file.getParentFile());
+            LOG.debug("CamelFileParent: {}", file.getParentFile());
         }
+
+        Map<String, Object> headers = in.getHeaders();
 
         headers.put("CamelFileLength", file.length());
         headers.put("CamelFileLastModified", file.lastModified());
@@ -189,17 +136,4 @@ public class ExtractorProducer extends DefaultProducer
 
         exchange.getOut().setHeaders(headers);
     }
-
-    private Archiver getArchiver(String[] extention)
-    {
-        if (extention.length == 3)
-        {
-            return ArchiverFactory.createArchiver(extention[1], extention[2]);
-        }
-        else
-        {
-            return ArchiverFactory.createArchiver(extention[1]);
-        }
-    }
-
 }
