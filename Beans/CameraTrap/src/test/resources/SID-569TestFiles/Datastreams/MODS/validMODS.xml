@@ -1,0 +1,48 @@
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <titleInfo>
+        <title>Prairie Ridge 22 2014, image 1 of 1</title>
+    </titleInfo>
+    <identifier type="Image ID">2970s1i1</identifier>
+    <relatedItem>
+        <identifier type="Image Sequence ID">2970s1</identifier>
+    </relatedItem>
+    <typeOfResource>still image</typeOfResource>
+    <abstract></abstract>
+    <physicalDescription>
+        <digitalOrigin>born digital</digitalOrigin>
+    </physicalDescription>
+    <subject authority="Camera Trap Data Network Photo Type">
+        <topic>unknown</topic>
+    </subject>
+    <subject authorityURI="http://www.iucnredlist.org">
+        <topic></topic>
+    </subject>
+    <subject>
+        <topic></topic>
+        <geographic></geographic>
+        <cartographics>
+            <coordinates></coordinates>
+        </cartographics>
+    </subject>
+    <name>
+        <namePart></namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text"></roleTerm>
+        </role>
+    </name>
+    <note type="Interest Rank">None</note>
+    <originInfo>
+        <dateCaptured>2014:03:15 13:19:47</dateCaptured>
+        <dateOther type="Embargo Period End Date"></dateOther>
+    </originInfo>
+    <location>
+        <physicalLocation></physicalLocation>
+        <holdingSimple>
+            <copyInformation>
+                <subLocation></subLocation>
+            </copyInformation>
+        </holdingSimple>
+    </location>
+    <accessCondition type="restriction on access"></accessCondition>
+    <accessCondition type="use and reproduction"></accessCondition>
+</mods>

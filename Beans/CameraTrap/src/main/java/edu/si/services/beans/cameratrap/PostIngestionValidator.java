@@ -80,8 +80,9 @@ public class PostIngestionValidator {
     }
 
     /**
-     *
-     * @param exchange
+     *  Used to compare the metadata fields of the deployment manifest to the datastream from the Fedora repository
+     *  and create the validation message based on the result to be returned on the exchange body.
+     * @param exchange the current exchange
      */
     public void validateField (Exchange exchange) {
 
@@ -92,45 +93,60 @@ public class PostIngestionValidator {
 
         String fieldName;
         String camelFileParent;
+        String message;
+        CameraTrapValidationMessage.MessageBean messageBean = null;
 
+        //Get exchange headers
         camelFileParent = exchange.getIn().getHeader("CamelFileParent", String.class);
-
         String datastreamXML = exchange.getIn().getHeader("datastreamValidationXML", String.class);
 
+        //Get the comma separated list of datastream and manifest and the xpaths for each field
         String[] validationList = exchange.getIn().getBody(String.class).split(",");
 
+        //Field name from comma separated list
         fieldName = validationList[0];
+
+        //datastream and manifest xPaths from comma separated list
         String datastreamXpath = validationList[1];
         String manifestXpath = validationList[2];
 
-        //Set the manifestField
+        //Use the xpath from the comma separated list to set the manifestField
         String manifestField = XPathBuilder
                 .xpath(manifestXpath)
                 .evaluate(exchange.getContext(),
                         exchange.getIn().getHeader("ManifestXML"),
                         String.class);
 
-        //Set the datastreamField
+        //Use the xPath from the comma separated list to set the datastreamField
         String datastreamField = XPathBuilder
                 .xpath(datastreamXpath)
                 //.namespace("eac", "urn:isbn:1-931666-33-4")
                 .namespaces(ns)
                 .evaluate(exchange.getContext(), datastreamXML);
 
-        CameraTrapValidationMessage validationMessage = new CameraTrapValidationMessage();
-        CameraTrapValidationMessage.MessageBean messageBean;
+        //Check if validation passed
         if (datastreamField.equals(manifestField)) {
-            messageBean = validationMessage.createValidationMessage(camelFileParent, "Validation Passed", true);
-            log.info("Inside validateField(): " + fieldName + " Field matches the Manifest Field. Validation passed...");
+            message = "Deployment Package ID - " + camelFileParent
+                    + ", Message - " + fieldName + "  Field matches the Manifest Field. Validation passed...";
+
+            //Create the validation message bean with validation message
+            messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, true);
+
+            log.info(message);
 
         } else {
-            String messageStr = "Deployment Package ID - " + camelFileParent
-                    + ", Message - " + fieldName + " Field validation failed."
+            message = "Deployment Package ID - " + camelFileParent
+                    + ", Message - " + fieldName + " Field validation failed. "
                     + "Expected " + manifestField + " but found " +datastreamField + ".";
-            messageBean = validationMessage.createValidationMessage(camelFileParent, messageStr, false);
-            log.info("Inside validateField(): " + messageStr);
+
+            //Create the validation message bean with validation message
+            messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, false);
+
+            log.info(message);
         }
 
+        //exchange.getIn().setHeader("ValidationErrors", "ValidationErrors");
         exchange.getIn().setBody(messageBean);
+
     }
 }

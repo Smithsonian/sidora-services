@@ -1,0 +1,62 @@
+<eac-cpf xmlns="urn:isbn:1-931666-33-4" xmlns:eac="urn:isbn:1-931666-33-4" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <control>
+        <recordId>default</recordId>
+        <maintenanceStatus>revised</maintenanceStatus>
+        <maintenanceAgency>
+            <agencyName></agencyName>
+        </maintenanceAgency>
+        <localControl localType="Publication Date">
+            <date></date>
+        </localControl>
+        <maintenanceHistory>
+            <maintenanceEvent>
+                <eventType>created</eventType>
+                <eventDateTime></eventDateTime>
+                <agentType>human</agentType>
+                <agent></agent>
+                <eventDescription></eventDescription>
+            </maintenanceEvent>
+        </maintenanceHistory>
+    </control>
+    <cpfDescription>
+        <identity>
+            <entityType>corporateBody</entityType>
+            <nameEntry localType="primary">
+                <part>Prairie Ridge Project</part>
+            </nameEntry>
+            <nameEntry localType="abbreviation">
+                <part>Prairie Ridge Project</part>
+            </nameEntry>
+        </identity>
+        <description>
+            <existDates>
+                <dateRange>
+                    <fromDate></fromDate>
+                    <toDate></toDate>
+                </dateRange>
+            </existDates>
+            <place>
+                <placeEntry localType="address"></placeEntry>
+                <placeEntry localType="region"></placeEntry>
+                <placeEntry countryCode="US" latitude="35.81108" longitude="-78.71894"></placeEntry>
+            </place>
+            <functions>
+                <function>
+                    <term>Project Data Access and Use Constraints</term>
+                    <descriptiveNote>
+                        <p></p>
+                    </descriptiveNote>
+                </function>
+            </functions>
+        </description>
+        <relations>
+            <cpfRelation>
+                <relationEntry></relationEntry>
+                <placeEntry localType="email address"></placeEntry>
+                <descriptiveNote>
+                    <p>Project Owner</p>
+                </descriptiveNote>
+            </cpfRelation>
+        </relations>
+    </cpfDescription>
+</eac-cpf>

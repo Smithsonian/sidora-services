@@ -1485,7 +1485,7 @@
             </setHeader>
 
             <!-- Get the EAC-CPF datastream from the project parent -->
-            <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut" id="getEAC-CPFDatastream"/>
 
             <convertBodyTo type="java.lang.String"/>
 
@@ -1497,6 +1497,7 @@
             </setHeader>
 
             <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- Validation xpaths for newer manifest ( see jira ticket SID-618 )
             <setBody>
                 <simple trim="true">
                     EAC-CPF Latitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@latitude, //CameraTrapDeployment/ActualLatitude/text()
@@ -1505,9 +1506,17 @@
                     EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
                 </simple>
             </setBody>
+            -->
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    EAC-CPF ProjectName, //eac:eac-cpf/eac:cpfDescription/eac:identity/eac:nameEntry[1]/eac:part, //CameraTrapDeployment/ProjectName/text()
+                </simple>
+            </setBody>
             <!--<to uri="direct:Validate_EAC-CPF_fields"/>-->
             <to uri="direct:ValidateDatastreamFieldList"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateEAC-CPF"/>
 
             <!-- Start FGDC Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1517,7 +1526,7 @@
             </setHeader>
 
             <!-- Get the FGDC datastream from the project parent -->
-            <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut" id="getFGDCDatastream"/>
 
             <convertBodyTo type="java.lang.String"/>
 
@@ -1532,13 +1541,13 @@
             <setBody>
                 <simple trim="true">
                     FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
-                    FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
-                    FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
+FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
+FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
                 </simple>
             </setBody>
             <!--<to uri="direct:Validate_FGDC_Fields"/>-->
             <to uri="direct:ValidateDatastreamFieldList"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateFGDC"/>
 
             <!-- Start MODS Validation -->
             <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
@@ -1548,8 +1557,8 @@
                 </simple>
             </setHeader>
 
-            <!-- Get the MOD datastream -->
-            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut"/>
+            <!-- Get the MODS datastream -->
+            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
 
             <convertBodyTo type="java.lang.String"/>
 
@@ -1568,7 +1577,7 @@
             </setBody>
             <!--<to uri="direct:ValidateMODSFields"/>-->
             <to uri="direct:ValidateDatastreamFieldList"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
 
             <!-- Start Researcher CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1577,8 +1586,8 @@
                 </simple>
             </setHeader>
 
-            <to uri="direct:ValidateCSVFields"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:ValidateCSVFields" id="validateResearcherObservationCSV"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateResearcher"/>
 
             <!-- Start Volunteer CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1586,8 +1595,8 @@
                     ${header.VolunteerObservationPID}
                 </simple>
             </setHeader>
-            
-            <to uri="direct:ValidateCSVFields"/>
+
+            <to uri="direct:ValidateCSVFields" id="validateVolunteerObservationCSV"/>
 
             <!-- Notify the aggregator to complete aggregation -->
             <setHeader headerName="ValidationComplete">
@@ -1596,7 +1605,7 @@
                 </simple>
             </setHeader>
 
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateVolunteer"/>
 
             <log message="${id} CameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
                  loggingLevel="INFO"
@@ -1643,7 +1652,7 @@
 
             <log message="${id} CameraTrapValidateCSVFields: Starting Validation of CSV Metadata Fields..."
                  loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>            
+                 logName="edu.si.ctingest"/>
 
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String"/>
@@ -1668,11 +1677,17 @@
                     </simple>
                 </setHeader>
 
+                <setHeader headerName="ManifestFields">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                        string-join((//CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceId, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceBeginTime, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceEndTime), ',')
+                    </xpath>
+                </setHeader>
+
                 <choice>
                     <when>
                         <!-- Check that the ImageSequence csv record (i.e "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime") matches the ImageSequence record from the manifest -->
                         <xpath resultType="java.lang.String" headerName="ManifestXML" >
-                            $in:CSVImageSequenceRecord = string-join((//CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceId, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceBeginTime, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceEndTime), ',')
+                            $in:CSVImageSequenceRecord = $in:ManifestFields
                         </xpath>
 
                         <log message="${id} CameraTrapValidateCSVFields: CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches the manifest validation passed ..."
@@ -1685,10 +1700,12 @@
                         <!-- The CSV ImageSequence record does not match the manifest -->
                         <setBody>
                             <simple>
-                                Deployment Package ID - ${header.CamelFileParent}, Message - CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches Manifest validation failed.
-                                Expected ${header.ManifestFields} but found ${header.CSVFields}.
+                                CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches Manifest validation failed.
                             </simple>
                         </setBody>
+                        <transform>
+                            <simple>${body}\nExpected ${header.ManifestFields} but found ${header.CSVImageSequenceRecord}.</simple>
+                        </transform>
                         <log message="${id} CameraTrapValidateCSVFields: ${body}"
                              loggingLevel="ERROR"
                              logName="edu.si.ctingest"/>
