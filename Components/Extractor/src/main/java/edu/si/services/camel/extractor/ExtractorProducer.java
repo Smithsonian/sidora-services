@@ -27,24 +27,24 @@
 
 package edu.si.services.camel.extractor;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultProducer;
+import org.rauschig.jarchivelib.ArchiveEntry;
+import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.util.Map;
+
 /**
  * The Extractor producer.
  *
  * @author jshingler
+ * @author jbirkhimer
  * @version 1.0
  */
 public class ExtractorProducer extends DefaultProducer
@@ -64,56 +64,63 @@ public class ExtractorProducer extends DefaultProducer
         Message in = exchange.getIn();
         File inBody = in.getBody(File.class);
 
+        //Location to extract to
         File outFolder = new File(this.endpoint.getLocation());
-        List<File> org;
-        if (outFolder.exists())
-        {
-            org = Arrays.asList(outFolder.listFiles());
-        }
-        else
-        {
-            org = Collections.emptyList();
-        }
+
+        //File path for the exchange body
+        File file = null;
+
+        //Create a string array of filename and extension(s)
         String[] split = inBody.getName().split("\\.");
         if (split.length < 2)
         {
-            LOG.error("Improperly formatted file not. No, file extension found for " + inBody.getName());
+            LOG.error("Improperly formatted file. No, file extension found for " + inBody.getName());
             throw new Exception();
         }
 
-        //FIXME: Change to stream extraction so that can get the name of compressed
-        //      folder. Right not determining the folder that is withing the archive
-        //      is a complete hack!!! It works and handles the edge cases but can
-        //      be more robust.
-        Archiver archiver = getArchiver(split);
-        archiver.extract(inBody, outFolder);
+        LOG.debug("inBody archive file name and extension(s): {}", split);
 
-        List<File> mod = new ArrayList<File>(Arrays.asList(outFolder.listFiles()));
+        //The ArchiveFactory can detect archive types based on file extensions and hand you the correct Archiver.
+        Archiver archiver = ArchiverFactory.createArchiver(inBody);
+        LOG.debug("Archive type: {}", archiver.getFilenameExtension());
 
-        mod.removeAll(org);
+        //Stream the archive rather then extracting directly to the file system.
+        ArchiveStream archiveStream = archiver.stream(inBody);
+        ArchiveEntry entry;
 
-        File file = outFolder;
+        String compressedFolder = null;
 
-        if (mod.isEmpty())
-        {
-            File temp = new File(outFolder, split[0]);
-            if (temp.exists())
-            {
-                file = temp;
+        //Extract each archive entry and check for the existence of a compressed folder otherwise create one
+        while ((entry = archiveStream.getNextEntry()) != null) {
+            LOG.debug("ArchiveStream Current Entry Name = {}, isDirectory = {}", entry.getName(), entry.isDirectory());
+
+            //Check for a compressed folder
+            if (entry.isDirectory()) {
+                log.debug("Found Directory '{}' in archive!", entry.getName());
+                compressedFolder = entry.getName(); //Get the name of the compressed folder
+                file = new File(outFolder, compressedFolder); //update the file path to be returned on exchange body
+            } else if (compressedFolder == null) {
+                compressedFolder = split[0]; //Set the missing compressed folder name
+                log.warn("No directory found in archive, Set directory '{}' to extract to!", compressedFolder);
+                outFolder = new File(outFolder, compressedFolder); //Update the outFolder location to extract files to
+                file = outFolder; //update the file path to be returned on exchange body
             }
-        }
-        else if (mod.size() == 1)
-        {
-            file = mod.get(0);
+            entry.extract(outFolder); //extract the file
         }
 
-        Map<String, Object> headers = in.getHeaders();
+        archiveStream.close();
+
+        LOG.debug("File path to be returned on exchange body: {}", file);
 
         String parent = null;
+
         if (file.getParentFile() != null)
         {
             parent = file.getParentFile().getName();
+            LOG.debug("CamelFileParent: {}", file.getParentFile());
         }
+
+        Map<String, Object> headers = in.getHeaders();
 
         headers.put("CamelFileLength", file.length());
         headers.put("CamelFileLastModified", file.lastModified());
@@ -130,17 +137,4 @@ public class ExtractorProducer extends DefaultProducer
 
         exchange.getOut().setHeaders(headers);
     }
-
-    private Archiver getArchiver(String[] extention)
-    {
-        if (extention.length == 3)
-        {
-            return ArchiverFactory.createArchiver(extention[1], extention[2]);
-        }
-        else
-        {
-            return ArchiverFactory.createArchiver(extention[1]);
-        }
-    }
-
 }

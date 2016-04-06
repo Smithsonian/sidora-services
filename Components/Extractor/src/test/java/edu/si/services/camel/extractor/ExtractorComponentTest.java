@@ -27,10 +27,6 @@
 
 package edu.si.services.camel.extractor;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -39,11 +35,21 @@ import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.rauschig.jarchivelib.ArchiveEntry;
+import org.rauschig.jarchivelib.ArchiveStream;
+import org.rauschig.jarchivelib.Archiver;
+import org.rauschig.jarchivelib.ArchiverFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ExtractorComponentTest extends CamelTestSupport
 {
 
     //TODO: Add more test!!! Need to make sure that Producer finds the correct new folder if there are multiple folders initially
+    //currently we assume that an archive contains one or no compressed directory.
     @Test
     public void testTarballExtractor() throws Exception
     {
@@ -59,7 +65,25 @@ public class ExtractorComponentTest extends CamelTestSupport
     @Test
     public void testZipExtractor() throws Exception
     {
+        //testExtractor("p1d246-test-zip.zip");
+        testExtractor("p1d246-test-zip.zip"); //zip with compressed directory
+        testExtractor("ECU-001-D0001-test-zip.zip"); //zip without compressed directory
+    }
+
+    @Test
+    public void testZipOverwriteWithDirectory() throws Exception
+    {
+        //zip with compressed directory
+        testExtractor("p1d246-test-zip.zip", false);
         testExtractor("p1d246-test-zip.zip");
+    }
+
+    @Test
+    public void testZipOverwriteWithoutDirectory() throws Exception
+    {
+        //test zip without compressed directory
+        testExtractor("ECU-001-D0001-test-zip.zip", false);
+        testExtractor("ECU-001-D0001-test-zip.zip");
     }
 
     @Test
@@ -81,6 +105,8 @@ public class ExtractorComponentTest extends CamelTestSupport
 
         File file = new File(this.getClass().getResource("/" + archive).toURI());
 
+        int numFiles = countFilesInArchive(file);
+
         template.sendBody("direct:start", file);
 
         assertMockEndpointsSatisfied();
@@ -92,8 +118,13 @@ public class ExtractorComponentTest extends CamelTestSupport
         {
             assertNotNull("Results should not be null", body);
             assertTrue("Results should be a directory", body.isDirectory());
-            assertEquals("Parent directory should be 'TestData'", "TestData", body.getParentFile().getName());
-            assertEquals("Directory should contain 4 elements", 4, body.list().length);
+            assertEquals("Parent directory should be 'TestCameraTrapData'", "TestCameraTrapData", body.getParentFile().getName());
+            assertEquals("Directory should contain " + numFiles + " elements", numFiles, body.list().length);
+
+            log.debug("Result body is not null: {}", (body != null));
+            log.debug("Result body should be a directory: {}", body.isDirectory());
+            log.debug("Result body parent File is: {}", body.getParentFile().getName());
+            log.debug("Num of files in archive: {}, Num of files in result body: {}", numFiles, body.list().length);
         }
         catch (Exception ex)
         {
@@ -109,6 +140,35 @@ public class ExtractorComponentTest extends CamelTestSupport
         }
     }
 
+    private int countFilesInArchive(File archiveTestFile) {
+        int numFiles = 0;
+        //ZipFile zipfile = new ZipFile(file);
+
+        //numElem = (int) zipfile.stream().filter(zipEntry -> !zipEntry.isDirectory()).count();
+
+        //zipfile.close();
+
+        Archiver archiver = ArchiverFactory.createArchiver(archiveTestFile);
+        log.debug("Testing Archive type: {}", archiver.getFilenameExtension());
+
+        try (ArchiveStream archiveStream = archiver.stream(archiveTestFile)) {
+            ArchiveEntry entry;
+
+            //Cont the number of files filtering out directories
+            while ((entry = archiveStream.getNextEntry()) != null) {
+                //don't count directories
+                if (!entry.isDirectory()) {
+                    numFiles++;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return numFiles;
+    }
+
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception
     {
@@ -118,7 +178,9 @@ public class ExtractorComponentTest extends CamelTestSupport
             public void configure()
             {
                 from("direct:start")
-                        .to("extractor:extract?location=TestData")
+                        .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
+                        .to("extractor:extract?location=TestCameraTrapData")
+                        .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
                         .to("mock:result");
             }
         };
@@ -137,7 +199,7 @@ public class ExtractorComponentTest extends CamelTestSupport
     {
         try
         {
-            FileUtils.deleteDirectory(new File("TestData"));
+            FileUtils.deleteDirectory(new File("TestCameraTrapData"));
         }
         catch (IOException ex)
         {
