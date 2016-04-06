@@ -1285,7 +1285,7 @@
                         <log message="${id} WCSInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
                              logName="edu.si.wcsingest"/>
-                        <to uri="bean:cameraTrapStaticStore?method=removeConceptId(${header.TempCorrelationId})"/>
+                        <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
                     </when>
                 </choice>
 

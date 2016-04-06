@@ -89,7 +89,7 @@
         </dependency>
         <dependency>
             <groupId>edu.si.services.camel</groupId>
-            <artifactId>fcrepo-rest</artifactId>
+            <artifactId>FcrepoRest</artifactId>
             <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
@@ -169,6 +169,7 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
             <version>${camel.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
