@@ -44,6 +44,7 @@ import java.util.Map;
  * The Extractor producer.
  *
  * @author jshingler
+ * @author jbirkhimer
  * @version 1.0
  */
 public class ExtractorProducer extends DefaultProducer

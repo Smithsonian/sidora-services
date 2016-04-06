@@ -49,7 +49,7 @@ public class ExtractorComponentTest extends CamelTestSupport
 {
 
     //TODO: Add more test!!! Need to make sure that Producer finds the correct new folder if there are multiple folders initially
-    //currently we assume that the archive contains one or no compressed directory.
+    //currently we assume that an archive contains one or no compressed directory.
     @Test
     public void testTarballExtractor() throws Exception
     {
@@ -67,7 +67,23 @@ public class ExtractorComponentTest extends CamelTestSupport
     {
         //testExtractor("p1d246-test-zip.zip");
         testExtractor("p1d246-test-zip.zip"); //zip with compressed directory
-        testExtractor("ECU-001-D0001.zip"); //zip without compressed directory
+        testExtractor("ECU-001-D0001-test-zip.zip"); //zip without compressed directory
+    }
+
+    @Test
+    public void testZipOverwriteWithDirectory() throws Exception
+    {
+        //zip with compressed directory
+        testExtractor("p1d246-test-zip.zip", false);
+        testExtractor("p1d246-test-zip.zip");
+    }
+
+    @Test
+    public void testZipOverwriteWithoutDirectory() throws Exception
+    {
+        //test zip without compressed directory
+        testExtractor("ECU-001-D0001-test-zip.zip", false);
+        testExtractor("ECU-001-D0001-test-zip.zip");
     }
 
     @Test
