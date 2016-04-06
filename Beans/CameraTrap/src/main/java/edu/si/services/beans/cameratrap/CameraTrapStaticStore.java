@@ -46,73 +46,73 @@ public class CameraTrapStaticStore {
 
     private static final Logger log = LoggerFactory.getLogger(CameraTrapStaticStore.class);
 
-    //map used to hold concept ID information and the owner of the concept ID(s) to correlate during multi-thread processing
-    private final Map<String, DeploymentConceptInformation> inFlightConceptIds = new HashMap<>(0);
+    //map used to hold correlation ID(s) and the owner of the ID(s) to correlate during multi-thread processing
+    private final Map<String, DeploymentCorrelationInformation> inFlightCorrelationIds = new HashMap<>(0);
 
     /**
-     * Wrapper method to check concept ID exists in the data structure that holds the in-flight concept IDs
+     * Wrapper method to check correlation ID exists in the data structure that holds the in-flight correlation IDs
      *
-     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param correlationId correlation identifier such as ProjectId or SubProjectId from the deployment manifest
      * @return true or false
      */
-    public synchronized boolean containsConceptId(String conceptId) {
-        log.debug("The cameratrap store contains following concept IDs: " + inFlightConceptIds.toString());
-        return inFlightConceptIds.containsKey(conceptId);
+    public synchronized boolean containsCorrelationtId(String correlationId) {
+        log.debug("The cameratrap store contains following correlation IDs: " + inFlightCorrelationIds.toString());
+        return inFlightCorrelationIds.containsKey(correlationId);
     }
 
     /**
-     * Wrapper method to add concept ID to the data structure that holds the in-flight concept IDs
+     * Wrapper method to add correlation ID to the data structure that holds the in-flight correlation IDs
      *
-     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
-     * @param conceptInformation deployment package ID; this information used to determine who is the owner of the in-flight concept ID(s)
+     * @param correlationId correlation identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param correlationInformation deployment package ID; this information used to determine who is the owner of the in-flight correlation ID(s)
      */
-    public synchronized void addConceptId(String conceptId, DeploymentConceptInformation conceptInformation){
-        log.debug("Adding concept Id: " + conceptId );
-        inFlightConceptIds.put(conceptId, conceptInformation);
+    public synchronized void addCorrelationId(String correlationId, DeploymentCorrelationInformation correlationInformation){
+        log.debug("Adding correlation Id: " + correlationId );
+        inFlightCorrelationIds.put(correlationId, correlationInformation);
     }
 
     /**
-     * Wrapper method to remove concept ID from the data structure that holds the in-flight concept IDs
+     * Wrapper method to remove correlation ID from the data structure that holds the in-flight correlation IDs
      *
-     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param correlationId correlation identifier such as ProjectId or SubProjectId from the deployment manifest
      */
-    public synchronized void removeConceptId(String conceptId){
-        log.debug("Removing concept Id: " + conceptId);
-        inFlightConceptIds.remove(conceptId);
+    public synchronized void removeCorrelationId(String correlationId){
+        log.debug("Removing correlation Id: " + correlationId);
+        inFlightCorrelationIds.remove(correlationId);
     }
 
     /**
-     * Wrapper method to get the value from the data structure that holds the DeploymentConceptInformation
+     * Wrapper method to get the value from the data structure that holds the DeploymentCorrelationInformation
      *
-     * @param conceptId concept object identifier such as ProjectId or SubProjectId from the deployment manifest
+     * @param correlationId correlation identifier such as ProjectId or SubProjectId from the deployment manifest
      */
-    public synchronized DeploymentConceptInformation getConceptInformationById(String conceptId){
-        return inFlightConceptIds.get(conceptId);
+    public synchronized DeploymentCorrelationInformation getCorrelationInformationById(String correlationId){
+        return inFlightCorrelationIds.get(correlationId);
     }
 
     /**
-     * Wrapper method to retrieve the data structure that holds the in-flight concept IDs
+     * Wrapper method to retrieve the data structure that holds the in-flight correlation IDs
      *
-     * @return contains the concept object identifier(s) in a map
+     * @return contains the correlation identifier(s) in a map
      */
-    public synchronized Map<String, DeploymentConceptInformation> getInFlightConceptIds() {
-        return inFlightConceptIds;
+    public synchronized Map<String, DeploymentCorrelationInformation> getInFlightCorrelationIds() {
+        return inFlightCorrelationIds;
     }
 
     /**
-     * Removes all Concept Ids based on the passed in deploymentId.  (Reverse look up on the data structure map)
+     * Removes all correlation Ids based on the passed in deploymentId.  (Reverse look up on the data structure map)
      *
      * @param deploymentId deployment package ID; mainly the package directory name used during the ingestion process
      */
-    public synchronized void removeConceptIdsByDeploymentId(String deploymentId) {
+    public synchronized void removeCorrelationIdsByDeploymentId(String deploymentId) {
 
-        final Iterator<Map.Entry<String, DeploymentConceptInformation>> iterator = inFlightConceptIds.entrySet().iterator();
+        final Iterator<Map.Entry<String, DeploymentCorrelationInformation>> iterator = inFlightCorrelationIds.entrySet().iterator();
         while(iterator.hasNext())
         {
-            Map.Entry<String, DeploymentConceptInformation> entry = iterator.next();
+            Map.Entry<String, DeploymentCorrelationInformation> entry = iterator.next();
             if(entry.getValue().getDeploymentId().equals(deploymentId))
             {
-                //removes conceptId from the storage
+                //removes correlationId from the storage
                 iterator.remove();
             }
         }

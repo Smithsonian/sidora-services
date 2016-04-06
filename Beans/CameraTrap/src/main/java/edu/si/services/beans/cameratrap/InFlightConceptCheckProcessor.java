@@ -49,12 +49,12 @@ public class InFlightConceptCheckProcessor implements Processor{
 
     /**
      * This method is called during the Fedora find object operation redelivery attempts to check if there is an existing in-flight
-     * process for the given conceptId and the deployment ID.  The deployment ID information is used to determine
+     * process for the given correlationId and the deployment ID.  The deployment ID information is used to determine
      * which deployment is currently processing the concept object(s).  The other deployment processes should wait
      * while the initial deployment is finishing up the first concept object(s) creation.
 
      * @param exchange camel message exchange; requires CamelFileParent, DeploymentConceptId, CamelFedoraLabel and CamelFedoraPid from the headers
-     *                 for the inFlightCheck to add the concept information to the static storage
+     *                 for the inFlightCheck to add the deployment concept information to the static storage
      * @throws InterruptedException
      */
     @Override
@@ -62,8 +62,8 @@ public class InFlightConceptCheckProcessor implements Processor{
         Message in = exchange.getIn();
 
         String deploymentId = in.getHeader("CamelFileParent", String.class);
-        String conceptId = in.getHeader("DeploymentConceptId", String.class);
-        String conceptLabel = in.getHeader("CamelFedoraLabel", String.class);
+        String correlationId = in.getHeader("DeploymentCorrelationId", String.class);
+        String correlationLabel = in.getHeader("CamelFedoraLabel", String.class);
         String parentObjectPid = in.getHeader("CamelFedoraPid", String.class);
 
         //check if CamelFileParent is set in the header
@@ -71,15 +71,15 @@ public class InFlightConceptCheckProcessor implements Processor{
             throw new IllegalArgumentException("CamelFileParent not found");
         }
 
-        if (conceptId!=null && conceptLabel!=null
-                && parentObjectPid!=null && !cameraTrapStaticStore.containsConceptId(conceptId)){
-            DeploymentConceptInformation conceptInformation = new DeploymentConceptInformation(deploymentId, conceptId, conceptLabel, parentObjectPid);
-            cameraTrapStaticStore.addConceptId(conceptId, conceptInformation);
+        if (correlationId!=null && correlationLabel!=null
+                && parentObjectPid!=null && !cameraTrapStaticStore.containsCorrelationtId(correlationId)){
+            DeploymentCorrelationInformation correlationInformation = new DeploymentCorrelationInformation(deploymentId, correlationId, correlationLabel, parentObjectPid);
+            cameraTrapStaticStore.addCorrelationId(correlationId, correlationInformation);
         }
 
-        DeploymentConceptInformation lockOwner = cameraTrapStaticStore.getInFlightConceptIds().get(conceptId);
+        DeploymentCorrelationInformation lockOwner = cameraTrapStaticStore.getCorrelationInformationById(correlationId);
         if (lockOwner!=null && !deploymentId.equals(lockOwner.getDeploymentId())){
-            waitWhileProcessing(conceptId);
+            waitWhileProcessing(correlationId);
         }
 
     }
@@ -87,20 +87,20 @@ public class InFlightConceptCheckProcessor implements Processor{
     /**
      * Checks the current status of in-flight static storage and uses while loop to enforce wait on the current thread if necessary
      *
-     * @param conceptId concept object identifier from the parent hierarchy such as the ProjectId or SubProjectId from the deployment manifest
-     *                  and it is used to determine whether there is an existing in-flight process for the same concept identifier
+     * @param correlationId correlation identifier from the parent hierarchy such as the ProjectId or SubProjectId from the deployment manifest
+     *                  and it is used to determine whether there is an existing in-flight process for the same correlation identifier
      * @throws InterruptedException
      */
-    private synchronized void waitWhileProcessing(String conceptId) throws InterruptedException {
+    private synchronized void waitWhileProcessing(String correlationId) throws InterruptedException {
 
-        boolean conceptInProcess = cameraTrapStaticStore.containsConceptId(conceptId);
+        boolean conceptInProcess = cameraTrapStaticStore.containsCorrelationtId(correlationId);
 
-        //wait if there is another process running for the same concept identifier
+        //wait if there is another process running for the same correlation identifier
         while(conceptInProcess){
-            log.debug("Current thread waiting due to in-flight process: " + conceptId);
+            log.debug("Current thread waiting due to in-flight process: " + correlationId);
             //change sleeping behavior event driven or configurable
             Thread.sleep(6000);
-            conceptInProcess = cameraTrapStaticStore.containsConceptId(conceptId);
+            conceptInProcess = cameraTrapStaticStore.containsCorrelationtId(correlationId);
 
         }
     }

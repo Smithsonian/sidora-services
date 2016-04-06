@@ -878,7 +878,7 @@
                         <to uri="direct:processPlot"/>
                     </filter>
                     <!-- Clean stashed header that could potentially lock for inflight check during post validations-->
-                    <removeHeader headerName="DeploymentConceptId"/>
+                    <removeHeader headerName="DeploymentCorrelationId"/>
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
@@ -1036,7 +1036,7 @@
                 </simple>
             </setHeader>
             <!-- stash parent identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentConceptId">
+            <setHeader headerName="DeploymentCorrelationId">
                 <simple>
                     ${body}
                 </simple>
@@ -1111,7 +1111,7 @@
                 </simple>
             </setHeader>
             <!-- stash subproject identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentConceptId">
+            <setHeader headerName="DeploymentCorrelationId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //SubProjectId
                 </xpath>
@@ -1186,7 +1186,7 @@
                 </simple>
             </setHeader>
             <!-- stash project identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentConceptId">
+            <setHeader headerName="DeploymentCorrelationId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //ProjectId
                 </xpath>
@@ -1243,21 +1243,21 @@
                  loggingLevel="DEBUG"
                  logName="edu.si.wcsingest"/>
 
-            <!-- retrieve the collection of concept identifiers from the storage-->
-            <to uri="bean:cameraTrapStaticStore?method=getInFlightConceptIds()"/>
+            <!-- retrieve the collection of correlation identifiers from the storage-->
+            <to uri="bean:cameraTrapStaticStore?method=getInFlightCorrelationIds()"/>
             <split>
                 <simple>${body.keySet}</simple>
-                <!-- retrieve the concept information from the storage; such as the deployment id, concept label etc-->
-                <to uri="bean:cameraTrapStaticStore?method=getConceptInformationById(${body})"/>
+                <!-- retrieve the correlation information from the storage; such as the deployment id, correlation label etc-->
+                <to uri="bean:cameraTrapStaticStore?method=getCorrelationInformationById(${body})"/>
 
-                <!-- stash concept identifier so we can remove it from the storage if the concept is found in the RI -->
-                <setHeader headerName="ConceptId">
+                <!-- stash correlation identifier so we can remove it from the storage if the concept is found in the RI -->
+                <setHeader headerName="TempCorrelationId">
                     <simple>
-                        ${body.conceptId}
+                        ${body.correlationId}
                     </simple>
                 </setHeader>
 
-                <!-- set required headeers and body for the find object operation to function -->
+                <!-- set required headers and body for the find object operation to function -->
                 <setHeader headerName="CamelFedoraPid">
                     <simple>
                         ${body.parentObjectPid}
@@ -1270,7 +1270,7 @@
                 </setHeader>
                 <setBody>
                     <simple>
-                        ${body.conceptLabel}
+                        ${body.correlationLabel}
                     </simple>
                 </setBody>
 
@@ -1282,10 +1282,10 @@
                         <simple>
                             ${body} != ''
                         </simple>
-                        <log message="${id} WCSInFlightConceptStatusPolling: Concept object: ${header.ConceptId} found from RI.. removing from the data structure..."
+                        <log message="${id} WCSInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
                              logName="edu.si.wcsingest"/>
-                        <to uri="bean:cameraTrapStaticStore?method=removeConceptId(${header.ConceptId})"/>
+                        <to uri="bean:cameraTrapStaticStore?method=removeConceptId(${header.TempCorrelationId})"/>
                     </when>
                 </choice>
 

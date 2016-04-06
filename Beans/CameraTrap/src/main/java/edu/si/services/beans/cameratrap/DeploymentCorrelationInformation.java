@@ -30,30 +30,30 @@ package edu.si.services.beans.cameratrap;
 import java.util.Objects;
 
 /**
- * Simple POJO to hold the deployment concept information such as the concept ID and concept label from the deployment manifest, as well as
+ * Simple POJO to hold the deployment correlation information such as the concept ID and concept label from the deployment manifest, as well as
  * the parentObjectPid from Fedora that could be used during the find object operation.
  *
  * @author parkjohn
  */
-public class DeploymentConceptInformation {
+public class DeploymentCorrelationInformation {
 
     private String deploymentId;
-    private String conceptId;
-    private String conceptLabel;
+    private String correlationId;
+    private String correlationLabel;
     private String parentObjectPid;
 
     /**
-     * Constructor that takes in the deploymentId, conceptId, conceptLable, and parentObjectPid
+     * Constructor that takes in the deploymentId, correlationId, correlationLabel, and parentObjectPid
      *
      * @param deploymentId deployment package identifier such as the directory name for the deployment package
-     * @param conceptId concept identifier from the deployment manifest such as the projectId, subProjectId etc
-     * @param conceptLabel concept name from the deployment manifest such as the projectName, subProjectName etc
+     * @param correlationId concept identifier from the deployment manifest such as the projectId, subProjectId etc
+     * @param correlationLabel concept name from the deployment manifest such as the projectName, subProjectName etc
      * @param parentObjectPid parent object PID from Fedora Repository for the given concept object from the manifest.
      */
-    public DeploymentConceptInformation(String deploymentId, String conceptId, String conceptLabel, String parentObjectPid) {
+    public DeploymentCorrelationInformation(String deploymentId, String correlationId, String correlationLabel, String parentObjectPid) {
         this.deploymentId = deploymentId;
-        this.conceptId = conceptId;
-        this.conceptLabel = conceptLabel;
+        this.correlationId = correlationId;
+        this.correlationLabel = correlationLabel;
         this.parentObjectPid = parentObjectPid;
     }
 
@@ -65,20 +65,20 @@ public class DeploymentConceptInformation {
         this.deploymentId = deploymentId;
     }
 
-    public String getConceptId() {
-        return conceptId;
+    public String getCorrelationId() {
+        return correlationId;
     }
 
-    public void setConceptId(String conceptId) {
-        this.conceptId = conceptId;
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
     }
 
-    public String getConceptLabel() {
-        return conceptLabel;
+    public String getCorrelationLabel() {
+        return correlationLabel;
     }
 
-    public void setConceptLabel(String conceptLabel) {
-        this.conceptLabel = conceptLabel;
+    public void setCorrelationLabel(String correlationLabel) {
+        this.correlationLabel = correlationLabel;
     }
 
     public String getParentObjectPid() {
@@ -91,10 +91,10 @@ public class DeploymentConceptInformation {
 
     @Override
     public String toString() {
-        return "DeploymentConceptInformation{" +
+        return "DeploymentCorrelationInformation{" +
                 "deploymentID='" + deploymentId + '\'' +
-                ", conceptId='" + conceptId + '\'' +
-                ", conceptLabel='" + conceptLabel + '\'' +
+                ", correlationId='" + correlationId + '\'' +
+                ", correlationLabel='" + correlationLabel + '\'' +
                 ", parentObjectPid='" + parentObjectPid + '\'' +
                 '}';
     }
@@ -107,15 +107,15 @@ public class DeploymentConceptInformation {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DeploymentConceptInformation that = (DeploymentConceptInformation) o;
+        DeploymentCorrelationInformation that = (DeploymentCorrelationInformation) o;
         return Objects.equals(deploymentId, that.deploymentId) &&
-                Objects.equals(conceptId, that.conceptId) &&
-                Objects.equals(conceptLabel, that.conceptLabel) &&
+                Objects.equals(correlationId, that.correlationId) &&
+                Objects.equals(correlationLabel, that.correlationLabel) &&
                 Objects.equals(parentObjectPid, that.parentObjectPid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(deploymentId, conceptId, conceptLabel, parentObjectPid);
+        return Objects.hash(deploymentId, correlationId, correlationLabel, parentObjectPid);
     }
 }
