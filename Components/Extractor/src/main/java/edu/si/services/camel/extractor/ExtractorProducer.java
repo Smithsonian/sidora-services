@@ -51,6 +51,7 @@ public class ExtractorProducer extends DefaultProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractorProducer.class);
     private final ExtractorEndpoint endpoint;
+    private StringBuilder errorMsg;
 
     public ExtractorProducer(ExtractorEndpoint endpoint)
     {
@@ -64,21 +65,19 @@ public class ExtractorProducer extends DefaultProducer
         Message in = exchange.getIn();
         File inBody = in.getBody(File.class);
 
-        //Location to extract to
-        File outFolder = new File(this.endpoint.getLocation());
-
-        //File path for the exchange body
-        File file = null;
-
         //Create a string array of filename and extension(s)
         String[] split = inBody.getName().split("\\.");
         if (split.length < 2)
-        {
-            LOG.error("Improperly formatted file. No, file extension found for " + inBody.getName());
-            throw new Exception();
+        {   errorMsg = new StringBuilder();
+            errorMsg.append("Improperly formatted file. No, file extension found for " + inBody.getName());
+            LOG.error(errorMsg.toString());
+            throw new ExtractorException(errorMsg.toString());
         }
 
         LOG.debug("inBody archive file name and extension(s): {}", split);
+
+        //Set location to extract to
+        File cameraTrapDataOutputDir = new File(this.endpoint.getLocation(), split[0]);
 
         //The ArchiveFactory can detect archive types based on file extensions and hand you the correct Archiver.
         Archiver archiver = ArchiverFactory.createArchiver(inBody);
@@ -88,52 +87,49 @@ public class ExtractorProducer extends DefaultProducer
         ArchiveStream archiveStream = archiver.stream(inBody);
         ArchiveEntry entry;
 
-        String compressedFolder = null;
-
         //Extract each archive entry and check for the existence of a compressed folder otherwise create one
         while ((entry = archiveStream.getNextEntry()) != null) {
             LOG.debug("ArchiveStream Current Entry Name = {}, isDirectory = {}", entry.getName(), entry.isDirectory());
 
             //Check for a compressed folder
             if (entry.isDirectory()) {
-                log.debug("Found Directory '{}' in archive!", entry.getName());
-                compressedFolder = entry.getName(); //Get the name of the compressed folder
-                file = new File(outFolder, compressedFolder); //update the file path to be returned on exchange body
-            } else if (compressedFolder == null) {
-                compressedFolder = split[0]; //Set the missing compressed folder name
-                log.warn("No directory found in archive, Set directory '{}' to extract to!", compressedFolder);
-                outFolder = new File(outFolder, compressedFolder); //Update the outFolder location to extract files to
-                file = outFolder; //update the file path to be returned on exchange body
+                errorMsg = new StringBuilder();
+                errorMsg.append("Extracting archive '" + inBody.getName() + "' failed! ");
+                errorMsg.append("Directory '" + entry.getName() + "' found in archive!");
+
+                log.error(errorMsg.toString());
+                throw new ExtractorException(errorMsg.toString());
+            } else {
+                entry.extract(cameraTrapDataOutputDir); //extract the file
             }
-            entry.extract(outFolder); //extract the file
         }
 
         archiveStream.close();
 
-        LOG.debug("File path to be returned on exchange body: {}", file);
+        LOG.debug("File path to be returned on exchange body: {}", cameraTrapDataOutputDir);
 
         String parent = null;
 
-        if (file.getParentFile() != null)
+        if (cameraTrapDataOutputDir.getParentFile() != null)
         {
-            parent = file.getParentFile().getName();
-            LOG.debug("CamelFileParent: {}", file.getParentFile());
+            parent = cameraTrapDataOutputDir.getParentFile().getName();
+            LOG.debug("CamelFileParent: {}", cameraTrapDataOutputDir.getParentFile());
         }
 
         Map<String, Object> headers = in.getHeaders();
 
-        headers.put("CamelFileLength", file.length());
-        headers.put("CamelFileLastModified", file.lastModified());
-        headers.put("CamelFileNameOnly", file.getName());
-        headers.put("CamelFileNameConsumed", file.getName());
-        headers.put("CamelFileName", file.getName());
-        headers.put("CamelFileRelativePath", file.getPath());
-        headers.put("CamelFilePath", file.getPath());
-        headers.put("CamelFileAbsolutePath", file.getAbsolutePath());
+        headers.put("CamelFileLength", cameraTrapDataOutputDir.length());
+        headers.put("CamelFileLastModified", cameraTrapDataOutputDir.lastModified());
+        headers.put("CamelFileNameOnly", cameraTrapDataOutputDir.getName());
+        headers.put("CamelFileNameConsumed", cameraTrapDataOutputDir.getName());
+        headers.put("CamelFileName", cameraTrapDataOutputDir.getName());
+        headers.put("CamelFileRelativePath", cameraTrapDataOutputDir.getPath());
+        headers.put("CamelFilePath", cameraTrapDataOutputDir.getPath());
+        headers.put("CamelFileAbsolutePath", cameraTrapDataOutputDir.getAbsolutePath());
         headers.put("CamelFileAbsolute", false);
         headers.put("CamelFileParent", parent);
 
-        exchange.getOut().setBody(file, File.class);
+        exchange.getOut().setBody(cameraTrapDataOutputDir, File.class);
 
         exchange.getOut().setHeaders(headers);
     }
