@@ -17,10 +17,11 @@
 5. Copy SIdora beans to th ServiceMix deploy directory (and over write when required)
   - Copy the `CameraTrap-(version).jar` from `GH_DIR/Beans/CameraTrap/target/` to the `SMX_HOME/deploy/` folder
   - Copy the `Excel-(version).jar` from `GH_DIR/Beans/Excel/target/` to the `SMX_HOME/deploy/` folder
-  3. Copy the `VelocityToolsHandler-(version).jar` from `GH_DIR/Beans/VelocityToolsHandler/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `VelocityToolsHandler-(version).jar` from `GH_DIR/Beans/VelocityToolsHandler/target/` to the `SMX_HOME/deploy/` folder
 6. Copy SIdora Camel Components to the ServiceMix deploy directory
   - Copy the `Extractor-(version).jar` from `GH_DIR/Components/Extractor/target/` to the `SMX_HOME/deploy/` folder
   - Copy the `FedoraRepo-(version).jar` from `GH_DIR/Components/FedoraRepo/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `FcrepoRest-(version).jar` from `GH_DIR/Components/FcrepoRest/target/` to the `SMX_HOME/deploy/` folder
   - Copy the `Reader-(version).jar` from `GH_DIR/Components/Reader/target/` to the `SMX_HOME/deploy/` folder
   - Copy the `Thumbnailator-(version).jar` from `GH_DIR/Components/Thumbnailator/target/` to the `SMX_HOME/deploy/` folder
 7. Copy SIdora Tabular Services to the ServiceMix deploy directory
@@ -44,6 +45,7 @@
   - smx@fedora> feature:install camel-velocity
   - smx@fedora> feature:install camel-saxon
   - smx@fedora> feature:install camel-schematron
+  - smx@fedora> feature:install camel-csv
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/3.11_1
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/2.0_1
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.14.RELEASE_1
