@@ -27,10 +27,7 @@
 
 package edu.si.services.beans.cameratrap;
 
-import org.apache.camel.BeanInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
-import org.apache.camel.Processor;
+import org.apache.camel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
