@@ -33,7 +33,11 @@
     xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
     <!-- OSGI blueprint property placeholder -->
-    <cm:property-placeholder id="system.placeholder" persistent-id="camel.blueprint"/>
+    <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="reload">
+        <cm:default-properties>
+            <cm:property name="si.ct.scbi.dryrun" value="false"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
 
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
 
@@ -94,7 +98,7 @@
         -->
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:system.placeholder,file:${karaf.home}/etc/system.properties"/>
+                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties"/>
 
         <!--
         <errorHandler id="ctingestErrorHandler" type="DefaultErrorHandler">
@@ -212,19 +216,31 @@
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
-                <!-- Process the deployment -->
-                <to uri="direct:processPackage"/>
+                <log message="${id} CameraTrapIngest: Ingest dry-run flag - {{si.ct.scbi.dryrun}}"
+                     loggingLevel="DEBUG"
+                     logName="edu.si.wcsingest"/>
 
-                <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
-                <log message="${id} CameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
-                     loggingLevel="INFO"
-                     logName="edu.si.ctingest"/>
-                <delay>
-                    <constant>6000</constant>
-                </delay>
+                <choice>
+                    <when>
+                        <simple>{{si.ct.scbi.dryrun}} == true</simple>
+                        <log message="${id} CameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process" loggingLevel="INFO"/>
+                    </when>
+                    <otherwise>
+                        <!-- Process the deployment -->
+                        <to uri="direct:processPackage"/>
 
-                <!-- Validate image count and check filenames. -->
-                <to uri="direct:validateIngest"/>
+                        <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
+                        <log message="${id} CameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
+                             loggingLevel="INFO"
+                             logName="edu.si.ctingest"/>
+                        <delay>
+                            <constant>6000</constant>
+                        </delay>
+
+                        <!-- Validate image count and check filenames. -->
+                        <to uri="direct:validateIngest"/>
+                    </otherwise>
+                </choice>
 
             </threads>
 

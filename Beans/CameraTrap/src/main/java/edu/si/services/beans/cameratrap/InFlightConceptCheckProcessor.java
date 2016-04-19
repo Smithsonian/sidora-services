@@ -44,6 +44,9 @@ public class InFlightConceptCheckProcessor implements Processor{
 
     private static final Logger log = LoggerFactory.getLogger(InFlightConceptCheckProcessor.class);
 
+    @PropertyInject(value = "si.ct.thread.wait.time", defaultValue = "5000")
+    private int waitTime;
+
     @BeanInject
     private CameraTrapStaticStore cameraTrapStaticStore;
 
@@ -98,8 +101,8 @@ public class InFlightConceptCheckProcessor implements Processor{
         //wait if there is another process running for the same correlation identifier
         while(conceptInProcess){
             log.debug("Current thread waiting due to in-flight process: " + correlationId);
-            //change sleeping behavior event driven or configurable
-            Thread.sleep(6000);
+
+            Thread.sleep(waitTime);
             conceptInProcess = cameraTrapStaticStore.containsCorrelationtId(correlationId);
 
         }

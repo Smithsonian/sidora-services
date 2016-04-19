@@ -95,9 +95,8 @@ public class DeploymentPackageValidator {
                 for (Path path : directoryStream) {
                     log.trace("Listing filename: " + path.toString());
                     totalResourceFound++;
-                    log.debug("The resource file counter incremented: " + totalResourceFound);
                 }
-
+                log.debug("The resource file counter: " + totalResourceFound);
             } catch (IOException ex) {
                 log.error("Exception occurred while processing directoryStream in fsDeploymentResourceCount(): ", ex);
             }
