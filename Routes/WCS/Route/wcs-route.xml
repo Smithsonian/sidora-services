@@ -61,7 +61,7 @@
     <!-- errorHandlerRef="wcsingestErrorHandler" -->
 
     <!-- processsor used during fedora findObject redelivery attempts to check for in-flight process-->
-    <bean id="inFlightCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightCheckProcessor"/>
+    <bean id="inFlightConceptCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightConceptCheckProcessor"/>
 
     <camelContext id="WCSIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -108,7 +108,7 @@
                               retryAttemptedLogLevel="WARN"/>
         </onException>
 
-        <onException useOriginalMessage="true" onRedeliveryRef="inFlightCheckProcessor">
+        <onException useOriginalMessage="true" onRedeliveryRef="inFlightConceptCheckProcessor">
             <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
@@ -877,8 +877,8 @@
                         </xpath>
                         <to uri="direct:processPlot"/>
                     </filter>
-                    <!-- Clean up parent ID(s) from the static storage to unlock the wait for follow-on ingestions with same parent identifiers. -->
-                    <to uri="bean:cameraTrapStaticStore?method=removeParentIdsByDeploymentId(${header.CamelFileParent})"/>
+                    <!-- Clean stashed header that could potentially lock for inflight check during post validations-->
+                    <removeHeader headerName="DeploymentCorrelationId"/>
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
@@ -1036,7 +1036,7 @@
                 </simple>
             </setHeader>
             <!-- stash parent identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentParentId">
+            <setHeader headerName="DeploymentCorrelationId">
                 <simple>
                     ${body}
                 </simple>
@@ -1111,7 +1111,7 @@
                 </simple>
             </setHeader>
             <!-- stash subproject identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentParentId">
+            <setHeader headerName="DeploymentCorrelationId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //SubProjectId
                 </xpath>
@@ -1186,7 +1186,7 @@
                 </simple>
             </setHeader>
             <!-- stash project identifier to be used for the in-flight parent process checks. -->
-            <setHeader headerName="DeploymentParentId">
+            <setHeader headerName="DeploymentCorrelationId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //ProjectId
                 </xpath>
@@ -1237,5 +1237,63 @@
                  logName="edu.si.wcsingest"/>
         </route>
 
+        <route id="WCSInFlightConceptStatusPolling">
+            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
+            <log message="${id} WCSInFlightConceptStatusPolling: Starting the In-Flight Concept process status check..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+
+            <!-- retrieve the collection of correlation identifiers from the storage-->
+            <to uri="bean:cameraTrapStaticStore?method=getInFlightCorrelationIds()"/>
+            <split>
+                <simple>${body.keySet}</simple>
+                <!-- retrieve the correlation information from the storage; such as the deployment id, correlation label etc-->
+                <to uri="bean:cameraTrapStaticStore?method=getCorrelationInformationById(${body})"/>
+
+                <!-- stash correlation identifier so we can remove it from the storage if the concept is found in the RI -->
+                <setHeader headerName="TempCorrelationId">
+                    <simple>
+                        ${body.correlationId}
+                    </simple>
+                </setHeader>
+
+                <!-- set required headers and body for the find object operation to function -->
+                <setHeader headerName="CamelFedoraPid">
+                    <simple>
+                        ${body.parentObjectPid}
+                    </simple>
+                </setHeader>
+                <setHeader headerName="CamelFileParent">
+                    <simple>
+                        ${body.deploymentId}
+                    </simple>
+                </setHeader>
+                <setBody>
+                    <simple>
+                        ${body.correlationLabel}
+                    </simple>
+                </setBody>
+
+                <to uri="direct:findObject" />
+
+                <!-- if concept is found in RI, we can safely remove from the storage to release the wait lock -->
+                <choice>
+                    <when>
+                        <simple>
+                            ${body} != ''
+                        </simple>
+                        <log message="${id} WCSInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
+                             loggingLevel="DEBUG"
+                             logName="edu.si.wcsingest"/>
+                        <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
+                    </when>
+                </choice>
+
+            </split>
+
+            <log message="${id} WCSInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.wcsingest"/>
+        </route>
     </camelContext>
 </blueprint>

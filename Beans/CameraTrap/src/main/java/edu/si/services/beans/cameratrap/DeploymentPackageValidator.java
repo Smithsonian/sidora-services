@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Smithsonian Institution.
+ * Copyright 2015-2016 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -95,9 +95,8 @@ public class DeploymentPackageValidator {
                 for (Path path : directoryStream) {
                     log.trace("Listing filename: " + path.toString());
                     totalResourceFound++;
-                    log.debug("The resource file counter incremented: " + totalResourceFound);
                 }
-
+                log.debug("The resource file counter: " + totalResourceFound);
             } catch (IOException ex) {
                 log.error("Exception occurred while processing directoryStream in fsDeploymentResourceCount(): ", ex);
             }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2015 Smithsonian Institution.
+  ~ Copyright 2015-2016 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -33,7 +33,11 @@
     xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
     <!-- OSGI blueprint property placeholder -->
-    <cm:property-placeholder id="system.placeholder" persistent-id="camel.blueprint"/>
+    <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="reload">
+        <cm:default-properties>
+            <cm:property name="si.ct.scbi.dryrun" value="false"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
 
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
 
@@ -57,15 +61,36 @@
 
     <bean id="deploymentPkgValidator" class="edu.si.services.beans.cameratrap.DeploymentPackageValidator"/>
 
+    <bean id="cameraTrapStaticStore" class="edu.si.services.beans.cameratrap.CameraTrapStaticStore"/>
+
+    <!-- processsor used during fedora findObject redelivery attempts to check for in-flight process-->
+    <bean id="inFlightConceptCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightConceptCheckProcessor"/>
+
+    <bean id="postIngestionValidator" class="edu.si.services.beans.cameratrap.PostIngestionValidator"/>
+
+    <bean id="cameraTrapValidationMessage" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessage"/>
+
+    <bean id="fcrepoConfiguration" class="edu.si.services.camel.fcrepo.FcrepoConfiguration">
+        <property name="fedoraHost" value="${si.fedora.host}"/>
+        <property name="authUsername" value="${si.fedora.user}"/>
+        <property name="authPassword" value="${si.fedora.password}"/>
+    </bean>
+
+    <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="CTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
+                  xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
+                  xmlns:findObjects="http://www.fedora.info/definitions/1/0/types/"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
                   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                  trace="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:eac="urn:isbn:1-931666-33-4"
+                  xmlns:mods="http://www.loc.gov/mods/v3"
+                  trace="false" useMDCLogging="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.1.xsd">
 
         <!--
@@ -73,7 +98,7 @@
         -->
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:system.placeholder,file:${karaf.home}/etc/system.properties"/>
+                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties"/>
 
         <!--
         <errorHandler id="ctingestErrorHandler" type="DefaultErrorHandler">
@@ -83,6 +108,7 @@
                               useExponentialBackOff="true"/>
         </errorHandler>
         -->
+        <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
 
@@ -102,6 +128,20 @@
                               redeliveryDelay="1000"
                               maximumRedeliveries="5"
                               retryAttemptedLogLevel="WARN"/>
+        </onException>
+
+        <onException useOriginalMessage="true" onRedeliveryRef="inFlightConceptCheckProcessor">
+            <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
+            <redeliveryPolicy useExponentialBackOff="true"
+                              backOffMultiplier="2"
+                              redeliveryDelay="1000"
+                              maximumRedeliveries="7"
+                              retryAttemptedLogLevel="WARN"
+                              retriesExhaustedLogLevel="WARN"
+                              logExhaustedMessageHistory="false"/>
+            <continued>
+                <constant>true</constant>
+            </continued>
         </onException>
 
         <!--
@@ -176,18 +216,31 @@
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
-                <!-- Process the deployment -->
-                <to uri="direct:processPackage"/>
+                <log message="${id} CameraTrapIngest: Ingest dry-run flag - {{si.ct.scbi.dryrun}}"
+                     loggingLevel="DEBUG"
+                     logName="edu.si.wcsingest"/>
 
-                <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
-                <log message="${id} CameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
-                     loggingLevel="INFO"
-                     logName="edu.si.ctingest"/>
-                <delay>
-                    <constant>6000</constant>
-                </delay>
-                <!-- Validate image count and check filenames. -->
-                <to uri="direct:validateIngest"/>
+                <choice>
+                    <when>
+                        <simple>{{si.ct.scbi.dryrun}} == true</simple>
+                        <log message="${id} CameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process" loggingLevel="INFO"/>
+                    </when>
+                    <otherwise>
+                        <!-- Process the deployment -->
+                        <to uri="direct:processPackage"/>
+
+                        <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
+                        <log message="${id} CameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
+                             loggingLevel="INFO"
+                             logName="edu.si.ctingest"/>
+                        <delay>
+                            <constant>6000</constant>
+                        </delay>
+
+                        <!-- Validate image count and check filenames. -->
+                        <to uri="direct:validateIngest"/>
+                    </otherwise>
+                </choice>
 
             </threads>
 
@@ -272,6 +325,31 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
+            <setHeader headerName="ValidationErrors">
+                <simple>
+                    ValidationErrors
+                </simple>
+            </setHeader>
+
+            <to uri="direct:validatePostIngestResourceCount"/>
+
+            <!-- validate datastreams exists for various object types -->
+            <to uri="direct:validateDatastreams"/>
+
+            <!-- Validate Ingest Datastream Metadata Fields -->
+            <to uri="direct:validateDatastreamFields"/>
+
+            <log message="${id} CameraTrapIngest: Finished Post validation"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapValidatePostIngestResourceCount">
+            <from uri="direct:validatePostIngestResourceCount"/>
+            <log message="${id} CameraTrapIngest: Starting Post Ingestion Resource Count validations..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
             <!-- RELS-EXT Resource reference count for validation.  The number includes the observation resource objs-->
             <setHeader headerName="RelsExtResourceCount">
                 <xpath resultType="java.lang.String">
@@ -287,43 +365,217 @@
             </setHeader>
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
 
-            <!-- Configurable max redelivery attempt for the Resource OBJ RI search validation-->
-            <setHeader headerName="ValidationMaxRedeliveryAttempt">
-                <simple resultType="java.lang.Integer">
-                    5
-                </simple>
-            </setHeader>
-
             <split streaming="true">
                 <xtokenize>//fedora:hasResource</xtokenize>
-                <!-- Stashing the PID in the header in case of RI search redelivery attempts for later use-->
-                <setHeader headerName="ValidationPID">
+                <!-- Stashing the resource object PID in the header in case of RI search redelivery attempts for later use-->
+                <setHeader headerName="ValidationResourceObjectPID">
                     <xpath resultType="java.lang.String">
                         //fedora:hasResource/@rdf:resource/substring-after(., 'info:fedora/')
                     </xpath>
                 </setHeader>
-                <!-- Counter to track the number of retry attempts for RI search validation-->
-                <setHeader headerName="ValidationRedeliveryCounter">
-                    <simple resultType="java.lang.Integer">
-                        0
-                    </simple>
-                </setHeader>
-                <!-- Configurable delay for each Resource OBJ RI search validation attempts-->
-                <setHeader headerName="ValidationRedeliveryDelay">
-                    <simple resultType="java.lang.Integer">
-                        2000
-                    </simple>
-                </setHeader>
 
-                <to uri="direct:validateFedoraResource"/>
+                <!-- This api will query Fedora relational db and PID is the only indexed field.  There may be performance impact if the query search includes more than PID-->
+                <toD uri="fcrepo:objects?query=pid%7E${header.ValidationResourceObjectPID}&amp;pid=true&amp;resultFormat=xml"/>
+
+                <choice>
+                    <when>
+                        <xpath resultType="java.lang.String">
+                            not(//findObjects:objectFields/findObjects:pid/text())
+                        </xpath>
+
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${header.ValidationResourceObjectPID}
+                            ,'Resource Object not found from Fedora Repository', ${body})"/>
+                        <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                        <log message="${id} CameraTrapIngest: Resource Object not found from Fedora Repository"
+                             loggingLevel="WARN"
+                             logName="edu.si.ctingest"/>
+                    </when>
+                </choice>
+
                 <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
                      logName="edu.si.ctingest"/>
             </split>
 
-            <log message="${id} CameraTrapIngest: Finished Post validation"
+            <log message="${id} CameraTrapIngest: Finished Post Ingestion Resource Count validations."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapValidateDatastreams">
+            <from uri="direct:validateDatastreams"/>
+            <log message="${id} CameraTrapIngest: Starting Datastream validations..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <!-- Validate Project Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Project
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ProjectPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, EAC-CPF, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Plot Object datastreams -->
+            <choice>
+                <when>
+                    <header>PlotPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            Plot
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.PlotPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, EAC-CPF, RELS-EXT
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
+
+            <!-- Validate Deployment Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Deployment
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.SitePID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, MANIFEST, FGDC, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Image Resource Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Image Resource
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ImageResourcePID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, TN, RELS-EXT, FITS, MODS
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Researcher Observation Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Researcher Observation
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ResearcherObservationPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, CSV, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Volunteer Observation Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Volunteer Observation
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.VolunteerObservationPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, CSV, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <log message="${id} CameraTrapIngest: Finished Datastream validations."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapValidateObjectDatastreams">
+            <from uri="direct:validateObjectDatastreams"/>
+            <log message="${id} CameraTrapIngest: Starting ${header.ValidationDatastreamObjectType} Object Datastream validations..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <simple>
+                    GET
+                </simple>
+            </setHeader>
+
+            <toD uri="fcrepo:objects/${header.ValidationDatastreamObjectPID}/datastreams?format=xml"/>
+
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == 200</simple>
+
+                    <setHeader headerName="FedoraDatastreamIDsFound">
+                        <xpath resultType="java.lang.String">
+                            string-join(//objDatastreams:datastream/@dsid,',')
+                        </xpath>
+                    </setHeader>
+
+                    <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
+
+                    <choice>
+                        <when>
+                            <simple>${body} == false</simple>
+                            <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                                    '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
+                            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                            <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
+                                 loggingLevel="WARN"
+                                 logName="edu.si.ctingest"/>
+                        </when>
+                    </choice>
+                </when>
+
+                <otherwise>
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                            '${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation', false)"/>
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
+                         loggingLevel="WARN"
+                         logName="edu.si.ctingest"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} CameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."/>
         </route>
 
         <route id="CameraTrapProcessPackage">
@@ -554,6 +806,19 @@
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
 
+            <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in
+                the processResources calling the addMODSDatastream to get the PID for the first MODS datastream being created -->
+            <filter>
+                <simple>
+                    ${property.CamelSplitIndex} &lt;= 0
+                </simple>
+                <setHeader headerName="ImageResourcePID">
+                    <simple>
+                        ${header.CamelFedoraPid}
+                    </simple>
+                </setHeader>
+            </filter>
+
             <!-- The current route only handles JPG. -->
             <choice>
                 <!-- If the image is a JPEG? Do nothing. -->
@@ -620,6 +885,12 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
+            <setHeader headerName="ResearcherObservationPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} CameraTrapIngest: Finished Researcher's data processing."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -669,6 +940,12 @@
 
             <setHeader headerName="ResourceCount">
                 <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="VolunteerObservationPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
             </setHeader>
 
             <log message="${id} CameraTrapIngest: Finished Volunteer's data processing."
@@ -836,6 +1113,8 @@
                         </xpath>
                         <to uri="direct:processPlot"/>
                     </filter>
+                    <!-- Clean stashed header that could potentially lock for inflight check during post validations-->
+                    <removeHeader headerName="DeploymentCorrelationId"/>
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
@@ -851,7 +1130,7 @@
                  logName="edu.si.ctingest"/>
         </route>
 
-        <route id="CameraTrapFindObject">
+        <route id="CameraTrapFindObject" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObject"/>
             <log message="${id} CameraTrapIngest: Started find object ..."
                  loggingLevel="INFO"
@@ -914,12 +1193,22 @@
                 </xpath>
             </setBody>
 
+            <choice>
+                <when>
+                    <simple>
+                        ${body} == ''
+                    </simple>
+                    <!-- Throw custom exception to trigger re-try attempts on search -->
+                    <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
+                                    message="The fedora object not found"/>
+                </when>
+            </choice>
             <log message="${id} CameraTrapIngest: Finished find object."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
 
-        <route id="CameraTrapFindObjectByPIDPredicate">
+        <route id="CameraTrapFindObjectByPIDPredicate" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObjectByPIDPredicate"/>
             <log message="${id} CameraTrapIngest: Started find object by PID ..."
                  loggingLevel="INFO"
@@ -947,6 +1236,16 @@
                     /ri:sparql/ri:results/ri:result[1]/ri:k0/text()
                 </xpath>
             </setBody>
+            <choice>
+                <when>
+                    <simple>
+                        ${body} == false
+                    </simple>
+                    <!-- Throw custom exception to trigger re-try attempts on search -->
+                    <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
+                                    message="The fedora object not found"/>
+                </when>
+            </choice>
             <log message="Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
@@ -975,6 +1274,12 @@
                 </xpath>
             </setBody>
             <setHeader headerName="CamelFedoraLabel">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+            <!-- stash parent identifier to be used for the in-flight parent process checks. -->
+            <setHeader headerName="DeploymentCorrelationId">
                 <simple>
                     ${body}
                 </simple>
@@ -1020,6 +1325,12 @@
                 </otherwise>
             </choice>
 
+            <setHeader headerName="PlotPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} CameraTrapIngest: Finished processing plot."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -1047,6 +1358,12 @@
                 <simple>
                     ${body}
                 </simple>
+            </setHeader>
+            <!-- stash subproject identifier to be used for the in-flight parent process checks. -->
+            <setHeader headerName="DeploymentCorrelationId">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //SubProjectId
+                </xpath>
             </setHeader>
             <log message="${id} CameraTrapIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
@@ -1117,6 +1434,12 @@
                     ${body}
                 </simple>
             </setHeader>
+            <!-- stash project identifier to be used for the in-flight parent process checks. -->
+            <setHeader headerName="DeploymentCorrelationId">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //ProjectId
+                </xpath>
+            </setHeader>
             <log message="${id} CameraTrapIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
@@ -1152,8 +1475,322 @@
                 </otherwise>
             </choice>
 
+            <setHeader headerName="ProjectPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} CameraTrapIngest: Finished processing project."
                  loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <!-- Validate Ingest Datastream Metadata Fields -->
+        <route id="CameraTrapValidateDatastreamFields">
+            <from uri="direct:validateDatastreamFields"/>
+            <log message="${id} CameraTrapValidateDatastreamFields: Starting Datastream Fields Validation ..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <!-- Start EAC-CPF Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ProjectPID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the EAC-CPF datastream from the project parent -->
+            <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut" id="getEAC-CPFDatastream"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- Validation xpaths for newer manifest ( see jira ticket SID-618 )
+            <setBody>
+                <simple trim="true">
+                    EAC-CPF Latitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@latitude, //CameraTrapDeployment/ActualLatitude/text()
+                    EAC-CPF Longitude, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:place/eac:placeEntry/@longitude, //CameraTrapDeployment/ActualLongitude/text()
+                    EAC-CPF PublishDate, //eac:eac-cpf/eac:control/eac:localControl/eac:date, //*[@PublishDate]
+                    EAC-CPF ProjectDataAccessandUseConstraints, //eac:eac-cpf/eac:cpfDescription/eac:description/eac:functions/eac:function/eac:descriptiveNote/eac:p, //*[@ProjectDataAccessandUseConstraints]
+                </simple>
+            </setBody>
+            -->
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    EAC-CPF ProjectName, //eac:eac-cpf/eac:cpfDescription/eac:identity/eac:nameEntry[1]/eac:part, //CameraTrapDeployment/ProjectName/text()
+                </simple>
+            </setBody>
+            <!--<to uri="direct:Validate_EAC-CPF_fields"/>-->
+            <to uri="direct:ValidateDatastreamFieldList"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateEAC-CPF"/>
+
+            <!-- Start FGDC Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.SitePID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the FGDC datastream from the project parent -->
+            <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut" id="getFGDCDatastream"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
+FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
+FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()
+                </simple>
+            </setBody>
+            <!--<to uri="direct:Validate_FGDC_Fields"/>-->
+            <to uri="direct:ValidateDatastreamFieldList"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateFGDC"/>
+
+            <!-- Start MODS Validation -->
+            <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ImageResourcePID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the MODS datastream -->
+            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream  to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the comma separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()
+                </simple>
+            </setBody>
+            <!--<to uri="direct:ValidateMODSFields"/>-->
+            <to uri="direct:ValidateDatastreamFieldList"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
+
+            <!-- Start Researcher CSV Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ResearcherObservationPID}
+                </simple>
+            </setHeader>
+
+            <to uri="direct:ValidateCSVFields" id="validateResearcherObservationCSV"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateResearcher"/>
+
+            <!-- Start Volunteer CSV Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.VolunteerObservationPID}
+                </simple>
+            </setHeader>
+
+            <to uri="direct:ValidateCSVFields" id="validateVolunteerObservationCSV"/>
+
+            <!-- Notify the aggregator to complete aggregation -->
+            <setHeader headerName="ValidationComplete">
+                <simple>
+                    true
+                </simple>
+            </setHeader>
+
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateVolunteer"/>
+
+            <log message="${id} CameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <!-- Validation Error Message Aggregation Strategy -->
+        <route id="ValidationErrorMessageAggregationStrategy">
+            <from uri="direct:validationErrorMessageAggregationStrategy"/>
+            <aggregate strategyRef="cameraTrapValidationMessageAggregationStrategy" eagerCheckCompletion="true">
+                <correlationExpression>
+                    <simple>header.ValidationErrors</simple>
+                </correlationExpression>
+                <completionPredicate>
+                    <simple>${header.ValidationComplete} == 'true'</simple>
+                </completionPredicate>
+                <log message="ValidationERRORAggregationMessage:\nBody:\n${body}"
+                     loggingLevel="ERROR"
+                     logName="edu.si.ctingest"/>
+            </aggregate>
+        </route>
+
+        <!-- Validate the provided datastream and field list -->
+        <route id="ValidateDatastreamFieldList">
+            <from uri="direct:ValidateDatastreamFieldList"/>
+            <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
+                <tokenize token="\r\n|\n" xml="false" trim="true" />
+                <!-- Use a bean for validation because xpathbuilder is need -->
+                <to uri="bean:postIngestionValidator?method=validateField"/>
+            </split>
+
+            <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Metadata Fields List Complete..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <!-- Validate CSV Fields -->
+        <route id="CameraTrapValidateCSVFields">
+            <from uri="direct:ValidateCSVFields"/>
+
+            <log message="${id} CameraTrapValidateCSVFields: Starting Validation of CSV Metadata Fields..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
+            <convertBodyTo type="java.lang.String"/>
+
+            <unmarshal>
+                <csv delimiter=","/>
+            </unmarshal>
+
+            <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
+                <!-- Process each record in the csv -->
+                <simple>${body}</simple>
+
+                <!-- Store the ImageSequence "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime" for the current csv record being processed -->
+                <setHeader headerName="CSVImageSequenceRecord">
+                    <simple>${body[2]},${body[3]},${body[4]}</simple>
+                </setHeader>
+
+                <!-- Increment the CamelSplitIndex for xpath on Manifest -->
+                <setHeader headerName="xpathIndex">
+                    <simple>
+                        ${property.CamelSplitIndex}++
+                    </simple>
+                </setHeader>
+
+                <setHeader headerName="ManifestFields">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                        string-join((//CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceId, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceBeginTime, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceEndTime), ',')
+                    </xpath>
+                </setHeader>
+
+                <choice>
+                    <when>
+                        <!-- Check that the ImageSequence csv record (i.e "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime") matches the ImageSequence record from the manifest -->
+                        <xpath resultType="java.lang.String" headerName="ManifestXML" >
+                            $in:CSVImageSequenceRecord = $in:ManifestFields
+                        </xpath>
+
+                        <log message="${id} CameraTrapValidateCSVFields: CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches the manifest validation passed ..."
+                             loggingLevel="INFO"
+                             logName="edu.si.ctingest"/>
+
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Validation Passed', true)"/>
+                    </when>
+                    <otherwise>
+                        <!-- The CSV ImageSequence record does not match the manifest -->
+                        <setBody>
+                            <simple>
+                                CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches Manifest validation failed.
+                            </simple>
+                        </setBody>
+                        <transform>
+                            <simple>${body}\nExpected ${header.ManifestFields} but found ${header.CSVImageSequenceRecord}.</simple>
+                        </transform>
+                        <log message="${id} CameraTrapValidateCSVFields: ${body}"
+                             loggingLevel="ERROR"
+                             logName="edu.si.ctingest"/>
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
+                    </otherwise>
+                </choice>
+            </split>
+
+            <log message="${id} CameraTrapValidateCSVFields: CSV Metadata Fields Validation Complete..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapInFlightConceptStatusPolling">
+            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.ctingest"/>
+
+            <!-- retrieve the collection of correlation identifiers from the storage-->
+            <to uri="bean:cameraTrapStaticStore?method=getInFlightCorrelationIds()"/>
+            <split>
+                <simple>${body.keySet}</simple>
+                <!-- retrieve the correlation information from the storage; such as the deployment id, correlation label etc-->
+                <to uri="bean:cameraTrapStaticStore?method=getCorrelationInformationById(${body})"/>
+
+                <!-- stash correlation identifier so we can remove it from the storage if the concept is found in the RI -->
+                <setHeader headerName="TempCorrelationId">
+                    <simple>
+                        ${body.correlationId}
+                    </simple>
+                </setHeader>
+
+                <!-- set required headers and body for the find object operation to function -->
+                <setHeader headerName="CamelFedoraPid">
+                    <simple>
+                        ${body.parentObjectPid}
+                    </simple>
+                </setHeader>
+                <setHeader headerName="CamelFileParent">
+                    <simple>
+                        ${body.deploymentId}
+                    </simple>
+                </setHeader>
+                <setBody>
+                    <simple>
+                        ${body.correlationLabel}
+                    </simple>
+                </setBody>
+
+                <to uri="direct:findObject" />
+
+                <!-- if concept is found in RI, we can safely remove from the storage to release the wait lock -->
+                <choice>
+                    <when>
+                        <simple>
+                            ${body} != ''
+                        </simple>
+                        <log message="${id} CameraTrapInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
+                             loggingLevel="DEBUG"
+                             logName="edu.si.ctingest"/>
+                        <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
+                    </when>
+                </choice>
+
+            </split>
+
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Smithsonian Institution.
+ * Copyright 2015-2016 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -24,6 +24,7 @@
  * license terms. For a complete copy of all copyright and license terms, including
  * those of third-party libraries, please see the product release notes.
  */
+
 package edu.si.services.beans.cameratrap;
 
 import org.apache.camel.LoggingLevel;
@@ -55,41 +56,10 @@ public class CameraTrapRouteBuilder extends RouteBuilder {
                     .id("ValidatePostResourceCountWhenBlock")
                 .otherwise()
                     .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} CameraTrapIngest: Post Resource Count validation failed - sending msg to queue")
-                    //Prepare the message body with deployment ID and validation failed message to the queue
-                    .setBody(simple("Deployment Package ID - ${header.CamelFileParent}, Message - Post Resource Count validation failed.  " +
-                            "Expected ${header.ResourceCount} but found ${header.RelsExtResourceCount}"))
-                    .to("activemq:queue:ct.post.validation.error")
+                    .to("bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Post Resource Count validation failed. " +
+                            "Expected ${header.ResourceCount} but found ${header.RelsExtResourceCount}', false)")
+                    .to("direct:validationErrorMessageAggregationStrategy")
             .endChoice();
-
-        //CameraTrapValidateFedoraResource route for Fedora RI resource search validation
-        from("direct:validateFedoraResource")
-            .routeId("CameraTrapValidateFedoraResource")
-            .setBody(header("ValidationPID"))
-            .to("direct:findObjectByPIDPredicate")
-            .choice()
-                //Fedora RI search successful
-                .when(body().isEqualTo("true"))
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} CameraTrapIngest: Fedora RI search validation passed")
-                    .stop()
-                //Fedora RI search unsuccessful
-                .otherwise()
-                    .choice()
-                         //Checks if the redelivery attempts has reached the max
-                        .when(simple("${header.ValidationRedeliveryCounter} >= ${header.ValidationMaxRedeliveryAttempt}"))
-                            .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} CameraTrapIngest: Fedora RI search validation failed - sending msg to queue")
-                            //Prepare the message body with deployment ID, PID, message to the queue
-                            .setBody(simple("Deployment Package ID - ${header.CamelFileParent}, Resource PID - ${header.ValidationPID}, " +
-                                    "Message - Fedora RI Search validation failed"))
-                            .to("activemq:queue:ct.post.validation.error")
-                        //The redelivery attempts has not reached the max and re-retry searching the Fedora RI for the PID.
-                        .otherwise()
-                            //Increment the redelivery counter
-                            .setHeader("ValidationRedeliveryCounter", simple("${header.ValidationRedeliveryCounter}++"))
-                            .delay(simple("${header.ValidationRedeliveryDelay}"))
-                            .log(LoggingLevel.DEBUG, CT_LOG_NAME, "${id} CameraTrapIngest: Fedora RI search validation failed - try again")
-                            .to("direct:validateFedoraResource")
-                    .endChoice() // end of inner choice for the redelivery attempt logic
-            .endChoice();  // end of outer choice for the Fedora RI search result check
 
     }
 }
