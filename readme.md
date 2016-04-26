@@ -39,7 +39,11 @@
   - si.ct.owner = CT owner username
   - si.ct.namespace = CT namespace
   - si.ct.root = PID of CT root object
-10. Add following dependencies to the ServiceMix by running the commands from the SMX client console
+10. Create SMX_HOME/etc/edu.si.sidora.karaf.cfg properties file and add following properties for the SCBI and WCS CT routes.  More details on properties can be found on the SIdora ServiceMix Confluence page.  
+  - si.ct.wcs.dryrun = false
+  - si.ct.scbi.dryrun = false
+  - si.ct.thread.wait.time = 6000
+11. Add following dependencies to the ServiceMix by running the commands from the SMX client console
   - smx@fedora> feature:install camel-exec # Use feature vs features for SMX 6.x
   - smx@fedora> feature:install camel-groovy
   - smx@fedora> feature:install camel-velocity
@@ -53,7 +57,7 @@
   - smx@fedora> bundle:install mvn:commons-codec/commons-codec/1.10
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7
   - smx@fedora> bundle:install mvn:com.google.guava/guava/18.0
-11. Start ServiceMix
+12. Start ServiceMix
   - Linux: SMX_HOME/bin/servicemix 
   - Windows: SMX_HOME/bin/servicemix.bat
 - To stop ServiceMix enter `logout` in the ServiceMix command prompt
