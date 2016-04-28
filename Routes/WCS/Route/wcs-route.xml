@@ -35,7 +35,7 @@
     <!-- OSGI blueprint property placeholder -->
     <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
         as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
-    <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="reload">
+    <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="si.ct.wcs.dryrun" value="false"/>
         </cm:default-properties>
