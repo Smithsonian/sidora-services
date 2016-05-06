@@ -753,15 +753,66 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
      * @throws Exception
      */
     @Test
+    public void testValidate_CSV_ResearcherObservation_Passed() throws Exception {
+
+        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
+
+        manifest = FileUtils.readFileToString(manifestFile);
+
+        headers.put("ManifestXML", String.valueOf(manifest));
+
+        //The datastream test file map key
+        validationTest = "CSV_ResearcherObservation_Passed";
+
+        //The expected validation message
+        StringBuilder expectedMessage = new StringBuilder();
+        expectedMessage.append("Validation Passed");
+
+        //Sets up the expected validation message and the datastream that normally would be provides by the fedora endpoint
+        csvValidationTestValues(validationTest, expectedMessage, true);
+
+        //Configure and use adviceWith to mock for testing purpose
+        validationEndpoint = "direct:ValidateCSVFields";
+        validationRouteDefinition = "CameraTrapValidateCSVFields";
+        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
+
+            @Override
+            public void configure() throws Exception {
+                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
+                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
+
+                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
+                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
+                weaveByType(SplitDefinition.class).after().to("mock:result").stop();
+            }
+
+        };
+
+        runValidationAdviceWithTest(validationRouteDefinition, validationEndpoint, adviceWithRouteBuilder);
+    }
+
+    /**
+     * Validation test of the CSV ResearcherObservation Datastream.
+     *
+     * @throws Exception
+     */
+    @Test
     public void testValidate_CSV_ResearcherObservation_Fail() throws Exception {
+
+        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
+
+        manifest = FileUtils.readFileToString(manifestFile);
+
+        headers.put("ManifestXML", String.valueOf(manifest));
+
         //The datastream test file map key
         validationTest = "CSV_ResearcherObservation_Fail";
 
         //The expected validation message
         StringBuilder expectedMessage = new StringBuilder();
-        expectedMessage.append("CSV ImageSequence: 1 containing ImageSequenceId: 0000000 matches Manifest validation failed.\n");
-        expectedMessage.append("Expected 2970s10,2014-03-16 11:33:32,2014-03-16 11:33:33 ");
-        expectedMessage.append("but found 0000000,2014-03-16 11:33:32,2014-03-16 11:33:33.");
+        expectedMessage.append("CSV Observation: 5 containing ImageSequenceId: d18434s12 does not match the Manifest... Validation Failed!\n");
+        expectedMessage.append("Expected d18434s12,2015-08-07 14:47:02,2015-08-07 14:47:30 ");
+        expectedMessage.append("but found d18434s12,2000-08-07 14:47:02,2015-08-07 14:47:30.");
 
         //Sets up the expected validation message and the datastream that normally would be provides by the fedora endpoint
         csvValidationTestValues(validationTest, expectedMessage, false);
@@ -792,9 +843,60 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
      * @throws Exception
      */
     @Test
-    public void testValidate_CSV_ResearcherObservation_Passed() throws Exception {
+    public void testValidate_CSV_ResearcherObservationCounts_Fail() throws Exception {
+
+        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
+
+        manifest = FileUtils.readFileToString(manifestFile);
+
+        headers.put("ManifestXML", String.valueOf(manifest));
+
         //The datastream test file map key
-        validationTest = "CSV_ResearcherObservation_Passed";
+        validationTest = "CSV_ResearcherObservationCounts_Fail";
+
+        //The expected validation message
+        StringBuilder expectedMessage = new StringBuilder();
+        expectedMessage.append("CSV Observation Count does not match the manifest observation count. Validation Failed!\n");
+        expectedMessage.append("Expected 17 observations but found 16 observations.");
+
+        //Sets up the expected validation message and the datastream that normally would be provides by the fedora endpoint
+        csvValidationTestValues(validationTest, expectedMessage, false);
+
+        //Configure and use adviceWith to mock for testing purpose
+        validationEndpoint = "direct:ValidateCSVFields";
+        validationRouteDefinition = "CameraTrapValidateCSVFields";
+        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
+
+            @Override
+            public void configure() throws Exception {
+                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
+                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
+
+                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
+                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
+                weaveByType(SplitDefinition.class).after().to("mock:result").stop();
+            }
+
+        };
+
+        runValidationAdviceWithTest(validationRouteDefinition, validationEndpoint, adviceWithRouteBuilder);
+    }
+
+    /**
+     * Validation test of the CSV VolunteerObservation Datastream.
+     * @throws Exception
+     */
+    @Test
+    public void testValidate_CSV_VolunteerObservation_Passed() throws Exception {
+
+        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
+
+        manifest = FileUtils.readFileToString(manifestFile);
+
+        headers.put("ManifestXML", String.valueOf(manifest));
+
+        //The datastream test file map key
+        validationTest = "CSV_VolunteerObservation_Passed";
 
         //The expected validation message
         StringBuilder expectedMessage = new StringBuilder();
@@ -830,14 +932,21 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
      */
     @Test
     public void testValidate_CSV_VolunteerObservation_Fail() throws Exception {
+
+        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
+
+        manifest = FileUtils.readFileToString(manifestFile);
+
+        headers.put("ManifestXML", String.valueOf(manifest));
+
         //The datastream test file map key
         validationTest = "CSV_VolunteerObservation_Fail";
 
         //The expected validation message
         StringBuilder expectedMessage = new StringBuilder();
-        expectedMessage.append("CSV ImageSequence: 1 containing ImageSequenceId: 0000000 matches Manifest validation failed.\n");
-        expectedMessage.append("Expected 2970s10,2014-03-16 11:33:32,2014-03-16 11:33:33 ");
-        expectedMessage.append("but found 0000000,2014-03-16 11:33:32,2014-03-16 11:33:33.");
+        expectedMessage.append("CSV Observation: 5 containing ImageSequenceId: d18434s13 does not match the Manifest... Validation Failed!\n");
+        expectedMessage.append("Expected d18434s13,2015-08-10 07:01:38,2015-08-10 07:02:31 ");
+        expectedMessage.append("but found d18434s13,2000-08-10 07:01:38,2015-08-10 07:02:31.");
 
         //Sets up the expected validation message and the datastream that normally would be provides by the fedora endpoint
         csvValidationTestValues(validationTest, expectedMessage, false);
@@ -864,19 +973,28 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
     /**
      * Validation test of the CSV VolunteerObservation Datastream.
+     *
      * @throws Exception
      */
     @Test
-    public void testValidate_CSV_VolunteerObservation_Passed() throws Exception {
+    public void testValidate_CSV_VolunteerObservationCounts_Fail() throws Exception {
+
+        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
+
+        manifest = FileUtils.readFileToString(manifestFile);
+
+        headers.put("ManifestXML", String.valueOf(manifest));
+
         //The datastream test file map key
-        validationTest = "CSV_VolunteerObservation_Passed";
+        validationTest = "CSV_VolunteerObservationCounts_Fail";
 
         //The expected validation message
         StringBuilder expectedMessage = new StringBuilder();
-        expectedMessage.append("Validation Passed");
+        expectedMessage.append("CSV Observation Count does not match the manifest observation count. Validation Failed!\n");
+        expectedMessage.append("Expected 16 observations but found 15 observations.");
 
         //Sets up the expected validation message and the datastream that normally would be provides by the fedora endpoint
-        csvValidationTestValues(validationTest, expectedMessage, true);
+        csvValidationTestValues(validationTest, expectedMessage, false);
 
         //Configure and use adviceWith to mock for testing purpose
         validationEndpoint = "direct:ValidateCSVFields";
@@ -964,10 +1082,20 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
             put("FGDC_Passed", new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/validFGDC.xml"));
             put("MODS_ImageSequenceId_Fail", new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml"));
             put("MODS_Passed", new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml"));
-            put("CSV_ResearcherObservation_Fail", new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin"));
+
+            /*put("CSV_ResearcherObservation_Fail", new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin"));
             put("CSV_ResearcherObservation_Passed", new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin"));
             put("CSV_VolunteerObservation_Fail", new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin"));
-            put("CSV_VolunteerObservation_Passed", new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin"));
+            put("CSV_VolunteerObservation_Passed", new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin"));*/
+
+            put("CSV_ResearcherObservation_Passed", new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationPASS.csv"));
+            put("CSV_ResearcherObservation_Fail", new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationFAIL.csv"));
+            put("CSV_ResearcherObservationCounts_Fail", new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationCountsFAIL.csv"));
+
+            put("CSV_VolunteerObservation_Passed", new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationPASS.csv"));
+            put("CSV_VolunteerObservation_Fail", new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationFAIL.csv"));
+            put("CSV_VolunteerObservationCounts_Fail", new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationCountsFAIL.csv"));
+
         }};
 
         //Map of the datastream and deployment manifest metadata fields and there xpaths

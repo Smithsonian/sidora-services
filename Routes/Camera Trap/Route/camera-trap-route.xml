@@ -1666,7 +1666,7 @@ FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //C
         <route id="CameraTrapValidateCSVFields">
             <from uri="direct:ValidateCSVFields"/>
 
-            <log message="${id} CameraTrapValidateCSVFields: Starting Validation of CSV Metadata Fields..."
+            <log message="${id} CameraTrapValidateCSVFields: Starting Observation CSV Validation..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
@@ -1677,60 +1677,137 @@ FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //C
                 <csv delimiter=","/>
             </unmarshal>
 
-            <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
-                <!-- Process each record in the csv -->
-                <simple>${body}</simple>
+            <!-- count the number of observation records in the csv -->
+            <setHeader headerName="CSVObservationCount">
+                <simple resultType="java.lang.Integer">
+                    ${body.size()}
+                </simple>
+            </setHeader>
 
-                <!-- Store the ImageSequence "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime" for the current csv record being processed -->
-                <setHeader headerName="CSVImageSequenceRecord">
-                    <simple>${body[2]},${body[3]},${body[4]}</simple>
-                </setHeader>
+            <!-- Get Researcher or Volunteer from the CSV -->
+            <setHeader headerName="Observer">
+                <simple resultType="java.lang.String">
+                    ${body[0][0]}
+                </simple>
+            </setHeader>
 
-                <!-- Increment the CamelSplitIndex for xpath on Manifest -->
-                <setHeader headerName="xpathIndex">
+            <!-- Generate xml element list of the Researcher or Volunteer Identifications from the manifest to validate against -->
+            <setHeader headerName="ManifestObservationsXML">
+                <xquery headerName="ManifestXML">
+                    declare variable $in.headers.Observer as xs:string external;
+                    element {$in.headers.Observer} {
+                    let $z := concat($in.headers.Observer,'Identifications')
+                    for $x in //*[name()=$z]/Identification
+                    let $y := $x/parent::node()/parent::node()
+                    let $id := $y/ImageSequenceId/text()
+                    let $time0 := $y/ImageSequenceBeginTime/text()
+                    let $time := $y/ImageSequenceEndTime/text()
+                    let $result := string-join(($id,$time0,$time) /normalize-space(), ',')
+                    return element {'Identifications'} {$result}
+                    }
+                </xquery>
+            </setHeader>
+
+            <!-- count the number of identifications from the xml list generated from the manifest -->
+            <setHeader headerName="ManifestObservationCount">
+                <xpath headerName="ManifestObservationsXML" resultType="java.lang.Integer">
+                    count(//Identifications)
+                </xpath>
+            </setHeader>
+
+            <!-- First check that the observations counts match -->
+            <choice>
+                <when>
                     <simple>
-                        ${property.CamelSplitIndex}++
+                        ${header.CSVObservationCount} != ${header.ManifestObservationCount}
                     </simple>
-                </setHeader>
+                    <log message=":::::::::::::::::::::: Count MATCH FAIL :::::::::::::::::::::::::"
+                         loggingLevel="INFO"
+                         logName="edu.si.ctingest"/>
 
-                <setHeader headerName="ManifestFields">
-                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                        string-join((//CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceId, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceBeginTime, //CameraTrapDeployment/ImageSequence[$in:xpathIndex]/ImageSequenceEndTime), ',')
-                    </xpath>
-                </setHeader>
+                    <!-- The CSV Observation Count does not match the manifest create the validation error message -->
+                    <setBody>
+                        <simple>
+                            CSV Observation Count does not match the manifest observation count. Validation Failed!
+                        </simple>
+                    </setBody>
+                    <transform>
+                        <simple>${body}\nExpected ${header.ManifestObservationCount} observations but found ${header.CSVObservationCount} observations.</simple>
+                    </transform>
+                    <log message="${id} CameraTrapValidateCSVFields: ${body}"
+                         loggingLevel="ERROR"
+                         logName="edu.si.ctingest"/>
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
-                <choice>
-                    <when>
-                        <!-- Check that the ImageSequence csv record (i.e "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime") matches the ImageSequence record from the manifest -->
-                        <xpath resultType="java.lang.String" headerName="ManifestXML" >
-                            $in:CSVImageSequenceRecord = $in:ManifestFields
-                        </xpath>
+                </when>
+                <otherwise>
+                    <log message=":::::::::::::::::::::: Count MATCH PASS :::::::::::::::::::::::::\nCounts Match\n"
+                         loggingLevel="DEBUG"
+                         logName="edu.si.ctingest"/>
 
-                        <log message="${id} CameraTrapValidateCSVFields: CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches the manifest validation passed ..."
-                             loggingLevel="INFO"
-                             logName="edu.si.ctingest"/>
+                    <log message="${id} CameraTrapValidateCSVFields: CSV Observation count matches the manifest observation count. Validation Passed! Continue validating each CSV Observation..."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.ctingest"/>
 
-                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Validation Passed', true)"/>
-                    </when>
-                    <otherwise>
-                        <!-- The CSV ImageSequence record does not match the manifest -->
-                        <setBody>
+                    <!-- Validate each CSV observation matches the Manifest -->
+                    <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
+                        <!-- Process each record in the csv -->
+                        <simple>${body}</simple>
+
+                        <!-- Increment the CamelSplitIndex for xpath on Manifest -->
+                        <setHeader headerName="ObservationIndex">
                             <simple>
-                                CSV ImageSequence: ${property.CamelSplitIndex} containing ImageSequenceId: ${body[2]} matches Manifest validation failed.
+                                ${property.CamelSplitIndex}++
                             </simple>
-                        </setBody>
-                        <transform>
-                            <simple>${body}\nExpected ${header.ManifestFields} but found ${header.CSVImageSequenceRecord}.</simple>
-                        </transform>
-                        <log message="${id} CameraTrapValidateCSVFields: ${body}"
-                             loggingLevel="ERROR"
-                             logName="edu.si.ctingest"/>
-                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
-                    </otherwise>
-                </choice>
-            </split>
+                        </setHeader>
 
-            <log message="${id} CameraTrapValidateCSVFields: CSV Metadata Fields Validation Complete..."
+                        <!-- Store the ImageSequence fields "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime" for the current csv observation being validated -->
+                        <setHeader headerName="CSVObservation">
+                            <simple>${body[2]},${body[3]},${body[4]}</simple>
+                        </setHeader>
+
+                        <!-- Store the ImageSequence fields for the current observation being validated -->
+                        <setHeader headerName="ManifestObservation">
+                            <xpath resultType="java.lang.String" headerName="ManifestObservationsXML">
+                                //Identifications[$in:ObservationIndex]/text()
+                            </xpath>
+                        </setHeader>
+
+                        <choice>
+                            <when>
+                                <!-- Check that the ImageSequence CSV observation (i.e "ImageSequenceId,ImageSequenceBeginTime,ImageSequenceEndTime") matches the ImageSequence observation from the manifest -->
+                                <simple>
+                                    ${header.CSVObservation} == ${header.ManifestObservation}
+                                </simple>
+
+                                <log message="${id} CameraTrapValidateCSVFields: CSV Observation: ${header.ObservationIndex} containing ImageSequenceId: ${body[2]} matches the manifest... Validation Passed!"
+                                     loggingLevel="INFO"
+                                     logName="edu.si.ctingest"/>
+
+                                <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Validation Passed', true)"/>
+                            </when>
+                            <otherwise>
+                                <!-- The CSV ImageSequence Observation does not match the manifest generate validation error message -->
+                                <setBody>
+                                    <simple>
+                                        CSV Observation: ${header.ObservationIndex} containing ImageSequenceId: ${body[2]} does not match the Manifest... Validation Failed!
+                                    </simple>
+                                </setBody>
+                                <transform>
+                                    <simple>${body}\nExpected ${header.ManifestObservation} but found ${header.CSVObservation}.</simple>
+                                </transform>
+                                <log message="${id} CameraTrapValidateCSVFields: ${body}"
+                                     loggingLevel="ERROR"
+                                     logName="edu.si.ctingest"/>
+                                <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
+                            </otherwise>
+                        </choice>
+                    </split>
+                </otherwise>
+            </choice>
+
+            <log message="${id} CameraTrapValidateCSVFields: Observation CSV Validation Complete..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
         </route>
