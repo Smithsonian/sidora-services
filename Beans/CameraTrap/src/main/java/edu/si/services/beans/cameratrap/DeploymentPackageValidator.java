@@ -27,16 +27,23 @@
 
 package edu.si.services.beans.cameratrap;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.Header;
+import org.apache.camel.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * The CameraTrap deployment package validator to verify whether the resource counts are matching between
@@ -165,5 +172,42 @@ public class DeploymentPackageValidator {
             returnCode = -1;
         }
         return returnCode;
+    }
+
+    public String validateChecksum(Exchange exchange) throws NoSuchAlgorithmException, IOException, DeploymentPackageException {
+
+        Message in = exchange.getIn();
+
+        //Create checksum for incoming object
+        InputStream is = in.getBody(InputStream.class);
+        String s3ObjectChecksum = in.getHeader("CamelAwsS3ETag", String.class);
+        log.debug("validateChecksum() - s3ObjectChecksum: " + s3ObjectChecksum);
+
+        //Use MD5 algorithm
+        MessageDigest md5Digest = MessageDigest.getInstance("MD5");
+
+        //Get the checksum
+        byte[] block = new byte[4096];
+        int length;
+        while ((length = is.read(block)) > 0) {
+            md5Digest.update(block, 0, length);
+        }
+
+        byte[] hash = md5Digest.digest();
+
+        StringBuffer checksum = new StringBuffer();
+        for (byte b : hash) {
+            checksum.append(String.format("%02x", b & 0xff));
+        }
+
+        log.debug("validateChecksum() - file checksum: " + checksum.toString());
+
+        if (s3ObjectChecksum.equals(checksum.toString())){
+            log.info("validateChecksum() - checksum passed");
+        }  else{
+            throw new DeploymentPackageException("checksum not matching!");
+        }
+        return checksum.toString();
+
     }
 }

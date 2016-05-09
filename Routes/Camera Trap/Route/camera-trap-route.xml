@@ -1794,5 +1794,80 @@ FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //C
                  logName="edu.si.ctingest"/>
         </route>
 
+
+        <route id="CameraTrapS3Consumer" streamCache="true">
+            <from uri="aws-s3://test-emammalapproved?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})&amp;
+                    delay=10000&amp;maxMessagesPerPoll=1&amp;deleteAfterRead=true"/>
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Starting AWS S3 Automatic Pulldown..."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <multicast stopOnException="true">
+
+                <to uri="direct:copyDeploymentToProcessingBucket"/>
+                <to uri="direct:copyDeploymentToLocalFS"/>
+
+            </multicast>
+
+
+            <log message="${id} CameraTrapInFlightConceptStatusPolling: Finished AWS S3 Automatic Pulldown."
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapCopyDeploymentToProcessingBucket">
+            <from uri="direct:copyDeploymentToProcessingBucket"/>
+            <log message="${id} CameraTrapCopyDeploymentToProcessingBucket: Starting Copying to Process Bucket"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <to uri="aws-s3://test-emammalapproved-progress?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})"/>
+
+            <log message="${id} CameraTrapCopyDeploymentToProcessingBucket: Finished Copying to Process Bucket"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapCopyDeploymentToLocalFS">
+            <from uri="direct:copyDeploymentToLocalFS"/>
+            <log message="${id} CameraTrapCopyDeploymentToLocalFS: Starting Copying to FS"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <to uri="file:ProcessAWS?fileName=${header.CamelAwsS3Key}&amp;delay=9000&amp;doneFileName=${file:name}.done"/>
+
+            <log message="${id} CameraTrapCopyDeploymentToLocalFS: Finished Copying to FS"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+        <route id="CameraTrapDeploymentsMoveStagingToProcess">
+            <from uri="file:ProcessAWS?delay=9000&amp;doneFileName=${file:name}.done&amp;maxMessagesPerPoll=1&amp;delete=true"/>
+            <log message="${id} CameraTrapDeploymentsMoveStagingToProcess: Starting Copying to Process"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
+            <to uri="file:Process?moveFailed=Error_ProcessAWS&amp;delay=9000&amp;maxMessagesPerPoll=1"/>
+
+            <log message="${id} CameraTrapDeploymentsMoveStagingToProcess: Finished Copying to Process"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+        </route>
+
+
+        <!--<route id="CameraTrapDeploymentsMoveStagingToError">-->
+            <!--<from uri="aws-s3://arn:aws:s3:::test-emammalapproved/30622971.zip?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})&amp;-->
+                    <!--deleteAfterRead=true"/>-->
+            <!--<log message="${id} CameraTrapDeploymentsMoveStagingToError: Starting Copying to Error"-->
+                 <!--loggingLevel="INFO"-->
+                 <!--logName="edu.si.ctingest"/>-->
+
+            <!--<to uri="aws-s3://test-emammalapproved-ingested?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})"/>-->
+
+            <!--<log message="${id} CameraTrapDeploymentsMoveStagingToError: Finished Copying to Error"-->
+                 <!--loggingLevel="INFO"-->
+                 <!--logName="edu.si.ctingest"/>-->
+        <!--</route>-->
+
     </camelContext>
 </blueprint>
