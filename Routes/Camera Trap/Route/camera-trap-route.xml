@@ -1738,7 +1738,6 @@ FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //C
                          loggingLevel="ERROR"
                          logName="edu.si.ctingest"/>
                     <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
-                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
                 </when>
                 <otherwise>
