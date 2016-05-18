@@ -1508,6 +1508,7 @@
             </setHeader>
 
             <to uri="direct:ValidateCSVFields"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
             <!-- Start Volunteer CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1709,6 +1710,10 @@
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
+            <log message=":::::::::::(0)::::::::::::: VolunteerObservationPID: ${header.VolunteerObservationPID} | ResearcherObservationPID: ${header.ResearcherObservationPID}:::::::::::(1):::::::::::::"
+                 loggingLevel="INFO"
+                 logName="edu.si.ctingest"/>
+
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String"/>
 
@@ -1771,9 +1776,14 @@
                          logName="edu.si.ctingest"/>
 
                     <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
-                    <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateResearcher"/>
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
                 </when>
+                    <otherwise>
+                        <setBody>
+                            <simple>""</simple>
+                        </setBody>
+                    </otherwise>
             </choice>
 
             <log message="${id} CameraTrapValidateCSVFields: ${header.Observer} CSV Validation Complete..."
