@@ -27,22 +27,19 @@
 
 package edu.si.services.beans.cameratrap;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.SplitDefinition;
+import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.w3c.dom.Document;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.xpath.XPath;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,16 +56,13 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     //Mock endpoint and AdviceWith configuration to be used
     private MockEndpoint mockEndpoint;
     private AdviceWithRouteBuilder adviceWithRouteBuilder;
-    private String validationEndpoint;
-    private String validationRouteDefinition;
 
     //Camel Headers Map
     private Map<String, Object> headers;
 
-
     //Camera Trap Deployment Manifest and Field values
     private File manifestFile = new File("src/test/resources/SID-569TestFiles/p151d18321/deployment_manifest.xml");
-    private Document manifestXML;
+    private File csvManifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
     private String manifest;
     
     //Datastream and Field values
@@ -427,50 +421,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationPASS.csv");
 
-        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        datastream = FileUtils.readFileToString(datastreamFile);
-
-        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
-
-        manifest = FileUtils.readFileToString(manifestFile);
-
-        headers.put("ManifestXML", String.valueOf(manifest));
-
-        /*//The expected validation message
-        StringBuilder csvMessage = new StringBuilder();
-        csvMessage.append("Validation Passed");
-
-        //creating a new messageBean that is expected from the test route
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
-                csvMessage.toString(), false);*/
-
-        //Sets up the expected validation message and the datastream that normally would be provides by the fedora endpoint
-
-
-        ArrayList expectedBody = new ArrayList();
-        expectedBody.add(Arrays.asList(datastream.split("\\s*,\\s*")));
-
-
-
-        //Configure and use adviceWith to mock for testing purpose
-        validationEndpoint = "direct:ValidateCSVFields";
-        validationRouteDefinition = "CameraTrapValidateCSVFields";
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-                weaveAddLast().to("mock:result").stop();
-            }
-
-        };
-
-        //runValidationAdviceWithTestCSV(validationRouteDefinition, validationEndpoint, adviceWithRouteBuilder, expectedBody);
+        runValidationAdviceWithTestCSV(datastreamFile, null);
     }
 
     /**
@@ -483,16 +434,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationFAIL.csv");
 
-        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        datastream = FileUtils.readFileToString(datastreamFile);
-
-        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
-
-        manifest = FileUtils.readFileToString(manifestFile);
-
-        headers.put("ManifestXML", String.valueOf(manifest));
-
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
         csvMessage.append("ResearcherIdentifications CSV: Validation Failed!");
@@ -501,22 +442,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 csvMessage.toString(), false);
 
-        //Configure and use adviceWith to mock for testing purpose
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
 
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-                weaveAddLast().to("mock:result").stop();
-            }
-
-        };
-
-        runValidationAdviceWithTestCSV("CameraTrapValidateCSVFields", "direct:ValidateCSVFields", adviceWithRouteBuilder, expectedValidationMessage);
+        runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);
     }
 
     /**
@@ -529,16 +456,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationCountsFAIL.csv");
 
-        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        datastream = FileUtils.readFileToString(datastreamFile);
-
-        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
-
-        manifest = FileUtils.readFileToString(manifestFile);
-
-        headers.put("ManifestXML", String.valueOf(manifest));
-
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
         csvMessage.append("ResearcherIdentifications CSV: Validation Failed!");
@@ -547,24 +464,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 csvMessage.toString(), false);
 
-        //Configure and use adviceWith to mock for testing purpose
-        validationEndpoint = "direct:ValidateCSVFields";
-        validationRouteDefinition = "CameraTrapValidateCSVFields";
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-                weaveAddLast().to("mock:result").stop();
-            }
-
-        };
-
-        runValidationAdviceWithTestCSV(validationRouteDefinition, validationEndpoint, adviceWithRouteBuilder, expectedValidationMessage);
+        runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);
     }
 
     /**
@@ -576,42 +476,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationPASS.csv");
 
-        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        datastream = FileUtils.readFileToString(datastreamFile);
-
-        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
-
-        manifest = FileUtils.readFileToString(manifestFile);
-
-        headers.put("ManifestXML", String.valueOf(manifest));
-
-        //The expected validation message
-        StringBuilder csvMessage = new StringBuilder();
-        csvMessage.append("Validation Passed");
-
-        //creating a new messageBean that is expected from the test route
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
-                csvMessage.toString(), false);
-
-        //Configure and use adviceWith to mock for testing purpose
-        validationEndpoint = "direct:ValidateCSVFields";
-        validationRouteDefinition = "CameraTrapValidateCSVFields";
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-                weaveAddLast().to("mock:result").stop();
-            }
-
-        };
-
-        runValidationAdviceWithTestCSV(validationRouteDefinition, validationEndpoint, adviceWithRouteBuilder, expectedValidationMessage);
+        runValidationAdviceWithTestCSV(datastreamFile, null);
     }
 
     /**
@@ -624,44 +489,15 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationFAIL.csv");
 
-        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        datastream = FileUtils.readFileToString(datastreamFile);
-
-        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
-
-        manifest = FileUtils.readFileToString(manifestFile);
-
-        headers.put("ManifestXML", String.valueOf(manifest));
-
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
-        csvMessage.append("CSV Observation: 5 containing ImageSequenceId: d18434s13 does not match the Manifest... Validation Failed!\n");
-        csvMessage.append("Expected d18434s13,2015-08-10 07:01:38,2015-08-10 07:02:31 ");
-        csvMessage.append("but found d18434s13,2000-08-10 07:01:38,2015-08-10 07:02:31.");
+        csvMessage.append("VolunteerIdentifications CSV: Validation Failed!");
 
         //creating a new messageBean that is expected from the test route
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 csvMessage.toString(), false);
 
-        //Configure and use adviceWith to mock for testing purpose
-        validationEndpoint = "direct:ValidateCSVFields";
-        validationRouteDefinition = "CameraTrapValidateCSVFields";
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-                weaveAddLast().to("mock:result").stop();
-            }
-
-        };
-
-        runValidationAdviceWithTestCSV(validationRouteDefinition, validationEndpoint, adviceWithRouteBuilder, expectedValidationMessage);
+        runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);
     }
 
     /**
@@ -674,16 +510,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationCountsFAIL.csv");
 
-        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        datastream = FileUtils.readFileToString(datastreamFile);
-
-        manifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
-
-        manifest = FileUtils.readFileToString(manifestFile);
-
-        headers.put("ManifestXML", String.valueOf(manifest));
-
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
         csvMessage.append("VolunteerIdentifications CSV: Validation Failed!");
@@ -692,59 +518,60 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 csvMessage.toString(), false);
 
-        //Configure and use adviceWith to mock for testing purpose
-        validationEndpoint = "direct:ValidateCSVFields";
-        validationRouteDefinition = "CameraTrapValidateCSVFields";
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
+        runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);
+    }
 
+    /**
+     * Used by each unit test to run the validation route using adviceWith to mock for testing purposes
+     * and check the assertions using the params provided as the configuration
+     * @param expectedBody
+     * @throws Exception
+     */
+    private void runValidationAdviceWithTestCSV(File datastreamFile, CameraTrapValidationMessage.MessageBean expectedBody) throws Exception {
+
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        datastream = FileUtils.readFileToString(datastreamFile);
+
+        manifest = FileUtils.readFileToString(csvManifestFile);
+
+        headers.put("ManifestXML", String.valueOf(manifest));
+
+        //using adviceWith to mock for testing purpose
+        context.getRouteDefinition("CameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+
                 //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
                 weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
 
                 //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
                 //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
                 weaveAddLast().to("mock:result").stop();
+
             }
-
-        };
-
-        runValidationAdviceWithTestCSV(validationRouteDefinition, validationEndpoint, adviceWithRouteBuilder, expectedValidationMessage);
-    }
-
-    /**
-     * Used by each unit test to run the validation route using adviceWith to mock for testing purposes
-     * and check the assertions using the params provided as the configuration
-     * @param validationRouteDefinition The route id
-     * @param validateDatastreamFieldsRoute The route endpoint
-     * @param adviceWithRouteBuilder The AdviceWithRouteBuilder configuration
-     * @param expectedBody
-     * @throws Exception
-     */
-    private void runValidationAdviceWithTestCSV(String validationRouteDefinition, String validateDatastreamFieldsRoute, AdviceWithRouteBuilder adviceWithRouteBuilder, CameraTrapValidationMessage.MessageBean expectedBody) throws Exception {
-
-        //using adviceWith to mock for testing purpose
-        context.getRouteDefinition(validationRouteDefinition).adviceWith(context, adviceWithRouteBuilder);
+        });
 
         mockEndpoint = getMockEndpoint("mock:result");
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
-        mockEndpoint.expectedBodiesReceived(expectedBody);
 
-        template.sendBodyAndHeaders(validateDatastreamFieldsRoute, "test", headers);
+        if (expectedBody != null) {
+            mockEndpoint.expectedBodiesReceived(expectedBody);
+        }
 
-        //Get the body from the mock endpoint for assertions
-        /*ArrayList<CameraTrapValidationMessage.MessageBean> resultBody =
-                (ArrayList<CameraTrapValidationMessage.MessageBean>) mockEndpoint.getExchanges().get(0).getIn().getBody();*/
+        template.sendBodyAndHeaders("direct:ValidateCSVFields", "test", headers);
 
-        Object resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody();
+        if (expectedBody != null) {
+            Object resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody();
 
-        log.info("expectedBody:\n" + expectedBody + "\nresultBody:\n" + resultBody);
+            log.info("expectedBody:\n" + expectedBody + "\nresultBody:\n" + resultBody);
 
-        log.info("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
+            log.info("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-        assertEquals("mock:result Body assertEquals failed!", expectedBody, resultBody);
+            assertEquals("mock:result Body assertEquals failed!", expectedBody, resultBody);
+        }
 
         assertMockEndpointsSatisfied();
     }
