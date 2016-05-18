@@ -125,7 +125,7 @@ public class PostIngestionValidator {
                 .evaluate(exchange.getContext(), datastreamXML);
 
         //Check if validation passed
-        if (!datastreamField.equals(manifestField)) {
+        if (datastreamField.equals(manifestField)) {
             message = "Deployment Package ID - " + camelFileParent
                     + ", Message - " + fieldName + "  Field matches the Manifest Field. Validation passed...";
 

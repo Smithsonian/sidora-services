@@ -1489,7 +1489,6 @@
         <!-- Validate Ingest Datastream Metadata Fields -->
         <route id="CameraTrapValidateDatastreamFields">
             <from uri="direct:validateDatastreamFields"/>
-
             <log message="${id} CameraTrapValidateDatastreamFields: Starting Datastream Fields Validation ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -1665,36 +1664,14 @@
         <!-- Validate the provided datastream and field list -->
         <route id="ValidateDatastreamFieldList">
             <from uri="direct:ValidateDatastreamFieldList"/>
-
             <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
 
-            <unmarshal>
-                <csv delimiter=","/>
-            </unmarshal>
-
             <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
-                <simple>
-                    ${body}
-                </simple>
-
+                <tokenize token="\r\n|\n" xml="false" trim="true" />
                 <!-- Use a bean for validation because xpathbuilder is need -->
                 <to uri="bean:postIngestionValidator?method=validateField"/>
-
-                <choice>
-                    <when>
-                        <simple>
-                            ${header.FieldValidationResult} == false
-                        </simple>
-
-                        <log message="${id} CameraTrapIngest: Datastream ${body[0]} Field Validation failed - ${header.FieldValidationResult}"
-                             loggingLevel="WARN"
-                             logName="edu.si.ctingest"/>
-
-                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},'Datastream ${body[0]} Field Validation failed', ${header.FieldValidationResult})"/>
-                    </when>
-                </choice>
             </split>
 
             <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
@@ -1776,7 +1753,7 @@
                          logName="edu.si.ctingest"/>
 
                     <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
-                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <!--<to uri="direct:validationErrorMessageAggregationStrategy"/>-->
 
                 </when>
                     <otherwise>

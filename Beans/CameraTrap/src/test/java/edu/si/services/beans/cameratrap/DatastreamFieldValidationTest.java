@@ -159,7 +159,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
      * @param expectedBody
      * @throws Exception
      */
-    private void runValidationAdviceWithTest(String validationRouteDefinition, String validateDatastreamFieldsRoute, AdviceWithRouteBuilder adviceWithRouteBuilder, ArrayList expectedBody) throws Exception {
+    private void runValidationAdviceWithTest(String validationRouteDefinition, String validateDatastreamFieldsRoute, AdviceWithRouteBuilder adviceWithRouteBuilder, Object expectedBody) throws Exception {
 
         //using adviceWith to mock for testing purpose
         context.getRouteDefinition(validationRouteDefinition).adviceWith(context, adviceWithRouteBuilder);
@@ -202,7 +202,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        message.append("Datastream EAC-CPF ProjectName Field Validation failed");
+        //message.append("Datastream EAC-CPF ProjectName Field Validation failed");
+        message.append("Deployment Package ID - " + camelFileParent);
+        message.append(", Message - EAC-CPF ProjectName Field validation failed. ");
+        message.append("Expected Prairie Ridge Project but found No Project Name.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), false);
@@ -241,10 +244,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         // with the same exchange body that fedora would return
         datastream = FileUtils.readFileToString(datastreamFile);
 
-        ArrayList expectedBody = new ArrayList<>();
-        expectedBody.add("EAC-CPF ProjectName");
-        expectedBody.add("//eac:nameEntry[1]/eac:part/text()");
-        expectedBody.add("//ProjectName/text()");
+        StringBuilder expectedBody = new StringBuilder();
+        expectedBody.append("EAC-CPF ProjectName,");
+        expectedBody.append("//eac:nameEntry[1]/eac:part/text(),");
+        expectedBody.append("//ProjectName/text()");
 
         //Configure and use adviceWith to mock for testing purpose
         adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
@@ -260,7 +263,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
             }
         };
 
-        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", adviceWithRouteBuilder, expectedBody);
+        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", adviceWithRouteBuilder, expectedBody.toString());
     }
 
 
@@ -279,7 +282,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        message.append("Datastream FGDC CameraDeploymentID Field Validation failed");
+        //message.append("Datastream FGDC CameraDeploymentID Field Validation failed");
+        message.append("Deployment Package ID - " + camelFileParent);
+        message.append(", Message - FGDC CameraDeploymentID Field validation failed. ");
+        message.append("Expected 0000 but found 1111.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), false);
@@ -318,10 +324,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         // with the same exchange body that fedora would return
         datastream = FileUtils.readFileToString(datastreamFile);
 
-        ArrayList expectedBody = new ArrayList<>();
-        expectedBody.add("FGDC CameraDeploymentID");
-        expectedBody.add("//citeinfo/othercit/text()");
-        expectedBody.add("//CameraDeploymentID/text()");
+        StringBuilder expectedBody = new StringBuilder();
+        expectedBody.append("FGDC CameraDeploymentID,");
+        expectedBody.append("//citeinfo/othercit/text(),");
+        expectedBody.append("//CameraDeploymentID/text()");
 
         adviceWithRouteBuilder =  new AdviceWithRouteBuilder() {
 
@@ -335,7 +341,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
             }
         };
 
-        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", adviceWithRouteBuilder, expectedBody);
+        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", adviceWithRouteBuilder, expectedBody.toString());
     }
 
     /**
@@ -353,7 +359,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        message.append("Datastream MODS ImageSequenceId Field Validation failed");
+        //message.append("Datastream MODS ImageSequenceId Field Validation failed");
+        message.append("Deployment Package ID - " + camelFileParent);
+        message.append(", Message - MODS ImageSequenceId Field validation failed. ");
+        message.append("Expected 2970s1 but found 000000.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), false);
@@ -391,10 +400,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         // with the same exchange body that fedora would return
         datastream = FileUtils.readFileToString(datastreamFile);
 
-        ArrayList expectedBody = new ArrayList<>();
-        expectedBody.add("MODS ImageSequenceId");
-        expectedBody.add("//mods:relatedItem/mods:identifier/text()");
-        expectedBody.add("//ImageSequence[1]/ImageSequenceId[1]/text()");
+        StringBuilder expectedBody = new StringBuilder();
+        expectedBody.append("MODS ImageSequenceId,");
+        expectedBody.append("//mods:relatedItem/mods:identifier/text(),");
+        expectedBody.append("//ImageSequence[1]/ImageSequenceId[1]/text()");
 
         adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
 
@@ -408,7 +417,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
             }
         };
 
-        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", adviceWithRouteBuilder, expectedBody);
+        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", adviceWithRouteBuilder, expectedBody.toString());
     }
 
     /**
