@@ -27,10 +27,8 @@
 
 package edu.si.services.beans.cameratrap;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -55,7 +53,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
     //Mock endpoint and AdviceWith configuration to be used
     private MockEndpoint mockEndpoint;
-    private AdviceWithRouteBuilder adviceWithRouteBuilder;
 
     //Camel Headers Map
     private Map<String, Object> headers;
