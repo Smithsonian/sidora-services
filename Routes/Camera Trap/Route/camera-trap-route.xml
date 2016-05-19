@@ -1506,8 +1506,8 @@
                 </simple>
             </setHeader>
 
-            <to uri="direct:ValidateCSVFields" id="validateResearcherObservationCSV"/>
-
+            <to uri="direct:ValidateCSVFields"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
             <!-- Start Volunteer CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1516,7 +1516,7 @@
                 </simple>
             </setHeader>
 
-            <to uri="direct:ValidateCSVFields" id="validateVolunteerObservationCSV"/>
+            <to uri="direct:ValidateCSVFields"/>
 
             <!-- Notify the aggregator to complete aggregation -->
             <setHeader headerName="ValidationComplete">
@@ -1525,7 +1525,7 @@
                 </simple>
             </setHeader>
 
-            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateVolunteer"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
             <log message="${id} CameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
                  loggingLevel="INFO"
@@ -1574,7 +1574,6 @@
             <!-- the comma separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    <!--EAC-CPF ProjectName,//eac:eac-cpf/eac:cpfDescription/eac:identity/eac:nameEntry[1]/eac:part,//CameraTrapDeployment/ProjectName/text()-->
                     EAC-CPF ProjectName,//eac:nameEntry[1]/eac:part/text(),//ProjectName/text()
                 </simple>
             </setBody>
@@ -1664,40 +1663,18 @@
         <!-- Validate the provided datastream and field list -->
         <route id="ValidateDatastreamFieldList">
             <from uri="direct:ValidateDatastreamFieldList"/>
-
             <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
 
-            <unmarshal>
-                <csv delimiter=","/>
-            </unmarshal>
-
             <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
-                <simple>
-                    ${body}
-                </simple>
-
+                <tokenize token="\r\n|\n" xml="false" trim="true" />
                 <!-- Use a bean for validation because xpathbuilder is need -->
                 <to uri="bean:postIngestionValidator?method=validateField"/>
-
-                <choice>
-                    <when>
-                        <simple>
-                            ${header.FieldValidationResult} == false
-                        </simple>
-
-                        <log message="${id} CameraTrapIngest: Datastream ${body[0]} Field Validation failed - ${header.FieldValidationResult}"
-                             loggingLevel="WARN"
-                             logName="edu.si.ctingest"/>
-
-                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},'Datastream ${body[0]} Field Validation failed', ${header.FieldValidationResult})"/>
-                    </when>
-                </choice>
             </split>
 
             <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>
 
@@ -1706,7 +1683,7 @@
             <from uri="direct:ValidateCSVFields"/>
 
             <log message="${id} CameraTrapValidateCSVFields: Starting Observation CSV Validation..."
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
 
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
@@ -1715,10 +1692,6 @@
             <unmarshal>
                 <csv delimiter=","/>
             </unmarshal>
-
-            <log message="::::::::::::(0):::::::::::: ${body} ::::::::::(0)::::::::::::::"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
 
             <!-- Get Researcher or Volunteer from the CSV -->
             <setHeader headerName="Observer">
@@ -1735,22 +1708,18 @@
             </setHeader>
 
             <!-- Validate each CSV observation matches the Manifest -->
-                <!-- Store the first ImageSequenceId to validate the CSV was created -->
-                <setHeader headerName="CSVImageSeqID">
-                    <simple resultType="java.lang.String">
-                        ${body[0][2]}
-                    </simple>
-                </setHeader>
+            <!-- Store the first ImageSequenceId to validate the CSV was created -->
+            <setHeader headerName="CSVImageSeqID">
+                <simple resultType="java.lang.String">
+                    ${body[0][2]}
+                </simple>
+            </setHeader>
 
             <setHeader headerName="validationResult">
                 <xpath headerName="ManifestXML" resultType="java.lang.String">
-                    boolean(//ImageSequenceId/text() = '$in:CSVImageSeqID') and (count(//*[name() = $in:Observer]/Identification) = $in:CSVObservationCount)
+                    boolean((//ImageSequenceId/text() = $in:CSVImageSeqID) and (count(//*[name() = $in:Observer]/Identification) = $in:CSVObservationCount))
                 </xpath>
             </setHeader>
-
-            <log message=":::::::::::(1)::::::::::::: Observer: ${header.Observer} | CSVObservationCount: ${header.CSVObservationCount} | CSVImageSeqID: ${header.CSVImageSeqID} :::::::::::(1):::::::::::::"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
 
                 <choice>
                     <when>
@@ -1759,22 +1728,28 @@
                             ${header.validationResult} == false
                         </simple>
 
-                        <!-- The CSV was not generated create validation error message -->
-                        <setBody>
-                            <simple>
-                                ${header.Observer} CSV: Validation Failed!
-                            </simple>
-                        </setBody>
-                        <log message="${id} CameraTrapValidateCSVFields: ${body}"
-                             loggingLevel="WARN"
-                             logName="edu.si.ctingest"/>
-                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
-                        <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateResearcher"/>
+                    <!-- The CSV was not generated create validation error message -->
+                    <setBody>
+                        <simple>
+                            ${header.Observer} CSV: Validation Failed!
+                        </simple>
+                    </setBody>
+
+                    <log message="${id} CameraTrapValidateCSVFields: ${body}"
+                         loggingLevel="WARN"
+                         logName="edu.si.ctingest"/>
+
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
                     </when>
-                </choice>
+                    <otherwise>
+                        <setBody>
+                            <simple>""</simple>
+                        </setBody>
+                    </otherwise>
+            </choice>
 
             <log message="${id} CameraTrapValidateCSVFields: ${header.Observer} CSV Validation Complete..."
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>
 
