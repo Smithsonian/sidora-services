@@ -92,6 +92,8 @@
         <argument ref="basicAWSCredentials"/>
     </bean>
 
+    <bean id="deploymentPackageProcessFilter" class="edu.si.services.beans.cameratrap.DeploymentPackageProcessFilter"/>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="CTIngestCamelContext"

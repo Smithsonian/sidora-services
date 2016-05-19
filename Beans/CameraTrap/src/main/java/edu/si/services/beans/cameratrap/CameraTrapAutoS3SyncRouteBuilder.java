@@ -96,6 +96,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
             from("file:"+stageDirPath+"?delay={{si.ct.file.pollDelay}}" +
                     "&doneFileName=${file:name}.done" +
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
+                    "&filter=#deploymentPackageProcessFilter" +
                     "&delete=true")
                     .routeId("CameraTrapDeploymentsPrepareStageToProcess")
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} CameraTrapDeploymentsPrepareStageToProcess: Starting Move Operation from Stage to Process Directory on Ready Deployments...")
