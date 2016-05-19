@@ -174,14 +174,16 @@ public class DeploymentPackageValidator {
         return returnCode;
     }
 
-    public String validateChecksum(Exchange exchange) throws NoSuchAlgorithmException, IOException, DeploymentPackageException {
+    public String createChecksum(Exchange exchange) throws NoSuchAlgorithmException, IOException {
 
-        Message in = exchange.getIn();
+        //Create checksum for incoming body
+        InputStream is = exchange.getIn().getBody(InputStream.class);
 
-        //Create checksum for incoming object
-        InputStream is = in.getBody(InputStream.class);
-        String s3ObjectChecksum = in.getHeader("CamelAwsS3ETag", String.class);
-        log.debug("validateChecksum() - s3ObjectChecksum: " + s3ObjectChecksum);
+        return createChecksum(is);
+
+    }
+
+    private String createChecksum(InputStream is) throws NoSuchAlgorithmException, IOException {
 
         //Use MD5 algorithm
         MessageDigest md5Digest = MessageDigest.getInstance("MD5");
@@ -200,14 +202,27 @@ public class DeploymentPackageValidator {
             checksum.append(String.format("%02x", b & 0xff));
         }
 
-        log.debug("validateChecksum() - file checksum: " + checksum.toString());
-
-        if (s3ObjectChecksum.equals(checksum.toString())){
-            log.info("validateChecksum() - checksum passed");
-        }  else{
-            throw new DeploymentPackageException("checksum not matching!");
-        }
         return checksum.toString();
 
+    }
+
+    public boolean validateChecksum(Exchange exchange) throws NoSuchAlgorithmException, IOException{
+
+        boolean validation = false;
+        Message in = exchange.getIn();
+
+        //Create checksum for incoming object
+        InputStream is = in.getBody(InputStream.class);
+
+        String fsChecksum = createChecksum(is);
+        String s3ObjectChecksum = in.getHeader("CamelAwsS3ETag", String.class);
+
+        log.debug("validateChecksum() - s3ObjectChecksum: " + s3ObjectChecksum);
+        log.debug("validateChecksum() - file checksum: " + fsChecksum);
+
+        if (s3ObjectChecksum.equals(fsChecksum)){
+            validation = true;
+        }
+        return validation;
     }
 }

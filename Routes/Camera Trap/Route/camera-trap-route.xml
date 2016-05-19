@@ -36,6 +36,7 @@
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="si.ct.scbi.dryrun" value="false"/>
+            <cm:property name="si.ct.scbi.enableS3Routes" value="false"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
@@ -54,6 +55,10 @@
     </bean>
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
+
+    <bean id="cameraTrapAutoS3SyncRouteBuilder" class="edu.si.services.beans.cameratrap.CameraTrapAutoS3SyncRouteBuilder">
+        <argument value="${si.ct.scbi.enableS3Routes}" type="java.lang.Boolean"/>
+    </bean>
 
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
 
@@ -77,6 +82,15 @@
     </bean>
 
     <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
+
+    <bean id="basicAWSCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
+        <argument value="${si.ct.scbi.aws.accessKey}" type="java.lang.String"/>
+        <argument value="${si.ct.scbi.aws.secretKey}" type="java.lang.String"/>
+    </bean>
+
+    <bean id="amazonS3Client" class="com.amazonaws.services.s3.AmazonS3Client">
+        <argument ref="basicAWSCredentials"/>
+    </bean>
 
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
@@ -111,6 +125,7 @@
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
+        <routeBuilder ref="cameraTrapAutoS3SyncRouteBuilder"/>
 
         <onException>
             <exception>java.net.ConnectException</exception>
@@ -157,7 +172,7 @@
         -->
 
         <route id="CameraTrapStartProcessing">
-            <from uri="file:Process?delay=9000&amp;moveFailed=Error_CamelTrap&amp;delete=true&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:Process?delay=9000&amp;moveFailed=Error_CameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id} CameraTrapIngest: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>
@@ -1793,81 +1808,6 @@ FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //C
                  loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>
-
-
-        <route id="CameraTrapS3Consumer" streamCache="true">
-            <from uri="aws-s3://test-emammalapproved?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})&amp;
-                    delay=10000&amp;maxMessagesPerPoll=1&amp;deleteAfterRead=true"/>
-            <log message="${id} CameraTrapInFlightConceptStatusPolling: Starting AWS S3 Automatic Pulldown..."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <multicast stopOnException="true">
-
-                <to uri="direct:copyDeploymentToProcessingBucket"/>
-                <to uri="direct:copyDeploymentToLocalFS"/>
-
-            </multicast>
-
-
-            <log message="${id} CameraTrapInFlightConceptStatusPolling: Finished AWS S3 Automatic Pulldown."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-        </route>
-
-        <route id="CameraTrapCopyDeploymentToProcessingBucket">
-            <from uri="direct:copyDeploymentToProcessingBucket"/>
-            <log message="${id} CameraTrapCopyDeploymentToProcessingBucket: Starting Copying to Process Bucket"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <to uri="aws-s3://test-emammalapproved-progress?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})"/>
-
-            <log message="${id} CameraTrapCopyDeploymentToProcessingBucket: Finished Copying to Process Bucket"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-        </route>
-
-        <route id="CameraTrapCopyDeploymentToLocalFS">
-            <from uri="direct:copyDeploymentToLocalFS"/>
-            <log message="${id} CameraTrapCopyDeploymentToLocalFS: Starting Copying to FS"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <to uri="file:ProcessAWS?fileName=${header.CamelAwsS3Key}&amp;delay=9000&amp;doneFileName=${file:name}.done"/>
-
-            <log message="${id} CameraTrapCopyDeploymentToLocalFS: Finished Copying to FS"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-        </route>
-
-        <route id="CameraTrapDeploymentsMoveStagingToProcess">
-            <from uri="file:ProcessAWS?delay=9000&amp;doneFileName=${file:name}.done&amp;maxMessagesPerPoll=1&amp;delete=true"/>
-            <log message="${id} CameraTrapDeploymentsMoveStagingToProcess: Starting Copying to Process"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <to uri="file:Process?moveFailed=Error_ProcessAWS&amp;delay=9000&amp;maxMessagesPerPoll=1"/>
-
-            <log message="${id} CameraTrapDeploymentsMoveStagingToProcess: Finished Copying to Process"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-        </route>
-
-
-        <!--<route id="CameraTrapDeploymentsMoveStagingToError">-->
-            <!--<from uri="aws-s3://arn:aws:s3:::test-emammalapproved/30622971.zip?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})&amp;-->
-                    <!--deleteAfterRead=true"/>-->
-            <!--<log message="${id} CameraTrapDeploymentsMoveStagingToError: Starting Copying to Error"-->
-                 <!--loggingLevel="INFO"-->
-                 <!--logName="edu.si.ctingest"/>-->
-
-            <!--<to uri="aws-s3://test-emammalapproved-ingested?accessKey=RAW({{awsAccessKey}})&amp;secretKey=RAW({{awsSecretKey}})"/>-->
-
-            <!--<log message="${id} CameraTrapDeploymentsMoveStagingToError: Finished Copying to Error"-->
-                 <!--loggingLevel="INFO"-->
-                 <!--logName="edu.si.ctingest"/>-->
-        <!--</route>-->
 
     </camelContext>
 </blueprint>

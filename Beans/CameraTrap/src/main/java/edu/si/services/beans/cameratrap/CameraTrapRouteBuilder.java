@@ -55,7 +55,7 @@ public class CameraTrapRouteBuilder extends RouteBuilder {
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} CameraTrapIngest: Post Resource Count validation passed")
                     .id("ValidatePostResourceCountWhenBlock")
                 .otherwise()
-                    .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} CameraTrapIngest: Post Resource Count validation failed - sending msg to queue")
+                    .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} CameraTrapIngest: Post Resource Count validation failed")
                     .to("bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Post Resource Count validation failed. " +
                             "Expected ${header.ResourceCount} but found ${header.RelsExtResourceCount}', false)")
                     .to("direct:validationErrorMessageAggregationStrategy")
