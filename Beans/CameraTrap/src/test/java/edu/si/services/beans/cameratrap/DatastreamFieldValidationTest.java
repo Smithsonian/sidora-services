@@ -62,7 +62,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
     //Camera Trap Deployment Manifest and Field values
     private File manifestFile = new File("src/test/resources/SID-569TestFiles/p151d18321/deployment_manifest.xml");
-    private File csvManifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
     private String manifest;
     
     //Datastream and Field values
@@ -70,8 +69,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     private String datastream;
 
     //Validation message bean configuration
-    CameraTrapValidationMessage cameraTrapValidationMessage = new CameraTrapValidationMessage();
-    CameraTrapValidationMessage.MessageBean expectedValidationMessage;
+    private CameraTrapValidationMessage cameraTrapValidationMessage = new CameraTrapValidationMessage();
+    private CameraTrapValidationMessage.MessageBean expectedValidationMessage;
 
     //Temp directories created for testing the camel validation route
     private static File tempInputDirectory, processDirectory;
@@ -155,14 +154,23 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
      * and check the assertions using the params provided as the configuration
      * @param validationRouteDefinition The route id
      * @param validateDatastreamFieldsRoute The route endpoint
-     * @param adviceWithRouteBuilder The AdviceWithRouteBuilder configuration
-     * @param expectedBody
+     * @param expectedBody The expected exchange body
      * @throws Exception
      */
-    private void runValidationAdviceWithTest(String validationRouteDefinition, String validateDatastreamFieldsRoute, AdviceWithRouteBuilder adviceWithRouteBuilder, Object expectedBody) throws Exception {
+    private void runValidationAdviceWithTest(String validationRouteDefinition, String validateDatastreamFieldsRoute, Object expectedBody) throws Exception {
 
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition(validationRouteDefinition).adviceWith(context, adviceWithRouteBuilder);
+        context.getRouteDefinition(validationRouteDefinition).adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
+                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
+
+                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
+                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
+            }
+        });
 
         mockEndpoint = getMockEndpoint("mock:result");
 
@@ -171,10 +179,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         mockEndpoint.expectedBodiesReceived(expectedBody.toString());
 
         template.sendBodyAndHeaders(validateDatastreamFieldsRoute, "test", headers);
-
-        //Get the body from the mock endpoint for assertions
-        /*ArrayList<CameraTrapValidationMessage.MessageBean> resultBody =
-                (ArrayList<CameraTrapValidationMessage.MessageBean>) mockEndpoint.getExchanges().get(0).getIn().getBody();*/
 
         Object resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody();
 
@@ -195,10 +199,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_EAC_CPF_Fail() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml");
-
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml");
+
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
@@ -213,21 +217,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         ArrayList expectedBody = new ArrayList<>();
         expectedBody.add(expectedValidationMessage);
 
-        //Configure and use adviceWith to mock for testing purpose
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-            }
-        };
-
-        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", adviceWithRouteBuilder, expectedBody);
+        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", expectedBody);
     }
 
     /**
@@ -238,10 +228,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_EAC_CPF_Passed() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml");
-
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml");
+
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder expectedBody = new StringBuilder();
@@ -249,21 +239,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         expectedBody.append("//eac:nameEntry[1]/eac:part/text(),");
         expectedBody.append("//ProjectName/text()");
 
-        //Configure and use adviceWith to mock for testing purpose
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-            }
-        };
-
-        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", adviceWithRouteBuilder, expectedBody.toString());
+        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", expectedBody.toString());
     }
 
 
@@ -275,10 +251,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_FGDC_Fail() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml");
-
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml");
+
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
@@ -293,20 +269,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         ArrayList expectedBody = new ArrayList<>();
         expectedBody.add(expectedValidationMessage);
 
-        adviceWithRouteBuilder =  new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-            }
-        };
-
-        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", adviceWithRouteBuilder, expectedBody);
+        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", expectedBody);
     }
 
 
@@ -318,10 +281,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_FGDC_Passed() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/validFGDC.xml");
-
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/validFGDC.xml");
+
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder expectedBody = new StringBuilder();
@@ -329,19 +292,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         expectedBody.append("//citeinfo/othercit/text(),");
         expectedBody.append("//CameraDeploymentID/text()");
 
-        adviceWithRouteBuilder =  new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-            }
-        };
-
-        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", adviceWithRouteBuilder, expectedBody.toString());
+        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", expectedBody.toString());
     }
 
     /**
@@ -352,10 +303,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_MODS_Fail() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml");
-
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml");
+
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
@@ -370,20 +321,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         ArrayList expectedBody = new ArrayList<>();
         expectedBody.add(expectedValidationMessage);
 
-        //Configure and use adviceWith to mock for testing purpose
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-            }
-        };
-
-        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", adviceWithRouteBuilder, expectedBody);
+        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody);
     }
 
     /**
@@ -394,10 +332,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_MODS_Passed() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml");
-
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml");
+
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder expectedBody = new StringBuilder();
@@ -405,19 +343,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         expectedBody.append("//mods:relatedItem/mods:identifier/text(),");
         expectedBody.append("//ImageSequence[1]/ImageSequenceId[1]/text()");
 
-        adviceWithRouteBuilder = new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-            }
-        };
-
-        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", adviceWithRouteBuilder, expectedBody.toString());
+        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody.toString());
     }
 
     /**
@@ -428,7 +354,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_CSV_ResearcherObservation_Passed() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationPASS.csv");
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationPASS.csv");
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin");
 
         runValidationAdviceWithTestCSV(datastreamFile, null);
     }
@@ -441,7 +370,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_CSV_ResearcherObservation_Fail() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationFAIL.csv");
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationFAIL.csv");
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -463,7 +395,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_CSV_ResearcherObservationCounts_Fail() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationCountsFAIL.csv");
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationCountsFAIL.csv");
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failCountsResearcherCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -483,7 +418,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_CSV_VolunteerObservation_Passed() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationPASS.csv");
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationPASS.csv");
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin");
 
         runValidationAdviceWithTestCSV(datastreamFile, null);
     }
@@ -496,7 +434,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_CSV_VolunteerObservation_Fail() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationFAIL.csv");
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationFAIL.csv");
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -517,7 +458,10 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     @Test
     public void testValidate_CSV_VolunteerObservationCounts_Fail() throws Exception {
 
-        datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationCountsFAIL.csv");
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationCountsFAIL.csv");
+        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failCountsVolunteerCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -531,7 +475,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     }
 
     /**
-     * Used by each unit test to run the validation route using adviceWith to mock for testing purposes
+     * Used by each csv unit test to run the validation route using adviceWith to mock for testing purposes
      * and check the assertions using the params provided as the configuration
      * @param expectedBody
      * @throws Exception
@@ -542,7 +486,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         // with the same exchange body that fedora would return
         datastream = FileUtils.readFileToString(datastreamFile);
 
-        manifest = FileUtils.readFileToString(csvManifestFile);
+        manifest = FileUtils.readFileToString(manifestFile);
 
         headers.put("ManifestXML", String.valueOf(manifest));
 
@@ -551,11 +495,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
             @Override
             public void configure() throws Exception {
 
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
                 weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
 
-                //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                //weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
                 weaveAddLast().to("mock:result").stop();
 
             }

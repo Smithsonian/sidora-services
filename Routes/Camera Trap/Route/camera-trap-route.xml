@@ -1574,7 +1574,6 @@
             <!-- the comma separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    <!--EAC-CPF ProjectName,//eac:eac-cpf/eac:cpfDescription/eac:identity/eac:nameEntry[1]/eac:part,//CameraTrapDeployment/ProjectName/text()-->
                     EAC-CPF ProjectName,//eac:nameEntry[1]/eac:part/text(),//ProjectName/text()
                 </simple>
             </setBody>
@@ -1665,7 +1664,7 @@
         <route id="ValidateDatastreamFieldList">
             <from uri="direct:ValidateDatastreamFieldList"/>
             <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
 
             <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
@@ -1675,7 +1674,7 @@
             </split>
 
             <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>
 
@@ -1684,11 +1683,7 @@
             <from uri="direct:ValidateCSVFields"/>
 
             <log message="${id} CameraTrapValidateCSVFields: Starting Observation CSV Validation..."
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <log message=":::::::::::(0)::::::::::::: VolunteerObservationPID: ${header.VolunteerObservationPID} | ResearcherObservationPID: ${header.ResearcherObservationPID}:::::::::::(1):::::::::::::"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
 
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
@@ -1726,14 +1721,6 @@
                 </xpath>
             </setHeader>
 
-            <log message=":::::::::::(1)::::::::::::: Observer: ${header.Observer} | CSVObservationCount: ${header.CSVObservationCount} | CSVImageSeqID: ${header.CSVImageSeqID} :::::::::::(1):::::::::::::"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
-            <log message=":::::::::::(2)::::::::::::: validationResult: ${header.validationResult} :::::::::::(1):::::::::::::"
-                 loggingLevel="INFO"
-                 logName="edu.si.ctingest"/>
-
                 <choice>
                     <when>
                         <!-- Check that the ImageSequenceID exists and observation counts matches the manifest -->
@@ -1753,9 +1740,7 @@
                          logName="edu.si.ctingest"/>
 
                     <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
-                    <!--<to uri="direct:validationErrorMessageAggregationStrategy"/>-->
-
-                </when>
+                    </when>
                     <otherwise>
                         <setBody>
                             <simple>""</simple>
@@ -1764,7 +1749,7 @@
             </choice>
 
             <log message="${id} CameraTrapValidateCSVFields: ${header.Observer} CSV Validation Complete..."
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="edu.si.ctingest"/>
         </route>
 

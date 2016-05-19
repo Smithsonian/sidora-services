@@ -59,7 +59,6 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
 
     //Camera Trap Deployment Manifest and Field values
     private File manifestFile = new File("src/test/resources/SID-569TestFiles/p151d18321/deployment_manifest.xml");
-    //private File csvManifestFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/deployment_manifest.xml");
     private String manifest;
 
     //Datastream and Field values
@@ -222,7 +221,9 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
             @Override
             public void configure() throws Exception {
 
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectFirst().after().setHeader("VolunteerObservationPID", simple("test:0000"));
+                // need to set header for the test created in the setupCSV advicewithroutebuilder so that
+                // the correct observation csv datastream is used.
+                weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectFirst().after().setHeader("testingVolunteer", simple("true"));
 
                 weaveAddLast().stop();
             }
@@ -365,6 +366,10 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
     /**
      * Researcher and Volunteer CSV Datastream test setup
      *
+     * NOTE: The csv route is modified slightly only for testing purposes. A header is created in the
+     * validate_DatastreamFieldsRoute_IT advicewithroutebuilder after the researcher csv validation completes
+     * The modified csv validation route will use the volunteer datastream if the header value is true.
+     *
      * @throws Exception
      * @param researcherPass
      * @param volunteerPass
@@ -376,10 +381,6 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
         // with the same exchange body that fedora would return
         String researcherCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[0]);
         String volunteerCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[1]);
-
-        /*manifest = FileUtils.readFileToString(csvManifestFile);
-
-        headers.put("ManifestXML", String.valueOf(manifest));*/
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 "ResearcherIdentifications CSV: Validation Failed!", researcherPass);
@@ -401,10 +402,12 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
         context.getRouteDefinition("CameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-
+                // The csv route is modified slightly only for testing purposes. A header is created in the
+                // validate_DatastreamFieldsRoute_IT advicewithroutebuilder after the researcher csv validation completes
+                // The modified csv validation route will use the volunteer datastream if the header value is true.
                 weaveByToString(".*getDatastreamDissemination.*").replace()
                         .choice()
-                        .when(header("VolunteerObservationPID").isNotNull())
+                        .when(header("testingVolunteer").isEqualTo("true"))
                             .setBody(simple(String.valueOf(volunteerCSVdatastream)))
                         .otherwise()
                             .setBody(simple(String.valueOf(researcherCSVdatastream)));
@@ -412,6 +415,11 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
         });
     }
 
+    /**
+     * Setting the mock endpoint at the end of the ValidationErrorMessageAggregationStrategy
+     * when the completion predicate is used to notify the aggregator that aggregation is complete.
+     * @throws Exception
+     */
     private void setupValidationErrorMessageAggregationStrategyAdviceWith() throws Exception {
         //using adviceWith to mock for testing purpose
         context.getRouteDefinition("ValidationErrorMessageAggregationStrategy").adviceWith(context, new AdviceWithRouteBuilder() {
