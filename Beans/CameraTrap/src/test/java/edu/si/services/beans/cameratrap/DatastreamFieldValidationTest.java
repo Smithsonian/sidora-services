@@ -98,7 +98,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     private XPath xPath;
 
     //Temp directories created for testing the camel validation route
-    private static File tempInputDirectory, processDirectory;
+    private static File tempInputDirectory, processDirectory, tempConfigDirectory;
 
     /**
      * Sets up the system properties and Temp directories used by the
@@ -126,12 +126,12 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         //Copy the Input src files to the CameraTrap root so the camel route can find them
         FileUtils.copyDirectory(inputSrcDirLoc, tempInputDirectory);
 
-        File tempEtcDirectory = new File("Karaf-config");
-        if(!tempEtcDirectory.exists()){
-            tempEtcDirectory.mkdir();
+        tempConfigDirectory = new File("Karaf-config");
+        if(!tempConfigDirectory.exists()){
+            tempConfigDirectory.mkdir();
         }
 
-        FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempEtcDirectory);
+        FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempConfigDirectory);
     }
 
     @Override
@@ -155,6 +155,9 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     public static void teardown() throws IOException {
         if(tempInputDirectory.exists()){
             FileUtils.deleteDirectory(tempInputDirectory);
+        }
+        if(tempConfigDirectory.exists()){
+            FileUtils.deleteDirectory(tempConfigDirectory);
         }
         if(processDirectory.exists()){
             FileUtils.deleteDirectory(processDirectory);
