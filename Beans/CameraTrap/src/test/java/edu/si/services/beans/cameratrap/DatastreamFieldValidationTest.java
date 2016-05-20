@@ -46,6 +46,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -124,6 +125,26 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         //Copy the Input src files to the CameraTrap root so the camel route can find them
         FileUtils.copyDirectory(inputSrcDirLoc, tempInputDirectory);
+
+        File tempEtcDirectory = new File("Karaf-config");
+        if(!tempEtcDirectory.exists()){
+            tempEtcDirectory.mkdir();
+        }
+
+        FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempEtcDirectory);
+    }
+
+    @Override
+    protected Properties useOverridePropertiesWithPropertiesComponent() {
+        Properties props = new Properties();
+        try {
+            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/edu.si.sidora.karaf.cfg");
+
+            props.load(in);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return props;
     }
 
     /**
