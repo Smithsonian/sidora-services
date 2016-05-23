@@ -34,6 +34,7 @@ import org.apache.camel.builder.xml.XPathBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -72,9 +73,11 @@ public class PostIngestionValidator {
         if (fedoraDatastreamIDsFound == null || fedoraDatastreamIDsFound.trim().length()==0){
             throw new IllegalArgumentException("FedoraDatastreamIDsFound header is empty");
         }
+        List<String> datastreamTypesCheckList = new ArrayList<>(Arrays.asList(datastreamTypesCheck.toUpperCase().trim().split("\\s*,\\s*")));
+        List<String> foundDatastreamsList = new ArrayList<>(Arrays.asList(fedoraDatastreamIDsFound.toUpperCase().trim().split("\\s*,\\s*")));
 
-        List<String> datastreamTypesCheckList = Arrays.asList(datastreamTypesCheck.trim().split("\\s*,\\s*"));
-        List<String> foundDatastreamsList = Arrays.asList(fedoraDatastreamIDsFound.trim().split("\\s*,\\s*"));
+        //ignore SIDORA datastream if found as it can be created by the workbench on some projects
+        foundDatastreamsList.remove("SIDORA");
 
         return datastreamTypesCheckList.containsAll(foundDatastreamsList) && foundDatastreamsList.containsAll(datastreamTypesCheckList);
     }

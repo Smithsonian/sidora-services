@@ -36,6 +36,7 @@
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="si.ct.scbi.dryrun" value="false"/>
+            <cm:property name="si.ct.scbi.enableS3Routes" value="false"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
@@ -54,6 +55,10 @@
     </bean>
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
+
+    <bean id="cameraTrapAutoS3SyncRouteBuilder" class="edu.si.services.beans.cameratrap.CameraTrapAutoS3SyncRouteBuilder">
+        <argument value="${si.ct.scbi.enableS3Routes}" type="java.lang.Boolean"/>
+    </bean>
 
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
 
@@ -77,6 +82,17 @@
     </bean>
 
     <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
+
+    <bean id="basicAWSCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
+        <argument value="${si.ct.scbi.aws.accessKey}" type="java.lang.String"/>
+        <argument value="${si.ct.scbi.aws.secretKey}" type="java.lang.String"/>
+    </bean>
+
+    <bean id="amazonS3Client" class="com.amazonaws.services.s3.AmazonS3Client">
+        <argument ref="basicAWSCredentials"/>
+    </bean>
+
+    <bean id="deploymentPackageProcessFilter" class="edu.si.services.beans.cameratrap.DeploymentPackageProcessFilter"/>
 
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
@@ -111,6 +127,7 @@
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
+        <routeBuilder ref="cameraTrapAutoS3SyncRouteBuilder"/>
 
         <onException>
             <exception>java.net.ConnectException</exception>
@@ -157,7 +174,7 @@
         -->
 
         <route id="CameraTrapStartProcessing">
-            <from uri="file:Process?delay=9000&amp;moveFailed=Error_CamelTrap&amp;delete=true&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:Process?delay=9000&amp;moveFailed=Error_CameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id} CameraTrapIngest: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="edu.si.ctingest"/>

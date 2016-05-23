@@ -102,4 +102,46 @@ public class PostIngestionValidatorTest extends CamelTestSupport {
         assertEquals(result, true);
     }
 
+    /**
+     * Testing if SIDORA datastream found in the available datastreams
+     *
+     */
+    @Test
+    public void testValidateDatastreamWhenSidoraDSExists() {
+
+        String dataStreamTypesToCheck;
+        String foundDatastreams;
+        boolean result;
+
+        //ignore SIDORA datastream when it is found from Fedora per business logic
+        dataStreamTypesToCheck = "OBJ,DC,TN";
+        foundDatastreams = "DC, OBJ, TN, SIDORA";
+        result = validator.validateDatastreamExists(dataStreamTypesToCheck, foundDatastreams);
+        assertEquals(result, true);
+
+        //but the otherway around should fail the test
+        dataStreamTypesToCheck = "DC, OBJ, TN, SIDORA";
+        foundDatastreams = "OBJ,DC,TN";
+        result = validator.validateDatastreamExists(dataStreamTypesToCheck, foundDatastreams);
+        assertEquals(result, false);
+    }
+
+    /**
+     * Testing case insensitivity for datastream checks
+     *
+     */
+    @Test
+    public void testValidateDatastreamCaseSensitivity() {
+
+        String dataStreamTypesToCheck;
+        String foundDatastreams;
+        boolean result;
+
+        dataStreamTypesToCheck = "OBJ,DC,TN";
+        foundDatastreams = "dc, obj, Tn, SIdora";
+        result = validator.validateDatastreamExists(dataStreamTypesToCheck, foundDatastreams);
+        assertEquals(result, true);
+
+    }
+
 }

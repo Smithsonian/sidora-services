@@ -50,10 +50,10 @@
   - smx@fedora> feature:install camel-saxon
   - smx@fedora> feature:install camel-schematron
   - smx@fedora> feature:install camel-csv
+  - smx@fedora> feature:install camel-aws
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/3.11_1
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/2.0_1
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.14.RELEASE_1
-  - smx@fedora> bundle:install mvn:mvn:commons-codec/commons-codec/1.10
   - smx@fedora> bundle:install mvn:commons-codec/commons-codec/1.10
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7
   - smx@fedora> bundle:install mvn:com.google.guava/guava/18.0
