@@ -68,7 +68,7 @@
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.1.xsd"
-                  trace="false">
+                  trace="false" useMDCLogging="true">
 
         <!--
           The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
