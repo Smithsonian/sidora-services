@@ -38,11 +38,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.InputStream;
-import java.util.*;
+import java.util.Properties;
 
 /**
  * @author jbirkhimer
@@ -109,6 +109,23 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
         FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempConfigDirectory);
     }
 
+    /**
+     * Clean up the temp directories after tests are finished
+     * @throws IOException
+     */
+    @AfterClass
+    public static void teardown() throws IOException {
+        if(tempInputDirectory.exists()){
+            FileUtils.deleteDirectory(tempInputDirectory);
+        }
+        if(processDirectory.exists()){
+            FileUtils.deleteDirectory(processDirectory);
+        }
+        if(tempConfigDirectory.exists()){
+            FileUtils.deleteDirectory(tempConfigDirectory);
+        }
+    }
+
     @Override
     protected Properties useOverridePropertiesWithPropertiesComponent() {
         Properties props = new Properties();
@@ -120,23 +137,6 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
             ex.printStackTrace();
         }
         return props;
-    }
-
-    /**
-     * Clean up the temp directories after tests are finished
-     * @throws IOException
-     */
-    @AfterClass
-    public static void teardown() throws IOException {
-        if(tempInputDirectory.exists()){
-            FileUtils.deleteDirectory(tempInputDirectory);
-        }
-        if(tempConfigDirectory.exists()){
-            FileUtils.deleteDirectory(tempConfigDirectory);
-        }
-        if(processDirectory.exists()){
-            FileUtils.deleteDirectory(processDirectory);
-        }
     }
 
     /**

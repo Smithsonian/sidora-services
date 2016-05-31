@@ -42,6 +42,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.io.InputStream;
 import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Tests for the Camera Trap Validate Fields Route
