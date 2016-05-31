@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.InputStream;
+import java.util.*;
 
 /**
  * @author jbirkhimer
@@ -71,7 +73,7 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
     private ArrayList expectedBody = new ArrayList<>();
 
     //Temp directories created for testing the camel validation route
-    private static File tempInputDirectory, processDirectory;
+    private static File tempInputDirectory, processDirectory, tempConfigDirectory;
 
     /**
      * Sets up the system properties and Temp directories used by the
@@ -98,6 +100,26 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
 
         //Copy the Input src files to the CameraTrap root so the camel route can find them
         FileUtils.copyDirectory(inputSrcDirLoc, tempInputDirectory);
+
+        tempConfigDirectory = new File("Karaf-config");
+        if(!tempConfigDirectory.exists()){
+            tempConfigDirectory.mkdir();
+        }
+
+        FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempConfigDirectory);
+    }
+
+    @Override
+    protected Properties useOverridePropertiesWithPropertiesComponent() {
+        Properties props = new Properties();
+        try {
+            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/edu.si.sidora.karaf.cfg");
+
+            props.load(in);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return props;
     }
 
     /**
@@ -108,6 +130,9 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
     public static void teardown() throws IOException {
         if(tempInputDirectory.exists()){
             FileUtils.deleteDirectory(tempInputDirectory);
+        }
+        if(tempConfigDirectory.exists()){
+            FileUtils.deleteDirectory(tempConfigDirectory);
         }
         if(processDirectory.exists()){
             FileUtils.deleteDirectory(processDirectory);
