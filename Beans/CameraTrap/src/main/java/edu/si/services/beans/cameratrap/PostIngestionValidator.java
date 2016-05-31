@@ -133,9 +133,9 @@ public class PostIngestionValidator {
                     + ", Message - " + fieldName + "  Field matches the Manifest Field. Validation passed...";
 
             //Create the validation message bean with validation message
-            messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, true);
+            //messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, true);
 
-            log.info(message);
+            log.debug(message);
 
         } else {
             message = "Deployment Package ID - " + camelFileParent
@@ -145,11 +145,8 @@ public class PostIngestionValidator {
             //Create the validation message bean with validation message
             messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, false);
 
-            log.info(message);
+            log.warn(message);
+            exchange.getIn().setBody(messageBean);
         }
-
-        //exchange.getIn().setHeader("ValidationErrors", "ValidationErrors");
-        exchange.getIn().setBody(messageBean);
-
     }
 }
