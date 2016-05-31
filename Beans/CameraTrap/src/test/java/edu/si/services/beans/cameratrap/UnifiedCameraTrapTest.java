@@ -242,7 +242,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
     public void validate_DatastreamFieldsRoute_IT() throws Exception {
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("CameraTrapValidateDatastreamFields").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapValidateDatastreamFields").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
 
@@ -301,7 +301,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
         }
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("Validate_EAC-CPF_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapValidate_EAC-CPF_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
 
             @Override
             public void configure() throws Exception {
@@ -339,7 +339,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
             expectedBody.add(expectedValidationMessage);
         };
 
-        context.getRouteDefinition("Validate_FGDC_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapValidate_FGDC_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
 
             @Override
             public void configure() throws Exception {
@@ -378,7 +378,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
         }
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("Validate_MODS_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapValidate_MODS_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
 
             @Override
             public void configure() throws Exception {
@@ -424,7 +424,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
         }
 
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition("CameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 // The csv route is modified slightly only for testing purposes. A header is created in the
@@ -447,7 +447,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
      */
     private void setupValidationErrorMessageAggregationStrategyAdviceWith() throws Exception {
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition("ValidationErrorMessageAggregationStrategy").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapValidationErrorMessageAggregationStrategy").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
 

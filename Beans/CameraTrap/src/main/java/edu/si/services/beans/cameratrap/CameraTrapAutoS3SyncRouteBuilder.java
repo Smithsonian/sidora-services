@@ -44,7 +44,8 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(CameraTrapAutoS3SyncRouteBuilder.class);
 
-    static final private String CT_LOG_NAME = "edu.si.ctingest";
+    @PropertyInject(value = "si.ct.id")
+    static private String CT_LOG_NAME;
 
     @PropertyInject(value = "si.ct.scbi.process.dir.path")
     private String processDirPath;
@@ -70,6 +71,8 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
         }
         this.enableS3Routes = enableS3Routes;
     }
+
+
 
     /**
      * Configure the Camel routing rules for the Camera Trap Deployment automatic sync with AWS S3 buckets for SCBI Deployments workflow.

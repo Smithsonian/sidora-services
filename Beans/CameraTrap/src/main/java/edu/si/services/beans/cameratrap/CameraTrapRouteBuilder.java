@@ -28,6 +28,7 @@
 package edu.si.services.beans.cameratrap;
 
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 
 /**
@@ -39,7 +40,8 @@ import org.apache.camel.builder.RouteBuilder;
  */
 public class CameraTrapRouteBuilder extends RouteBuilder {
 
-    static final private String CT_LOG_NAME = "edu.si.ctingest";
+    @PropertyInject(value = "si.ct.id")
+    static private String CT_LOG_NAME;
 
     /**
      * Configure the Camel routing rules for the Camera Trap Deployment Package Ingestion Process.

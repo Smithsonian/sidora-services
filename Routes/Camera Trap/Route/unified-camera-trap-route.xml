@@ -33,10 +33,13 @@
     xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
     <!-- OSGI blueprint property placeholder -->
+    <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
+        as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
-            <cm:property name="si.ct.scbi.dryrun" value="false"/>
-            <cm:property name="si.ct.scbi.enableS3Routes" value="false"/>
+            <cm:property name="si.ct.id" value="edu.si.uctingest"/>
+            <cm:property name="si.ct.uscbi.dryrun" value="false"/>
+            <cm:property name="si.ct.uscbi.enableS3Routes" value="false"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
@@ -57,7 +60,7 @@
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
 
     <bean id="cameraTrapAutoS3SyncRouteBuilder" class="edu.si.services.beans.cameratrap.CameraTrapAutoS3SyncRouteBuilder">
-        <argument value="${si.ct.scbi.enableS3Routes}" type="java.lang.Boolean"/>
+        <argument value="${si.ct.uscbi.enableS3Routes}" type="java.lang.Boolean"/>
     </bean>
 
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
@@ -84,8 +87,8 @@
     <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
 
     <bean id="basicAWSCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
-        <argument value="${si.ct.scbi.aws.accessKey}" type="java.lang.String"/>
-        <argument value="${si.ct.scbi.aws.secretKey}" type="java.lang.String"/>
+        <argument value="${si.ct.uscbi.aws.accessKey}" type="java.lang.String"/>
+        <argument value="${si.ct.uscbi.aws.secretKey}" type="java.lang.String"/>
     </bean>
 
     <bean id="amazonS3Client" class="com.amazonaws.services.s3.AmazonS3Client">
@@ -177,7 +180,7 @@
             <from uri="file:ProcessUnified?delay=9000&amp;moveFailed=Error_UnifiedCameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Needed for the Velocity tools. -->
             <setHeader headerName="esc">
@@ -207,7 +210,9 @@
                 </transform>
                 <to uri="reader:file?type=text"/>
                 <!-- Validate against the XSD. -->
-                <log message="${id} UnifiedCameraTrapIngest: Body - ${body}" loggingLevel="WARN"/>
+                <log message="${id} UnifiedCameraTrapIngest: Body - ${body}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"/>
                 <to uri="validator:file:Input/schemas/Unified_eMammalDeploymentManifest.xsd"/>
 
                 <!-- Add Schematron validation. -->
@@ -239,13 +244,13 @@
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
-                <log message="${id} UnifiedCameraTrapIngest: Ingest dry-run flag - {{si.ct.scbi.dryrun}}"
+                <log message="${id} UnifiedCameraTrapIngest: Ingest dry-run flag - {{si.ct.uscbi.dryrun}}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
 
                 <choice>
                     <when>
-                        <simple>{{si.ct.scbi.dryrun}} == true</simple>
+                        <simple>{{si.ct.uscbi.dryrun}} == true</simple>
                         <log message="${id} UnifiedCameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process" loggingLevel="INFO"/>
                     </when>
                     <otherwise>
@@ -255,7 +260,7 @@
                         <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
                         <log message="${id} UnifiedCameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
                              loggingLevel="INFO"
-                             logName="edu.si.uctingest"/>
+                             logName="{{si.ct.id}}"/>
                         <delay>
                             <constant>6000</constant>
                         </delay>
@@ -269,14 +274,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Camera Trap processing!"
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapValidatePackage">
             <from uri="direct:validatePackage"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Package validation ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="ResourceFileType">
                 <simple resultType="java.lang.String">
@@ -302,7 +307,7 @@
                 </xpath>
                 <log message="${id} UnifiedCameraTrapIngest: Split Resource - ${body}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
                 <setHeader headerName="ImageFileName">
                     <simple resultType="java.lang.String">
                         ${body}
@@ -315,12 +320,12 @@
                 </setHeader>
                 <log message="${id} UnifiedCameraTrapIngest: ImageSequenceID - ${header.ImageSequenceID}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
                 <!-- This throws a java.io.FileNotFoundException if the file does not exist. -->
                 <to uri="reader:file"/>
                 <log message="${id} UnifiedCameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
                 <!-- We should check the image count to see if it exactly matches the image file count. -->
             </split>
 
@@ -339,7 +344,7 @@
             </choice>
             <log message="${id} UnifiedCameraTrapIngest: Finished Package validation."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapValidateIngest">
@@ -347,7 +352,7 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Starting Post validation ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="ValidationErrors">
                 <simple>
@@ -365,14 +370,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Post validation"
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapValidatePostIngestResourceCount">
             <from uri="direct:validatePostIngestResourceCount"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Post Ingestion Resource Count validations..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- RELS-EXT Resource reference count for validation.  The number includes the observation resource objs-->
             <setHeader headerName="RelsExtResourceCount">
@@ -412,25 +417,25 @@
                         <to uri="direct:validationErrorMessageAggregationStrategy"/>
                         <log message="${id} UnifiedCameraTrapIngest: Resource Object not found from Fedora Repository"
                              loggingLevel="WARN"
-                             logName="edu.si.uctingest"/>
+                             logName="{{si.ct.id}}"/>
                     </when>
                 </choice>
 
                 <log message="${id} UnifiedCameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
             </split>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Post Ingestion Resource Count validations."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapValidateDatastreams">
             <from uri="direct:validateDatastreams"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Datastream validations..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Validate Project Object datastreams -->
             <setHeader headerName="ValidationDatastreamObjectType">
@@ -547,14 +552,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Datastream validations."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapValidateObjectDatastreams">
             <from uri="direct:validateObjectDatastreams"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting ${header.ValidationDatastreamObjectType} Object Datastream validations..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="CamelHttpMethod">
                 <simple>
@@ -584,7 +589,7 @@
                             <to uri="direct:validationErrorMessageAggregationStrategy"/>
                             <log message="${id} UnifiedCameraTrapIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
                                  loggingLevel="WARN"
-                                 logName="edu.si.uctingest"/>
+                                 logName="{{si.ct.id}}"/>
                         </when>
                     </choice>
                 </when>
@@ -595,7 +600,7 @@
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
                     <log message="${id} UnifiedCameraTrapIngest: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
                          loggingLevel="WARN"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
@@ -606,21 +611,21 @@
             <from uri="direct:processPackage"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Package processing..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="direct:processParents"/>
             <to uri="direct:processSite"/>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Package processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessSite">
             <from uri="direct:processSite"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Site processing... "
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Stash the parent PID which could be a Plot or a Sub-project. -->
             <setHeader headerName="ParentPID">
@@ -636,11 +641,11 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <log message="${id} UnifiedCameraTrapIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
             <log message="${id} UnifiedCameraTrapIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -654,41 +659,41 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Site processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddManifestDataStream">
             <from uri="direct:addManifestDataStream"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Manifest processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="fedora:addDatastream?name=MANIFEST&amp;type=text/xml&amp;group=M&amp;dsLabel=MANIFEST"/>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Manifest processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddFGDCDataStream">
             <from uri="direct:addFGDCDataStream"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting FGDC processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="xslt:file:Input/xslt/ManifestDeployment.xsl?saxon=true"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished FGDC processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessResources">
             <from uri="direct:processResources"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting resource processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="SitePID">
                 <simple>
@@ -702,7 +707,7 @@
             </setHeader>
             <log message="${id} UnifiedCameraTrapIngest: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
@@ -711,7 +716,7 @@
                 </xpath>
                 <log message="${id} UnifiedCameraTrapIngest: Split Resource - ${body}"
                      loggingLevel="INFO"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
                 <setBody>
                     <simple resultType="java.lang.String">
                         ${body}
@@ -720,10 +725,10 @@
                 <to uri="direct:addImageResource"/>
                 <log message="${id} UnifiedCameraTrapIngest: Created Image Resource - ${body}."
                      loggingLevel="DEBUG"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
                 <log message="${id} UnifiedCameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
             </split>
 
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
@@ -741,14 +746,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished resource processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
             <log message="${id} UnifiedCameraTrapIngest: Started Image processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="ImageID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
@@ -792,7 +797,7 @@
                     <!-- Stop processing this deployment. -->
                     <log message="${id} UnifiedCameraTrapIngest: Image sequence does not exist."
                          loggingLevel="WARN"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <throwException ref="noImageSequence"/>
                 </when>
             </choice>
@@ -804,10 +809,10 @@
             </setHeader>
             <log message="${id} UnifiedCameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <log message="${id} UnifiedCameraTrapIngest: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="reader:file"/>
             <recipientList>
                 <simple>
@@ -851,27 +856,27 @@
                     </simple>
                     <log message="${id} Derivatives: Found JPEG."
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
                     <log message="${id} Derivatives: Found non-JPEG Image."
                          loggingLevel="WARN"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Image processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddResearcherObservationResource">
             <from uri="direct:addResearcherObservationResource"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Researcher Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- When there are Researcher observations. -->
             <setBody>
@@ -882,17 +887,17 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Researcher%20Observations"/>
             <log message="Research Observation Resource PID - ${header.CamelFedoraPid}"
                     loggingLevel="DEBUG"
-                    logName="edu.si.uctingest"/>
+                    logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ResearcherObservation.xsl"/>
             <log message="Researcher Observations - \n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <transform>
                 <xpath>
                     //researcher/text()
@@ -918,7 +923,7 @@
 
             <log message="${id} UnifiedCameraTrapIngest: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
 
@@ -934,14 +939,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Researcher Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddVolunteerObservationResource">
             <from uri="direct:addVolunteerObservationResource"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Volunteer Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- When there are Volunteer observations. -->
             <setBody>
@@ -952,13 +957,13 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Volunteer%20Observations"/>
             <log message="Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -967,10 +972,10 @@
             <to uri="xslt:file:Input/xslt/VolunteerObservation.xsl"/>
             <log message="Volunteer Observations - \n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <transform>
                 <xpath>
-                    //researcher/text()
+                    //volunteer/text()
                 </xpath>
             </transform>
             <recipientList>
@@ -991,7 +996,7 @@
             <to uri="xslt:file:Input/xslt/ManifestVolunteerObservation.xsl?saxon=true"/>
             <log message="${id} UnifiedCameraTrapIngest: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
 
             <setHeader headerName="ResourceCount">
@@ -1006,14 +1011,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Volunteer Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddImageObservationResource">
             <from uri="direct:addImageObservationResource"/>
             <log message="${id} UnifiedCameraTrapIngest: Starting Image Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- For Image observations. -->
             <setBody>
@@ -1024,17 +1029,17 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Image%20Observations"/>
             <log message="Image Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ImageObservation.xsl"/>
             <log message="Image Observations - \n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <transform>
                 <xpath>
                     //image/text()
@@ -1059,19 +1064,19 @@
             <to uri="xslt:file:Input/xslt/ManifestImageObservation.xsl?saxon=true"/>
             <log message="${id} UnifiedCameraTrapIngest: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Image Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddFITSDataStream">
             <from uri="direct:addFITSDataStream"/>
             <log message="${id} UnifiedCameraTrapIngest: Started processing FITS ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <recipientList>
                 <simple>
@@ -1088,11 +1093,11 @@
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
                         <log message="${id} UnifiedCameraTrapIngest: FITS MIME: ${header.FITSmimeType}"
                              loggingLevel="DEBUG"
-                             logName="edu.si.uctingest"/>
+                             logName="{{si.ct.id}}"/>
                     </setHeader>
                     <log message="${id} UnifiedCameraTrapIngest: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
@@ -1103,14 +1108,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished processing FITS."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddMODSDataStream">
             <from uri="direct:addMODSDataStream"/>
             <log message="${id} UnifiedCameraTrapIngest: Started processing MODS ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <setHeader headerName="esc">
@@ -1139,19 +1144,19 @@
             <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
             <log message="${id} UnifiedCameraTrapIngest: MODS XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished processing MODS."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapCreateThumbnailImage">
             <from uri="direct:createThumbnail"/>
             <log message="${id} UnifiedCameraTrapIngest: Started creating thumbnail ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <onException>
@@ -1174,20 +1179,20 @@
                     <exception>javax.imageio.IIOException</exception>
                     <log message="${id} UnifiedCameraTrapIngest: Cannot create thumbnail image corrupted."
                          loggingLevel="WARN"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                 </doCatch>
             </doTry>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished creating thumbnail."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapCreateArchivalImage">
             <from uri="direct:createArchivalImage"/>
             <log message="${id} UnifiedCameraTrapIngest: Started creating archival image ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
                 NOTE: This is planned to be a JPEG 2000 but we are not doing it yet.
@@ -1197,14 +1202,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished creating archival image."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessParents">
             <from uri="direct:processParents"/>
             <log message="${id} UnifiedCameraTrapIngest: Started processing parents ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setBody>
                 <simple>
@@ -1220,7 +1225,7 @@
                     </simple>
                     <log message="${id} UnifiedCameraTrapIngest: Root object exists."
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             {{si.ct.root}}
@@ -1249,24 +1254,24 @@
                     <!-- Stop processing this deployment. -->
                     <log message="${id} UnifiedCameraTrapIngest: Root object does not exist."
                          loggingLevel="WARN"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <throwException ref="noRootObject"/>
                 </otherwise>
             </choice>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished processing parents."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapFindObject" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObject"/>
             <log message="${id} UnifiedCameraTrapIngest: Started find object ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <log message="${id} UnifiedCameraTrapIngest: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <transform>
@@ -1300,11 +1305,11 @@
             </setBody>
             <log message="${id} UnifiedCameraTrapIngest: Project Parent - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
             <log message="${id} UnifiedCameraTrapIngest: Query Result - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <!-- Count the results. If greater than one warn about duplicate parents. -->
             <choice>
                 <when>
@@ -1313,7 +1318,7 @@
                     </xpath>
                     <log message="${id} UnifiedCameraTrapIngest: Warning - Duplicate parents."
                          loggingLevel="WARN"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                 </when>
             </choice>
             <setBody>
@@ -1334,14 +1339,14 @@
             </choice>
             <log message="${id} UnifiedCameraTrapIngest: Finished find object."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapFindObjectByPIDPredicate" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObjectByPIDPredicate"/>
             <log message="${id} UnifiedCameraTrapIngest: Started find object by PID ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Return true in the body if the object exists for the PID, false if not. -->
             <setBody>
@@ -1355,11 +1360,11 @@
             </setBody>
             <log message="${id} UnifiedCameraTrapIngest: Find Query - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
             <log message="${id} UnifiedCameraTrapIngest: Find Query Result - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <setBody>
                 <xpath logNamespaces="false" resultType="java.lang.String">
                     /ri:sparql/ri:results/ri:result[1]/ri:k0/text()
@@ -1377,18 +1382,18 @@
             </choice>
             <log message="Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished find object by PID."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessPlot">
             <from uri="direct:processPlot"/>
             <log message="${id} UnifiedCameraTrapIngest: Started processing plot ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <setHeader headerName="esc">
@@ -1415,7 +1420,7 @@
             </setHeader>
             <log message="${id} UnifiedCameraTrapIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
@@ -1424,7 +1429,7 @@
                     </simple>
                     <log message="${id} UnifiedCameraTrapIngest: Plot does not exist"
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Stash the sub-project PID. -->
                     <setHeader headerName="ParentPID">
                         <simple>
@@ -1452,7 +1457,7 @@
                     <!-- Return the existing plot as the current object. -->
                     <log message="${id} UnifiedCameraTrapIngest: Plot already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1469,14 +1474,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished processing plot."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessSubproject">
             <from uri="direct:processSubproject"/>
             <log message="${id} UnifiedCameraTrapIngest: Started processing subproject ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <setHeader headerName="esc">
@@ -1503,7 +1508,7 @@
             </setHeader>
             <log message="${id} UnifiedCameraTrapIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
@@ -1512,7 +1517,7 @@
                     </simple>
                     <log message="${id} UnifiedCameraTrapIngest: Sub-project does not exist"
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Stash the Project PID. -->
                     <setHeader headerName="ParentPID">
                         <simple>
@@ -1540,7 +1545,7 @@
                     <!-- Return the existing sub-project as the current object. -->
                     <log message="${id} UnifiedCameraTrapIngest: Sub-project already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1551,14 +1556,14 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished processing subproject."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessProject">
             <from uri="direct:processProject"/>
             <log message="${id} UnifiedCameraTrapIngest: Started processing project ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <setHeader headerName="esc">
@@ -1585,7 +1590,7 @@
             </setHeader>
             <log message="${id} UnifiedCameraTrapIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="direct:findObject"/>
             <choice>
                 <when>
@@ -1594,7 +1599,7 @@
                     </simple>
                     <log message="${id} UnifiedCameraTrapIngest: Project does not exist."
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Create UCT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project. -->
@@ -1616,7 +1621,7 @@
                     <!-- Return the existing project as the current object. -->
                     <log message="${id} UnifiedCameraTrapIngest: Project already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1633,7 +1638,7 @@
 
             <log message="${id} UnifiedCameraTrapIngest: Finished processing project."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <!-- Validate Ingest Datastream Metadata Fields -->
@@ -1641,7 +1646,7 @@
             <from uri="direct:validateDatastreamFields"/>
             <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting Datastream Fields Validation ..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="direct:validate_EAC-CPF_Datastream"/>
 
@@ -1679,16 +1684,16 @@
 
             <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
                  loggingLevel="INFO"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <!-- EAC-CPF Datastream Validation Route -->
-        <route id="Validate_EAC-CPF_Datastream">
+        <route id="UnifiedCameraTrapValidate_EAC-CPF_Datastream">
             <from uri="direct:validate_EAC-CPF_Datastream"/>
 
             <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting EAC-CPF Datastream Validation ..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Start EAC-CPF Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1732,12 +1737,12 @@
         </route>
 
         <!-- FGDC Datastream Validation Route -->
-        <route id="Validate_FGDC_Datastream">
+        <route id="UnifiedCameraTrapValidate_FGDC_Datastream">
             <from uri="direct:validate_FGDC_Datastream"/>
 
             <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting FGDC Datastream Validation ..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Start FGDC Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -1772,12 +1777,12 @@
         </route>
 
         <!-- MODS Datastream Validation Route -->
-        <route id="Validate_MODS_Datastream">
+        <route id="UnifiedCameraTrapValidate_MODS_Datastream">
             <from uri="direct:validate_MODS_Datastream"/>
 
             <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Start MODS Validation -->
             <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
@@ -1811,11 +1816,11 @@
         </route>
 
         <!-- Validate the provided datastream and field list -->
-        <route id="ValidateDatastreamFieldList">
+        <route id="UnifiedCameraTrapValidateDatastreamFieldList">
             <from uri="direct:ValidateDatastreamFieldList"/>
             <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
                 <tokenize token="\r\n|\n" xml="false" trim="true" />
@@ -1825,7 +1830,7 @@
 
             <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <!-- Validate CSV Fields -->
@@ -1834,7 +1839,7 @@
 
             <log message="${id} UnifiedCameraTrapValidateCSVFields: Starting Observation CSV Validation..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String"/>
@@ -1887,7 +1892,7 @@
 
                     <log message="${id} UnifiedCameraTrapValidateCSVFields: ${body}"
                          loggingLevel="WARN"
-                         logName="edu.si.uctingest"/>
+                         logName="{{si.ct.id}}"/>
 
                     <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
                     </when>
@@ -1900,11 +1905,11 @@
 
             <log message="${id} UnifiedCameraTrapValidateCSVFields: ${header.Observer} CSV Validation Complete..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <!-- Validation Error Message Aggregation Strategy -->
-        <route id="ValidationErrorMessageAggregationStrategy">
+        <route id="UnifiedCameraTrapValidationErrorMessageAggregationStrategy">
             <from uri="direct:validationErrorMessageAggregationStrategy"/>
             <aggregate strategyRef="cameraTrapValidationMessageAggregationStrategy" eagerCheckCompletion="true">
                 <correlationExpression>
@@ -1915,7 +1920,7 @@
                 </completionPredicate>
                 <log message="${id} UnifiedCameraTrap ValidationERRORAggregationMessage:\nBody:\n${body}"
                      loggingLevel="ERROR"
-                     logName="edu.si.uctingest"/>
+                     logName="{{si.ct.id}}"/>
             </aggregate>
         </route>
 
@@ -1923,7 +1928,7 @@
             <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
             <log message="${id} UnifiedCameraTrapInFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- retrieve the collection of correlation identifiers from the storage-->
             <to uri="bean:cameraTrapStaticStore?method=getInFlightCorrelationIds()"/>
@@ -1966,7 +1971,7 @@
                         </simple>
                         <log message="${id} UnifiedCameraTrapInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
-                             logName="edu.si.uctingest"/>
+                             logName="{{si.ct.id}}"/>
                         <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
                     </when>
                 </choice>
@@ -1975,7 +1980,7 @@
 
             <log message="${id} UnifiedCameraTrapInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
-                 logName="edu.si.uctingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
     </camelContext>
