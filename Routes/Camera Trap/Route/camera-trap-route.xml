@@ -96,7 +96,6 @@
 
     <bean id="unitOfWorkFactory" class="edu.si.services.beans.cameratrap.CameraTrapUnitOfWorkFactory"/>
 
-    <!--<bean id="containerWideInterceptor" class="edu.si.services.beans.cameratrap.ContainerWideInterceptor"/>-->
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="CTIngestCamelContext"
