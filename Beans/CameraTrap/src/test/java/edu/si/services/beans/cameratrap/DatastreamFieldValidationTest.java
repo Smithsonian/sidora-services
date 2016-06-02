@@ -37,6 +37,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.io.InputStream;
 import java.util.*;
 import java.util.ArrayList;
@@ -257,8 +260,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder expectedBody = new StringBuilder();
-        expectedBody.append("EAC-CPF ProjectName,");
-        expectedBody.append("//eac:nameEntry[1]/eac:part/text(),");
+        expectedBody.append("EAC-CPF ProjectName|");
+        expectedBody.append("//eac:nameEntry[1]/eac:part/text()|");
         expectedBody.append("//ProjectName/text()");
 
         runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", expectedBody.toString());
@@ -310,8 +313,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder expectedBody = new StringBuilder();
-        expectedBody.append("FGDC CameraDeploymentID,");
-        expectedBody.append("//citeinfo/othercit/text(),");
+        expectedBody.append("FGDC CameraDeploymentID|");
+        expectedBody.append("//citeinfo/othercit/text()|");
         expectedBody.append("//CameraDeploymentID/text()");
 
         runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", expectedBody.toString());
@@ -361,8 +364,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder expectedBody = new StringBuilder();
-        expectedBody.append("MODS ImageSequenceId,");
-        expectedBody.append("//mods:relatedItem/mods:identifier/text(),");
+        expectedBody.append("MODS ImageSequenceId|");
+        expectedBody.append("//mods:relatedItem/mods:identifier/text()|");
         expectedBody.append("//ImageSequence[1]/ImageSequenceId[1]/text()");
 
         runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody.toString());

@@ -37,6 +37,7 @@
         as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
+            <cm:property name="si.ct.id" value="edu.si.wcsingest"/>
             <cm:property name="si.ct.wcs.dryrun" value="false"/>
         </cm:default-properties>
     </cm:property-placeholder>
@@ -138,7 +139,7 @@
             <from uri="file:ProcessWCS?delay=9000&amp;moveFailed=Error-WCS&amp;delete=true&amp;maxMessagesPerPoll=1"/>
             <log message="${id} WCSIngest: Starting WCS processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Needed for the Velocity tools. -->
             <setHeader headerName="esc">
@@ -186,7 +187,7 @@
 
                 <log message="${id} WCSIngest: Ingest dry-run flag - {{si.ct.wcs.dryrun}}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
 
                 <choice>
                     <when>
@@ -202,14 +203,14 @@
 
             <log message="${id} WCSIngest: Finished WCS processing!"
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSValidatePackage">
             <from uri="direct:validatePackage"/>
             <log message="${id} WCSIngest: Starting Package validation ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="ResourceFileType">
                 <simple resultType="java.lang.String">
@@ -235,7 +236,7 @@
                 </xpath>
                 <log message="${id} WCSIngest: Split Resource - ${body}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
                 <setHeader headerName="ImageFileName">
                     <simple resultType="java.lang.String">
                         ${body}
@@ -248,12 +249,12 @@
                 </setHeader>
                 <log message="${id} WCSIngest: ImageSequenceID - ${header.ImageSequenceID}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
                 <!-- This throws a java.io.FileNotFoundException if the file does not exist. -->
                 <to uri="reader:file"/>
                 <log message="${id} WCSIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="DEBUG"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
                 <!-- We should check the image count to see if it exactly matches the image file count. -->
             </split>
 
@@ -273,28 +274,28 @@
 
             <log message="${id} WCSIngest: Finished Package validation."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSProcessPackage">
             <from uri="direct:processPackage"/>
             <log message="${id} WCSIngest: Starting Package processing..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="direct:processParents"/>
             <to uri="direct:processSite"/>
 
             <log message="${id} WCSIngest: Finished Package processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSProcessSite">
             <from uri="direct:processSite"/>
             <log message="${id} WCSIngest: Starting Site processing... "
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Stash the parent PID which could be a Plot or a Sub-project. -->
             <setHeader headerName="ParentPID">
@@ -310,11 +311,11 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
             <log message="${id} WCSIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
             <log message="${id} WCSIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -328,41 +329,41 @@
 
             <log message="${id} WCSIngest: Finished Site processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddManifestDataStream">
             <from uri="direct:addManifestDataStream"/>
             <log message="${id} WCSIngest: Starting Manifest processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="fedora:addDatastream?name=MANIFEST&amp;type=text/xml&amp;group=M&amp;dsLabel=MANIFEST"/>
 
             <log message="${id} WCSIngest: Finished Manifest processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddFGDCDataStream">
             <from uri="direct:addFGDCDataStream"/>
             <log message="${id} WCSIngest: Starting FGDC processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <to uri="xslt:file:Input/xslt/ManifestDeployment.xsl?saxon=true"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id} WCSIngest: Finished FGDC processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSProcessResources">
             <from uri="direct:processResources"/>
             <log message="${id} WCSIngest: Starting resource processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="SitePID">
                 <simple>
@@ -376,7 +377,7 @@
             </setHeader>
             <log message="${id} WCSIngest: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
@@ -385,7 +386,7 @@
                 </xpath>
                 <log message="${id} WCSIngest: Split Resource - ${body}"
                      loggingLevel="INFO"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
                 <setBody>
                     <simple resultType="java.lang.String">
                         ${body}
@@ -394,10 +395,10 @@
                 <to uri="direct:addImageResource"/>
                 <log message="${id} WCSIngest: Created Image Resource - ${body}."
                      loggingLevel="DEBUG"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
                 <log message="${id} WCSIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
-                     logName="edu.si.wcsingest"/>
+                     logName="{{si.ct.id}}"/>
             </split>
 
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
@@ -423,14 +424,14 @@
 
             <log message="${id} WCSIngest: Finished resource processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
             <log message="${id} WCSIngest: Started Image processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <setHeader headerName="ImageID">
@@ -467,7 +468,7 @@
                     <!-- Stop processing this deployment. -->
                     <log message="${id} WCSIngest: Image sequence does not exist."
                          loggingLevel="WARN"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <throwException ref="noImageSequence"/>
                 </when>
             </choice>
@@ -480,10 +481,10 @@
             </setHeader>
             <log message="${id} WCSIngest: Label - ${body}  ImageID - ${header.imageid}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <log message="${id} WCSIngest: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             -->
             <to uri="reader:file"/>
             <recipientList>
@@ -515,27 +516,27 @@
                     </simple>
                     <log message="${id} Derivatives: Found JPEG."
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
                     <log message="${id} Derivatives: Found non-JPEG Image."
                          loggingLevel="WARN"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
             <log message="${id} WCSIngest: Finished Image processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddResearcherObservationResource">
             <from uri="direct:addResearcherObservationResource"/>
             <log message="${id} WCSIngest: Starting Researcher Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- For Researcher observations. -->
             <setBody>
@@ -546,17 +547,17 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Researcher%20Observations"/>
             <log message="Research Observation Resource PID - ${header.CamelFedoraPid}"
                     loggingLevel="DEBUG"
-                    logName="edu.si.wcsingest"/>
+                    logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ResearcherObservation.xsl"/>
             <log message="Researcher Observations - \n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <transform>
                 <xpath>
                     //researcher/text()
@@ -581,19 +582,19 @@
             <to uri="xslt:file:Input/xslt/ManifestResearcherObservation.xsl?saxon=true"/>
             <log message="${id} WCSIngest: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id} WCSIngest: Finished Researcher Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddVolunteerObservationResource">
             <from uri="direct:addVolunteerObservationResource"/>
             <log message="${id} WCSIngest: Starting Volunteer Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- For Volunteer observations. -->
             <setBody>
@@ -604,13 +605,13 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Volunteer%20Observations"/>
             <log message="Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -619,7 +620,7 @@
             <to uri="xslt:file:Input/xslt/VolunteerObservation.xsl"/>
             <log message="Volunteer Observations - \n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <transform>
                 <xpath>
                     //volunteer/text()
@@ -644,19 +645,19 @@
             <to uri="xslt:file:Input/xslt/ManifestVolunteerObservation.xsl?saxon=true"/>
             <log message="${id} WCSIngest: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id} WCSIngest: Finished Volunteer Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddImageObservationResource">
             <from uri="direct:addImageObservationResource"/>
             <log message="${id} WCSIngest: Starting Image Observation data processing ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- For Image observations. -->
             <setBody>
@@ -667,17 +668,17 @@
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Image%20Observations"/>
             <log message="Image Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
             <log message="Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ImageObservation.xsl"/>
             <log message="Image Observations - \n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <transform>
                 <xpath>
                     //image/text()
@@ -702,19 +703,19 @@
             <to uri="xslt:file:Input/xslt/ManifestImageObservation.xsl?saxon=true"/>
             <log message="${id} WCSIngest: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id} WCSIngest: Finished Image Observation data processing."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddFITSDataStream">
             <from uri="direct:addFITSDataStream"/>
             <log message="${id} WCSIngest: Started processing FITS ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <recipientList>
                 <simple>
@@ -731,11 +732,11 @@
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
                         <log message="${id} WCSIngest: FITS MIME: ${header.FITSmimeType}"
                              loggingLevel="DEBUG"
-                             logName="edu.si.wcsingest"/>
+                             logName="{{si.ct.id}}"/>
                     </setHeader>
                     <log message="${id} WCSIngest: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
@@ -746,14 +747,14 @@
 
             <log message="${id} WCSIngest: Finished processing FITS."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSAddMODSDataStream">
             <from uri="direct:addMODSDataStream"/>
             <log message="${id} WCSIngest: Started processing MODS ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Get the FITS XML and use XPATH to get the created date from it. -->
             <!--
@@ -775,19 +776,19 @@
             <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
             <log message="${id} WCSIngest: MODS XML -\n${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id} WCSIngest: Finished processing MODS."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSCreateThumbnailImage">
             <from uri="direct:createThumbnail"/>
             <log message="${id} WCSIngest: Started creating thumbnail ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <onException>
@@ -809,20 +810,20 @@
                     <exception>javax.imageio.IIOException</exception>
                     <log message="${id} WCSIngest: Cannot create thumbnail image corrupted."
                          loggingLevel="WARN"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                 </doCatch>
             </doTry>
 
             <log message="${id} WCSIngest: Finished creating thumbnail."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSCreateArchivalImage">
             <from uri="direct:createArchivalImage"/>
             <log message="${id} WCSIngest: Started creating archival image ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
                 NOTE: This is planned to be a JPEG 2000 but we are not doing it yet.
@@ -832,14 +833,14 @@
 
             <log message="${id} WCSIngest: Finished creating archival image."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSProcessParents">
             <from uri="direct:processParents"/>
             <log message="${id} WCSIngest: Started processing parents ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <setBody>
                 <simple>
@@ -855,7 +856,7 @@
                     </simple>
                     <log message="${id} WCSIngest: Root object exists."
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             {{si.ct.root}}
@@ -884,24 +885,24 @@
                     <!-- Stop processing this deployment. -->
                     <log message="${id} WCSIngest: Root object does not exist."
                          loggingLevel="WARN"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <throwException ref="noRootObject"/>
                 </otherwise>
             </choice>
 
             <log message="${id} WCSIngest: Finished processing parents."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSFindObject" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObject"/>
             <log message="${id} WCSIngest: Started find object ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <log message="${id} WCSIngest: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!--
             <transform>
@@ -935,11 +936,11 @@
             </setBody>
             <log message="${id} WCSIngest: Project Parent - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
             <log message="${id} WCSIngest: Query Result - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <!-- Count the results. If greater than one warn about duplicate parents. -->
             <choice>
                 <when>
@@ -948,7 +949,7 @@
                     </xpath>
                     <log message="${id} WCSIngest: Warning - Duplicate parents."
                          loggingLevel="WARN"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                 </when>
             </choice>
             <setBody>
@@ -969,14 +970,14 @@
             </choice>
             <log message="${id} WCSIngest: Finished find object."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSFindObjectByPIDPredicate" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObjectByPIDPredicate"/>
             <log message="${id} WCSIngest: Started find object by PID ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Return true in the body if the object exists for the PID, false if not. -->
             <setBody>
@@ -989,11 +990,11 @@
             </setBody>
             <log message="${id} WCSIngest: Find Query - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
             <log message="${id} WCSIngest: Find Query Result - ${body}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <setBody>
                 <xpath logNamespaces="false" resultType="java.lang.String">
                     /ri:sparql/ri:results/ri:result[1]/ri:k0/text()
@@ -1011,18 +1012,18 @@
             </choice>
             <log message="Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <log message="${id} WCSIngest: Finished find object by PID."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSProcessPlot">
             <from uri="direct:processPlot"/>
             <log message="${id} WCSIngest: Started processing plot ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Look for the plot (its optional). -->
             <setBody>
@@ -1043,7 +1044,7 @@
             </setHeader>
             <log message="${id} WCSIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
@@ -1052,7 +1053,7 @@
                     </simple>
                     <log message="${id} WCSIngest: Plot does not exist"
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Stash the sub-project PID. -->
                     <setHeader headerName="ParentPID">
                         <simple>
@@ -1079,7 +1080,7 @@
                     <!-- Return the existing plot as the current object. -->
                     <log message="${id} WCSIngest: Plot already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1090,14 +1091,14 @@
 
             <log message="${id} WCSIngest: Finished processing plot."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSProcessSubproject">
             <from uri="direct:processSubproject"/>
             <log message="${id} WCSIngest: Started processing subproject ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Look for the sub-project. -->
             <setBody>
@@ -1118,7 +1119,7 @@
             </setHeader>
             <log message="${id} WCSIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="direct:findObject" />
             <choice>
                 <when>
@@ -1127,7 +1128,7 @@
                     </simple>
                     <log message="${id} WCSIngest: Sub-project does not exist"
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Stash the Project PID. -->
                     <setHeader headerName="ParentPID">
                         <simple>
@@ -1154,7 +1155,7 @@
                     <!-- Return the existing sub-project as the current object. -->
                     <log message="${id} WCSIngest: Sub-project already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1165,14 +1166,14 @@
 
             <log message="${id} WCSIngest: Finished processing subproject."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSProcessProject">
             <from uri="direct:processProject"/>
             <log message="${id} WCSIngest: Started processing project ..."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- Look for the project. -->
             <setBody>
@@ -1193,7 +1194,7 @@
             </setHeader>
             <log message="${id} WCSIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
             <to uri="direct:findObject"/>
             <choice>
                 <when>
@@ -1202,7 +1203,7 @@
                     </simple>
                     <log message="${id} WCSIngest: Project does not exist."
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <!-- Create CT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project. -->
@@ -1223,7 +1224,7 @@
                     <!-- Return the existing project as the current object. -->
                     <log message="${id} WCSIngest: Project already exists - ${body}."
                          loggingLevel="DEBUG"
-                         logName="edu.si.wcsingest"/>
+                         logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${body}
@@ -1234,14 +1235,14 @@
 
             <log message="${id} WCSIngest: Finished processing project."
                  loggingLevel="INFO"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="WCSInFlightConceptStatusPolling">
             <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
             <log message="${id} WCSInFlightConceptStatusPolling: Starting the In-Flight Concept process status check..."
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
 
             <!-- retrieve the collection of correlation identifiers from the storage-->
             <to uri="bean:cameraTrapStaticStore?method=getInFlightCorrelationIds()"/>
@@ -1284,7 +1285,7 @@
                         </simple>
                         <log message="${id} WCSInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
-                             logName="edu.si.wcsingest"/>
+                             logName="{{si.ct.id}}"/>
                         <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
                     </when>
                 </choice>
@@ -1293,7 +1294,7 @@
 
             <log message="${id} WCSInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
-                 logName="edu.si.wcsingest"/>
+                 logName="{{si.ct.id}}"/>
         </route>
     </camelContext>
 </blueprint>

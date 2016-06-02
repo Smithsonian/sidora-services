@@ -1,0 +1,47 @@
+<fits xmlns="http://hul.harvard.edu/ois/xml/ns/fits/fits_output" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" timestamp="6/1/16 9:23 AM" version="0.6.2" xsi:schemaLocation="http://hul.harvard.edu/ois/xml/ns/fits/fits_output http://hul.harvard.edu/ois/xml/xsd/fits/fits_output.xsd">
+    <identification>
+        <identity format="Exchangeable Image File Format" mimetype="image/jpeg" toolname="FITS" toolversion="0.6.2">
+            <tool toolname="file utility" toolversion="5.04"></tool>
+            <tool toolname="Exiftool" toolversion="9.06"></tool>
+            <tool toolname="Droid" toolversion="3.0"></tool>
+            <tool toolname="NLNZ Metadata Extractor" toolversion="3.4GA"></tool>
+            <version status="CONFLICT" toolname="file utility" toolversion="5.04">4360</version>
+            <version status="CONFLICT" toolname="Droid" toolversion="3.0">2.2</version>
+            <externalIdentifier toolname="Droid" toolversion="3.0" type="puid">x-fmt/391</externalIdentifier>
+        </identity>
+    </identification>
+    <fileinfo>
+        <size toolname="Jhove" toolversion="1.5">776629</size>
+        <creatingApplicationName toolname="Exiftool" toolversion="9.06">PC800 PROFESSIONAL</creatingApplicationName>
+        <lastmodified status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">2016:06:01 09:19:24-04:00</lastmodified>
+        <created toolname="Exiftool" toolversion="9.06">2016:02:13 12:11:26</created>
+        <filepath status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">/utility/sidora/apache-servicemix-6.1.0/UnifiedCameraTrapData/p125d18981/d18981s1i1.JPG</filepath>
+        <filename status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">/utility/sidora/apache-servicemix-6.1.0/UnifiedCameraTrapData/p125d18981/d18981s1i1.JPG</filename>
+        <md5checksum status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">92eb7f66e3f19a2fd92212d9768daaef</md5checksum>
+        <fslastmodified status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">1464787164000</fslastmodified>
+    </fileinfo>
+    <filestatus></filestatus>
+    <metadata>
+        <image>
+            <imageWidth toolname="Exiftool" toolversion="9.06">2048</imageWidth>
+            <imageHeight toolname="Exiftool" toolversion="9.06">1536</imageHeight>
+            <YCbCrSubSampling status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">2 1</YCbCrSubSampling>
+            <YCbCrPositioning status="CONFLICT" toolname="Exiftool" toolversion="9.06">Co-sited</YCbCrPositioning>
+            <YCbCrPositioning status="CONFLICT" toolname="NLNZ Metadata Extractor" toolversion="3.4GA">2</YCbCrPositioning>
+            <samplingFrequencyUnit status="CONFLICT" toolname="Exiftool" toolversion="9.06">inches</samplingFrequencyUnit>
+            <samplingFrequencyUnit status="CONFLICT" toolname="NLNZ Metadata Extractor" toolversion="3.4GA">in.</samplingFrequencyUnit>
+            <xSamplingFrequency toolname="Exiftool" toolversion="9.06">72</xSamplingFrequency>
+            <ySamplingFrequency toolname="Exiftool" toolversion="9.06">72</ySamplingFrequency>
+            <bitsPerSample toolname="Exiftool" toolversion="9.06">8 8 8</bitsPerSample>
+            <scannerManufacturer status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">RECONYX</scannerManufacturer>
+            <scannerModelName status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">PC800 PROFESSIONAL</scannerModelName>
+            <exposureTime status="CONFLICT" toolname="Exiftool" toolversion="9.06">1/120</exposureTime>
+            <exposureTime status="CONFLICT" toolname="NLNZ Metadata Extractor" toolversion="3.4GA">0.008333333333333333</exposureTime>
+            <isoSpeedRating status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">80</isoSpeedRating>
+            <exifVersion toolname="Exiftool" toolversion="9.06">0220</exifVersion>
+            <lightSource status="SINGLE_RESULT" toolname="NLNZ Metadata Extractor" toolversion="3.4GA">unknown</lightSource>
+            <flash status="CONFLICT" toolname="Exiftool" toolversion="9.06">Auto, Did not fire</flash>
+            <flash status="CONFLICT" toolname="NLNZ Metadata Extractor" toolversion="3.4GA">Flash did not fire, auto mode</flash>
+        </image>
+    </metadata>
+</fits>
