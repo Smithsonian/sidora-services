@@ -104,7 +104,7 @@ public class PostIngestionValidator {
         String datastreamXML = exchange.getIn().getHeader("datastreamValidationXML", String.class);
 
         //Get the comma separated list of datastream and manifest and the xpaths for each field
-        String[] validationList = exchange.getIn().getBody(String.class).split(",");
+        String[] validationList = exchange.getIn().getBody(String.class).split("\\|");
 
         //Field name from comma separated list
         fieldName = validationList[0];
@@ -117,8 +117,7 @@ public class PostIngestionValidator {
         String manifestField = XPathBuilder
                 .xpath(manifestXpath)
                 .evaluate(exchange.getContext(),
-                        exchange.getIn().getHeader("ManifestXML"),
-                        String.class);
+                        exchange.getIn().getHeader("ManifestXML"));
 
         //Use the xPath from the comma separated list to set the datastreamField
         String datastreamField = XPathBuilder
@@ -140,7 +139,7 @@ public class PostIngestionValidator {
         } else {
             message = "Deployment Package ID - " + camelFileParent
                     + ", Message - " + fieldName + " Field validation failed. "
-                    + "Expected " + manifestField + " but found " +datastreamField + ".";
+                    + "Expected " + manifestField + " but found " + datastreamField + ".";
 
             //Create the validation message bean with validation message
             messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, false);

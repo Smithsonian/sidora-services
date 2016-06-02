@@ -97,6 +97,9 @@
 
     <bean id="deploymentPackageProcessFilter" class="edu.si.services.beans.cameratrap.DeploymentPackageProcessFilter"/>
 
+    <bean id="unitOfWorkFactory" class="edu.si.services.beans.cameratrap.CameraTrapUnitOfWorkFactory"/>
+
+    <!--<bean id="containerWideInterceptor" class="edu.si.services.beans.cameratrap.ContainerWideInterceptor"/>-->
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="UnifiedCTIngestCamelContext"
@@ -328,7 +331,6 @@
                      logName="{{si.ct.id}}"/>
                 <!-- We should check the image count to see if it exactly matches the image file count. -->
             </split>
-
             <!-- This throws custom exception when the resource count validator was unsuccessful. -->
             <choice>
                 <when>
@@ -755,7 +757,15 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
+            <!--
             <setHeader headerName="ImageID">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
+                </xpath>
+            </setHeader>
+            -->
+            <!-- Spelled this way for the MODS XSLT parameter. -->
+            <setHeader headerName="imageid">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
                 </xpath>
@@ -784,9 +794,16 @@
                 This is a fix to deal with a change made to the backlog UCT ImageID format.  It will fail if there are
                 two or more 'i' characters in the ImageID.
             -->
+            <!--
             <setHeader headerName="ImageSequenceIndex">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
                     substring-after($ImageID,'i')
+                </xpath>
+            </setHeader>
+            -->
+            <setHeader headerName="ImageSequenceIndex">
+                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/ImageOrder/text()
                 </xpath>
             </setHeader>
             <choice>
@@ -807,21 +824,23 @@
                     count(//Image[../ImageSequenceId=$ImageSequenceID])
                 </xpath>
             </setHeader>
-            <log message="${id} UnifiedCameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
+            <log message="${id} UnifiedCameraTrapIngest: Label - ${body}  imageid - ${header.imageid}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <log message="${id} UnifiedCameraTrapIngest: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
+
             <to uri="reader:file"/>
+
             <recipientList>
                 <simple>
-                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.ImageID}
+                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}
                 </simple>
             </recipientList>
             <recipientList>
                 <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.ImageID}&amp;versionable=false
+                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false
                 </simple>
             </recipientList>
             <!--<multicast>-->
@@ -878,7 +897,7 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <!-- When there are Researcher observations. -->
+            <!-- For Researcher observations. -->
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -903,6 +922,7 @@
                     //researcher/text()
                 </xpath>
             </transform>
+            <convertBodyTo type="java.lang.String"/>
             <recipientList>
                 <simple>
                     fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"
@@ -948,7 +968,7 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <!-- When there are Volunteer observations. -->
+            <!-- For Volunteer observations. -->
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -978,6 +998,7 @@
                     //volunteer/text()
                 </xpath>
             </transform>
+            <convertBodyTo type="java.lang.String"/>
             <recipientList>
                 <simple>
                     fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"
@@ -1067,6 +1088,16 @@
                  logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
 
+            <setHeader headerName="ResourceCount">
+                <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="ImageObservationPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} UnifiedCameraTrapIngest: Finished Image Observation data processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1124,13 +1155,12 @@
             -->
 
             <!-- Get the FITS XML and use XPATH to get the created date from it. -->
+            <!--
             <setHeader headerName="FITSCreatedDate">
                 <xpath logNamespaces="false" resultType="java.lang.String">
                     //fits:fileinfo/fits:created[@toolname="Exiftool"]
                 </xpath>
             </setHeader>
-
-            <!--
             <log message="MODS FITS Created Date - ${header.FITSCreatedDate}"/>
             -->
 
@@ -1141,7 +1171,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
+            <to uri="xslt:file:Input/xslt/Unified_ManifestImage.xsl?saxon=true"/>
             <log message="${id} UnifiedCameraTrapIngest: MODS XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1169,7 +1199,6 @@
                 </continued>
                 <stop/>
             </onException>
-
             -->
 
             <doTry>
@@ -1672,6 +1701,16 @@
             </setHeader>
 
             <to uri="direct:ValidateCSVFields"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+
+            <!-- Start Image CSV Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ImageObservationPID}
+                </simple>
+            </setHeader>
+
+            <to uri="direct:ValidateCSVFields"/>
 
             <!-- Notify the aggregator to complete aggregation -->
             <setHeader headerName="ValidationComplete">
@@ -1726,10 +1765,10 @@
             </setBody>
             -->
 
-            <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- the | separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    EAC-CPF ProjectName,//eac:nameEntry[1]/eac:part/text(),//ProjectName/text()
+                    EAC-CPF ProjectName|//eac:nameEntry[1]/eac:part/text()|concat(//ProjectName/text(), ' &#40;', //ProjectId/text(), '&#41;')
                 </simple>
             </setBody>
             <to uri="direct:ValidateDatastreamFieldList"/>
@@ -1763,10 +1802,10 @@
                 </simple>
             </setHeader>
 
-            <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- the | separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    FGDC CameraDeploymentID,//citeinfo/othercit/text(),//CameraDeploymentID/text()
+                    FGDC CameraDeploymentID|//citeinfo/othercit/text()|//CameraDeploymentID/text()
                     <!--FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
                     FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
                     FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()-->
@@ -1804,10 +1843,10 @@
                 </simple>
             </setHeader>
 
-            <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- the | separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    MODS ImageSequenceId,//mods:relatedItem/mods:identifier/text(),//ImageSequence[1]/ImageSequenceId[1]/text()
+                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()
                     <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
                 </simple>
             </setBody>
@@ -1841,14 +1880,27 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
+            <log message="===========(0)============ CamelFedoraPid: ${header.CamelFedoraPid} |  ===========(0)============\n${body}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String"/>
+
+            <log message="===========(1)============ Body ===========(1)============\n${body}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
             <unmarshal>
                 <csv delimiter=","/>
             </unmarshal>
 
-            <!-- Get Researcher or Volunteer from the CSV -->
+            <log message="===========(2)============ Body ===========(2)============\n${body}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <!-- Get Researcher, Volunteer, or Image from the CSV -->
             <setHeader headerName="Observer">
                 <simple resultType="java.lang.String">
                     ${body[0][0]}Identifications
@@ -1870,18 +1922,26 @@
                 </simple>
             </setHeader>
 
+            <log message="===========(3)============ Observer: ${header.Observer} | CSVObservationCount: ${header.CSVObservationCount} | CSVImageSeqID: ${header.CSVImageSeqID} ===========(3)============"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <setHeader headerName="validationResult">
                 <xpath headerName="ManifestXML" resultType="java.lang.String">
                     boolean((//ImageSequenceId/text() = $in:CSVImageSeqID) and (count(//*[name() = $in:Observer]/Identification) = $in:CSVObservationCount))
                 </xpath>
             </setHeader>
 
-                <choice>
-                    <when>
-                        <!-- Check that the ImageSequenceID exists and observation counts matches the manifest -->
-                        <simple>
-                            ${header.validationResult} == false
-                        </simple>
+            <log message="===========(4)============ validationResult: ${header.validationResult} ===========(4)============"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <choice>
+                <when>
+                    <!-- Check that the ImageSequenceID exists and observation counts matches the manifest -->
+                    <simple>
+                        ${header.validationResult} == false
+                    </simple>
 
                     <!-- The CSV was not generated create validation error message -->
                     <setBody>
@@ -1895,12 +1955,12 @@
                          logName="{{si.ct.id}}"/>
 
                     <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
-                    </when>
-                    <otherwise>
-                        <setBody>
-                            <simple>""</simple>
-                        </setBody>
-                    </otherwise>
+                </when>
+                <otherwise>
+                    <setBody>
+                        <simple>""</simple>
+                    </setBody>
+                </otherwise>
             </choice>
 
             <log message="${id} UnifiedCameraTrapValidateCSVFields: ${header.Observer} CSV Validation Complete..."

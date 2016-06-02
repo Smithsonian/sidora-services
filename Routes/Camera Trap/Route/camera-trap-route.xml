@@ -33,6 +33,8 @@
     xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
     <!-- OSGI blueprint property placeholder -->
+    <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
+        as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="si.ct.id" value="edu.si.ctingest"/>
@@ -1593,10 +1595,10 @@
             </setBody>
             -->
 
-            <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- the | separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    EAC-CPF ProjectName,//eac:nameEntry[1]/eac:part/text(),//ProjectName/text()
+                    EAC-CPF ProjectName|//eac:nameEntry[1]/eac:part/text()|//ProjectName/text()
                 </simple>
             </setBody>
             <to uri="direct:ValidateDatastreamFieldList"/>
@@ -1630,10 +1632,10 @@
                 </simple>
             </setHeader>
 
-            <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- the || separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    FGDC CameraDeploymentID,//citeinfo/othercit/text(),//CameraDeploymentID/text()
+                    FGDC CameraDeploymentID|//citeinfo/othercit/text()|//CameraDeploymentID/text()
                     <!--FGDC CameraDeploymentID, //metadata/idinfo/citation/citeinfo/othercit/text(), //CameraTrapDeployment/CameraDeploymentID/text()
                     FGDC Bait, //metadata/dataqual/lineage/method[1]/methodid/methkey/text(), //CameraTrapDeployment/Bait/text()
                     FGDC Feature, //metadata/dataqual/lineage/method[2]/methodid/methkey/text(), //CameraTrapDeployment/Feature/text()-->
@@ -1671,10 +1673,10 @@
                 </simple>
             </setHeader>
 
-            <!-- the comma separated list of xpath's and field names to be validated -->
+            <!-- the | separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    MODS ImageSequenceId,//mods:relatedItem/mods:identifier/text(),//ImageSequence[1]/ImageSequenceId[1]/text()
+                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()
                     <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
                 </simple>
             </setBody>

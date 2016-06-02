@@ -27,9 +27,13 @@
 
 package edu.si.services.beans.cameratrap;
 
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.model.ChoiceDefinition;
 import org.apache.camel.model.LogDefinition;
+import org.apache.camel.model.RecipientListDefinition;
+import org.apache.camel.model.SetHeaderDefinition;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -178,14 +182,17 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
      */
     @Test
     public void validation_FailTest() throws Exception {
-        setupEAC_CPF(false, new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml"));
-        setupFGDC(false, new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml"));
-        setupMODS(false, new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml"));
+        setupEAC_CPF(false, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/EAC-CPF/fail_EAC_CPF.xml"));
+        setupFGDC(false, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/FGDC/fail_FGDC.xml"));
+        setupMODS(false, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/MODS/fail_MODS.xml"));
 
-        File[] datastreamFileCSV = {new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin"),
-                new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin")};
+        File[] datastreamFileCSV = {
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ResearcherObservation/fail_ResearcherObservationCSV.csv"),
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/VolunteerObservation/fail_VolunteerObservationCSV.csv"),
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ImageObservation/fail_ImageObservationCSV.csv")
+        };
 
-        setupCSV_ValidationAdviceWith(false, false, datastreamFileCSV);
+        setupCSV_ValidationAdviceWith(false, false, false, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
         //Start Running the validation tests
@@ -199,14 +206,17 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
      */
     @Test
     public void validationPassTest() throws Exception {
-        setupEAC_CPF(true, new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml"));
-        setupFGDC(true, new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/validFGDC.xml"));
-        setupMODS(true, new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml"));
+        setupEAC_CPF(true, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/EAC-CPF/valid_EAC_CPF.xml"));
+        setupFGDC(true, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/FGDC/valid_FGDC.xml"));
+        setupMODS(true, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/MODS/valid_MODS.xml"));
 
-        File[] datastreamFileCSV = {new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin"),
-                new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin")};
+        File[] datastreamFileCSV = {
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ResearcherObservation/valid_ResearcherObservationCSV.csv"),
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/VolunteerObservation/valid_VolunteerObservationCSV.csv"),
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ImageObservation/valid_ImageObservationCSV.csv")
+        };
 
-        setupCSV_ValidationAdviceWith(true, true, datastreamFileCSV);
+        setupCSV_ValidationAdviceWith(true, true, true, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
         //Start Running the validation tests
@@ -220,18 +230,185 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
      */
     @Test
     public void validationMixedPassFailTest() throws Exception {
-        setupEAC_CPF(true, new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml"));
-        setupFGDC(false, new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml"));
-        setupMODS(true, new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml"));
+        setupEAC_CPF(true, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/EAC-CPF/valid_EAC_CPF.xml"));
+        setupFGDC(false, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/FGDC/fail_FGDC.xml"));
+        setupMODS(true, new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/MODS/valid_MODS.xml"));
 
-        File[] datastreamFileCSV = {new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin"),
-                new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin")};
+        File[] datastreamFileCSV = {
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ResearcherObservation/valid_ResearcherObservationCSV.csv"),
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/VolunteerObservation/fail_VolunteerObservationCSV.csv"),
+                new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ImageObservation/valid_ImageObservationCSV.csv")
+        };
 
-        setupCSV_ValidationAdviceWith(true, false, datastreamFileCSV);
+        setupCSV_ValidationAdviceWith(true, false, true, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
         //Start Running the validation tests
         validate_DatastreamFieldsRoute_IT();
+    }
+
+    /**
+     * Testing the headers created in the UnifiedCameraTrapAddImageResource route
+     * @throws Exception
+     */
+    @Test
+    public void addImageResource_Test() throws Exception {
+        //RouteId and endpoint uri
+        String routeId = "UnifiedCameraTrapAddImageResource";
+        String routeURI = "direct:addImageResource";
+
+        //The expected header values
+        String imageidHeaderExpected = "d18981s1i1";
+        String imageSequenceIDHeaderExpected = "d18981s1";
+        String imageSequenceIndexHeaderExpected = "1";
+        String imageSequenceCountHeaderExpected = "2";
+
+        //Configure and use adviceWith to mock for testing purpose
+        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                //set the mockEndpoint and stop the route after the headers we are testing have been created
+                weaveByToString(".*reader:file.*").before().to("mock:result").stop();
+            }
+        });
+
+        mockEndpoint = getMockEndpoint("mock:result");
+
+        // set mock expectations
+        mockEndpoint.expectedMessageCount(1);
+        mockEndpoint.expectedHeaderReceived("imageid", imageidHeaderExpected);
+        mockEndpoint.expectedHeaderReceived("ImageSequenceID", imageSequenceIDHeaderExpected);
+        mockEndpoint.expectedHeaderReceived("ImageSequenceIndex", imageSequenceIndexHeaderExpected);
+        mockEndpoint.expectedHeaderReceived("ImageSequenceCount", imageSequenceCountHeaderExpected);
+
+        template.sendBodyAndHeaders(routeURI, "d18981s1i1.JPG", headers);
+
+        //get the mockEndpoint header values
+        String imageidHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("imageid", String.class);
+        String imageSequenceIDHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("ImageSequenceID", String.class);
+        String imageSequenceIndexHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("ImageSequenceIndex", String.class);
+        String imageSequenceCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("ImageSequenceCount", String.class);
+
+        assertEquals("imageid header assertEquals failed!", imageidHeaderExpected, imageidHeaderResult);
+        assertEquals("ImageSequenceID header assertEquals failed!", imageSequenceIDHeaderExpected, imageSequenceIDHeaderResult);
+        assertEquals("ImageSequenceIndex header assertEquals failed!", imageSequenceIndexHeaderExpected, imageSequenceIndexHeaderResult);
+        assertEquals("ImageSequenceCount header assertEquals failed!", imageSequenceCountHeaderExpected, imageSequenceCountHeaderResult);
+
+        assertMockEndpointsSatisfied();
+
+    }
+
+    /**
+     * Testing the MODS datastream is created and has the correct field values in the UnifiedCameraTrapAddMODSDataStream route
+     * @throws Exception
+     */
+    @Test
+    public void addMODSDatastream_Test() throws Exception {
+        //RouteId and endpoint uri
+        String routeId = "UnifiedCameraTrapAddMODSDataStream";
+        String routeURI = "direct:addMODSDataStream";
+
+        File MODS_DatastreamTestFile = new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/MODS/valid_MODS.xml");
+
+        String MODS_DatastreamExpected = FileUtils.readFileToString(MODS_DatastreamTestFile);
+
+        //the header thats used for the Unified_ManifestImage.xsl param
+        headers.put("imageid", "d18981s1i1");
+
+        //manually setting the FITSCreatedDate header
+        headers.put("FITSCreatedDate", "2016:02:13 12:11:26");
+
+        //Configure and use adviceWith to mock for testing purpose
+        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                //Remove the setheader definition for FITSCreatedDate we are manually passing this header in already
+                //weaveByType(SetHeaderDefinition.class).selectFirst().remove();
+                //set the mockEndpoint result and stop the route before adding the MODS datastream to fedora
+                weaveByToString(".*fedora:addDatastream.*").before().log(LoggingLevel.INFO, "uct.test", "============ BODY ============\n${body}").to("mock:result").stop();
+            }
+        });
+
+        mockEndpoint = getMockEndpoint("mock:result");
+
+        // set mock expectations
+        mockEndpoint.expectedMessageCount(1);
+        mockEndpoint.expectedBodyReceived().body().isEqualTo(MODS_DatastreamExpected);
+        mockEndpoint.expectedBodiesReceived(MODS_DatastreamExpected);
+
+        template.sendBodyAndHeaders(routeURI, "d18981s1i1.JPG", headers);
+
+        String resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody(String.class);
+
+        log.info("expectedBody:\n" + MODS_DatastreamExpected + "\nresultBody:\n" + resultBody);
+
+        log.info("expectedBody Type:\n" + MODS_DatastreamExpected.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
+
+        assertEquals("mock:result Body containing MODS datastream xml assertEquals failed!", MODS_DatastreamExpected, resultBody);
+
+        assertMockEndpointsSatisfied();
+
+    }
+
+    /**
+     * Testing the UnifiedCameraTrapValidateCSVFields route
+     * @throws Exception
+     */
+    @Test
+    public void unifiedCameraTrapValidateCSVFields_ResearcherObservation_Test() throws Exception {
+
+        //RouteId and endpoint uri
+        String routeId = "UnifiedCameraTrapValidateCSVFields";
+        String routeURI = "direct:ValidateCSVFields";
+
+        File ResearcherObservationCSV_DatastreamTestFile = new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ResearcherObservation/valid_ResearcherObservationCSV.csv");
+
+        String ResearcherObservationCSV_DatastreamExpected = FileUtils.readFileToString(ResearcherObservationCSV_DatastreamTestFile);
+
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+                "ResearcherIdentifications CSV: Validation Failed!", true);
+
+        //only add validation failed messages  to the bucket
+        if (!expectedValidationMessage.getValidationSuccess()) {
+            expectedBody.add(expectedValidationMessage);
+        }
+
+        setupValidationErrorMessageAggregationStrategyAdviceWith();
+
+        //Configure and use adviceWith to mock for testing purpose
+        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                //Remove the setheader definition for FITSCreatedDate we are manually passing this header in already
+                //weaveByType(SetHeaderDefinition.class).selectFirst().remove();
+                //set the mockEndpoint result and stop the route before adding the MODS datastream to fedora
+                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(ResearcherObservationCSV_DatastreamExpected)));
+                weaveAddLast().to("direct:validationErrorMessageAggregationStrategy").setHeader("ValidationComplete", simple("true")).to("direct:validationErrorMessageAggregationStrategy").stop();
+            }
+        });
+
+        mockEndpoint = getMockEndpoint("mock:result");
+
+        // set mock expectations
+        mockEndpoint.expectedMessageCount(1);
+        /*mockEndpoint.expectedBodyReceived().body().isEqualTo(ResearcherObservationCSV_DatastreamExpected);
+        mockEndpoint.expectedBodiesReceived(ResearcherObservationCSV_DatastreamExpected);*/
+
+        template.sendBodyAndHeaders(routeURI, "testCSV", headers);
+
+        Object resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody();
+
+        log.info("expectedBody:\n" + expectedBody + "\nresultBody:\n" + resultBody);
+
+        log.info("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
+
+        assertEquals("mock:result Body containing MODS datastream xml assertEquals failed!", expectedBody, resultBody);
+
+        assertMockEndpointsSatisfied();
+
     }
 
     /**
@@ -248,7 +425,8 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
 
                 // need to set header for the test created in the setupCSV advicewithroutebuilder so that
                 // the correct observation csv datastream is used.
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectFirst().after().setHeader("testingVolunteer", simple("true"));
+                weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectFirst().after().setHeader("testingVolunteerObservation", simple("true"));
+                weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectIndex(1).after().setHeader("testingImageObservation", simple("true"));
 
                 weaveAddLast().stop();
             }
@@ -290,7 +468,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
         //message.append("Datastream EAC-CPF ProjectName Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - EAC-CPF ProjectName Field validation failed. ");
-        message.append("Expected Prairie Ridge Project but found No Project Name.");
+        message.append("Expected Sample Triangle Camera Trap Survey Project (p125) but found Sample Blah Blah Blah Project (p125).");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), pass);
@@ -329,7 +507,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
         //message.append("Datastream FGDC CameraDeploymentID Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - FGDC CameraDeploymentID Field validation failed. ");
-        message.append("Expected 0000 but found 1111.");
+        message.append("Expected d18981 but found blahblah.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), pass);
@@ -367,7 +545,7 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
         //message.append("Datastream MODS ImageSequenceId Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - MODS ImageSequenceId Field validation failed. ");
-        message.append("Expected 2970s1 but found 000000.");
+        message.append("Expected d18981s1 but found blahblah.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), pass);
@@ -400,12 +578,13 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
      * @param volunteerPass
      * @param datastreamFileCSV
      */
-    private void setupCSV_ValidationAdviceWith(boolean researcherPass, boolean volunteerPass, File[] datastreamFileCSV) throws Exception {
+    private void setupCSV_ValidationAdviceWith(boolean researcherPass, boolean volunteerPass, boolean imagePass, File[] datastreamFileCSV) throws Exception {
 
         //The researcher or volunteer datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
         String researcherCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[0]);
         String volunteerCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[1]);
+        String imageCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[2]);
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 "ResearcherIdentifications CSV: Validation Failed!", researcherPass);
@@ -423,6 +602,14 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
             expectedBody.add(expectedValidationMessage);
         }
 
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+                "ImageIdentifications CSV: Validation Failed!", imagePass);
+
+        //only add validation failed messages  to the bucket
+        if (!expectedValidationMessage.getValidationSuccess()) {
+            expectedBody.add(expectedValidationMessage);
+        }
+
         //using adviceWith to mock for testing purpose
         context.getRouteDefinition("UnifiedCameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -432,7 +619,9 @@ public class UnifiedCameraTrapTest extends CamelBlueprintTestSupport {
                 // The modified csv validation route will use the volunteer datastream if the header value is true.
                 weaveByToString(".*getDatastreamDissemination.*").replace()
                         .choice()
-                        .when(header("testingVolunteer").isEqualTo("true"))
+                        .when(header("testingImageObservation").isEqualTo("true"))
+                        .setBody(simple(String.valueOf(imageCSVdatastream)))
+                        .when(header("testingVolunteerObservation").isEqualTo("true"))
                         .setBody(simple(String.valueOf(volunteerCSVdatastream)))
                         .otherwise()
                         .setBody(simple(String.valueOf(researcherCSVdatastream)));
