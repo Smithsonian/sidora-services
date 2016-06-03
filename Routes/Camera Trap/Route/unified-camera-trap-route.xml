@@ -38,6 +38,7 @@
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="si.ct.id" value="edu.si.uctingest"/>
+            <cm:property name="si.ct.pipeline" value="UnifiedCameraTrapIngest"/>
             <cm:property name="si.ct.uscbi.dryrun" value="false"/>
             <cm:property name="si.ct.uscbi.enableS3Routes" value="false"/>
         </cm:default-properties>
@@ -211,32 +212,37 @@
                 <transform>
                     <simple>deployment_manifest.xml</simple>
                 </transform>
+
                 <to uri="reader:file?type=text"/>
-                <!-- Validate against the XSD. -->
+
                 <log message="${id} UnifiedCameraTrapIngest: Body - ${body}"
                      loggingLevel="WARN"
                      logName="{{si.ct.id}}"/>
+
+                <!-- Validate against the XSD. -->
                 <to uri="validator:file:Input/schemas/Unified_eMammalDeploymentManifest.xsd"/>
 
-                <!-- Add Schematron validation. -->
-                <!--
-                <to uri="schematron:file:Input/schemas/DeploymentManifest2014.sch"/>
+                <!-- Schematron validation. -->
+                <to uri="schematron:file:Input/schemas/Unified_eMammalDeploymentManifest.sch"/>
                 <log message="${id} UnifiedCameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"/>
                 <choice>
                     <when>
                         <simple>${in.header.CamelSchematronValidationStatus} == 'FAILED'</simple>
                         <log message="${id} UnifiedCameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                             loggingLevel="WARN"/>
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
                         <log message="${id} UnifiedCameraTrapIngest: Schematron Validation Report -\n ${header.CamelSchematronValidationReport}"
-                             loggingLevel="WARN"/>
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
                         <throwException ref="validationFailure"/>
                     </when>
                     <otherwise>
-                        <log message="${id} UnifiedCameraTrapIngest: Schematron validation succeeded."/>
+                        <log message="${id} UnifiedCameraTrapIngest: Schematron validation succeeded."
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
                     </otherwise>
                 </choice>
-                -->
 
                 <setHeader headerName="ManifestXML">
                     <simple>
@@ -265,7 +271,7 @@
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
                         <delay>
-                            <constant>6000</constant>
+                            <constant>8000</constant>
                         </delay>
 
                         <!-- Validate image count and check filenames. -->
@@ -457,6 +463,8 @@
             </setHeader>
             <to uri="direct:validateObjectDatastreams"/>
 
+            <!-- TODO: Validation for Sub-Project -->
+
             <!-- Validate Plot Object datastreams -->
             <choice>
                 <when>
@@ -529,7 +537,7 @@
             </setHeader>
             <setHeader headerName="DatastreamTypesCheck">
                 <simple resultType="java.lang.String">
-                    DC, OBJ, CSV, RELS-EXT
+                    DC, OBJ, CSV, RELS-EXT, FGDC
                 </simple>
             </setHeader>
             <to uri="direct:validateObjectDatastreams"/>
@@ -547,7 +555,25 @@
             </setHeader>
             <setHeader headerName="DatastreamTypesCheck">
                 <simple resultType="java.lang.String">
-                    DC, OBJ, CSV, RELS-EXT
+                    DC, OBJ, CSV, RELS-EXT, FGDC
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Image Observation Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Image Observation
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ImageObservationPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, CSV, RELS-EXT, FGDC
                 </simple>
             </setHeader>
             <to uri="direct:validateObjectDatastreams"/>
@@ -733,9 +759,18 @@
                      logName="{{si.ct.id}}"/>
             </split>
 
+            <!-- TODO: verify required and optional resources for the Unified CT Ingest -->
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
+            <!-- Researcher is required for Unified CT Ingest. -->
             <to uri="direct:addResearcherObservationResource"/>
+            <!-- Volunteer is optional for Unified CT Ingest. -->
+            <filter>
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    boolean(//VolunteerIdentifications/Identification/IUCNId/text()[1])
+                </xpath>
             <to uri="direct:addVolunteerObservationResource"/>
+            </filter>
+            <!-- Image is required for Unified CT Ingest. -->
             <to uri="direct:addImageObservationResource"/>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
@@ -1260,9 +1295,23 @@
                             {{si.ct.root}}
                         </simple>
                     </setHeader>
+
+                    <!-- TODO: implement checks for Project, Sub-Project, and Plot
+                            Project Level: If Project Id or Project Name = Blank, produce error report and do no further processing
+                            Sub-Project Level: If there is information in the Sub-Project Design, but not in the Sub-Project ID and Name, produce error report and do no further processing
+                                               If there is a sub-project Id, but no sub-project name, produce error report and do no further processing
+                                               If there is a sub-project name, but no sub-project id, produce an error report and do no further processing
+                                               If sub-project id and name are blank, no sub-project is created, skip to plot
+                            Plot Level: If there is information in the Plot Treatment, but not in the Plot Name, produce error report and do no further processing
+                                        If plot name is blank, skip to deployment
+
+                                    Ex. <throwException ref="noProject_ID_or_Name"/>
+                                        <throwException ref="subProject_DESIGN_No_ID_or_NAME"/>
+                                        <throwException ref="plot_TREATMENT_No_NAME"/>
+                    -->
                     <!-- Add the parents if needed. -->
                     <to uri="direct:processProject"/>
-                    <!-- Subproject is optional. -->
+                    <!-- Add Subproject - leaving the filter on subproject for now even though its required as part of the unified ingest-->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
                             boolean(//SubProjectName/text()[1])
@@ -1881,7 +1930,7 @@
                  logName="{{si.ct.id}}"/>
 
             <log message="===========(0)============ CamelFedoraPid: ${header.CamelFedoraPid} |  ===========(0)============\n${body}"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
 
@@ -1889,7 +1938,7 @@
             <convertBodyTo type="java.lang.String"/>
 
             <log message="===========(1)============ Body ===========(1)============\n${body}"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <unmarshal>
@@ -1897,7 +1946,7 @@
             </unmarshal>
 
             <log message="===========(2)============ Body ===========(2)============\n${body}"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <!-- Get Researcher, Volunteer, or Image from the CSV -->
@@ -1923,7 +1972,7 @@
             </setHeader>
 
             <log message="===========(3)============ Observer: ${header.Observer} | CSVObservationCount: ${header.CSVObservationCount} | CSVImageSeqID: ${header.CSVImageSeqID} ===========(3)============"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <setHeader headerName="validationResult">
@@ -1933,7 +1982,7 @@
             </setHeader>
 
             <log message="===========(4)============ validationResult: ${header.validationResult} ===========(4)============"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <choice>
