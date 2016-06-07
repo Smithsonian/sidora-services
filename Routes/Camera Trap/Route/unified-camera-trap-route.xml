@@ -271,7 +271,7 @@
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
                         <delay>
-                            <constant>8000</constant>
+                            <constant>6000</constant>
                         </delay>
 
                         <!-- Validate image count and check filenames. -->
@@ -464,6 +464,28 @@
             <to uri="direct:validateObjectDatastreams"/>
 
             <!-- TODO: Validation for Sub-Project -->
+            <!-- Validate SubProject Object datastreams -->
+            <choice>
+                <when>
+                    <header>SubProjectPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            SubProject
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.SubProjectPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, FGDC-Research, RELS-EXT
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
 
             <!-- Validate Plot Object datastreams -->
             <choice>
@@ -481,7 +503,7 @@
                     </setHeader>
                     <setHeader headerName="DatastreamTypesCheck">
                         <simple resultType="java.lang.String">
-                            DC, EAC-CPF, RELS-EXT
+                            DC, FGDC-CTPlot, RELS-EXT
                         </simple>
                     </setHeader>
                     <to uri="direct:validateObjectDatastreams"/>
@@ -758,11 +780,11 @@
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
             </split>
-
-            <!-- TODO: verify required and optional resources for the Unified CT Ingest -->
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
+
             <!-- Researcher is required for Unified CT Ingest. -->
             <to uri="direct:addResearcherObservationResource"/>
+
             <!-- Volunteer is optional for Unified CT Ingest. -->
             <filter>
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
@@ -770,16 +792,18 @@
                 </xpath>
             <to uri="direct:addVolunteerObservationResource"/>
             </filter>
-            <!-- Image is required for Unified CT Ingest. -->
-            <to uri="direct:addImageObservationResource"/>
+
+            <!-- Image is optional for Unified CT Ingest. -->
+            <filter>
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    boolean(//ImageIdentifications/Identification/IUCNId/text()[1])
+                </xpath>
+                <to uri="direct:addImageObservationResource"/>
+            </filter>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false
-                </simple>
-            </recipientList>
+            <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished resource processing."
                  loggingLevel="INFO"
@@ -792,13 +816,6 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <!--
-            <setHeader headerName="ImageID">
-                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
-                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
-                </xpath>
-            </setHeader>
-            -->
             <!-- Spelled this way for the MODS XSLT parameter. -->
             <setHeader headerName="imageid">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
@@ -811,31 +828,6 @@
                     //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                 </xpath>
             </setHeader>
-            <!--
-            <setHeader headerName="ImageSequenceIndex">
-                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
-                    count(//Image/ImageId[.=$ImageID]/../preceding-sibling::Image)
-                </xpath>
-            </setHeader>
-            -->
-            <!--
-            <setHeader headerName="ImageSequenceIndex">
-                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
-                    substring-after($ImageID,concat($ImageSequenceID,'i'))
-                </xpath>
-            </setHeader>
-            -->
-            <!--
-                This is a fix to deal with a change made to the backlog UCT ImageID format.  It will fail if there are
-                two or more 'i' characters in the ImageID.
-            -->
-            <!--
-            <setHeader headerName="ImageSequenceIndex">
-                <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
-                    substring-after($ImageID,'i')
-                </xpath>
-            </setHeader>
-            -->
             <setHeader headerName="ImageSequenceIndex">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageOrder/text()
@@ -868,16 +860,10 @@
 
             <to uri="reader:file"/>
 
-            <recipientList>
-                <simple>
-                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}
-                </simple>
-            </recipientList>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false
-                </simple>
-            </recipientList>
+            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false"/>
+
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
             <!-- <to uri="direct:createArchivalImage" /> -->
@@ -958,11 +944,9 @@
                 </xpath>
             </transform>
             <convertBodyTo type="java.lang.String"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"/>
+
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
@@ -1034,11 +1018,9 @@
                 </xpath>
             </transform>
             <convertBodyTo type="java.lang.String"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"/>
+
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
@@ -1102,11 +1084,9 @@
                 </xpath>
             </transform>
             <convertBodyTo type="java.lang.String"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"/>
+
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
@@ -1183,12 +1163,6 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
-
             <!-- Get the FITS XML and use XPATH to get the created date from it. -->
             <!--
             <setHeader headerName="FITSCreatedDate">
@@ -1206,7 +1180,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/Unified_ManifestImage.xsl?saxon=true"/>
+            <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
             <log message="${id} UnifiedCameraTrapIngest: MODS XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1296,29 +1270,17 @@
                         </simple>
                     </setHeader>
 
-                    <!-- TODO: implement checks for Project, Sub-Project, and Plot
-                            Project Level: If Project Id or Project Name = Blank, produce error report and do no further processing
-                            Sub-Project Level: If there is information in the Sub-Project Design, but not in the Sub-Project ID and Name, produce error report and do no further processing
-                                               If there is a sub-project Id, but no sub-project name, produce error report and do no further processing
-                                               If there is a sub-project name, but no sub-project id, produce an error report and do no further processing
-                                               If sub-project id and name are blank, no sub-project is created, skip to plot
-                            Plot Level: If there is information in the Plot Treatment, but not in the Plot Name, produce error report and do no further processing
-                                        If plot name is blank, skip to deployment
-
-                                    Ex. <throwException ref="noProject_ID_or_Name"/>
-                                        <throwException ref="subProject_DESIGN_No_ID_or_NAME"/>
-                                        <throwException ref="plot_TREATMENT_No_NAME"/>
-                    -->
                     <!-- Add the parents if needed. -->
+                    <!-- Project is required, Project is required -->
                     <to uri="direct:processProject"/>
-                    <!-- Add Subproject - leaving the filter on subproject for now even though its required as part of the unified ingest-->
+                    <!-- Add Sub-Project if needed, Sub-Project is required -->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
                             boolean(//SubProjectName/text()[1])
                         </xpath>
                         <to uri="direct:processSubproject"/>
                     </filter>
-                    <!-- Plot is optional. -->
+                    <!-- Add Plot if needed, Plot is optional -->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
                             boolean(//PlotName/text()[1])
@@ -1473,12 +1435,6 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
-
             <!-- Look for the plot (its optional). -->
             <setBody>
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
@@ -1522,7 +1478,6 @@
                     <!-- Add Relation from parent UCT sub-project to the child UCT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- Add an FGDC-CTPlot datastream for concept metadata. -->
-                    <!--<to uri="velocity:file:Input/templates/CTPlotFGDC-CTPlotTemplate.vsl"/>-->
                     <setBody>
                         <simple>
                             ${header.ManifestXML}
@@ -1560,12 +1515,6 @@
             <log message="${id} UnifiedCameraTrapIngest: Started processing subproject ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
 
             <!-- Look for the sub-project. -->
             <setBody>
@@ -1610,7 +1559,6 @@
                     <!-- Add Relation from parent UCT project to the child UCT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- Add an FGDC-Research datastream for concept metadata. -->
-                    <!--<to uri="velocity:file:Input/templates/CTPlotFGDC-ResearchTemplate.vsl"/>-->
                     <setBody>
                         <simple>
                             ${header.ManifestXML}
@@ -1632,6 +1580,12 @@
                 </otherwise>
             </choice>
 
+            <setHeader headerName="SubProjectPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} UnifiedCameraTrapIngest: Finished processing subproject."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1642,12 +1596,6 @@
             <log message="${id} UnifiedCameraTrapIngest: Started processing project ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-
-            <!--
-            <setHeader headerName="esc">
-                <method ref="velocityToolsHandler" method="getVelocityEscapeTool"/>
-            </setHeader>
-            -->
 
             <!-- Look for the project. -->
             <setBody>
@@ -1686,7 +1634,6 @@
                     <!-- Add Relation from parent UCT root object to the child UCT project. -->
                     <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- Add an EAC-CPF datastream for concept metadata. -->
-                    <!--<to uri="velocity:file:Input/templates/CTProjectEAC-CPFTemplate.vsl"/>-->
                     <setBody>
                         <simple>
                             ${header.ManifestXML}
@@ -1738,28 +1685,42 @@
                     ${header.ResearcherObservationPID}
                 </simple>
             </setHeader>
-
             <to uri="direct:ValidateCSVFields"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
-
+            <!--
+                If Volunteer or Image Observations exist Researcher Validation Errors will be sent to the aggregator
+                before continuing to the next validation.
+                If Volunteer or Image Observations DO NOT exist the ValidationComplete header is set and the
+                Researcher Observation Errors are sent to the aggregator for final validation error message aggregation
+            -->
             <!-- Start Volunteer CSV Validation -->
-            <setHeader headerName="CamelFedoraPid">
-                <simple>
-                    ${header.VolunteerObservationPID}
-                </simple>
-            </setHeader>
-
-            <to uri="direct:ValidateCSVFields"/>
-            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+            <choice>
+                <when>
+                    <header>VolunteerObservationPID</header>
+                    <!-- Send the Validation Error Message to the aggregator if any -->
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            ${header.VolunteerObservationPID}
+                        </simple>
+                        <to uri="direct:ValidateCSVFields"/>
+                    </setHeader>
+                </when>
+            </choice>
 
             <!-- Start Image CSV Validation -->
-            <setHeader headerName="CamelFedoraPid">
-                <simple>
-                    ${header.ImageObservationPID}
-                </simple>
-            </setHeader>
-
-            <to uri="direct:ValidateCSVFields"/>
+            <choice>
+                <when>
+                    <header>ImageObservationPID</header>
+                    <!-- Send the Validation Error Message to the aggregator if any -->
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            ${header.ImageObservationPID}
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:ValidateCSVFields"/>
+                </when>
+            </choice>
 
             <!-- Notify the aggregator to complete aggregation -->
             <setHeader headerName="ValidationComplete">
@@ -1814,7 +1775,7 @@
             </setBody>
             -->
 
-            <!-- the | separated list of xpath's and field names to be validated -->
+            <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
                     EAC-CPF ProjectName|//eac:nameEntry[1]/eac:part/text()|concat(//ProjectName/text(), ' &#40;', //ProjectId/text(), '&#41;')
@@ -1851,7 +1812,7 @@
                 </simple>
             </setHeader>
 
-            <!-- the | separated list of xpath's and field names to be validated -->
+            <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
                     FGDC CameraDeploymentID|//citeinfo/othercit/text()|//CameraDeploymentID/text()
@@ -1892,7 +1853,7 @@
                 </simple>
             </setHeader>
 
-            <!-- the | separated list of xpath's and field names to be validated -->
+            <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
                     MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()

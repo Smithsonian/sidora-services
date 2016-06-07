@@ -3,7 +3,7 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="xml" indent="yes" encoding="utf-8"/>
     <xsl:output name="content" method="text"/>
-    <xsl:param name="imageid" select="'RWA-003-D0002-I000443'"></xsl:param>
+    <xsl:param name="imageid"/>
 
  <!-- This stylesheet creates MODS metadata for a camera trap image.  
  -->
