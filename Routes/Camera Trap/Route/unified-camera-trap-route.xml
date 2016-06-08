@@ -1706,9 +1706,6 @@
             <choice>
                 <when>
                     <header>VolunteerObservationPID</header>
-                    <log message="|||||||||||||||||||||||||||||||||| True ||||||||||||||||||||||||||||||||"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
                     <!-- Send the Validation Error Message to the aggregator if any -->
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1718,20 +1715,12 @@
                     </setHeader>
                     <to uri="direct:ValidateCSVFields"/>
                 </when>
-                <otherwise>
-                    <log message="|||||||||||||||||||||||||||||||||| False ||||||||||||||||||||||||||||||||"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                </otherwise>
             </choice>
 
             <!-- Start Image CSV Validation -->
             <choice>
                 <when>
                     <header>ImageObservationPID</header>
-                    <log message="////////////////////////////////// True ////////////////////////////////"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
                     <!-- Send the Validation Error Message to the aggregator if any -->
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1741,11 +1730,6 @@
                     </setHeader>
                     <to uri="direct:ValidateCSVFields"/>
                 </when>
-                <otherwise>
-                    <log message="////////////////////////////////// False ////////////////////////////////"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                </otherwise>
             </choice>
 
             <!-- Notify the aggregator to complete aggregation -->
@@ -1916,25 +1900,12 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <log message="===========(0)============ CamelFedoraPid: ${header.CamelFedoraPid} |  ===========(0)============\n${body}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-
             <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String"/>
-
-            <log message="===========(1)============ Body ===========(1)============\n${body}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
 
             <unmarshal>
                 <csv delimiter=","/>
             </unmarshal>
-
-            <log message="===========(2)============ Body ===========(2)============\n${body}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
 
             <!-- Get Researcher, Volunteer, or Image from the CSV -->
             <setHeader headerName="Observer">
@@ -1958,8 +1929,8 @@
                 </simple>
             </setHeader>
 
-            <log message="===========(3)============ Observer: ${header.Observer} | CSVObservationCount: ${header.CSVObservationCount} | CSVImageSeqID: ${header.CSVImageSeqID} ===========(3)============"
-                 loggingLevel="INFO"
+            <log message="${id} UnifiedCameraTrapValidateCSVFields: ${header.Observer} | CSVObservationCount = ${header.CSVObservationCount} | CSVImageSeqID = ${header.CSVImageSeqID}"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <setHeader headerName="validationResult">
@@ -1968,8 +1939,8 @@
                 </xpath>
             </setHeader>
 
-            <log message="===========(4)============ validationResult: ${header.validationResult} ===========(4)============"
-                 loggingLevel="INFO"
+            <log message="${id} UnifiedCameraTrapValidateCSVFields: ${header.Observer} validationResult: ${header.validationResult} "
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <choice>
