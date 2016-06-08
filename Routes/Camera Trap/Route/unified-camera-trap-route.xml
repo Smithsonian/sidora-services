@@ -565,40 +565,50 @@
             <to uri="direct:validateObjectDatastreams"/>
 
             <!-- Validate Volunteer Observation Object datastreams -->
-            <setHeader headerName="ValidationDatastreamObjectType">
-                <simple>
-                    Volunteer Observation
-                </simple>
-            </setHeader>
-            <setHeader headerName="ValidationDatastreamObjectPID">
-                <simple>
-                    ${headers.VolunteerObservationPID}
-                </simple>
-            </setHeader>
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, OBJ, CSV, RELS-EXT, FGDC
-                </simple>
-            </setHeader>
-            <to uri="direct:validateObjectDatastreams"/>
+            <choice>
+                <when>
+                    <header>VolunteerObservationPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            Volunteer Observation
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.VolunteerObservationPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, OBJ, CSV, RELS-EXT, FGDC
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
 
             <!-- Validate Image Observation Object datastreams -->
-            <setHeader headerName="ValidationDatastreamObjectType">
-                <simple>
-                    Image Observation
-                </simple>
-            </setHeader>
-            <setHeader headerName="ValidationDatastreamObjectPID">
-                <simple>
-                    ${headers.ImageObservationPID}
-                </simple>
-            </setHeader>
-            <setHeader headerName="DatastreamTypesCheck">
-                <simple resultType="java.lang.String">
-                    DC, OBJ, CSV, RELS-EXT, FGDC
-                </simple>
-            </setHeader>
-            <to uri="direct:validateObjectDatastreams"/>
+            <choice>
+                <when>
+                    <header>ImageObservationPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            Image Observation
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.ImageObservationPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, OBJ, CSV, RELS-EXT, FGDC
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
 
             <log message="${id} UnifiedCameraTrapIngest: Finished Datastream validations."
                  loggingLevel="INFO"
