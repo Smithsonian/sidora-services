@@ -1,12 +1,12 @@
 <eac-cpf xmlns="urn:isbn:1-931666-33-4" xmlns:eac="urn:isbn:1-931666-33-4" xmlns:xlink="http://www.w3.org/1999/xlink">
     <control>
-        <recordId>default</recordId>
+        <recordId>p125</recordId>
         <maintenanceStatus>revised</maintenanceStatus>
         <maintenanceAgency>
             <agencyName></agencyName>
         </maintenanceAgency>
         <localControl localType="Publication Date">
-            <date></date>
+            <date>2016-04-27</date>
         </localControl>
         <maintenanceHistory>
             <maintenanceEvent>
@@ -22,10 +22,10 @@
         <identity>
             <entityType>corporateBody</entityType>
             <nameEntry localType="primary">
-                <part>No Project Name</part>
+                <part>Sample Triangle Camera Trap Survey Project (p125)</part>
             </nameEntry>
             <nameEntry localType="abbreviation">
-                <part>Prairie Ridge Project</part>
+                <part>p125</part>
             </nameEntry>
         </identity>
         <description>
@@ -38,23 +38,43 @@
             <place>
                 <placeEntry localType="address"></placeEntry>
                 <placeEntry localType="region"></placeEntry>
-                <placeEntry countryCode="US" latitude="35.81108" longitude="-78.71894"></placeEntry>
+                <placeEntry countryCode="EC" latitude="8.000000" longitude="-67.000000"></placeEntry>
             </place>
             <functions>
                 <function>
+                    <term>Project Objectives</term>
+                    <descriptiveNote>
+                        <p>Sample Project Objectives</p>
+                    </descriptiveNote>
+                </function>
+                <function>
                     <term>Project Data Access and Use Constraints</term>
                     <descriptiveNote>
-                        <p></p>
+                        <p>None</p>
                     </descriptiveNote>
                 </function>
             </functions>
         </description>
         <relations>
             <cpfRelation>
-                <relationEntry></relationEntry>
-                <placeEntry localType="email address"></placeEntry>
+                <relationEntry>Sample Owner</relationEntry>
+                <placeEntry localType="email address">owner@sample.org</placeEntry>
                 <descriptiveNote>
                     <p>Project Owner</p>
+                </descriptiveNote>
+            </cpfRelation>
+            <cpfRelation>
+                <relationEntry>Sample Investigator</relationEntry>
+                <placeEntry localType="email address">investigator@sample.org</placeEntry>
+                <descriptiveNote>
+                    <p>Principal Investigator</p>
+                </descriptiveNote>
+            </cpfRelation>
+            <cpfRelation>
+                <relationEntry>Sample Project Contact</relationEntry>
+                <placeEntry localType="email address">projectcontact@sample.org</placeEntry>
+                <descriptiveNote>
+                    <p>Project Contact</p>
                 </descriptiveNote>
             </cpfRelation>
         </relations>
