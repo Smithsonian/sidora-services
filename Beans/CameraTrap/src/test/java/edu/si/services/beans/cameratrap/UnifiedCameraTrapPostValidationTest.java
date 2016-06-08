@@ -350,6 +350,9 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
                 new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ImageObservation/fail_ImageObservationCSV.csv")
         };
 
+        headers.put("VolunteerObservationPID", "test:00000");
+        headers.put("ImageObservationPID", "test:00000");
+
         setupCSV_ValidationAdviceWith(false, false, false, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
@@ -374,6 +377,9 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
                 new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ImageObservation/valid_ImageObservationCSV.csv")
         };
 
+        headers.put("VolunteerObservationPID", "test:00000");
+        headers.put("ImageObservationPID", "test:00000");
+
         setupCSV_ValidationAdviceWith(true, true, true, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
@@ -397,6 +403,9 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
                 new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/VolunteerObservation/fail_VolunteerObservationCSV.csv"),
                 new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/ImageObservation/valid_ImageObservationCSV.csv")
         };
+
+        headers.put("VolunteerObservationPID", "test:00000");
+        headers.put("ImageObservationPID", "test:00000");
 
         setupCSV_ValidationAdviceWith(true, false, true, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();

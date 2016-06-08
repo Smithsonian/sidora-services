@@ -1706,21 +1706,32 @@
             <choice>
                 <when>
                     <header>VolunteerObservationPID</header>
+                    <log message="|||||||||||||||||||||||||||||||||| True ||||||||||||||||||||||||||||||||"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
                     <!-- Send the Validation Error Message to the aggregator if any -->
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
                     <setHeader headerName="CamelFedoraPid">
                         <simple>
                             ${header.VolunteerObservationPID}
                         </simple>
-                        <to uri="direct:ValidateCSVFields"/>
                     </setHeader>
+                    <to uri="direct:ValidateCSVFields"/>
                 </when>
+                <otherwise>
+                    <log message="|||||||||||||||||||||||||||||||||| False ||||||||||||||||||||||||||||||||"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
             </choice>
 
             <!-- Start Image CSV Validation -->
             <choice>
                 <when>
                     <header>ImageObservationPID</header>
+                    <log message="////////////////////////////////// True ////////////////////////////////"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
                     <!-- Send the Validation Error Message to the aggregator if any -->
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1730,6 +1741,11 @@
                     </setHeader>
                     <to uri="direct:ValidateCSVFields"/>
                 </when>
+                <otherwise>
+                    <log message="////////////////////////////////// False ////////////////////////////////"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
             </choice>
 
             <!-- Notify the aggregator to complete aggregation -->
@@ -1901,7 +1917,7 @@
                  logName="{{si.ct.id}}"/>
 
             <log message="===========(0)============ CamelFedoraPid: ${header.CamelFedoraPid} |  ===========(0)============\n${body}"
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
 
@@ -1909,7 +1925,7 @@
             <convertBodyTo type="java.lang.String"/>
 
             <log message="===========(1)============ Body ===========(1)============\n${body}"
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
             <unmarshal>
@@ -1917,7 +1933,7 @@
             </unmarshal>
 
             <log message="===========(2)============ Body ===========(2)============\n${body}"
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
             <!-- Get Researcher, Volunteer, or Image from the CSV -->
@@ -1943,7 +1959,7 @@
             </setHeader>
 
             <log message="===========(3)============ Observer: ${header.Observer} | CSVObservationCount: ${header.CSVObservationCount} | CSVImageSeqID: ${header.CSVImageSeqID} ===========(3)============"
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
             <setHeader headerName="validationResult">
@@ -1953,7 +1969,7 @@
             </setHeader>
 
             <log message="===========(4)============ validationResult: ${header.validationResult} ===========(4)============"
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
             <choice>
