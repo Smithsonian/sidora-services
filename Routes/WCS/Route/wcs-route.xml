@@ -38,6 +38,7 @@
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="si.ct.id" value="edu.si.wcsingest"/>
+            <cm:property name="si.ct.pipeline" value="WCSCameraTrapIngest"/>
             <cm:property name="si.ct.wcs.dryrun" value="false"/>
         </cm:default-properties>
     </cm:property-placeholder>
