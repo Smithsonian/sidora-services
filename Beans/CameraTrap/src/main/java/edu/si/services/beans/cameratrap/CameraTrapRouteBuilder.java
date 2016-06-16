@@ -28,6 +28,7 @@
 package edu.si.services.beans.cameratrap;
 
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 
 /**
@@ -39,7 +40,12 @@ import org.apache.camel.builder.RouteBuilder;
  */
 public class CameraTrapRouteBuilder extends RouteBuilder {
 
-    static final private String CT_LOG_NAME = "edu.si.ctingest";
+    @PropertyInject(value = "si.ct.id")
+    static private String CT_LOG_NAME;
+
+    @PropertyInject(value = "si.ct.pipeline")
+    static private String CT_PIPELINE_NAME;
+
 
     /**
      * Configure the Camel routing rules for the Camera Trap Deployment Package Ingestion Process.
@@ -52,12 +58,12 @@ public class CameraTrapRouteBuilder extends RouteBuilder {
             .routeId("CameraTrapValidatePostResourceCount")
             .choice()
                 .when(header("ResourceCount").isEqualTo(header("RelsExtResourceCount")))
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} CameraTrapIngest: Post Resource Count validation passed")
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + ": Post Resource Count validation passed")
                     .id("ValidatePostResourceCountWhenBlock")
                 .otherwise()
-                    .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} CameraTrapIngest: Post Resource Count validation failed - sending msg to queue")
-                    .to("bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Post Resource Count validation failed. " +
-                            "Expected ${header.ResourceCount} but found ${header.RelsExtResourceCount}', false)")
+                    .log(LoggingLevel.WARN, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + ": Post Resource Count validation failed")
+                .to("bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, 'Post Resource Count validation failed. " +
+                        "Expected ${header.ResourceCount} but found ${header.RelsExtResourceCount}', false)")
                     .to("direct:validationErrorMessageAggregationStrategy")
             .endChoice();
 

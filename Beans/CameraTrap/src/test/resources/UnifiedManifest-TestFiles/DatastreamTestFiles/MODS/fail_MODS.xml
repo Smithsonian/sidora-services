@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mods xmlns="http://www.loc.gov/mods/v3"
+      xmlns:mods="http://www.loc.gov/mods/v3"
+      xmlns:xlink="http://www.w3.org/1999/xlink">
+   <titleInfo>
+      <title>RaleighBYO 416,  1 of 2</title>
+   </titleInfo>
+   <identifier type="Image ID">d18981s1i1</identifier>
+   <relatedItem>
+      <identifier type="Image Sequence ID">blahblah</identifier>
+   </relatedItem>
+   <typeOfResource>still image</typeOfResource>
+   <abstract/>
+   <physicalDescription>
+      <digitalOrigin>born digital</digitalOrigin>
+   </physicalDescription>
+   <subject authority="Camera Trap Data Network Photo Type">
+      <topic>animal</topic>
+   </subject>
+   <subject authorityURI="http://www.iucnredlist.org">
+      <topic/>
+   </subject>
+   <subject>
+      <topic/>
+      <geographic/>
+      <cartographics>
+         <coordinates/>
+      </cartographics>
+   </subject>
+   <name>
+      <namePart/>
+      <role>
+         <roleTerm authority="marcrelator" type="text">Photo Type Identified By</roleTerm>
+      </role>
+   </name>
+   <note type="Interest Rank">None</note>
+   <originInfo>
+      <dateCaptured>2016-02-13 12:11:26</dateCaptured>
+      <dateOther type="Embargo Period End Date"/>
+   </originInfo>
+   <location>
+      <physicalLocation/>
+      <holdingSimple>
+         <copyInformation>
+            <subLocation/>
+         </copyInformation>
+      </holdingSimple>
+   </location>
+   <accessCondition type="restriction on access"/>
+   <accessCondition type="use and reproduction"/>
+</mods>
