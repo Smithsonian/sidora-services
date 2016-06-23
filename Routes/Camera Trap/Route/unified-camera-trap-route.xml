@@ -1788,7 +1788,7 @@
             <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    EAC-CPF ProjectName|//eac:nameEntry[1]/eac:part/text()|concat(//ProjectName/text(), ' &#40;', //ProjectId/text(), '&#41;')
+                    EAC-CPF ProjectName|//eac:nameEntry[1]/eac:part/text()|//ProjectName/text()
                 </simple>
             </setBody>
             <to uri="direct:ValidateDatastreamFieldList"/>
