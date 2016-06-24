@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<si:codebook xmlns:dc="http://purl.org/dc/terms/" xmlns="urn:si.edu/codebook#" xmlns:si="urn:si.edu/codebook#">
+    <dc:title/>
+    <dc:description/>
+    <dc:creator/>
+    <dc:date/>
+    <dc:identifier/>
+    <si:variables>
+        <si:variable name="SUBEST_ID" type="string">
+            <si:label>label of SUBEST_ID</si:label>
+            <si:description>desc of SUBEST_ID</si:description>
+            <si:enumeration vocabulary="SUBEST_ID">
+                <si:value>BAC01</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>BAC01</si:min>
+                <si:max>EAS04</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="struLENGTH" type="numeric">
+            <si:label>label of struLENGTH</si:label>
+            <si:description>desc of struLENGTH</si:description>
+            <si:enumeration vocabulary="struLENGTH">
+                <si:value>0.078294679</si:value>
+                <si:value>0.084102389</si:value>
+                <si:value>0.076936118</si:value>
+                <si:value>0.059919236</si:value>
+                <si:value>0.083591039</si:value>
+                <si:value>0.107909409</si:value>
+                <si:value>0.096326813</si:value>
+                <si:value>0.054015426</si:value>
+                <si:value>0.086461155</si:value>
+                <si:value>0.066732914</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.050117135</si:min>
+                <si:max>0.123846956</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="Bulkhead%" type="numeric">
+            <si:label>label of Bulkhead%</si:label>
+            <si:description>desc of Bulkhead%</si:description>
+            <si:enumeration vocabulary="Bulkhead%">
+                <si:value>1</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>1</si:min>
+                <si:max>1</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="Riprap%" type="nonnegativeinteger">
+            <si:label>label of Riprap%</si:label>
+            <si:description>desc of Riprap%</si:description>
+            <si:enumeration vocabulary="Riprap%">
+                <si:value>0</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0</si:min>
+                <si:max>0</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="OCC_HAB" type="numeric">
+            <si:label>label of OCC_HAB</si:label>
+            <si:description>desc of OCC_HAB</si:description>
+            <si:enumeration vocabulary="OCC_HAB">
+                <si:value>0</si:value>
+                <si:value>0.082081433</si:value>
+                <si:value>0.057266896</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.0</si:min>
+                <si:max>0.99660397</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="SAV_AREA" type="numeric">
+            <si:label>label of SAV_AREA</si:label>
+            <si:description>desc of SAV_AREA</si:description>
+            <si:enumeration vocabulary="SAV_AREA">
+                <si:value>0</si:value>
+                <si:value>0.129911018</si:value>
+                <si:value>0.092967588</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.0</si:min>
+                <si:max>1.9571873</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="PTHAB_AREA" type="numeric">
+            <si:label>label of PTHAB_AREA</si:label>
+            <si:description>desc of PTHAB_AREA</si:description>
+            <si:enumeration vocabulary="PTHAB_AREA">
+                <si:value>1.505039685</si:value>
+                <si:value>1.557198928</si:value>
+                <si:value>1.387433325</si:value>
+                <si:value>2.094272731</si:value>
+                <si:value>1.582708943</si:value>
+                <si:value>1.320972678</si:value>
+                <si:value>1.503182484</si:value>
+                <si:value>1.382618773</si:value>
+                <si:value>1.623408801</si:value>
+                <si:value>1.954827074</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.13774402</si:min>
+                <si:max>3.8317106</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="FID_sstru_" type="numeric">
+            <si:label>label of FID_sstru_</si:label>
+            <si:description>desc of FID_sstru_</si:description>
+            <si:enumeration vocabulary="FID_sstru_">
+                <si:value>9467</si:value>
+                <si:value>9211</si:value>
+                <si:value>11325</si:value>
+                <si:value>9201</si:value>
+                <si:value>9125</si:value>
+                <si:value>9140</si:value>
+                <si:value>9388</si:value>
+                <si:value>9501</si:value>
+                <si:value>9129</si:value>
+                <si:value>9328</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>1187</si:min>
+                <si:max>11382</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="NAME" type="string">
+            <si:label>label of NAME</si:label>
+            <si:description>desc of NAME</si:description>
+            <si:enumeration vocabulary="NAME">
+                <si:value>Back River</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>Back River</si:min>
+                <si:max>Wye River</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="DEPTHMNm" type="numeric">
+            <si:label>label of DEPTHMNm</si:label>
+            <si:description>desc of DEPTHMNm</si:description>
+            <si:enumeration vocabulary="DEPTHMNm">
+                <si:value>1.53</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.06</si:min>
+                <si:max>3.92</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="SHALLOW" type="numeric">
+            <si:label>label of SHALLOW</si:label>
+            <si:description>desc of SHALLOW</si:description>
+            <si:enumeration vocabulary="SHALLOW">
+                <si:value>73.33</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>43.84</si:min>
+                <si:max>99.07</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="SALINppt" type="numeric">
+            <si:label>label of SALINppt</si:label>
+            <si:description>desc of SALINppt</si:description>
+            <si:enumeration vocabulary="SALINppt">
+                <si:value>2.75</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.25</si:min>
+                <si:max>25.0</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="SALINZONE" type="string">
+            <si:label>label of SALINZONE</si:label>
+            <si:description>desc of SALINZONE</si:description>
+            <si:enumeration vocabulary="SALINZONE">
+                <si:value>OH</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>MH</si:min>
+                <si:max>TF</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="TIDERNGm" type="numeric">
+            <si:label>label of TIDERNGm</si:label>
+            <si:description>desc of TIDERNGm</si:description>
+            <si:enumeration vocabulary="TIDERNGm">
+                <si:value>0.31</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.28</si:min>
+                <si:max>0.78</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="DEV01" type="numeric">
+            <si:label>label of DEV01</si:label>
+            <si:description>desc of DEV01</si:description>
+            <si:enumeration vocabulary="DEV01">
+                <si:value>83.26</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>4.95</si:min>
+                <si:max>86.47</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="CROP01" type="numeric">
+            <si:label>label of CROP01</si:label>
+            <si:description>desc of CROP01</si:description>
+            <si:enumeration vocabulary="CROP01">
+                <si:value>0.39</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.08</si:min>
+                <si:max>64.12</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="WETLAND01" type="numeric">
+            <si:label>label of WETLAND01</si:label>
+            <si:description>desc of WETLAND01</si:description>
+            <si:enumeration vocabulary="WETLAND01">
+                <si:value>1.03</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.87</si:min>
+                <si:max>27.36</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="LANDCAT" type="string">
+            <si:label>label of LANDCAT</si:label>
+            <si:description>desc of LANDCAT</si:description>
+            <si:enumeration vocabulary="LANDCAT">
+                <si:value>Developed</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>Agricultural</si:min>
+                <si:max>OtherMixed</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+        <si:variable name="ShoreMarsh" type="numeric">
+            <si:label>label of ShoreMarsh</si:label>
+            <si:description>desc of ShoreMarsh</si:description>
+            <si:enumeration vocabulary="ShoreMarsh">
+                <si:value>5.91</si:value>
+            </si:enumeration>
+            <si:projection/>
+            <si:datum/>
+            <si:format/>
+            <si:range>
+                <si:min>0.0</si:min>
+                <si:max>68.8</si:max>
+            </si:range>
+            <si:uom/>
+            <si:valueForMissingValue>--</si:valueForMissingValue>
+            <si:dateFormat/>
+        </si:variable>
+    </si:variables>
+</si:codebook>

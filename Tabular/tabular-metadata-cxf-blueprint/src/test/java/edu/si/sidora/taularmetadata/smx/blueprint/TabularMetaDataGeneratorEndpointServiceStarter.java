@@ -25,24 +25,39 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.sidora.tabularmetadata.smx.blueprint;
+package edu.si.sidora.taularmetadata.smx.blueprint;
 
-import edu.si.codebook.Codebook;
+import edu.si.sidora.tabularmetadata.smx.blueprint.TabularMetadataGeneratorEndpointImpl;
+import org.apache.cxf.endpoint.Server;
+import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
+import org.apache.cxf.jaxrs.lifecycle.SingletonResourceProvider;
+import org.apache.cxf.jaxrs.provider.JAXBElementProvider;
 
-import javax.ws.rs.*;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 
 /**
+ * Starts up the rest service to test in the IDE
+ * 
  * @author jbirkhimer
  */
-public interface TabularMetadataGeneratorEndpoint {
+public class TabularMetaDataGeneratorEndpointServiceStarter {
+    @SuppressWarnings("rawtypes")
+    public void startRestService() {
+        JAXRSServerFactoryBean factory = new JAXRSServerFactoryBean();
+        factory.setAddress("http://localhost:8282/codebook");
+        factory.setResourceClasses(TabularMetadataGeneratorEndpointImpl.class);
+        factory.setResourceProvider(new SingletonResourceProvider(new TabularMetadataGeneratorEndpointImpl()));
+        factory.setProvider(new JAXBElementProvider());
+        Server server = factory.create();
+        server.start();
+    }
 
-    //TODO: Set the default scanLimit from a properties file
-
-    @GET
-    @Path("/")
-    @Produces("text/xml")
-    public Codebook getCodebook(@QueryParam("url") final URL url, @QueryParam("headers") final boolean hasHeaders, @QueryParam("scanLimit") @DefaultValue("100") final int scanLimit) throws URISyntaxException, IOException;
+    /**
+     * @param args
+     * @throws IOException
+     */
+    public static void main(String[] args) throws IOException {
+        new TabularMetaDataGeneratorEndpointServiceStarter().startRestService();
+        System.in.read();
+    }
 }

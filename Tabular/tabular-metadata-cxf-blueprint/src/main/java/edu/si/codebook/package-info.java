@@ -35,9 +35,10 @@
                 @XmlNs(namespaceURI = "http://purl.org/dc/terms/", prefix = "dc")
         },
         elementFormDefault = QUALIFIED)
-package edu.si.codebook;
 
-import static javax.xml.bind.annotation.XmlNsForm.QUALIFIED;
+package edu.si.codebook;
 
 import javax.xml.bind.annotation.XmlNs;
 import javax.xml.bind.annotation.XmlSchema;
+
+import static javax.xml.bind.annotation.XmlNsForm.QUALIFIED;
