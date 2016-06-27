@@ -1,0 +1,10 @@
+
+<rdf:RDF xmlns:default="http://islandora.org/ontologies/metadata#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about="info:fedora/test:00000">
+        <fedora-model:hasModel rdf:resource="info:fedora/si:cameraTrapCModel"></fedora-model:hasModel>
+        <fedora-model:hasModel rdf:resource="info:fedora/si:conceptCModel"></fedora-model:hasModel>
+        <default:orginal_metadata>TRUE</default:orginal_metadata>
+        <fedora:hasResource rdf:resource="info:fedora/test:00001"></fedora:hasResource>
+    </rdf:Description>
+</rdf:RDF>

@@ -225,7 +225,8 @@
                 <!-- Schematron validation. -->
                 <to uri="schematron:file:Input/schemas/Unified_eMammalDeploymentManifest.sch"/>
                 <log message="${id} UnifiedCameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                     loggingLevel="INFO"/>
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
                 <choice>
                     <when>
                         <simple>${in.header.CamelSchematronValidationStatus} == 'FAILED'</simple>
@@ -260,7 +261,9 @@
                 <choice>
                     <when>
                         <simple>{{si.ct.uscbi.dryrun}} == true</simple>
-                        <log message="${id} UnifiedCameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process" loggingLevel="INFO"/>
+                        <log message="${id} UnifiedCameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process"
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
                     </when>
                     <otherwise>
                         <!-- Process the deployment -->
@@ -664,7 +667,9 @@
                 </otherwise>
             </choice>
 
-            <log message="${id} UnifiedCameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."/>
+            <log message="${id} UnifiedCameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessPackage">
