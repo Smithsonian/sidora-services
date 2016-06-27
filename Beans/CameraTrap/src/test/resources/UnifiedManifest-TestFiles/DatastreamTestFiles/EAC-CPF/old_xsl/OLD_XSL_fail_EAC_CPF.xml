@@ -22,7 +22,7 @@
         <identity>
             <entityType>corporateBody</entityType>
             <nameEntry localType="primary">
-                <part>Sample Blah Blah Blah Project</part> <!-- xsl updated and this has changed -->
+                <part>Sample Blah Blah Blah Project (p125)</part> <!-- xsl updated and this has changed -->
             </nameEntry>
             <nameEntry localType="abbreviation">
                 <part>p125</part>

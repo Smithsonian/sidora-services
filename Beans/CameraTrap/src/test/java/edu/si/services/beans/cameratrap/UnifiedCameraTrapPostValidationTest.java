@@ -578,7 +578,7 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
         //message.append("Datastream EAC-CPF ProjectName Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - EAC-CPF ProjectName Field validation failed. ");
-        message.append("Expected Sample Triangle Camera Trap Survey Project (p125) but found Sample Blah Blah Blah Project (p125).");
+        message.append("Expected Sample Triangle Camera Trap Survey Project but found Sample Blah Blah Blah Project.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), pass);
