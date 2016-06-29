@@ -1,6 +1,12 @@
 
-<rdf:RDF xmlns:default="http://islandora.org/ontologies/metadata#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#"
-         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:default="http://islandora.org/ontologies/metadata#"
+         xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
+         xmlns:fedora-model="info:fedora/fedora-system:def/model#"
+         xmlns:islandora="http://islandora.ca/ontology/relsext#"
+         xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
     <rdf:Description rdf:about="info:fedora/test:00000">
         <fedora-model:hasModel rdf:resource="info:fedora/si:cameraTrapCModel"></fedora-model:hasModel>
         <fedora-model:hasModel rdf:resource="info:fedora/si:conceptCModel"></fedora-model:hasModel>
