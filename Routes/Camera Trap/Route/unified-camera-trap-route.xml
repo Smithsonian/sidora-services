@@ -196,11 +196,16 @@
                 <constant>6000</constant>
             </delay>
 
-            <log message="${id} UnifiedCameraTrapIngest: Starting Extraction"/>
+            <log message="${id} UnifiedCameraTrapIngest: Starting Extraction"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             <to uri="extractor:extract?location=UnifiedCameraTrapData"/>
-            <log message="${id} UnifiedCameraTrapIngest: Finished Extraction"/>
+            <log message="${id} UnifiedCameraTrapIngest: Finished Extraction"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             <log message="${id} UnifiedCameraTrapIngest: AbsolutePath - ${header.CamelFileAbsolutePath}"
-                 loggingLevel="WARN"/>
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
 
             <threads poolSize="3" maxPoolSize="5">
 
@@ -225,7 +230,8 @@
                 <!-- Schematron validation. -->
                 <to uri="schematron:file:Input/schemas/Unified_eMammalDeploymentManifest.sch"/>
                 <log message="${id} UnifiedCameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                     loggingLevel="INFO"/>
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
                 <choice>
                     <when>
                         <simple>${in.header.CamelSchematronValidationStatus} == 'FAILED'</simple>
@@ -260,7 +266,9 @@
                 <choice>
                     <when>
                         <simple>{{si.ct.uscbi.dryrun}} == true</simple>
-                        <log message="${id} UnifiedCameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process" loggingLevel="INFO"/>
+                        <log message="${id} UnifiedCameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process"
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
                     </when>
                     <otherwise>
                         <!-- Process the deployment -->
@@ -664,7 +672,9 @@
                 </otherwise>
             </choice>
 
-            <log message="${id} UnifiedCameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."/>
+            <log message="${id} UnifiedCameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapProcessPackage">
@@ -904,14 +914,14 @@
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
-                    <log message="${id} Derivatives: Found JPEG."
+                    <log message="${id} UnifiedCameraTrapIngest: Derivatives: Found JPEG."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
-                    <log message="${id} Derivatives: Found non-JPEG Image."
+                    <log message="${id} UnifiedCameraTrapIngest: Derivatives: Found non-JPEG Image."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
@@ -935,17 +945,17 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Researcher%20Observations"/>
-            <log message="Research Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} UnifiedCameraTrapIngest: Research Observation Resource PID - ${header.CamelFedoraPid}"
                     loggingLevel="DEBUG"
                     logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} UnifiedCameraTrapIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ResearcherObservation.xsl"/>
-            <log message="Researcher Observations - \n${body}"
+            <log message="${id} UnifiedCameraTrapIngest: Researcher Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <transform>
@@ -1004,13 +1014,13 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Volunteer%20Observations"/>
-            <log message="Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} UnifiedCameraTrapIngest: Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} UnifiedCameraTrapIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setBody>
@@ -1019,7 +1029,7 @@
                 </simple>
             </setBody>
             <to uri="xslt:file:Input/xslt/VolunteerObservation.xsl"/>
-            <log message="Volunteer Observations - \n${body}"
+            <log message="${id} UnifiedCameraTrapIngest: Volunteer Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <transform>
@@ -1075,17 +1085,17 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Image%20Observations"/>
-            <log message="Image Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} UnifiedCameraTrapIngest: Image Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} UnifiedCameraTrapIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ImageObservation.xsl"/>
-            <log message="Image Observations - \n${body}"
+            <log message="${id} UnifiedCameraTrapIngest: Image Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <transform>
@@ -1158,7 +1168,8 @@
                 </when>
                 <otherwise>
                     <log message="${id} UnifiedCameraTrapIngest: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
-                         loggingLevel="ERROR"/>
+                         loggingLevel="ERROR"
+                         logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
@@ -1180,7 +1191,9 @@
                     //fits:fileinfo/fits:created[@toolname="Exiftool"]
                 </xpath>
             </setHeader>
-            <log message="MODS FITS Created Date - ${header.FITSCreatedDate}"/>
+            <log message="${id} UnifiedCameraTrapIngest: MODS FITS Created Date - ${header.FITSCreatedDate}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             -->
 
             <!-- TODO - The Image ID has .JPG appended and we may want to make this consistent. -->
@@ -1340,7 +1353,9 @@
                 </groovy>
             </transform>
 
-            <log message="Replace body - ${body}" loggingLevel="WARN"/>
+            <log message="${id} UnifiedCameraTrapIngest: Replace body - ${body}"
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
 
             <setBody>
                 <!-- The query needs to also check directly along the parent axis since names are not unique. -->
@@ -1430,7 +1445,7 @@
                                     message="The fedora object not found"/>
                 </when>
             </choice>
-            <log message="Find Object By PID - ${body}."
+            <log message="${id} UnifiedCameraTrapIngest: Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1679,7 +1694,7 @@
         <!-- Validate Ingest Datastream Metadata Fields -->
         <route id="UnifiedCameraTrapValidateDatastreamFields">
             <from uri="direct:validateDatastreamFields"/>
-            <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting Datastream Fields Validation ..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateDatastreamFields: Starting Datastream Fields Validation ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1741,7 +1756,7 @@
 
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
-            <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateDatastreamFields: Datastream Fields Validation Complete..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1750,7 +1765,7 @@
         <route id="UnifiedCameraTrapValidate_EAC-CPF_Datastream">
             <from uri="direct:validate_EAC-CPF_Datastream"/>
 
-            <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting EAC-CPF Datastream Validation ..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateDatastreamFields: Starting EAC-CPF Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1799,7 +1814,7 @@
         <route id="UnifiedCameraTrapValidate_FGDC_Datastream">
             <from uri="direct:validate_FGDC_Datastream"/>
 
-            <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting FGDC Datastream Validation ..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateDatastreamFields: Starting FGDC Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1839,7 +1854,7 @@
         <route id="UnifiedCameraTrapValidate_MODS_Datastream">
             <from uri="direct:validate_MODS_Datastream"/>
 
-            <log message="${id} UnifiedCameraTrapValidateDatastreamFields: Starting MODS Datastream Validation ..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1877,7 +1892,7 @@
         <!-- Validate the provided datastream and field list -->
         <route id="UnifiedCameraTrapValidateDatastreamFieldList">
             <from uri="direct:ValidateDatastreamFieldList"/>
-            <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1887,7 +1902,7 @@
                 <to uri="bean:postIngestionValidator?method=validateField"/>
             </split>
 
-            <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1896,7 +1911,7 @@
         <route id="UnifiedCameraTrapValidateCSVFields">
             <from uri="direct:ValidateCSVFields"/>
 
-            <log message="${id} UnifiedCameraTrapValidateCSVFields: Starting Observation CSV Validation..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateCSVFields: Starting Observation CSV Validation..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1929,7 +1944,7 @@
                 </simple>
             </setHeader>
 
-            <log message="${id} UnifiedCameraTrapValidateCSVFields: ${header.Observer} | CSVObservationCount = ${header.CSVObservationCount} | CSVImageSeqID = ${header.CSVImageSeqID}"
+            <log message="${id} UnifiedCameraTrapIngest: ValidateCSVFields: ${header.Observer} | CSVObservationCount = ${header.CSVObservationCount} | CSVImageSeqID = ${header.CSVImageSeqID}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1939,7 +1954,7 @@
                 </xpath>
             </setHeader>
 
-            <log message="${id} UnifiedCameraTrapValidateCSVFields: ${header.Observer} validationResult: ${header.validationResult} "
+            <log message="${id} UnifiedCameraTrapIngest: ValidateCSVFields: ${header.Observer} validationResult: ${header.validationResult} "
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1957,7 +1972,7 @@
                         </simple>
                     </setBody>
 
-                    <log message="${id} UnifiedCameraTrapValidateCSVFields: ${body}"
+                    <log message="${id} UnifiedCameraTrapIngest: ValidateCSVFields: ${body}"
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
 
@@ -1970,7 +1985,7 @@
                 </otherwise>
             </choice>
 
-            <log message="${id} UnifiedCameraTrapValidateCSVFields: ${header.Observer} CSV Validation Complete..."
+            <log message="${id} UnifiedCameraTrapIngest: ValidateCSVFields: ${header.Observer} CSV Validation Complete..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1985,7 +2000,7 @@
                 <completionPredicate>
                     <simple>${header.ValidationComplete} == 'true'</simple>
                 </completionPredicate>
-                <log message="${id} UnifiedCameraTrap ValidationERRORAggregationMessage:\nBody:\n${body}"
+                <log message="${id} UnifiedCameraTrapIngest: ValidationERRORAggregationMessage:\nBody:\n${body}"
                      loggingLevel="ERROR"
                      logName="{{si.ct.id}}"/>
             </aggregate>
@@ -1993,7 +2008,7 @@
 
         <route id="UnifiedCameraTrapInFlightConceptStatusPolling">
             <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
-            <log message="${id} UnifiedCameraTrapInFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
+            <log message="${id} UnifiedCameraTrapIngest: InFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -2036,7 +2051,7 @@
                         <simple>
                             ${body} != ''
                         </simple>
-                        <log message="${id} UnifiedCameraTrapInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
+                        <log message="${id} UnifiedCameraTrapIngest: InFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
                              logName="{{si.ct.id}}"/>
                         <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
@@ -2045,7 +2060,7 @@
 
             </split>
 
-            <log message="${id} UnifiedCameraTrapInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
+            <log message="${id} UnifiedCameraTrapIngest: InFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>

@@ -38,7 +38,7 @@
     <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="si.ct.id" value="edu.si.ctingest"/>
-            <cm:property name="si.ct.pipeline" value="CameraTrapIngest"/>
+            <cm:property name="si.ct.pipeline" value="LegacyCameraTrapIngest"/>
             <cm:property name="si.ct.scbi.dryrun" value="false"/>
             <cm:property name="si.ct.scbi.enableS3Routes" value="false"/>
         </cm:default-properties>
@@ -47,15 +47,15 @@
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
 
     <bean id="noRootObject" class="java.lang.IllegalArgumentException">
-        <argument value="CameraTrapIngest: Root object does not exist."/>
+        <argument value="LegacyCameraTrapIngest: Root object does not exist."/>
     </bean>
 
     <bean id="noImageSequence" class="java.lang.IllegalArgumentException">
-        <argument value="CameraTrapIngest: Image sequence does not exist."/>
+        <argument value="LegacyCameraTrapIngest: Image sequence does not exist."/>
     </bean>
 
     <bean id="validationFailure" class="java.lang.IllegalArgumentException">
-        <argument value="CameraTrapIngest: Schematron validation failed."/>
+        <argument value="LegacyCameraTrapIngest: Schematron validation failed."/>
     </bean>
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
@@ -181,7 +181,7 @@
 
         <route id="CameraTrapStartProcessing">
             <from uri="file:Process?delay=9000&amp;moveFailed=Error_CameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
-            <log message="${id} CameraTrapIngest: Starting Camera Trap processing ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -195,10 +195,14 @@
                 <constant>6000</constant>
             </delay>
 
-            <log message="${id} CameraTrapIngest: Starting Extraction"/>
+            <log message="${id} LegacyCameraTrapIngest: Starting Extraction"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             <to uri="extractor:extract?location=CameraTrapData"/>
-            <log message="${id} CameraTrapIngest: Finished Extraction"/>
-            <log message="${id} CameraTrapIngest: AbsolutePath - ${header.CamelFileAbsolutePath}"
+            <log message="${id} LegacyCameraTrapIngest: Finished Extraction"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+            <log message="${id} LegacyCameraTrapIngest: AbsolutePath - ${header.CamelFileAbsolutePath}"
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 
@@ -219,42 +223,47 @@
                 <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
 
                 <!-- Add Schematron validation. -->
-                <!--
                 <to uri="schematron:file:Input/schemas/DeploymentManifest2014.sch"/>
-                <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                     loggingLevel="INFO"/>
+                <log message="${id} LegacyCameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
+                     loggingLevel="DEBUG"
+                     logName="{{si.ct.id}}"/>
                 <choice>
                     <when>
                         <simple>${in.header.CamelSchematronValidationStatus} == 'FAILED'</simple>
-                        <log message="${id} CameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                             loggingLevel="WARN"/>
-                        <log message="${id} CameraTrapIngest: Schematron Validation Report -\n ${header.CamelSchematronValidationReport}"
-                             loggingLevel="WARN"/>
+                        <log message="${id} LegacyCameraTrapIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
+                        <log message="${id} LegacyCameraTrapIngest: Schematron Validation Report -\n ${header.CamelSchematronValidationReport}"
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
                         <throwException ref="validationFailure"/>
                     </when>
                     <otherwise>
-                        <log message="${id} CameraTrapIngest: Schematron validation succeeded."/>
+                        <log message="${id} LegacyCameraTrapIngest: Schematron validation succeeded."
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
                     </otherwise>
                 </choice>
-                -->
                 <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
-                <log message="${id} CameraTrapIngest: Ingest dry-run flag - {{si.ct.scbi.dryrun}}"
+                <log message="${id} LegacyCameraTrapIngest: Ingest dry-run flag - {{si.ct.scbi.dryrun}}"
                      loggingLevel="DEBUG"
                      logName="{{si.ct.id}}"/>
 
                 <choice>
                     <when>
                         <simple>{{si.ct.scbi.dryrun}} == true</simple>
-                        <log message="${id} CameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process" loggingLevel="INFO"/>
+                        <log message="${id} LegacyCameraTrapIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process"
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
                     </when>
                     <otherwise>
                         <!-- Process the deployment -->
                         <to uri="direct:processPackage"/>
 
                         <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
-                        <log message="${id} CameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
+                        <log message="${id} LegacyCameraTrapIngest: Delaying for moment before starting the post ingest validation ..."
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
                         <delay>
@@ -268,14 +277,14 @@
 
             </threads>
 
-            <log message="${id} CameraTrapIngest: Finished Camera Trap processing!"
+            <log message="${id} LegacyCameraTrapIngest: Finished Camera Trap processing!"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapValidatePackage">
             <from uri="direct:validatePackage"/>
-            <log message="${id} CameraTrapIngest: Starting Package validation ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Package validation ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -301,7 +310,7 @@
                 <xpath headerName="ManifestXML">
                     //ImageFileName/text()
                 </xpath>
-                <log message="${id} CameraTrapIngest: Split Resource - ${body}"
+                <log message="${id} LegacyCameraTrapIngest: Split Resource - ${body}"
                      loggingLevel="DEBUG"
                      logName="{{si.ct.id}}"/>
                 <setHeader headerName="ImageFileName">
@@ -314,12 +323,12 @@
                         //ImageFileName[text()=$ImageFileName]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                     </xpath>
                 </setHeader>
-                <log message="${id} CameraTrapIngest: ImageSequenceID - ${header.ImageSequenceID}"
+                <log message="${id} LegacyCameraTrapIngest: ImageSequenceID - ${header.ImageSequenceID}"
                      loggingLevel="DEBUG"
                      logName="{{si.ct.id}}"/>
                 <!-- This throws a java.io.FileNotFoundException if the file does not exist. -->
                 <to uri="reader:file"/>
-                <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                <log message="${id} LegacyCameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="DEBUG"
                      logName="{{si.ct.id}}"/>
                 <!-- We should check the image count to see if it exactly matches the image file count. -->
@@ -337,7 +346,7 @@
                                     message="The resource counts do not match - less resource(s) found in the file system than manifest"/>
                 </when>
             </choice>
-            <log message="${id} CameraTrapIngest: Finished Package validation."
+            <log message="${id} LegacyCameraTrapIngest: Finished Package validation."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -345,7 +354,7 @@
         <route id="CameraTrapValidateIngest">
             <from uri="direct:validateIngest"/>
 
-            <log message="${id} CameraTrapIngest: Starting Post validation ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Post validation ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -363,14 +372,14 @@
             <!-- Validate Ingest Datastream Metadata Fields -->
             <to uri="direct:validateDatastreamFields"/>
 
-            <log message="${id} CameraTrapIngest: Finished Post validation"
+            <log message="${id} LegacyCameraTrapIngest: Finished Post validation"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapValidatePostIngestResourceCount">
             <from uri="direct:validatePostIngestResourceCount"/>
-            <log message="${id} CameraTrapIngest: Starting Post Ingestion Resource Count validations..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Post Ingestion Resource Count validations..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -410,25 +419,25 @@
                         <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${header.ValidationResourceObjectPID}
                             ,'Resource Object not found from Fedora Repository', ${body})"/>
                         <to uri="direct:validationErrorMessageAggregationStrategy"/>
-                        <log message="${id} CameraTrapIngest: Resource Object not found from Fedora Repository"
+                        <log message="${id} LegacyCameraTrapIngest: Resource Object not found from Fedora Repository"
                              loggingLevel="WARN"
                              logName="{{si.ct.id}}"/>
                     </when>
                 </choice>
 
-                <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                <log message="${id} LegacyCameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
             </split>
 
-            <log message="${id} CameraTrapIngest: Finished Post Ingestion Resource Count validations."
+            <log message="${id} LegacyCameraTrapIngest: Finished Post Ingestion Resource Count validations."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapValidateDatastreams">
             <from uri="direct:validateDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting Datastream validations..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Datastream validations..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -545,14 +554,14 @@
             </setHeader>
             <to uri="direct:validateObjectDatastreams"/>
 
-            <log message="${id} CameraTrapIngest: Finished Datastream validations."
+            <log message="${id} LegacyCameraTrapIngest: Finished Datastream validations."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapValidateObjectDatastreams">
             <from uri="direct:validateObjectDatastreams"/>
-            <log message="${id} CameraTrapIngest: Starting ${header.ValidationDatastreamObjectType} Object Datastream validations..."
+            <log message="${id} LegacyCameraTrapIngest: Starting ${header.ValidationDatastreamObjectType} Object Datastream validations..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -582,7 +591,7 @@
                             <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
                                     '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
                             <to uri="direct:validationErrorMessageAggregationStrategy"/>
-                            <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
+                            <log message="${id} LegacyCameraTrapIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
                                  loggingLevel="WARN"
                                  logName="{{si.ct.id}}"/>
                         </when>
@@ -593,32 +602,34 @@
                     <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
                             '${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation', false)"/>
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
-                    <log message="${id} CameraTrapIngest: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
+                    <log message="${id} LegacyCameraTrapIngest: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."/>
+            <log message="${id} LegacyCameraTrapIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapProcessPackage">
             <from uri="direct:processPackage"/>
-            <log message="${id} CameraTrapIngest: Starting Package processing..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Package processing..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
             <to uri="direct:processParents"/>
             <to uri="direct:processSite"/>
 
-            <log message="${id} CameraTrapIngest: Finished Package processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished Package processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapProcessSite">
             <from uri="direct:processSite"/>
-            <log message="${id} CameraTrapIngest: Starting Site processing... "
+            <log message="${id} LegacyCameraTrapIngest: Starting Site processing... "
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -634,11 +645,11 @@
                 </xpath>
             </setHeader>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-            <log message="${id} CameraTrapIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
+            <log message="${id} LegacyCameraTrapIngest: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-            <log message="${id} CameraTrapIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
+            <log message="${id} LegacyCameraTrapIngest: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setBody>
@@ -652,27 +663,27 @@
                 <to uri="direct:processResources"/>
             </multicast>
 
-            <log message="${id} CameraTrapIngest: Finished Site processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished Site processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapAddManifestDataStream">
             <from uri="direct:addManifestDataStream"/>
-            <log message="${id} CameraTrapIngest: Starting Manifest processing ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Manifest processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
             <to uri="fedora:addDatastream?name=MANIFEST&amp;type=text/xml&amp;group=M&amp;dsLabel=MANIFEST"/>
 
-            <log message="${id} CameraTrapIngest: Finished Manifest processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished Manifest processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapAddFGDCDataStream">
             <from uri="direct:addFGDCDataStream"/>
-            <log message="${id} CameraTrapIngest: Starting FGDC processing ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting FGDC processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -681,14 +692,14 @@
             <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
 
-            <log message="${id} CameraTrapIngest: Finished FGDC processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished FGDC processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapProcessResources">
             <from uri="direct:processResources"/>
-            <log message="${id} CameraTrapIngest: Starting resource processing ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting resource processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -702,7 +713,7 @@
                     count(//ImageFileName)
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
+            <log message="${id} LegacyCameraTrapIngest: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -711,7 +722,7 @@
                 <xpath headerName="ManifestXML">
                     //ImageFileName/text()
                 </xpath>
-                <log message="${id} CameraTrapIngest: Split Resource - ${body}"
+                <log message="${id} LegacyCameraTrapIngest: Split Resource - ${body}"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
                 <setBody>
@@ -720,10 +731,10 @@
                     </simple>
                 </setBody>
                 <to uri="direct:addImageResource"/>
-                <log message="${id} CameraTrapIngest: Created Image Resource - ${body}."
+                <log message="${id} LegacyCameraTrapIngest: Created Image Resource - ${body}."
                      loggingLevel="DEBUG"
                      logName="{{si.ct.id}}"/>
-                <log message="${id} CameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                <log message="${id} LegacyCameraTrapIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
             </split>
@@ -740,14 +751,14 @@
                 </simple>
             </recipientList>
 
-            <log message="${id} CameraTrapIngest: Finished resource processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished resource processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
-            <log message="${id} CameraTrapIngest: Started Image processing ..."
+            <log message="${id} LegacyCameraTrapIngest: Started Image processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -791,7 +802,7 @@
                         ${header.ImageSequenceIndex} == ''
                     </simple>
                     <!-- Stop processing this deployment. -->
-                    <log message="${id} CameraTrapIngest: Image sequence does not exist."
+                    <log message="${id} LegacyCameraTrapIngest: Image sequence does not exist."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                     <throwException ref="noImageSequence"/>
@@ -803,10 +814,10 @@
                     count(//Image[../ImageSequenceId=$ImageSequenceID])
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
+            <log message="${id} LegacyCameraTrapIngest: Label - ${body}  ImageID - ${header.ImageID}  ImageSequenceIndex - ${header.ImageSequenceIndex}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <log message="${id} CameraTrapIngest: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
+            <log message="${id} LegacyCameraTrapIngest: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="reader:file"/>
@@ -850,27 +861,27 @@
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
-                    <log message="${id} Derivatives: Found JPEG."
+                    <log message="${id} LegacyCameraTrapIngest: Derivatives: Found JPEG."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
-                    <log message="${id} Derivatives: Found non-JPEG Image."
+                    <log message="${id} LegacyCameraTrapIngest: Derivatives: Found non-JPEG Image."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished Image processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished Image processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapAddResearcherResource">
             <from uri="direct:addResearcherResource"/>
-            <log message="${id} CameraTrapIngest: Starting Researcher's data processing ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Researcher's data processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -881,13 +892,13 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Researcher%20Observations"/>
-            <log message="Research Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} LegacyCameraTrapIngest: Research Observation Resource PID - ${header.CamelFedoraPid}"
                     loggingLevel="DEBUG"
                     logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} LegacyCameraTrapIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/researcher.xsl"/>
@@ -915,14 +926,14 @@
                 </simple>
             </setHeader>
 
-            <log message="${id} CameraTrapIngest: Finished Researcher's data processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished Researcher's data processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapAddVolunteerResource">
             <from uri="direct:addVolunteerResource"/>
-            <log message="${id} CameraTrapIngest: Starting Volunteer's data processing ..."
+            <log message="${id} LegacyCameraTrapIngest: Starting Volunteer's data processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -933,13 +944,13 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Volunteer%20Observations"/>
-            <log message="Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} LegacyCameraTrapIngest: Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} LegacyCameraTrapIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setBody>
@@ -972,14 +983,14 @@
                 </simple>
             </setHeader>
 
-            <log message="${id} CameraTrapIngest: Finished Volunteer's data processing."
+            <log message="${id} LegacyCameraTrapIngest: Finished Volunteer's data processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapAddFITSDataStream">
             <from uri="direct:addFITSDataStream"/>
-            <log message="${id} CameraTrapIngest: Started processing FITS ..."
+            <log message="${id} LegacyCameraTrapIngest: Started processing FITS ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -996,29 +1007,30 @@
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
-                        <log message="${id} CameraTrapIngest: FITS MIME: ${header.FITSmimeType}"
+                        <log message="${id} LegacyCameraTrapIngest: FITS MIME: ${header.FITSmimeType}"
                              loggingLevel="DEBUG"
                              logName="{{si.ct.id}}"/>
                     </setHeader>
-                    <log message="${id} CameraTrapIngest: Exec FITS. BODY: ${body}"
+                    <log message="${id} LegacyCameraTrapIngest: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
-                    <log message="${id} CameraTrapIngest: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
-                         loggingLevel="ERROR"/>
+                    <log message="${id} LegacyCameraTrapIngest: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
+                         loggingLevel="ERROR"
+                         logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing FITS."
+            <log message="${id} LegacyCameraTrapIngest: Finished processing FITS."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapAddMODSDataStream">
             <from uri="direct:addMODSDataStream"/>
-            <log message="${id} CameraTrapIngest: Started processing MODS ..."
+            <log message="${id} LegacyCameraTrapIngest: Started processing MODS ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1036,21 +1048,23 @@
             </setHeader>
 
             <!--
-            <log message="MODS FITS Created Date - ${header.FITSCreatedDate}"/>
+            <log message="${id} LegacyCameraTrapIngest: MODS FITS Created Date - ${header.FITSCreatedDate}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             -->
 
             <!-- TODO - The Image ID has .JPG appended and we may want to make this consistent. -->
             <to uri="velocity:file:Input/templates/CTImageResourceMODSTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
-            <log message="${id} CameraTrapIngest: Finished processing MODS."
+            <log message="${id} LegacyCameraTrapIngest: Finished processing MODS."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapCreateThumbnailImage">
             <from uri="direct:createThumbnail"/>
-            <log message="${id} CameraTrapIngest: Started creating thumbnail ..."
+            <log message="${id} LegacyCameraTrapIngest: Started creating thumbnail ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1073,20 +1087,20 @@
                 <to uri="fedora:addDatastream?name=TN&amp;type=image/jpeg&amp;group=M&amp;dsLabel=Thumbnail&amp;versionable=false"/>
                 <doCatch>
                     <exception>javax.imageio.IIOException</exception>
-                    <log message="${id} CameraTrapIngest: Cannot create thumbnail image corrupted."
+                    <log message="${id} LegacyCameraTrapIngest: Cannot create thumbnail image corrupted."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </doCatch>
             </doTry>
 
-            <log message="${id} CameraTrapIngest: Finished creating thumbnail."
+            <log message="${id} LegacyCameraTrapIngest: Finished creating thumbnail."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapCreateArchivalImage">
             <from uri="direct:createArchivalImage"/>
-            <log message="${id} CameraTrapIngest: Started creating archival image ..."
+            <log message="${id} LegacyCameraTrapIngest: Started creating archival image ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1096,14 +1110,14 @@
             <to uri="file://CameraTrapOutput/resample"/>
             -->
 
-            <log message="${id} CameraTrapIngest: Finished creating archival image."
+            <log message="${id} LegacyCameraTrapIngest: Finished creating archival image."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapProcessParents">
             <from uri="direct:processParents"/>
-            <log message="${id} CameraTrapIngest: Started processing parents ..."
+            <log message="${id} LegacyCameraTrapIngest: Started processing parents ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1119,7 +1133,7 @@
                     <simple>
                         ${body} == 'true'
                     </simple>
-                    <log message="${id} CameraTrapIngest: Root object exists."
+                    <log message="${id} LegacyCameraTrapIngest: Root object exists."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1142,24 +1156,24 @@
                 </when>
                 <otherwise>
                     <!-- Stop processing this deployment. -->
-                    <log message="${id} CameraTrapIngest: Root object does not exist."
+                    <log message="${id} LegacyCameraTrapIngest: Root object does not exist."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                     <throwException ref="noRootObject"/>
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing parents."
+            <log message="${id} LegacyCameraTrapIngest: Finished processing parents."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapFindObject" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObject"/>
-            <log message="${id} CameraTrapIngest: Started find object ..."
+            <log message="${id} LegacyCameraTrapIngest: Started find object ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <log message="${id} CameraTrapIngest: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
+            <log message="${id} LegacyCameraTrapIngest: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1180,7 +1194,9 @@
                 </groovy>
             </transform>
 
-            <log message="Replace body - ${body}" loggingLevel="WARN"/>
+            <log message="${id} LegacyCameraTrapIngest: Replace body - ${body}"
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
 
             <setBody>
                 <!-- The query needs to also check directly along the parent axis since names are not unique. -->
@@ -1193,11 +1209,11 @@
                     }
                 </simple>
             </setBody>
-            <log message="${id} CameraTrapIngest: Project Parent - ${body}"
+            <log message="${id} LegacyCameraTrapIngest: Project Parent - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
-            <log message="${id} CameraTrapIngest: Query Result - ${body}"
+            <log message="${id} LegacyCameraTrapIngest: Query Result - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <!-- Count the results. If greater than one warn about duplicate parents. -->
@@ -1206,7 +1222,7 @@
                     <xpath>
                         count(/ri:sparql/ri:results/ri:result) > 1
                     </xpath>
-                    <log message="${id} CameraTrapIngest: Warning - Duplicate parents."
+                    <log message="${id} LegacyCameraTrapIngest: Warning - Duplicate parents."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </when>
@@ -1227,14 +1243,14 @@
                                     message="The fedora object not found"/>
                 </when>
             </choice>
-            <log message="${id} CameraTrapIngest: Finished find object."
+            <log message="${id} LegacyCameraTrapIngest: Finished find object."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapFindObjectByPIDPredicate" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObjectByPIDPredicate"/>
-            <log message="${id} CameraTrapIngest: Started find object by PID ..."
+            <log message="${id} LegacyCameraTrapIngest: Started find object by PID ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1248,11 +1264,11 @@
                     }
                 </simple>
             </setBody>
-            <log message="${id} CameraTrapIngest: Find Query - ${body}"
+            <log message="${id} LegacyCameraTrapIngest: Find Query - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
-            <log message="${id} CameraTrapIngest: Find Query Result - ${body}"
+            <log message="${id} LegacyCameraTrapIngest: Find Query Result - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setBody>
@@ -1270,18 +1286,18 @@
                                     message="The fedora object not found"/>
                 </when>
             </choice>
-            <log message="Find Object By PID - ${body}."
+            <log message="${id} LegacyCameraTrapIngest: Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <log message="${id} CameraTrapIngest: Finished find object by PID."
+            <log message="${id} LegacyCameraTrapIngest: Finished find object by PID."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapProcessPlot">
             <from uri="direct:processPlot"/>
-            <log message="${id} CameraTrapIngest: Started processing plot ..."
+            <log message="${id} LegacyCameraTrapIngest: Started processing plot ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1308,7 +1324,7 @@
                     ${body}
                 </simple>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id} LegacyCameraTrapIngest: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="direct:findObject" />
@@ -1317,7 +1333,7 @@
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrapIngest: Plot does not exist"
+                    <log message="${id} LegacyCameraTrapIngest: Plot does not exist"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Stash the sub-project PID. -->
@@ -1338,7 +1354,7 @@
                 </when>
                 <otherwise>
                     <!-- Return the existing plot as the current object. -->
-                    <log message="${id} CameraTrapIngest: Plot already exists - ${body}."
+                    <log message="${id} LegacyCameraTrapIngest: Plot already exists - ${body}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1355,14 +1371,14 @@
                 </simple>
             </setHeader>
 
-            <log message="${id} CameraTrapIngest: Finished processing plot."
+            <log message="${id} LegacyCameraTrapIngest: Finished processing plot."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapProcessSubproject">
             <from uri="direct:processSubproject"/>
-            <log message="${id} CameraTrapIngest: Started processing subproject ..."
+            <log message="${id} LegacyCameraTrapIngest: Started processing subproject ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1389,7 +1405,7 @@
                     //SubProjectId
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id} LegacyCameraTrapIngest: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="direct:findObject" />
@@ -1398,7 +1414,7 @@
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrapIngest: Sub-project does not exist"
+                    <log message="${id} LegacyCameraTrapIngest: Sub-project does not exist"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Stash the Project PID. -->
@@ -1419,7 +1435,7 @@
                 </when>
                 <otherwise>
                     <!-- Return the existing sub-project as the current object. -->
-                    <log message="${id} CameraTrapIngest: Sub-project already exists - ${body}."
+                    <log message="${id} LegacyCameraTrapIngest: Sub-project already exists - ${body}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1430,14 +1446,14 @@
                 </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapIngest: Finished processing subproject."
+            <log message="${id} LegacyCameraTrapIngest: Finished processing subproject."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="CameraTrapProcessProject">
             <from uri="direct:processProject"/>
-            <log message="${id} CameraTrapIngest: Started processing project ..."
+            <log message="${id} LegacyCameraTrapIngest: Started processing project ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1464,7 +1480,7 @@
                     //ProjectId
                 </xpath>
             </setHeader>
-            <log message="${id} CameraTrapIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
+            <log message="${id} LegacyCameraTrapIngest: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="direct:findObject"/>
@@ -1473,7 +1489,7 @@
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id} CameraTrapIngest: Project does not exist."
+                    <log message="${id} LegacyCameraTrapIngest: Project does not exist."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Create CT project and add it as a sub-concept of the Camera Trap root object. -->
@@ -1488,7 +1504,7 @@
                 </when>
                 <otherwise>
                     <!-- Return the existing project as the current object. -->
-                    <log message="${id} CameraTrapIngest: Project already exists - ${body}."
+                    <log message="${id} LegacyCameraTrapIngest: Project already exists - ${body}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1505,7 +1521,7 @@
                 </simple>
             </setHeader>
 
-            <log message="${id} CameraTrapIngest: Finished processing project."
+            <log message="${id} LegacyCameraTrapIngest: Finished processing project."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1513,7 +1529,7 @@
         <!-- Validate Ingest Datastream Metadata Fields -->
         <route id="CameraTrapValidateDatastreamFields">
             <from uri="direct:validateDatastreamFields"/>
-            <log message="${id} CameraTrapValidateDatastreamFields: Starting Datastream Fields Validation ..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateDatastreamFields: Starting Datastream Fields Validation ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1551,7 +1567,7 @@
 
             <to uri="direct:validationErrorMessageAggregationStrategy"/>
 
-            <log message="${id} CameraTrapValidateDatastreamFields: Datastream Fields Validation Complete..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateDatastreamFields: Datastream Fields Validation Complete..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1560,7 +1576,7 @@
         <route id="Validate_EAC-CPF_Datastream">
             <from uri="direct:validate_EAC-CPF_Datastream"/>
 
-            <log message="${id} CameraTrapValidateDatastreamFields: Starting EAC-CPF Datastream Validation ..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateDatastreamFields: Starting EAC-CPF Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1609,7 +1625,7 @@
         <route id="Validate_FGDC_Datastream">
             <from uri="direct:validate_FGDC_Datastream"/>
 
-            <log message="${id} CameraTrapValidateDatastreamFields: Starting FGDC Datastream Validation ..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateDatastreamFields: Starting FGDC Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1649,7 +1665,7 @@
         <route id="Validate_MODS_Datastream">
             <from uri="direct:validate_MODS_Datastream"/>
 
-            <log message="${id} CameraTrapValidateDatastreamFields: Starting MODS Datastream Validation ..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1687,7 +1703,7 @@
         <!-- Validate the provided datastream and field list -->
         <route id="ValidateDatastreamFieldList">
             <from uri="direct:ValidateDatastreamFieldList"/>
-            <log message="${id} ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1697,7 +1713,7 @@
                 <to uri="bean:postIngestionValidator?method=validateField"/>
             </split>
 
-            <log message="${id} ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1706,7 +1722,7 @@
         <route id="CameraTrapValidateCSVFields">
             <from uri="direct:ValidateCSVFields"/>
 
-            <log message="${id} CameraTrapValidateCSVFields: Starting Observation CSV Validation..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateCSVFields: Starting Observation CSV Validation..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1759,7 +1775,7 @@
                         </simple>
                     </setBody>
 
-                    <log message="${id} CameraTrapValidateCSVFields: ${body}"
+                    <log message="${id} LegacyCameraTrapIngest: ValidateCSVFields: ${body}"
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
 
@@ -1772,7 +1788,7 @@
                     </otherwise>
             </choice>
 
-            <log message="${id} CameraTrapValidateCSVFields: ${header.Observer} CSV Validation Complete..."
+            <log message="${id} LegacyCameraTrapIngest: ValidateCSVFields: ${header.Observer} CSV Validation Complete..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1787,7 +1803,7 @@
                 <completionPredicate>
                     <simple>${header.ValidationComplete} == 'true'</simple>
                 </completionPredicate>
-                <log message="ValidationERRORAggregationMessage:\nBody:\n${body}"
+                <log message="${id} LegacyCameraTrapIngest: ValidationERRORAggregationMessage:\nBody:\n${body}"
                      loggingLevel="ERROR"
                      logName="{{si.ct.id}}"/>
             </aggregate>
@@ -1795,7 +1811,7 @@
 
         <route id="CameraTrapInFlightConceptStatusPolling">
             <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
-            <log message="${id} CameraTrapInFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
+            <log message="${id} LegacyCameraTrapIngest: CameraTrapInFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1838,7 +1854,7 @@
                         <simple>
                             ${body} != ''
                         </simple>
-                        <log message="${id} CameraTrapInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
+                        <log message="${id} LegacyCameraTrapIngest: CameraTrapInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
                              logName="{{si.ct.id}}"/>
                         <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
@@ -1847,7 +1863,7 @@
 
             </split>
 
-            <log message="${id} CameraTrapInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
+            <log message="${id} LegacyCameraTrapIngest: CameraTrapInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>
