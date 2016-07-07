@@ -54,7 +54,7 @@
     <bean id="metadataGeneratorExcel" class="edu.si.sidora.excel2tabular.ExcelToTabular"/>
     <bean id="metadataGenerator" class="edu.si.sidora.tabularmetadata.TabularMetadataGenerator"/>
 
-    <bean id="jaxrsResource" class="edu.si.sidora.tabularmetadata.smx.blueprint.TabularMetadataGeneratorEndpoint"/>
+    <bean id="jaxrsResource" class="edu.si.sidora.tabularmetadata.smx.blueprint.TabularMetadataGeneratorEndpointImpl"/>
     <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
         <property name="marshallerProperties">
             <map>
