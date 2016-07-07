@@ -40,6 +40,7 @@
             <cm:property name="si.ct.id" value="edu.si.wcsingest"/>
             <cm:property name="si.ct.pipeline" value="WCSCameraTrapIngest"/>
             <cm:property name="si.ct.wcs.dryrun" value="false"/>
+            <cm:property name="si.ct.wcs.enableS3Routes" value="false"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
@@ -53,9 +54,19 @@
         <argument value="WCSIngest: Image sequence does not exist."/>
     </bean>
 
+    <bean id="validationFailure" class="java.lang.IllegalArgumentException">
+        <argument value="WCSIngest: Schematron validation failed."/>
+    </bean>
+
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
 
+    <bean id="cameraTrapAutoS3SyncRouteBuilder" class="edu.si.services.beans.cameratrap.CameraTrapAutoS3SyncRouteBuilder">
+        <argument value="${si.ct.wcs.enableS3Routes}" type="java.lang.Boolean"/>
+    </bean>
+
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
+
+    <bean id="saxonFactory" class="net.sf.saxon.TransformerFactoryImpl"/>
 
     <bean id="deploymentPkgValidator" class="edu.si.services.beans.cameratrap.DeploymentPackageValidator"/>
 
@@ -65,12 +76,46 @@
     <!-- processsor used during fedora findObject redelivery attempts to check for in-flight process-->
     <bean id="inFlightConceptCheckProcessor" class="edu.si.services.beans.cameratrap.InFlightConceptCheckProcessor"/>
 
+    <bean id="postIngestionValidator" class="edu.si.services.beans.cameratrap.PostIngestionValidator"/>
+
+    <bean id="cameraTrapValidationMessage" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessage"/>
+
+    <bean id="fcrepoConfiguration" class="edu.si.services.camel.fcrepo.FcrepoConfiguration">
+        <property name="fedoraHost" value="${si.fedora.host}"/>
+        <property name="authUsername" value="${si.fedora.user}"/>
+        <property name="authPassword" value="${si.fedora.password}"/>
+    </bean>
+
+    <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
+
+    <bean id="basicAWSCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
+        <argument value="${si.ct.wcs.aws.accessKey}" type="java.lang.String"/>
+        <argument value="${si.ct.wcs.aws.secretKey}" type="java.lang.String"/>
+    </bean>
+
+    <bean id="amazonS3Client" class="com.amazonaws.services.s3.AmazonS3Client">
+        <argument ref="basicAWSCredentials"/>
+    </bean>
+
+    <bean id="deploymentPackageProcessFilter" class="edu.si.services.beans.cameratrap.DeploymentPackageProcessFilter"/>
+
+    <bean id="unitOfWorkFactory" class="edu.si.services.beans.cameratrap.CameraTrapUnitOfWorkFactory"/>
+
+    <!--<bean id="containerWideInterceptor" class="edu.si.services.beans.cameratrap.ContainerWideInterceptor"/>-->
+    <!-- errorHandlerRef="ctingestErrorHandler" -->
+
     <camelContext id="WCSIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
+                  xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
+                  xmlns:findObjects="http://www.fedora.info/definitions/1/0/types/"
                   xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
-                  xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.1.xsd"
-                  trace="false" useMDCLogging="true">
+                  xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
+                  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                  xmlns:eac="urn:isbn:1-931666-33-4"
+                  xmlns:mods="http://www.loc.gov/mods/v3"
+                  trace="false" useMDCLogging="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.1.xsd">
 
         <!--
           The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
@@ -91,6 +136,7 @@
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
+        <routeBuilder ref="cameraTrapAutoS3SyncRouteBuilder"/>
 
         <onException>
             <exception>java.net.ConnectException</exception>
@@ -137,7 +183,7 @@
         -->
 
         <route id="WCSStartProcessing">
-            <from uri="file:ProcessWCS?delay=9000&amp;moveFailed=Error-WCS&amp;delete=true&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:ProcessWCS?delay=9000&amp;moveFailed=Error-WCS&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id} WCSIngest: Starting WCS processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -152,11 +198,16 @@
                 <constant>6000</constant>
             </delay>
 
-            <log message="${id} WCSIngest: Starting Extraction"/>
+            <log message="${id} WCSIngest: Starting Extraction"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             <to uri="extractor:extract?location=WCSData"/>
-            <log message="${id} WCSIngest: Finished Extraction"/>
+            <log message="${id} WCSIngest: Finished Extraction"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             <log message="${id} WCSIngest: AbsolutePath - ${header.CamelFileAbsolutePath}"
-                 loggingLevel="WARN"/>
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
 
             <threads poolSize="3" maxPoolSize="5">
 
@@ -168,15 +219,38 @@
                 <transform>
                     <simple>deployment_manifest.xml</simple>
                 </transform>
+
                 <to uri="reader:file?type=text"/>
-                <log message="${id} WCSIngest: Body - ${body}" loggingLevel="WARN"/>
+
+                <log message="${id} WCSIngest: Body - ${body}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"/>
+
+                <!-- Validate against the XSD. -->
                 <to uri="validator:file:Input/schemas/Unified_WCSDeploymentManifest.xsd"/>
 
-                <!-- Add Schematron validation. -->
-                <!-- <to uri="schematron:///home/davisda/Projects/sidora/sem/apache-servicemix-5.4.0/Input/schemas/Unified_WCSDeploymentManifest.sch"/> -->
-                <!-- <to uri="schematron:///opt/sidora/smx/Input/schemas/Unified_WCSDeploymentManifest.sch"/>
+                <!-- Schematron validation. -->
+                <to uri="schematron:file:Input/schemas/Unified_WCSDeploymentManifest.sch"/>
                 <log message="${id} WCSIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
-                     loggingLevel="INFO"/> -->
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
+                <choice>
+                    <when>
+                        <simple>${in.header.CamelSchematronValidationStatus} == 'FAILED'</simple>
+                        <log message="${id} WCSIngest: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
+                        <log message="${id} WCSIngest: Schematron Validation Report -\n ${header.CamelSchematronValidationReport}"
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
+                        <throwException ref="validationFailure"/>
+                    </when>
+                    <otherwise>
+                        <log message="${id} WCSIngest: Schematron validation succeeded."
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
+                    </otherwise>
+                </choice>
 
                 <!-- Add image count and filename check. -->
                 <setHeader headerName="ManifestXML">
@@ -184,6 +258,8 @@
                         ${body}
                     </simple>
                 </setHeader>
+
+                <!-- Validate image count and check filenames. -->
                 <to uri="direct:validatePackage"/>
 
                 <log message="${id} WCSIngest: Ingest dry-run flag - {{si.ct.wcs.dryrun}}"
@@ -193,11 +269,24 @@
                 <choice>
                     <when>
                         <simple>{{si.ct.wcs.dryrun}} == true</simple>
-                        <log message="${id} WCSIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process" loggingLevel="INFO"/>
+                        <log message="${id} WCSIngest: Ingestion dryrun mode is enabled.. skipping the actual ingestion process"
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
                     </when>
                     <otherwise>
                         <!-- Process the deployment -->
                         <to uri="direct:processPackage"/>
+
+                        <!-- Delay some time for Fedora to catch up with RI sync before starting post validation-->
+                        <log message="${id} WCSIngest: Delaying for moment before starting the post ingest validation ..."
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
+                        <delay>
+                            <constant>6000</constant>
+                        </delay>
+
+                        <!-- Validate image count and check filenames. -->
+                        <to uri="direct:validateIngest"/>
                     </otherwise>
                 </choice>
             </threads>
@@ -274,6 +363,330 @@
             </choice>
 
             <log message="${id} WCSIngest: Finished Package validation."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="WCSValidateIngest">
+            <from uri="direct:validateIngest"/>
+
+            <log message="${id} WCSIngest: Starting Post validation ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="ValidationErrors">
+                <simple>
+                    ValidationErrors
+                </simple>
+            </setHeader>
+
+            <to uri="direct:validatePostIngestResourceCount"/>
+
+            <!-- validate datastreams exists for various object types -->
+            <to uri="direct:validateDatastreams"/>
+
+            <!-- Validate Ingest Datastream Metadata Fields -->
+            <to uri="direct:validateDatastreamFields"/>
+
+            <log message="${id} WCSIngest: Finished Post validation"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="WCSValidatePostIngestResourceCount">
+            <from uri="direct:validatePostIngestResourceCount"/>
+            <log message="${id} WCSIngest: Starting Post Ingestion Resource Count validations..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <!-- RELS-EXT Resource reference count for validation.  The number includes the observation resource objs-->
+            <setHeader headerName="RelsExtResourceCount">
+                <xpath resultType="java.lang.String">
+                    count(/rdf:RDF/rdf:Description/fedora:hasResource)
+                </xpath>
+            </setHeader>
+            <to uri="direct:validatePostResourceCount"/>
+
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${headers.SitePID}
+                </simple>
+            </setHeader>
+            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
+
+            <split streaming="true">
+                <xtokenize>//fedora:hasResource</xtokenize>
+                <!-- Stashing the resource object PID in the header in case of RI search redelivery attempts for later use-->
+                <setHeader headerName="ValidationResourceObjectPID">
+                    <xpath resultType="java.lang.String">
+                        //fedora:hasResource/@rdf:resource/substring-after(., 'info:fedora/')
+                    </xpath>
+                </setHeader>
+
+                <!-- This api will query Fedora relational db and PID is the only indexed field.  There may be performance impact if the query search includes more than PID-->
+                <toD uri="fcrepo:objects?query=pid%7E${header.ValidationResourceObjectPID}&amp;pid=true&amp;resultFormat=xml"/>
+
+                <choice>
+                    <when>
+                        <xpath resultType="java.lang.String">
+                            not(//findObjects:objectFields/findObjects:pid/text())
+                        </xpath>
+
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${header.ValidationResourceObjectPID}
+                            ,'Resource Object not found from Fedora Repository', ${body})"/>
+                        <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                        <log message="${id} WCSIngest: Resource Object not found from Fedora Repository"
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
+                    </when>
+                </choice>
+
+                <log message="${id} WCSIngest: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
+            </split>
+
+            <log message="${id} WCSIngest: Finished Post Ingestion Resource Count validations."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="WCSValidateDatastreams">
+            <from uri="direct:validateDatastreams"/>
+            <log message="${id} WCSIngest: Starting Datastream validations..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <!-- Project is required for WCS-->
+            <!-- Subproject is optional for WCS. -->
+            <!-- Plot is optional for WCS -->
+            <!-- Researcher is required for WCS. -->
+            <!-- Volunteer is optional for WCS. -->
+            <!-- Image is required for WCS. -->
+
+
+            <!-- Validate Project Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Project
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ProjectPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, EAC-CPF, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- TODO: Validation for Sub-Project -->
+            <!-- Validate SubProject Object datastreams -->
+            <!--
+            <choice>
+                <when>
+                    <header>SubProjectPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            SubProject
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.SubProjectPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, FGDC-Research, RELS-EXT
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
+            -->
+
+            <!-- Validate Plot Object datastreams -->
+            <choice>
+                <when>
+                    <header>PlotPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            Plot
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.PlotPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, FGDC-CTPlot, RELS-EXT
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
+
+            <!-- Validate Deployment Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Deployment
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.SitePID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, MANIFEST, FGDC, RELS-EXT
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Image Resource Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Image Resource
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ImageResourcePID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, TN, RELS-EXT, FITS, MODS
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Researcher Observation Object datastreams -->
+            <setHeader headerName="ValidationDatastreamObjectType">
+                <simple>
+                    Researcher Observation
+                </simple>
+            </setHeader>
+            <setHeader headerName="ValidationDatastreamObjectPID">
+                <simple>
+                    ${headers.ResearcherObservationPID}
+                </simple>
+            </setHeader>
+            <setHeader headerName="DatastreamTypesCheck">
+                <simple resultType="java.lang.String">
+                    DC, OBJ, CSV, RELS-EXT, FGDC
+                </simple>
+            </setHeader>
+            <to uri="direct:validateObjectDatastreams"/>
+
+            <!-- Validate Volunteer Observation Object datastreams -->
+            <choice>
+                <when>
+                    <header>VolunteerObservationPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            Volunteer Observation
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.VolunteerObservationPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, OBJ, CSV, RELS-EXT, FGDC
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
+
+            <!-- Validate Image Observation Object datastreams -->
+            <choice>
+                <when>
+                    <header>ImageObservationPID</header>
+                    <setHeader headerName="ValidationDatastreamObjectType">
+                        <simple>
+                            Image Observation
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="ValidationDatastreamObjectPID">
+                        <simple>
+                            ${headers.ImageObservationPID}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="DatastreamTypesCheck">
+                        <simple resultType="java.lang.String">
+                            DC, OBJ, CSV, RELS-EXT, FGDC
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
+
+            <log message="${id} WCSIngest: Finished Datastream validations."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="WCSValidateObjectDatastreams">
+            <from uri="direct:validateObjectDatastreams"/>
+            <log message="${id} WCSIngest: Starting ${header.ValidationDatastreamObjectType} Object Datastream validations..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <simple>
+                    GET
+                </simple>
+            </setHeader>
+
+            <toD uri="fcrepo:objects/${header.ValidationDatastreamObjectPID}/datastreams?format=xml"/>
+
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == 200</simple>
+
+                    <setHeader headerName="FedoraDatastreamIDsFound">
+                        <xpath resultType="java.lang.String">
+                            string-join(//objDatastreams:datastream/@dsid,',')
+                        </xpath>
+                    </setHeader>
+
+                    <to uri="bean:postIngestionValidator?method=validateDatastreamExists"/>
+
+                    <choice>
+                        <when>
+                            <simple>${body} == false</simple>
+                            <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                                    '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
+                            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                            <log message="${id} WCSIngest: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
+                                 loggingLevel="WARN"
+                                 logName="{{si.ct.id}}"/>
+                        </when>
+                    </choice>
+                </when>
+
+                <otherwise>
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                            '${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation', false)"/>
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <log message="${id} WCSIngest: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
+                         loggingLevel="WARN"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} WCSIngest: Finished ${header.ValidationDatastreamObjectType} Object Datastream validations."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -403,8 +816,10 @@
             </split>
 
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
+
             <!-- Researcher is required for WCS. -->
             <to uri="direct:addResearcherObservationResource"/>
+
             <!-- Volunteer is optional for WCS. -->
             <filter>
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
@@ -412,16 +827,13 @@
                 </xpath>
                 <to uri="direct:addVolunteerObservationResource"/>
             </filter>
+
             <!-- Image is required for WCS. -->
             <to uri="direct:addImageObservationResource"/>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
             <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false
-                </simple>
-            </recipientList>
+            <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <log message="${id} WCSIngest: Finished resource processing."
                  loggingLevel="INFO"
@@ -488,16 +900,11 @@
                  logName="{{si.ct.id}}"/>
             -->
             <to uri="reader:file"/>
-            <recipientList>
-                <simple>
-                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}
-                </simple>
-            </recipientList>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false"/>
+
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
             <!-- <to uri="direct:createArchivalImage" /> -->
@@ -508,6 +915,19 @@
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
 
+            <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in
+                the processResources calling the addMODSDatastream to get the PID for the first MODS datastream being created -->
+            <filter>
+                <simple>
+                    ${property.CamelSplitIndex} &lt;= 0
+                </simple>
+                <setHeader headerName="ImageResourcePID">
+                    <simple>
+                        ${header.CamelFedoraPid}
+                    </simple>
+                </setHeader>
+            </filter>
+
             <!-- The current route only handles JPG. -->
             <choice>
                 <!-- If the image is a JPEG? Do nothing. -->
@@ -515,14 +935,14 @@
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
-                    <log message="${id} Derivatives: Found JPEG."
+                    <log message="${id} WCSIngest: Derivatives: Found JPEG."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
-                    <log message="${id} Derivatives: Found non-JPEG Image."
+                    <log message="${id} WCSIngest: Derivatives: Found non-JPEG Image."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
@@ -546,17 +966,17 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Researcher%20Observations"/>
-            <log message="Research Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} WCSIngest: Research Observation Resource PID - ${header.CamelFedoraPid}"
                     loggingLevel="DEBUG"
                     logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} WCSIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ResearcherObservation.xsl"/>
-            <log message="Researcher Observations - \n${body}"
+            <log message="${id} WCSIngest: Researcher Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <transform>
@@ -565,11 +985,9 @@
                 </xpath>
             </transform>
             <convertBodyTo type="java.lang.String"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"/>
+
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
@@ -580,11 +998,24 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
+
             <to uri="xslt:file:Input/xslt/ManifestResearcherObservation.xsl?saxon=true"/>
+
             <log message="${id} WCSIngest: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
+
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
+
+            <setHeader headerName="ResourceCount">
+                <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="ResearcherObservationPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
 
             <log message="${id} WCSIngest: Finished Researcher Observation data processing."
                  loggingLevel="INFO"
@@ -604,13 +1035,13 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Volunteer%20Observations"/>
-            <log message="Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} WCSIngest: Volunteer Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} WCSIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setBody>
@@ -619,7 +1050,7 @@
                 </simple>
             </setBody>
             <to uri="xslt:file:Input/xslt/VolunteerObservation.xsl"/>
-            <log message="Volunteer Observations - \n${body}"
+            <log message="${id} WCSIngest: Volunteer Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <transform>
@@ -628,11 +1059,9 @@
                 </xpath>
             </transform>
             <convertBodyTo type="java.lang.String"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"/>
+
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
@@ -648,6 +1077,16 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
+
+            <setHeader headerName="ResourceCount">
+                <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="VolunteerObservationPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
 
             <log message="${id} WCSIngest: Finished Volunteer Observation data processing."
                  loggingLevel="INFO"
@@ -667,17 +1106,17 @@
                 </simple>
             </setBody>
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=Image%20Observations"/>
-            <log message="Image Observation Resource PID - ${header.CamelFedoraPid}"
+            <log message="${id} WCSIngest: Image Observation Resource PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setHeader headerName="PIDAggregation">
                 <simple>${header.PIDAggregation},${header.CamelFedoraPid}</simple>
             </setHeader>
-            <log message="Aggregation: ${header.PIDAggregation}"
+            <log message="${id} WCSIngest: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="xslt:file:Input/xslt/ImageObservation.xsl"/>
-            <log message="Image Observations - \n${body}"
+            <log message="${id} WCSIngest: Image Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <transform>
@@ -686,11 +1125,9 @@
                 </xpath>
             </transform>
             <convertBodyTo type="java.lang.String"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"/>
+
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
             <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
@@ -706,6 +1143,16 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC%20Record"/>
+
+            <setHeader headerName="ResourceCount">
+                <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="ImageObservationPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
 
             <log message="${id} WCSIngest: Finished Image Observation data processing."
                  loggingLevel="INFO"
@@ -742,7 +1189,8 @@
                 </when>
                 <otherwise>
                     <log message="${id} WCSIngest: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
-                         loggingLevel="ERROR"/>
+                         loggingLevel="ERROR"
+                         logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
@@ -764,7 +1212,9 @@
                     //fits:fileinfo/fits:created[@toolname="Exiftool"]
                 </xpath>
             </setHeader>
-            <log message="MODS FITS Created Date - ${header.FITSCreatedDate}"/>
+            <log message="${id} WCSIngest: MODS FITS Created Date - ${header.FITSCreatedDate}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             -->
 
             <!-- TODO - The Image ID has .JPG appended and we may want to make this consistent. -->
@@ -863,8 +1313,11 @@
                             {{si.ct.root}}
                         </simple>
                     </setHeader>
+
                     <!-- Add the parents if needed. -->
+                    <!-- Project is required, Project is required -->
                     <to uri="direct:processProject"/>
+
                     <!-- Subproject is optional for WCS. -->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
@@ -872,6 +1325,7 @@
                         </xpath>
                         <to uri="direct:processSubproject"/>
                     </filter>
+
                     <!-- Plot is optional. -->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
@@ -879,6 +1333,7 @@
                         </xpath>
                         <to uri="direct:processPlot"/>
                     </filter>
+
                     <!-- Clean stashed header that could potentially lock for inflight check during post validations-->
                     <removeHeader headerName="DeploymentCorrelationId"/>
                 </when>
@@ -922,7 +1377,9 @@
                 </groovy>
             </transform>
 
-            <log message="Replace body - ${body}" loggingLevel="WARN"/>
+            <log message="${id} WCSIngest: Replace body - ${body}"
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
 
             <setBody>
                 <!-- The query needs to also check directly along the parent axis since names are not unique. -->
@@ -1011,7 +1468,7 @@
                                     message="The fedora object not found"/>
                 </when>
             </choice>
-            <log message="Find Object By PID - ${body}."
+            <log message="${id} WCSIngest: Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1061,14 +1518,14 @@
                             ${header.CamelFedoraPid}
                         </simple>
                     </setHeader>
-                    <!-- Create CT plot and add it as a sub-concept of the sub-project -->
+                    <!-- Create WCS CT plot and add it as a sub-concept of the sub-project -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-                    <!-- Add Relation from parent CT sub-project to the child CT plot -->
+                    <!-- Add Relation from parent WCS CT sub-project to the child WCS CT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <!-- Add an EAC-CPF datastream for concept metadata. -->
+                    <!-- Add an FGDC-CTPlot datastream for concept metadata. -->
                     <setBody>
                         <simple>
                             ${header.ManifestXML}
@@ -1089,6 +1546,12 @@
                     </setHeader>
                 </otherwise>
             </choice>
+
+            <setHeader headerName="PlotPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
 
             <log message="${id} WCSIngest: Finished processing plot."
                  loggingLevel="INFO"
@@ -1136,14 +1599,14 @@
                             ${header.CamelFedoraPid}
                         </simple>
                     </setHeader>
-                    <!-- Create CT sub-project and add it as a sub-concept of the project. -->
+                    <!-- Create WCS CT sub-project and add it as a sub-concept of the project. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the sub-project -->
                     <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-                    <!-- Add Relation from parent CT project to the child CT sub-project -->
+                    <!-- Add Relation from parent WCS CT project to the child WCS CT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <!-- Add an EAC-CPF datastream for concept metadata. -->
+                    <!-- Add an FGDC-Research datastream for concept metadata. -->
                     <setBody>
                         <simple>
                             ${header.ManifestXML}
@@ -1164,6 +1627,12 @@
                     </setHeader>
                 </otherwise>
             </choice>
+
+            <setHeader headerName="SubProjectPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
 
             <log message="${id} WCSIngest: Finished processing subproject."
                  loggingLevel="INFO"
@@ -1205,12 +1674,12 @@
                     <log message="${id} WCSIngest: Project does not exist."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
-                    <!-- Create CT project and add it as a sub-concept of the Camera Trap root object. -->
+                    <!-- Create WCS CT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project. -->
                     <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-                    <!-- Add Relation from parent CT root object to the child CT project. -->
+                    <!-- Add Relation from parent WCS CT root object to the child WCS CT project. -->
                     <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- Add an EAC-CPF datastream for concept metadata. -->
                     <setBody>
@@ -1234,14 +1703,320 @@
                 </otherwise>
             </choice>
 
+            <setHeader headerName="ProjectPID">
+                <simple>
+                    ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+
             <log message="${id} WCSIngest: Finished processing project."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
+        <!-- Validate Ingest Datastream Metadata Fields -->
+        <route id="WCSValidateDatastreamFields">
+            <from uri="direct:validateDatastreamFields"/>
+            <log message="${id} WCSIngest: ValidateDatastreamFields: Starting Datastream Fields Validation ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="direct:validate_EAC-CPF_Datastream"/>
+
+            <to uri="direct:validate_FGDC_Datastream"/>
+
+            <to uri="direct:validate_MODS_Datastream"/>
+
+            <!-- Start Researcher CSV Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ResearcherObservationPID}
+                </simple>
+            </setHeader>
+            <to uri="direct:ValidateCSVFields"/>
+            <!--
+                If Volunteer or Image Observations exist Researcher Validation Errors will be sent to the aggregator
+                before continuing to the next validation.
+                If Volunteer or Image Observations DO NOT exist the ValidationComplete header is set and the
+                Researcher Observation Errors are sent to the aggregator for final validation error message aggregation
+            -->
+            <!-- Start Volunteer CSV Validation -->
+            <choice>
+                <when>
+                    <header>VolunteerObservationPID</header>
+                    <!-- Send the Validation Error Message to the aggregator if any -->
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            ${header.VolunteerObservationPID}
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:ValidateCSVFields"/>
+                </when>
+            </choice>
+
+            <!-- Start Image CSV Validation -->
+            <choice>
+                <when>
+                    <header>ImageObservationPID</header>
+                    <!-- Send the Validation Error Message to the aggregator if any -->
+                    <to uri="direct:validationErrorMessageAggregationStrategy"/>
+                    <setHeader headerName="CamelFedoraPid">
+                        <simple>
+                            ${header.ImageObservationPID}
+                        </simple>
+                    </setHeader>
+                    <to uri="direct:ValidateCSVFields"/>
+                </when>
+            </choice>
+
+            <!-- Notify the aggregator to complete aggregation -->
+            <setHeader headerName="ValidationComplete">
+                <simple>
+                    true
+                </simple>
+            </setHeader>
+
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+
+            <log message="${id} WCSIngest: ValidateDatastreamFields: Datastream Fields Validation Complete..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <!-- EAC-CPF Datastream Validation Route -->
+        <route id="WCSValidate_EAC-CPF_Datastream">
+            <from uri="direct:validate_EAC-CPF_Datastream"/>
+
+            <log message="${id} WCSIngest: ValidateDatastreamFields: Starting EAC-CPF Datastream Validation ..."
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <!-- Start EAC-CPF Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ProjectPID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the EAC-CPF datastream from the project parent -->
+            <to uri="fedora://getDatastreamDissemination?dsId=EAC-CPF&amp;exchangePattern=InOut"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the piped separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    <!--EAC-CPF ProjectName|//eac:nameEntry[1]/eac:part/text()|concat(//ProjectName/text(), ' &#40;', //ProjectId/text(), '&#41;')-->
+                    EAC-CPF ProjectName|//eac:nameEntry[1]/eac:part/text()|//ProjectName/text()
+                </simple>
+            </setBody>
+            <to uri="direct:ValidateDatastreamFieldList"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy"/>
+        </route>
+
+        <!-- FGDC Datastream Validation Route -->
+        <route id="WCSValidate_FGDC_Datastream">
+            <from uri="direct:validate_FGDC_Datastream"/>
+
+            <log message="${id} WCSIngest: ValidateDatastreamFields: Starting FGDC Datastream Validation ..."
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <!-- Start FGDC Validation -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.SitePID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the FGDC datastream from the project parent -->
+            <to uri="fedora://getDatastreamDissemination?dsId=FGDC&amp;exchangePattern=InOut" id="getFGDCDatastream"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the piped separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    FGDC CameraDeploymentID|//citeinfo/othercit/text()|//CameraDeploymentID/text()
+                </simple>
+            </setBody>
+            <to uri="direct:ValidateDatastreamFieldList"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateFGDC"/>
+        </route>
+
+        <!-- MODS Datastream Validation Route -->
+        <route id="WCSValidate_MODS_Datastream">
+            <from uri="direct:validate_MODS_Datastream"/>
+
+            <log message="${id} WCSIngest: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <!-- Start MODS Validation -->
+            <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
+            <setHeader headerName="CamelFedoraPid">
+                <simple>
+                    ${header.ImageResourcePID}
+                </simple>
+            </setHeader>
+
+            <!-- Get the MODS datastream -->
+            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
+
+            <convertBodyTo type="java.lang.String"/>
+
+            <!-- Store the current datastream  to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <!-- the piped separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()
+                </simple>
+            </setBody>
+            <to uri="direct:ValidateDatastreamFieldList"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
+        </route>
+
+        <!-- Validate the provided datastream and field list -->
+        <route id="WCSValidateDatastreamFieldList">
+            <from uri="direct:ValidateDatastreamFieldList"/>
+            <log message="${id} WCSIngest: ValidateDatastreamFieldList: Starting Validation of Datastream Metadata Fields List..."
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <split streaming="true" strategyRef="cameraTrapValidationMessageAggregationStrategy">
+                <tokenize token="\r\n|\n" xml="false" trim="true" />
+                <!-- Use a bean for validation because xpathbuilder is need -->
+                <to uri="bean:postIngestionValidator?method=validateField"/>
+            </split>
+
+            <log message="${id} WCSIngest: ValidateDatastreamFieldList: Validation of Datastream Fields List Complete..."
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <!-- Validate CSV Fields -->
+        <route id="WCSValidateCSVFields">
+            <from uri="direct:ValidateCSVFields"/>
+
+            <log message="${id} WCSIngest: ValidateCSVFields: Starting Observation CSV Validation..."
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="fedora://getDatastreamDissemination?dsId=CSV&amp;exchangePattern=InOut"/>
+            <convertBodyTo type="java.lang.String"/>
+
+            <unmarshal>
+                <csv delimiter=","/>
+            </unmarshal>
+
+            <!-- Get Researcher, Volunteer, or Image from the CSV -->
+            <setHeader headerName="Observer">
+                <simple resultType="java.lang.String">
+                    ${body[0][0]}Identifications
+                </simple>
+            </setHeader>
+
+            <!-- Count the number of observation records in the csv -->
+            <setHeader headerName="CSVObservationCount">
+                <simple resultType="java.lang.Integer">
+                    ${body.size()}
+                </simple>
+            </setHeader>
+
+            <!-- Validate each CSV observation matches the Manifest -->
+            <!-- Store the first ImageSequenceId to validate the CSV was created -->
+            <setHeader headerName="CSVImageSeqID">
+                <simple resultType="java.lang.String">
+                    ${body[0][2]}
+                </simple>
+            </setHeader>
+
+            <log message="${id} WCSIngest: ValidateCSVFields: ${header.Observer} | CSVObservationCount = ${header.CSVObservationCount} | CSVImageSeqID = ${header.CSVImageSeqID}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="validationResult">
+                <xpath headerName="ManifestXML" resultType="java.lang.String">
+                    boolean((//ImageSequenceId/text() = $in:CSVImageSeqID) and (count(//*[name() = $in:Observer]/Identification) = $in:CSVObservationCount))
+                </xpath>
+            </setHeader>
+
+            <log message="${id} WCSIngest: ValidateCSVFields: ${header.Observer} validationResult: ${header.validationResult} "
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <choice>
+                <when>
+                    <!-- Check that the ImageSequenceID exists and observation counts matches the manifest -->
+                    <simple>
+                        ${header.validationResult} == false
+                    </simple>
+
+                    <!-- The CSV was not generated create validation error message -->
+                    <setBody>
+                        <simple>
+                            ${header.Observer} CSV: Validation Failed!
+                        </simple>
+                    </setBody>
+
+                    <log message="${id} WCSIngest: ValidateCSVFields: ${body}"
+                         loggingLevel="WARN"
+                         logName="{{si.ct.id}}"/>
+
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
+                </when>
+                <otherwise>
+                    <setBody>
+                        <simple>""</simple>
+                    </setBody>
+                </otherwise>
+            </choice>
+
+            <log message="${id} WCSIngest: ValidateCSVFields: ${header.Observer} CSV Validation Complete..."
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <!-- Validation Error Message Aggregation Strategy -->
+        <route id="WCSValidationErrorMessageAggregationStrategy">
+            <from uri="direct:validationErrorMessageAggregationStrategy"/>
+            <aggregate strategyRef="cameraTrapValidationMessageAggregationStrategy" eagerCheckCompletion="true">
+                <correlationExpression>
+                    <simple>header.ValidationErrors</simple>
+                </correlationExpression>
+                <completionPredicate>
+                    <simple>${header.ValidationComplete} == 'true'</simple>
+                </completionPredicate>
+                <log message="${id} WCSIngest: ValidationERRORAggregationMessage:\nBody:\n${body}"
+                     loggingLevel="ERROR"
+                     logName="{{si.ct.id}}"/>
+            </aggregate>
+        </route>
+
         <route id="WCSInFlightConceptStatusPolling">
             <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
-            <log message="${id} WCSInFlightConceptStatusPolling: Starting the In-Flight Concept process status check..."
+            <log message="${id} WCSIngest: InFlightConceptStatusPolling: Starting the In-Flight Concept process status check..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1284,7 +2059,7 @@
                         <simple>
                             ${body} != ''
                         </simple>
-                        <log message="${id} WCSInFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
+                        <log message="${id} WCSIngest: InFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
                              loggingLevel="DEBUG"
                              logName="{{si.ct.id}}"/>
                         <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
@@ -1293,7 +2068,7 @@
 
             </split>
 
-            <log message="${id} WCSInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
+            <log message="${id} WCSIngest: InFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>
