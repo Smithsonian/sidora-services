@@ -1,0 +1,49 @@
+
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink">
+   <titleInfo>
+      <title>WCS-ECU-011-D0128,  1 of 1</title>
+   </titleInfo>
+   <identifier type="Image ID">WCS-ECU-011-D0128-I000901</identifier>
+   <relatedItem>
+      <identifier type="Image Sequence ID">WCS-ECU-011-D0128-1</identifier>
+   </relatedItem>
+   <typeOfResource>still image</typeOfResource>
+   <abstract></abstract>
+   <physicalDescription>
+      <digitalOrigin></digitalOrigin>
+   </physicalDescription>
+   <subject authority="Camera Trap Data Network Photo Type">
+      <topic>animal</topic>
+   </subject>
+   <subject authorityURI="http://www.iucnredlist.org">
+      <topic>Mazama americana</topic>
+   </subject>
+   <subject>
+      <topic></topic>
+      <geographic></geographic>
+      <cartographics>
+         <coordinates></coordinates>
+      </cartographics>
+   </subject>
+   <name>
+      <namePart></namePart>
+      <role>
+         <roleTerm authority="marcrelator" type="text">Photo Type Identified By</roleTerm>
+      </role>
+   </name>
+   <note type="Interest Rank">None</note>
+   <originInfo>
+      <dateCaptured>2009-02-08T21:34:00</dateCaptured>
+      <dateOther type="Embargo Period End Date"></dateOther>
+   </originInfo>
+   <location>
+      <physicalLocation></physicalLocation>
+      <holdingSimple>
+         <copyInformation>
+            <subLocation></subLocation>
+         </copyInformation>
+      </holdingSimple>
+   </location>
+   <accessCondition type="restriction on access">See Project Data Use and Constraints</accessCondition>
+   <accessCondition type="use and reproduction">See Project Data Use and Constraints</accessCondition>
+</mods>

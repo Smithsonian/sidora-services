@@ -1,0 +1,42 @@
+
+<fits xmlns="http://hul.harvard.edu/ois/xml/ns/fits/fits_output" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" timestamp="6/29/16 1:47 PM" version="0.6.2" xsi:schemaLocation="http://hul.harvard.edu/ois/xml/ns/fits/fits_output http://hul.harvard.edu/ois/xml/xsd/fits/fits_output.xsd">
+    <identification>
+        <identity format="JPEG File Interchange Format" mimetype="image/jpeg" toolname="FITS" toolversion="0.6.2">
+            <tool toolname="file utility" toolversion="5.04"></tool>
+            <tool toolname="Exiftool" toolversion="9.06"></tool>
+            <tool toolname="Droid" toolversion="3.0"></tool>
+            <version toolname="file utility" toolversion="5.04">1.02</version>
+            <externalIdentifier toolname="Droid" toolversion="3.0" type="puid">fmt/44</externalIdentifier>
+        </identity>
+    </identification>
+    <fileinfo>
+        <size toolname="Jhove" toolversion="1.5">26345</size>
+        <creatingApplicationName status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">Nikon COOLSCAN V ED</creatingApplicationName>
+        <lastmodified status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">2016:06:29 13:45:26-04:00</lastmodified>
+        <filepath status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">/utility/sidora/apache-servicemix-6.1.0/WCSData/ECU-011-D0128/WCS-ECU-011-D0128-I000901.jpg</filepath>
+        <filename status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">/utility/sidora/apache-servicemix-6.1.0/WCSData/ECU-011-D0128/WCS-ECU-011-D0128-I000901.jpg</filename>
+        <md5checksum status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">fa7e45e7e278f3d144fe6b0c6e65b7c7</md5checksum>
+        <fslastmodified status="SINGLE_RESULT" toolname="OIS File Information" toolversion="0.1">1467222326000</fslastmodified>
+    </fileinfo>
+    <filestatus></filestatus>
+    <metadata>
+        <image>
+            <compressionScheme status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">JPEG (old-style)</compressionScheme>
+            <imageWidth status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">446</imageWidth>
+            <imageHeight status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">295</imageHeight>
+            <iccProfileName status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">Nikon sRGB 4.0.0.3001</iccProfileName>
+            <iccProfileVersion status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">2.2.0</iccProfileVersion>
+            <YCbCrSubSampling status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">2 1</YCbCrSubSampling>
+            <YCbCrPositioning status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">Centered</YCbCrPositioning>
+            <orientation status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">normal*</orientation>
+            <samplingFrequencyUnit status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">inches</samplingFrequencyUnit>
+            <xSamplingFrequency status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">300</xSamplingFrequency>
+            <ySamplingFrequency status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">300</ySamplingFrequency>
+            <bitsPerSample status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">8 8 8</bitsPerSample>
+            <scannerManufacturer status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">Nikon</scannerManufacturer>
+            <scannerModelName status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">Nikon COOLSCAN V ED</scannerModelName>
+            <scanningSoftwareName status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">Nikon Scan 4.0.2 W</scanningSoftwareName>
+            <exifVersion status="SINGLE_RESULT" toolname="Exiftool" toolversion="9.06">0220</exifVersion>
+        </image>
+    </metadata>
+</fits>

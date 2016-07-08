@@ -219,10 +219,14 @@
                 <directory>src/test/resources</directory>
             </testResource>
 
-            <!-- add the Camera Trap Routes directory -->
+            <!-- add the Camera Trap and WCS Routes directory -->
             <testResource>
                 <directory>../../Routes/Camera Trap</directory>
             </testResource>
+            <testResource>
+                <directory>../../Routes/WCS</directory>
+            </testResource>
+
         </testResources>
 
         <plugins>
