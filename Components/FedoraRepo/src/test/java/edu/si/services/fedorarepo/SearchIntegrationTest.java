@@ -46,7 +46,7 @@ public class SearchIntegrationTest extends FedoraComponentIntegrationTest
 
         // Use a system object.
         String searchLabel = "Content Model Object for Content Model Objects";
-        String query = String.format("SELECT ?o FROM <#ri> WHERE {?o <fedora-model:label> '%s'}", searchLabel);
+        String query = String.format("SELECT ?o FROM <info:edu.si.fedora#ri> WHERE {?o <info:fedora/fedora-system:def/model#label> '%s'}", searchLabel);
 
         template.sendBody("direct:testSearch", query);
 
