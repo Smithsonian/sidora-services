@@ -51,17 +51,20 @@ import java.util.Properties;
  */
 public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport {
 
-    //Camera Trap Deployment Info
+    //Test Data Directory contains the datastreams and other resources for the tests
+    private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";
+
+    //Camera Trap Deployment Info for testing
     private String camelFileParent = "10002000";
     private int ManifestCameraDeploymentId = 0000;
 
-    //Mock endpoint and AdviceWith configuration to be used
+    //Mock endpoint to be used for assertions
     private MockEndpoint mockEndpoint;
 
     //Camel Headers Map
     private Map<String, Object> headers;
 
-    //Camera Trap Deployment Manifest and Field values
+    //Camera Trap Deployment Manifest
     private File manifestFile = new File("src/test/resources/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/deployment_manifest.xml");
     private String manifest;
 
@@ -72,6 +75,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
     private CameraTrapValidationMessage cameraTrapValidationMessage = new CameraTrapValidationMessage();
     private CameraTrapValidationMessage.MessageBean expectedValidationMessage;
 
+    //The mock:result expected body
     private ArrayList expectedBody = new ArrayList<>();
 
     //Temp directories created for testing the camel validation route
@@ -84,9 +88,6 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
      */
     @BeforeClass
     public static void setupSysPropsTempResourceDir() throws IOException {
-        //Set the karaf.home property use by the camera trap route
-        System.setProperty("karaf.home", "src/test/resources/SID-569TestFiles");
-
         //Define the Process directory that the camera trap route creates
         // to be able to clean the project up after tests
         processDirectory = new File("ProcessUnified");
@@ -109,13 +110,16 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
         }
 
         FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempConfigDirectory);
+
+        //Set the karaf.home property use by the camera trap route
+        System.setProperty("karaf.home", "Karaf-config");
     }
 
     @Override
     protected Properties useOverridePropertiesWithPropertiesComponent() {
         Properties props = new Properties();
         try {
-            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/edu.si.sidora.karaf.cfg");
+            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/etc/edu.si.sidora.karaf.cfg");
 
             props.load(in);
         } catch (IOException ex) {
@@ -160,6 +164,8 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
     public void setUp() throws Exception {
         super.setUp();
 
+        disableJMX();
+
         //Store the Deployment Manifest as string to set the camel ManifestXML header
         manifest = FileUtils.readFileToString(manifestFile);
 
@@ -195,7 +201,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
             @Override
             public void configure() throws Exception {
 
-                //set the mockEndpoint and stop the route after the headers we are testing have been created
+                //add the mock:result endpoint and stop the route after the headers we are testing have been created
                 weaveByToString(".*reader:file.*").before().to("mock:result").stop();
             }
         });
@@ -211,12 +217,13 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
 
         template.sendBodyAndHeaders(routeURI, "d18981s1i1.JPG", headers);
 
-        //get the mockEndpoint header values
+        //get the mockEndpoint header values for assertions
         String imageidHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("imageid", String.class);
         String imageSequenceIDHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("ImageSequenceID", String.class);
         String imageSequenceIndexHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("ImageSequenceIndex", String.class);
         String imageSequenceCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("ImageSequenceCount", String.class);
 
+        //Assertions
         assertEquals("imageid header assertEquals failed!", imageidHeaderExpected, imageidHeaderResult);
         assertEquals("ImageSequenceID header assertEquals failed!", imageSequenceIDHeaderExpected, imageSequenceIDHeaderResult);
         assertEquals("ImageSequenceIndex header assertEquals failed!", imageSequenceIndexHeaderExpected, imageSequenceIndexHeaderResult);
@@ -236,7 +243,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
         String routeId = "UnifiedCameraTrapAddMODSDataStream";
         String routeURI = "direct:addMODSDataStream";
 
-        File MODS_DatastreamTestFile = new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/MODS/valid_MODS.xml");
+        File MODS_DatastreamTestFile = new File(testDataDir + "/MODS/valid_MODS.xml");
 
         String MODS_DatastreamExpected = FileUtils.readFileToString(MODS_DatastreamTestFile);
 
@@ -254,7 +261,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
                 //Remove the setheader definition for FITSCreatedDate we are manually passing this header in already
                 //weaveByType(SetHeaderDefinition.class).selectFirst().remove();
                 //set the mockEndpoint result and stop the route before adding the MODS datastream to fedora
-                weaveByToString(".*fedora:addDatastream.*").before().log(LoggingLevel.INFO, "uct.test", "============ BODY ============\n${body}").to("mock:result").stop();
+                weaveByToString(".*fedora:addDatastream.*").before().log(LoggingLevel.DEBUG, "uct.test", "============ BODY ============\n${body}").to("mock:result").stop();
             }
         });
 
@@ -269,9 +276,9 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
 
         String resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody(String.class);
 
-        log.info("expectedBody:\n" + MODS_DatastreamExpected + "\nresultBody:\n" + resultBody);
+        log.debug("expectedBody:\n" + MODS_DatastreamExpected + "\nresultBody:\n" + resultBody);
 
-        log.info("expectedBody Type:\n" + MODS_DatastreamExpected.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
+        log.debug("expectedBody Type:\n" + MODS_DatastreamExpected.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
         assertEquals("mock:result Body containing MODS datastream xml assertEquals failed!", MODS_DatastreamExpected, resultBody);
 

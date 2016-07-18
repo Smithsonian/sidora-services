@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2015 Smithsonian Institution.
+  ~ Copyright 2015-2016 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -40,7 +40,6 @@
             <cm:property name="si.ct.id" value="edu.si.wcsingest"/>
             <cm:property name="si.ct.pipeline" value="WCSCameraTrapIngest"/>
             <cm:property name="si.ct.wcs.dryrun" value="false"/>
-            <cm:property name="si.ct.wcs.enableS3Routes" value="false"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
@@ -59,10 +58,6 @@
     </bean>
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
-
-    <bean id="cameraTrapAutoS3SyncRouteBuilder" class="edu.si.services.beans.cameratrap.CameraTrapAutoS3SyncRouteBuilder">
-        <argument value="${si.ct.wcs.enableS3Routes}" type="java.lang.Boolean"/>
-    </bean>
 
     <bean id="velocityToolsHandler" class="edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler"/>
 
@@ -87,15 +82,6 @@
     </bean>
 
     <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
-
-    <bean id="basicAWSCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
-        <argument value="${si.ct.wcs.aws.accessKey}" type="java.lang.String"/>
-        <argument value="${si.ct.wcs.aws.secretKey}" type="java.lang.String"/>
-    </bean>
-
-    <bean id="amazonS3Client" class="com.amazonaws.services.s3.AmazonS3Client">
-        <argument ref="basicAWSCredentials"/>
-    </bean>
 
     <bean id="deploymentPackageProcessFilter" class="edu.si.services.beans.cameratrap.DeploymentPackageProcessFilter"/>
 
@@ -136,7 +122,6 @@
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
-        <routeBuilder ref="cameraTrapAutoS3SyncRouteBuilder"/>
 
         <onException>
             <exception>java.net.ConnectException</exception>
