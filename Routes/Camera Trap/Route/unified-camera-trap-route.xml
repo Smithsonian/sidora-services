@@ -110,7 +110,6 @@
         </property>
     </bean>
 
-    <!--<bean id="containerWideInterceptor" class="edu.si.services.beans.cameratrap.ContainerWideInterceptor"/>-->
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="UnifiedCTIngestCamelContext"
@@ -1373,8 +1372,8 @@
                     SELECT ?o FROM &lt;info:edu.si.fedora#ri&gt;
                     WHERE
                     {
-                    ?o &lt;info:fedora/fedora-system:def/model#label&gt; '${body}' .
-                    &lt;info:fedora/${header.CamelFedoraPid}&gt; &lt;info:fedora/fedora-system:def/relations-external#hasConcept&gt; ?o .
+                        ?o &lt;info:fedora/fedora-system:def/model#label&gt; '${body}' .
+                        &lt;info:fedora/${header.CamelFedoraPid}&gt; &lt;info:fedora/fedora-system:def/relations-external#hasConcept&gt; ?o .
                     }
                 </simple>
             </setBody>
@@ -1443,7 +1442,7 @@
                 <simple>
                     ASK FROM &lt;info:edu.si.fedora#ri&gt;
                     {
-                    &lt;info:fedora/${body}&gt; ?p ?o .
+                        &lt;info:fedora/${body}&gt; ?p ?o .
                     }
                 </simple>
             </setBody>

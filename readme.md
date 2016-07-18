@@ -30,6 +30,7 @@
   - Copy the `tabular-metadata-cxf-services-SMX-blueprint-(version).jar` from `GH_DIR/Tabular/tabular-metadata-cxf-blueprint/target/` to the `SMX_HOME/deploy/` folder
 8. Copy SIdora Camel Routes to the ServiceMix deploy directory
   - Copy the `camera-trap-route.xml` from `GH_DIR/Routes/Camera Trap/Route/` to the `SMX_HOME/deploy/` folder
+  - Copy the `unified-camera-trap-route.xml` from `GH_DIR/Routes/Camera Trap/Route/` to the `SMX_HOME/deploy/` folder
   - Copy the `wcs-route.xml` from `GH_DIR/Routes/WCS/Route/` to the `SMX_HOME/deploy/` folder
   - Copy the `derivatives-route.xml` from `GH_DIR/Routes/Derivatives/Route/` to the `SMX_HOME/deploy/` folder
 9. Edit SMX_HOME/etc/system.properties and add following properties for Fedora and CT route settings
@@ -39,10 +40,8 @@
   - si.ct.owner = CT owner username
   - si.ct.namespace = CT namespace
   - si.ct.root = PID of CT root object
-10. Create SMX_HOME/etc/edu.si.sidora.karaf.cfg properties file and add following properties for the SCBI and WCS CT routes.  More details on properties can be found on the SIdora ServiceMix Confluence page.  
-  - si.ct.wcs.dryrun = false
-  - si.ct.scbi.dryrun = false
-  - si.ct.thread.wait.time = 6000
+10. Copy the sidora external properties file from the template available from Routes/Camera Trap/Karaf-config/edu.si.sidora.karaf.cfg to the SMX_HOME/etc directory and configure the values.
+    More details on properties can be found on the SIdora ServiceMix Confluence page.  
 11. Add following dependencies to the ServiceMix by running the commands from the SMX client console
   - smx@fedora> feature:install camel-exec # Use feature vs features for SMX 6.x
   - smx@fedora> feature:install camel-groovy
@@ -95,9 +94,9 @@ To process Camera Trap data copy the data archive (e.g. p1d246.tar.gz) into the 
 > Note: SIservices is built with Maven 3
 
 ### Version
-0.4.4
+0.5.0
 
-Copyright 2015 Smithsonian Institution.
+Copyright 2015-2016 Smithsonian Institution.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not
 use this file except in compliance with the License.You may obtain a copy of
