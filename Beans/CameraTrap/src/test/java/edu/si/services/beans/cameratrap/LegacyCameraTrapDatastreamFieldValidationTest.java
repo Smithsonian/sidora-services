@@ -50,22 +50,25 @@ import java.util.Map;
  * Tests for the Camera Trap Validate Fields Route
  * Created by jbirkhimer on 2/29/16.
  */
-public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
+public class LegacyCameraTrapDatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
-    //Camera Trap Deployment Info
+    //Test Data Directory contains the datastreams and other resources for the tests
+    private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";
+
+    //Camera Trap Deployment Info for testing
     private String camelFileParent = "10002000";
     private int ManifestCameraDeploymentId = 0000;
 
-    //Mock endpoint and AdviceWith configuration to be used
+    //Mock endpoint to be used for assertions
     private MockEndpoint mockEndpoint;
 
     //Camel Headers Map
     private Map<String, Object> headers;
 
-    //Camera Trap Deployment Manifest and Field values
-    private File manifestFile = new File("src/test/resources/SID-569TestFiles/p151d18321/deployment_manifest.xml");
+    //Camera Trap Deployment Manifest
+    private File manifestFile = new File("src/test/resources/LegacyManifest-TestFiles/p151d18321/deployment_manifest.xml");
     private String manifest;
-    
+
     //Datastream and Field values
     private File datastreamFile;
     private String datastream;
@@ -84,9 +87,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
      */
     @BeforeClass
     public static void setupSysPropsTempResourceDir() throws IOException {
-        //Set the karaf.home property use by the camera trap route
-        System.setProperty("karaf.home", "src/test/resources/SID-569TestFiles");
-
         //Define the Process directory that the camera trap route creates
         // to be able to clean the project up after tests
         processDirectory = new File("Process");
@@ -109,13 +109,16 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         }
 
         FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempConfigDirectory);
+
+        //Set the karaf.home property use by the camera trap route
+        System.setProperty("karaf.home", "Karaf-config");
     }
 
     @Override
     protected Properties useOverridePropertiesWithPropertiesComponent() {
         Properties props = new Properties();
         try {
-            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/edu.si.sidora.karaf.cfg");
+            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/etc/edu.si.sidora.karaf.cfg");
 
             props.load(in);
         } catch (IOException ex) {
@@ -160,6 +163,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     public void setUp() throws Exception {
         super.setUp();
 
+        disableJMX();
+
         //Store the Deployment Manifest as string to set the camel ManifestXML header
         manifest = FileUtils.readFileToString(manifestFile);
 
@@ -171,7 +176,6 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         headers.put("ValidationErrors", "ValidationErrors");
         headers.put("ProjectPID", "test:0000");
         headers.put("SitePID", "test:0000");
-
     }
 
     /**
@@ -189,7 +193,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
             @Override
             public void configure() throws Exception {
 
-                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
+                //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return but modified for our test
                 weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
 
                 //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
@@ -225,8 +229,8 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
     public void testValidate_EAC_CPF_Fail() throws Exception {
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml");
+        // with the same exchange body that fedora would return but modified for our test
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -255,7 +259,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -278,7 +282,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -308,7 +312,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/validFGDC.xml");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/FGDC/validFGDC.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -330,7 +334,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -359,7 +363,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/MODS/validMODS.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -382,7 +386,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
         //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationPASS.csv");
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin");
 
         runValidationAdviceWithTestCSV(datastreamFile, null);
     }
@@ -398,7 +402,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
         //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationFAIL.csv");
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -423,7 +427,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
         //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationCountsFAIL.csv");
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failCountsResearcherCSV.bin");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/failCountsResearcherCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -446,7 +450,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
         //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationPASS.csv");
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin");
 
         runValidationAdviceWithTestCSV(datastreamFile, null);
     }
@@ -462,7 +466,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
         //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationFAIL.csv");
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -486,7 +490,7 @@ public class DatastreamFieldValidationTest extends CamelBlueprintTestSupport {
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
         //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationCountsFAIL.csv");
-        datastreamFile = new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failCountsVolunteerCSV.bin");
+        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/failCountsVolunteerCSV.bin");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
