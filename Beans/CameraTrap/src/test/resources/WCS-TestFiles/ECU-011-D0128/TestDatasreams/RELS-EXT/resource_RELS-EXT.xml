@@ -11,6 +11,6 @@
         <fedora-model:hasModel rdf:resource="info:fedora/si:cameraTrapCModel"></fedora-model:hasModel>
         <fedora-model:hasModel rdf:resource="info:fedora/si:conceptCModel"></fedora-model:hasModel>
         <default:orginal_metadata xmlns="http://islandora.org/ontologies/metadata#">TRUE</default:orginal_metadata>
-        <fedora:hasResource rdf:resource="info:fedora/test:00001"></fedora:hasResource>
+        <fedora:hasResource rdf:resource="info:fedora/test:00000"></fedora:hasResource>
     </rdf:Description>
 </rdf:RDF>
