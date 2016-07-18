@@ -100,13 +100,23 @@
 
     <bean id="unitOfWorkFactory" class="edu.si.services.beans.cameratrap.CameraTrapUnitOfWorkFactory"/>
 
+    <bean id="fusekiHttpHeaderFilterStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilter">
+            <set>
+                <value>ManifestXML</value>
+                <value>CamelSchematronValidationReport</value>
+                <value>Content-Type</value>
+            </set>
+        </property>
+    </bean>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="CTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
                   xmlns:findObjects="http://www.fedora.info/definitions/1/0/types/"
-                  xmlns:ri="http://www.w3.org/2001/sw/DataAccess/rf1/result"
+                  xmlns:ri="http://www.w3.org/2005/sparql-results#"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
                   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1201,18 +1211,32 @@
             <setBody>
                 <!-- The query needs to also check directly along the parent axis since names are not unique. -->
                 <simple>
-                    SELECT ?o FROM &lt;#ri&gt;
+                    SELECT ?o FROM &lt;info:edu.si.fedora#ri&gt;
                     WHERE
                     {
-                        ?o &lt;fedora-model:label&gt; '${body}' .
+                        ?o &lt;info:fedora/fedora-system:def/model#label&gt; '${body}' .
                         &lt;info:fedora/${header.CamelFedoraPid}&gt; &lt;info:fedora/fedora-system:def/relations-external#hasConcept&gt; ?o .
                     }
                 </simple>
             </setBody>
+            <!-- Converting the query above to URL encoded string to send over HTTP with GET method. -->
+            <setBody>
+                <groovy>
+                    "query=" + URLEncoder.encode(request.getBody(String.class));
+                </groovy>
+            </setBody>
+
             <log message="${id} LegacyCameraTrapIngest: Project Parent - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <constant>GET</constant>
+            </setHeader>
+            <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
+            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <convertBodyTo type="java.lang.String"/>
+
             <log message="${id} LegacyCameraTrapIngest: Query Result - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1229,7 +1253,7 @@
             </choice>
             <setBody>
                 <xpath logNamespaces="false" resultType="java.lang.String">
-                    substring-after(/ri:sparql/ri:results/ri:result[1]/ri:o/@uri,'/')
+                    substring-after(/ri:sparql/ri:results/ri:result[1]/ri:binding/ri:uri,'/')
                 </xpath>
             </setBody>
 
@@ -1258,22 +1282,36 @@
             <setBody>
                 <!-- ASK FROM &lt;#ri&gt; -->
                 <simple>
-                    ASK FROM &lt;#ri&gt;
+                    ASK FROM &lt;info:edu.si.fedora#ri&gt;
                     {
                         &lt;info:fedora/${body}&gt; ?p ?o .
                     }
                 </simple>
             </setBody>
+            <!-- Converting the query above to URL encoded string to send over HTTP with GET method. -->
+            <setBody>
+                <groovy>
+                    "query=" + URLEncoder.encode(request.getBody(String.class));
+                </groovy>
+            </setBody>
+
             <log message="${id} LegacyCameraTrapIngest: Find Query - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="fedora:search?lang=sparql&amp;type=tuples&amp;format=sparql"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <constant>GET</constant>
+            </setHeader>
+            <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
+            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <convertBodyTo type="java.lang.String"/>
+
             <log message="${id} LegacyCameraTrapIngest: Find Query Result - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setBody>
                 <xpath logNamespaces="false" resultType="java.lang.String">
-                    /ri:sparql/ri:results/ri:result[1]/ri:k0/text()
+                    //ri:boolean/text()
                 </xpath>
             </setBody>
             <choice>
@@ -1286,6 +1324,7 @@
                                     message="The fedora object not found"/>
                 </when>
             </choice>
+
             <log message="${id} LegacyCameraTrapIngest: Find Object By PID - ${body}."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
