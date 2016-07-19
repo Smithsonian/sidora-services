@@ -89,11 +89,11 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&deleteAfterRead=true")
                     .routeId("CameraTrapDeploymentsPulldownFromS3")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapDeploymentsPulldownFromS3: Starting AWS S3 Automatic Pulldown for Processing...")
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapDeploymentsPulldownFromS3: Starting AWS S3 Automatic Pulldown for Processing...")
                     .to("file:"+stageDirPath+"?fileName=${header.CamelAwsS3Key}" +
                             "&delay={{si.ct.file.pollDelay}}" +
                             "&doneFileName=${file:name}.done")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapDeploymentsPulldownFromS3: Finished AWS S3 Automatic Pulldown on file: ${header.CamelAwsS3Key}");
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapDeploymentsPulldownFromS3: Finished AWS S3 Automatic Pulldown on file: ${header.CamelAwsS3Key}");
 
 
             //Route for moving "ready" deployments with the .done marker file from the staging directory to the processing directory for ingestion.
@@ -103,12 +103,12 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
                     "&filter=#deploymentPackageProcessFilter" +
                     "&delete=true")
                     .routeId("CameraTrapDeploymentsPrepareStageToProcess")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapDeploymentsPrepareStageToProcess: Starting Move Operation from Stage to Process Directory " +
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapDeploymentsPrepareStageToProcess: Starting Move Operation from Stage to Process Directory " +
                             "on Ready Deployments...")
                     .to("file:"+processDirPath+"?moveFailed=Error" +
                             "&delay={{si.ct.file.pollDelay}}" +
                             "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapDeploymentsPrepareStageToProcess: Finished Move Operation " +
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapDeploymentsPrepareStageToProcess: Finished Move Operation " +
                             "on file: ${header.CamelFileName} from Stage to Process directory.");
 
 
@@ -118,11 +118,11 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")
                     .routeId("CameraTrapCopyIngestedDeploymentsToS3")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapCopyIngestedDeploymentsToS3: Starting AWS S3 upload for Ingested Deployments...")
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyIngestedDeploymentsToS3: Starting AWS S3 upload for Ingested Deployments...")
                     .setHeader("CamelAwsS3Key", simple("${header.CamelFileName}"))
                     .setHeader("CamelAwsS3ContentLength", simple("${header.CamelFileLength}"))
                     .to("aws-s3://" + s3IngestedBucketName + "?amazonS3Client=#amazonS3Client")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapCopyIngestedDeploymentsToS3: Finished AWS S3 upload for file: ${header.CamelFileName}");
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyIngestedDeploymentsToS3: Finished AWS S3 upload for file: ${header.CamelFileName}");
 
 
             //Route for copying problematic deployments to AWS S3 rejected bucket
@@ -131,11 +131,11 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")
                     .routeId("CameraTrapCopyErrorDeploymentsToS3")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapCopyErrorDeploymentsToS3: Starting AWS S3 upload for Error Deployments...")
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyErrorDeploymentsToS3: Starting AWS S3 upload for Error Deployments...")
                     .setHeader("CamelAwsS3Key", simple("${header.CamelFileName}"))
                     .setHeader("CamelAwsS3ContentLength", simple("${header.CamelFileLength}"))
                     .to("aws-s3://" + s3RejectedBucketName + "?amazonS3Client=#amazonS3Client")
-                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapCopyErrorDeploymentsToS3: Finished AWS S3 upload for file: ${header.CamelFileName}");
+                    .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyErrorDeploymentsToS3: Finished AWS S3 upload for file: ${header.CamelFileName}");
 
         }
 
