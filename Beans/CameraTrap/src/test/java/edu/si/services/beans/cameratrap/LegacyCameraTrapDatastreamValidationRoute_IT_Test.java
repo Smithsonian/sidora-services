@@ -47,7 +47,7 @@ import java.util.Properties;
 /**
  * @author jbirkhimer
  */
-public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport{
+public class LegacyCameraTrapDatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport{
 
     //Camera Trap Deployment Info
     private String camelFileParent = "10002000";
@@ -60,7 +60,7 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
     private Map<String, Object> headers;
 
     //Camera Trap Deployment Manifest and Field values
-    private File manifestFile = new File("src/test/resources/SID-569TestFiles/p151d18321/deployment_manifest.xml");
+    private File manifestFile = new File("src/test/resources/LegacyManifest-TestFiles/p151d18321/deployment_manifest.xml");
     private String manifest;
 
     //Datastream and Field values
@@ -82,9 +82,6 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
      */
     @BeforeClass
     public static void setupSysPropsTempResourceDir() throws IOException {
-        //Set the karaf.home property use by the camera trap route
-        System.setProperty("karaf.home", "src/test/resources/SID-569TestFiles");
-
         //Define the Process directory that the camera trap route creates
         // to be able to clean the project up after tests
         processDirectory = new File("Process");
@@ -107,6 +104,9 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
         }
 
         FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempConfigDirectory);
+
+        //Set the karaf.home property use by the camera trap route
+        System.setProperty("karaf.home", "Karaf-config");
     }
 
     /**
@@ -130,7 +130,7 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
     protected Properties useOverridePropertiesWithPropertiesComponent() {
         Properties props = new Properties();
         try {
-            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/edu.si.sidora.karaf.cfg");
+            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/etc/edu.si.sidora.karaf.cfg");
 
             props.load(in);
         } catch (IOException ex) {
@@ -178,12 +178,12 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
      */
     @Test
     public void validation_FailTest() throws Exception {
-        setupEAC_CPF(false, new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml"));
-        setupFGDC(false, new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml"));
-        setupMODS(false, new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml"));
+        setupEAC_CPF(false, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml"));
+        setupFGDC(false, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml"));
+        setupMODS(false, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml"));
 
-        File[] datastreamFileCSV = {new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin"),
-                new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin")};
+        File[] datastreamFileCSV = {new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin"),
+                new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin")};
 
         setupCSV_ValidationAdviceWith(false, false, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
@@ -199,12 +199,12 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
      */
     @Test
     public void validationPassTest() throws Exception {
-        setupEAC_CPF(true, new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml"));
-        setupFGDC(true, new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/validFGDC.xml"));
-        setupMODS(true, new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml"));
+        setupEAC_CPF(true, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml"));
+        setupFGDC(true, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/FGDC/validFGDC.xml"));
+        setupMODS(true, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/MODS/validMODS.xml"));
 
-        File[] datastreamFileCSV = {new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin"),
-                new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin")};
+        File[] datastreamFileCSV = {new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin"),
+                new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin")};
 
         setupCSV_ValidationAdviceWith(true, true, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
@@ -220,12 +220,12 @@ public class DatastreamValidationRoute_IT_Test extends CamelBlueprintTestSupport
      */
     @Test
     public void validationMixedPassFailTest() throws Exception {
-        setupEAC_CPF(true, new File("src/test/resources/SID-569TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml"));
-        setupFGDC(false, new File("src/test/resources/SID-569TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml"));
-        setupMODS(true, new File("src/test/resources/SID-569TestFiles/Datastreams/MODS/validMODS.xml"));
+        setupEAC_CPF(true, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml"));
+        setupFGDC(false, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml"));
+        setupMODS(true, new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/MODS/validMODS.xml"));
 
-        File[] datastreamFileCSV = {new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin"),
-                new File("src/test/resources/SID-569TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin")};
+        File[] datastreamFileCSV = {new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin"),
+                new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin")};
 
         setupCSV_ValidationAdviceWith(true, false, datastreamFileCSV);
         setupValidationErrorMessageAggregationStrategyAdviceWith();
