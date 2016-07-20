@@ -47,9 +47,6 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "si.ct.id")
     static private String CT_LOG_NAME;
 
-    @PropertyInject(value = "si.ct.pipeline")
-    static private String CT_PIPELINE_NAME;
-
     @PropertyInject(value = "si.ct.uscbi.process.dir.path")
     private String processDirPath;
 

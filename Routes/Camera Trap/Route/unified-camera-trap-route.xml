@@ -46,15 +46,15 @@
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
 
     <bean id="noRootObject" class="java.lang.IllegalArgumentException">
-        <argument value="UnifiedCameraTrapIngest: Root object does not exist."/>
+        <argument value="Root object does not exist."/>
     </bean>
 
     <bean id="noImageSequence" class="java.lang.IllegalArgumentException">
-        <argument value="UnifiedCameraTrapIngest: Image sequence does not exist."/>
+        <argument value="Image sequence does not exist."/>
     </bean>
 
     <bean id="validationFailure" class="java.lang.IllegalArgumentException">
-        <argument value="UnifiedCameraTrapIngest: Schematron validation failed."/>
+        <argument value="Schematron validation failed."/>
     </bean>
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>

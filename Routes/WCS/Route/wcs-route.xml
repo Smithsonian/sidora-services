@@ -45,15 +45,15 @@
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
 
     <bean id="noRootObject" class="java.lang.IllegalArgumentException">
-        <argument value="WCSIngest: Root object does not exist."/>
+        <argument value="Root object does not exist."/>
     </bean>
 
     <bean id="noImageSequence" class="java.lang.IllegalArgumentException">
-        <argument value="WCSIngest: Image sequence does not exist."/>
+        <argument value="Image sequence does not exist."/>
     </bean>
 
     <bean id="validationFailure" class="java.lang.IllegalArgumentException">
-        <argument value="WCSIngest: Schematron validation failed."/>
+        <argument value="Schematron validation failed."/>
     </bean>
 
     <bean id="cameraTrapRoutes" class="edu.si.services.beans.cameratrap.CameraTrapRouteBuilder"/>
@@ -1388,7 +1388,7 @@
                 </groovy>
             </setBody>
 
-            <log message="${id} WCSIngest: Project Parent - ${body}"
+            <log message="${id}: Project Parent - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1399,7 +1399,7 @@
             <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
             <convertBodyTo type="java.lang.String"/>
 
-            <log message="${id} WCSIngest: Query Result - ${body}"
+            <log message="${id}: Query Result - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <!-- Count the results. If greater than one warn about duplicate parents. -->
@@ -1456,7 +1456,7 @@
                 </groovy>
             </setBody>
 
-            <log message="${id} WCSIngest: Find Query - ${body}"
+            <log message="${id}: Find Query - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1467,7 +1467,7 @@
             <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
             <convertBodyTo type="java.lang.String"/>
 
-            <log message="${id} WCSIngest: Find Query Result - ${body}"
+            <log message="${id}: Find Query Result - ${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <setBody>
