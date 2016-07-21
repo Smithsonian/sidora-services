@@ -38,7 +38,7 @@
     <packaging>bundle</packaging>
     <version>1.0</version>
 
-    <name>SI :: Camel :: Reader</name>
+    <name>SI :: Services :: Components :: Reader</name>
     <!-- <url>http://oris.si.edu/sidora</url> -->
 
     <properties>

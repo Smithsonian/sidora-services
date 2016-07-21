@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>edu.si.services</groupId>
+        <artifactId>services</artifactId>
+        <version>1.0</version>
+    </parent>
+
+    <artifactId>sidora-deployment</artifactId>
+    <packaging>kar</packaging>
+
+    <name>SI :: Services :: Karaf Archive</name>
+    <description>The SIdora Services Karaf Archive deployment artifact</description>
+    <properties>
+        <karaf.version>3.0.5</karaf.version>
+        <camel.version>2.16.1</camel.version>
+    </properties>
+
+    <dependencies>
+        <!-- SIdora Beans-->
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>CameraTrap</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>Excel</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>VelocityToolsHandler</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <!-- SIdora Components-->
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Extractor</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FcrepoRest</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FedoraRepo</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Reader</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Thumbnailator</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <!-- SIdora Tabular Services-->
+        <dependency>
+            <groupId>edu.si.sidora</groupId>
+            <artifactId>excel2tabular-translator</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.sidora</groupId>
+            <artifactId>tabular-metadata-cxf-services-SMX-blueprint</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.sidora</groupId>
+            <artifactId>tabular-metadata-generator</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.karaf.tooling</groupId>
+                <artifactId>karaf-maven-plugin</artifactId>
+                <version>${karaf.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <startLevel>80</startLevel>
+                    <aggregateFeatures>true</aggregateFeatures>
+                    <includeTransitiveDependency>false</includeTransitiveDependency>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

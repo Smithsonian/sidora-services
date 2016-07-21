@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<features name="edu.si.sidora.smx.bundles" xmlns="http://karaf.apache.org/xmlns/features/v1.2.1"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.1 http://karaf.apache.org/xmlns/features/v1.2.1">
+
+    <!-- Sidora Dependencies -->
+    <feature name="sidora-dependencies" version="${version}" >
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/3.11_1</bundle>	<!-- can use the file url handler as well-->
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/2.0_1</bundle> <!-- can use the file url handler as well-->
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.14.RELEASE_1</bundle>
+        <bundle dependency="true" start-level='80'>mvn:commons-codec/commons-codec/1.10</bundle>
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>
+        <bundle dependency="true" start-level='80'>mvn:com.google.guava/guava/18.0</bundle>
+    </feature>
+
+    <!-- Sidora Camel Dependencies -->
+    <feature name="sidora-camel-dependencies" version="${camel.version}" >
+        <feature version="${camel.version}" start-level='50'>camel-exec</feature>
+        <feature version="${camel.version}" start-level='50'>camel-groovy</feature>
+        <feature version="${camel.version}" start-level='50'>camel-velocity</feature>
+        <feature version="${camel.version}" start-level='50'>camel-saxon</feature>
+        <feature version="${camel.version}" start-level='50'>camel-schematron</feature>
+        <feature version="${camel.version}" start-level='50'>camel-csv</feature>
+        <feature version="${camel.version}" start-level='50'>camel-aws</feature>
+        <feature version="${camel.version}" start-level='50'>camel-http</feature>
+    </feature>
+
+</features>

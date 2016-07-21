@@ -39,8 +39,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>Excel</module>
         <module>CameraTrap</module>
+        <module>Excel</module>
         <module>VelocityToolsHandler</module>
     </modules>
 

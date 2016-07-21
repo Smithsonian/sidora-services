@@ -38,7 +38,7 @@
     <packaging>bundle</packaging>
     <version>1.0</version>
 
-    <name>SI :: Camel :: Thumbnailator</name>
+    <name>SI :: Services :: Components :: Thumbnailator</name>
     <!-- <url>http://oris.si.edu</url> -->
 
     <properties>

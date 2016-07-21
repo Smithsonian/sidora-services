@@ -38,7 +38,7 @@
     <packaging>bundle</packaging>
     <version>1.0.0</version>
 
-    <name>SI :: Camel :: Fedora Commons REST</name>
+    <name>SI :: Services :: Components :: Fedora Commons REST</name>
     <!-- <url>http://oris.si.edu</url> -->
 
     <properties>
