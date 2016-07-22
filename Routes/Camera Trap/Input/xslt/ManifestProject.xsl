@@ -51,7 +51,7 @@
                     <identity>
                         <entityType>corporateBody</entityType>
                         <nameEntry localType="primary">
-                            <part><xsl:value-of select="ProjectName"/> (<xsl:value-of select="ProjectId"/>)</part>
+                            <part><xsl:value-of select="ProjectName"/></part>
                         </nameEntry>
                         <nameEntry localType="abbreviation">
                             <part><xsl:value-of select="ProjectId"/></part>

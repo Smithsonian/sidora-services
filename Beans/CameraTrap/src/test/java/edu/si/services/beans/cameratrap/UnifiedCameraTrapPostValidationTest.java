@@ -27,11 +27,10 @@
 
 package edu.si.services.beans.cameratrap;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.*;
+import org.apache.camel.model.LogDefinition;
+import org.apache.camel.model.ToDynamicDefinition;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -39,7 +38,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -163,6 +161,8 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
     public void setUp() throws Exception {
         super.setUp();
 
+        disableJMX();
+
         //Store the Deployment Manifest as string to set the camel ManifestXML header
         manifest = FileUtils.readFileToString(manifestFile);
 
@@ -177,20 +177,68 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
     }
 
     /**
-     * UnifiedCameraTrapValidatePostIngestResourceCount Route (direct:validatePostIngestResourceCount) Test
+     * UnifiedCameraTrapValidatePostIngestResourceCount route test Resource Counts Match and Resource Objects Found
+     * @throws Exception
      */
-    //@Test
-    public void unifiedCameraTrapValidatePostIngestResourceCount_Test() throws Exception {
-        // RELS-EXT Resource reference count for validation. The number includes the observation resource objs
-        headers.put("ResourceCount", "6"); //Header that's incremented after a resource obj is ingested.
-        headers.put("SitePID", "ct:16593");
+    @Test
+    public void unifiedCameraTrapValidatePostIngestResourceCount_Matches_ObjectFound_Test() throws Exception {
+        runUnifiedCameraTrapValidatePostIngestResourceCountRoute_Test(true, true);
+    }
+
+    /**
+     * UnifiedCameraTrapValidatePostIngestResourceCount route test Resource Counts Do Not Match and Resource Objects Not Found
+     * @throws Exception
+     */
+    @Test
+    public void unifiedCameraTrapValidatePostIngestResourceCount_NotMatch_ObjectNotFound_Test() throws Exception {
+        runUnifiedCameraTrapValidatePostIngestResourceCountRoute_Test(false, false);
+    }
+
+    /**
+     * UnifiedCameraTrapValidatePostIngestResourceCount route test Resource Counts Match and Resource Objects Not Found
+     * @throws Exception
+     */
+    @Test
+    public void unifiedCameraTrapValidatePostIngestResourceCount_Match_ObjectNotFound_Test() throws Exception {
+        runUnifiedCameraTrapValidatePostIngestResourceCountRoute_Test(true, false);
+    }
+
+    /**
+     * Setup and AdviceWith the UnifiedCameraTrapValidatePostIngestResourceCount Route (direct:validatePostIngestResourceCount)
+     */
+    public void runUnifiedCameraTrapValidatePostIngestResourceCountRoute_Test(boolean passResourceCount, boolean passObjectFound) throws Exception {
+
+        headers.put("SitePID", "test:00000");
+        headers.put("ValidationErrors", "ValidationErrors");
 
         //The RELS-EXT datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        String datastream_RELS_EXTfilePath = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/resource_RELS-EXT.xml";
-        datastream = FileUtils.readFileToString(new File(datastream_RELS_EXTfilePath));
+        datastream = FileUtils.readFileToString(new File("src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/resource_RELS-EXT.xml"));
 
-        InputStream datastream_RELS_EXT = new FileInputStream(datastream_RELS_EXTfilePath);
+        //Build the Expected validation error message for Resource Count Validation
+        if (passResourceCount) {
+            headers.put("ResourceCount", "1"); //count matches
+        } else {
+            headers.put("ResourceCount", "2"); //count matches fail
+            StringBuilder message = new StringBuilder();
+            message.append("Post Resource Count validation failed. ");
+            message.append("Expected " + headers.get("ResourceCount") + " but found 1");
+
+            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+                    message.toString(), false);
+            expectedBody.add(expectedValidationMessage);
+        }
+
+        //Build the Expected validation error message for Resource Object Not Found and the body used for validation
+        String fcrepo_objectResponceFile;
+        if (passObjectFound) {
+            fcrepo_objectResponceFile = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/fcrepo_object_toD_result_found.xml";
+        } else {
+            fcrepo_objectResponceFile = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles/fcrepo_object_toD_result_notFound.xml";
+            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent, "test:00001",
+                    "Resource Object not found from Fedora Repository", false);
+            expectedBody.add(expectedValidationMessage);
+        }
 
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
@@ -201,47 +249,47 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
             public void configure() throws Exception {
 
                 //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return
-                //weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(datastream));
+                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(datastream));
 
-                //weaveByToString(".*fcrepo:objects.*").replace().setBody(simple(fcrepo_objectResponce));
+                //set body for fedora ri search result
+                weaveByType(ToDynamicDefinition.class)
+                        .replace()
+                        .setBody(simple(FileUtils.readFileToString(new File(fcrepo_objectResponceFile))));
 
-
-                /*weaveByType(ToDynamicDefinition.class)
-                        .after()
-                        .to("mock:result")
-                        .stop();*/
-
-                //weaveAddLast().to("mock:result").stop();
-
+                //Send Validation complete and stop route
+                weaveAddLast()
+                        .setHeader("ValidationComplete", simple("true"))
+                        .to("direct:validationErrorMessageAggregationStrategy")
+                        .stop();
             }
         });
 
         mockEndpoint = getMockEndpoint("mock:result");
 
         // set mock expectations
-        mockEndpoint.expectedMessageCount(1);
-        /*if (!postResourceCountMatchPassed) {
+        mockEndpoint.setMinimumExpectedMessageCount(1);
+        if (!expectedBody.isEmpty()) {
             mockEndpoint.expectedBodiesReceived(expectedBody.toString());
         } else {
-            mockEndpoint.expectedBodiesReceived(datastream);
-        }*/
+            mockEndpoint.expectedBodiesReceived(datastream.trim());
+        }
 
-        template.sendBodyAndHeaders("direct:validatePostIngestResourceCount", datastream_RELS_EXT, headers);
+        template.sendBodyAndHeaders("direct:validatePostIngestResourceCount", datastream, headers);
 
-        /*Object resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody();
+        Object resultBody = mockEndpoint.getExchanges().get(0).getIn().getBody();
 
-        if (!postResourceCountMatchPassed) {
+        if (!expectedBody.isEmpty()) {
             log.info("expectedBody:\n" + expectedBody + "\nresultBody:\n" + resultBody);
             log.info("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
             assertEquals("mock:result Body assertEquals failed!", expectedBody, resultBody);
 
         } else {
-            log.info("expectedBody:\n" + datastream + "\nresultBody:\n" + resultBody);
+            log.info("expectedBody:\n" + datastream.trim() + "\nresultBody:\n" + resultBody);
             log.info("expectedBody Type:\n" + datastream.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-            assertEquals("mock:result Body assertEquals failed!", datastream, resultBody);
-        }*/
+            assertEquals("mock:result Body assertEquals failed!", datastream.trim(), resultBody);
+        }
 
         assertMockEndpointsSatisfied();
     }
@@ -530,7 +578,7 @@ public class UnifiedCameraTrapPostValidationTest extends CamelBlueprintTestSuppo
         //message.append("Datastream EAC-CPF ProjectName Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - EAC-CPF ProjectName Field validation failed. ");
-        message.append("Expected Sample Triangle Camera Trap Survey Project (p125) but found Sample Blah Blah Blah Project (p125).");
+        message.append("Expected Sample Triangle Camera Trap Survey Project but found Sample Blah Blah Blah Project.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), pass);

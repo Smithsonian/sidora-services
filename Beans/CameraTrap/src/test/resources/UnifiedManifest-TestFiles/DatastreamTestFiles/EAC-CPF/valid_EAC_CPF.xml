@@ -22,7 +22,7 @@
         <identity>
             <entityType>corporateBody</entityType>
             <nameEntry localType="primary">
-                <part>Sample Triangle Camera Trap Survey Project (p125)</part>
+                <part>Sample Triangle Camera Trap Survey Project</part> <!-- xsl updated and this has changed -->
             </nameEntry>
             <nameEntry localType="abbreviation">
                 <part>p125</part>
