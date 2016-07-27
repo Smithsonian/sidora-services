@@ -123,7 +123,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
 
 
             //Route for copying problematic deployments to AWS S3 rejected bucket
-            from("file:"+processDirPath+"/Error_CameraTrap?delay={{si.ct.file.pollDelay}}" +
+            from("file:"+processDirPath+"/Error_UnifiedCameraTrap?delay={{si.ct.file.pollDelay}}" +
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")
