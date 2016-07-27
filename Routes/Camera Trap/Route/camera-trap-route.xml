@@ -81,8 +81,6 @@
 
     <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
 
-    <bean id="deploymentPackageProcessFilter" class="edu.si.services.beans.cameratrap.DeploymentPackageProcessFilter"/>
-
     <bean id="unitOfWorkFactory" class="edu.si.services.beans.cameratrap.CameraTrapUnitOfWorkFactory"/>
 
     <bean id="fusekiHttpHeaderFilterStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
