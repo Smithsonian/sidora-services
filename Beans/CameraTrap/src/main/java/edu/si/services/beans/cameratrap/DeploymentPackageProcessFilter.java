@@ -47,10 +47,10 @@ public class DeploymentPackageProcessFilter<T> implements GenericFileFilter<T> {
 
     private static final Logger log = LoggerFactory.getLogger(DeploymentPackageProcessFilter.class);
 
-    @PropertyInject(value = "si.ct.scbi.process.dir.path")
+    @PropertyInject(value = "si.ct.uscbi.process.dir.path")
     private String processDirPath;
 
-    @PropertyInject(value = "si.ct.scbi.process.dir.threshold")
+    @PropertyInject(value = "si.ct.uscbi.process.dir.threshold")
     private Long processDirThreshold;
 
     /**

@@ -50,19 +50,19 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "si.ct.pipeline")
     static private String CT_PIPELINE_NAME;
 
-    @PropertyInject(value = "si.ct.scbi.process.dir.path")
+    @PropertyInject(value = "si.ct.uscbi.process.dir.path")
     private String processDirPath;
 
-    @PropertyInject(value = "si.ct.scbi.stage.dir.path")
+    @PropertyInject(value = "si.ct.uscbi.stage.dir.path")
     private String stageDirPath;
 
-    @PropertyInject(value = "si.ct.scbi.s3.approved.bucketName")
+    @PropertyInject(value = "si.ct.uscbi.s3.approved.bucketName")
     private String s3ApprovedBucketName;
 
-    @PropertyInject(value = "si.ct.scbi.s3.ingested.bucketName")
+    @PropertyInject(value = "si.ct.uscbi.s3.ingested.bucketName")
     private String s3IngestedBucketName;
 
-    @PropertyInject(value = "si.ct.scbi.s3.rejected.bucketName")
+    @PropertyInject(value = "si.ct.uscbi.s3.rejected.bucketName")
     private String s3RejectedBucketName;
 
     private final Boolean enableS3Routes;
@@ -70,7 +70,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
     public CameraTrapAutoS3SyncRouteBuilder(Boolean enableS3Routes) {
 
         if (enableS3Routes == null){
-            throw new IllegalArgumentException("si.ct.scbi.enableS3Routes property must be set");
+            throw new IllegalArgumentException("si.ct.uscbi.enableS3Routes property must be set");
         }
         this.enableS3Routes = enableS3Routes;
     }
@@ -126,7 +126,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
 
 
             //Route for copying problematic deployments to AWS S3 rejected bucket
-            from("file:"+processDirPath+"/Error_CameraTrap?delay={{si.ct.file.pollDelay}}" +
+            from("file:"+processDirPath+"/Error_UnifiedCameraTrap?delay={{si.ct.file.pollDelay}}" +
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")
