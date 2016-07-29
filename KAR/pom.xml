@@ -44,8 +44,8 @@
     <name>SI :: Services :: Karaf Archive</name>
     <description>The SIdora Services Karaf Archive deployment artifact</description>
     <properties>
-        <karaf.version>3.0.5</karaf.version>
-        <camel.version>2.16.1</camel.version>
+        <karaf.version>3.0.7</karaf.version>
+        <camel.version>2.16.3</camel.version>
     </properties>
 
     <dependencies>
