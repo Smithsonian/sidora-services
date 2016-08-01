@@ -3,46 +3,21 @@
 ## Installation of ServiceMix
 ### See the ServiceMix [Quickstart](http://servicemix.apache.org/docs/5.0.x/quickstart/index.html) guide [install section](http://servicemix.apache.org/docs/5.0.x/quickstart/installation.html) for help 
 ### See the SIdora ServiceMix [Installation](https://confluence.si.edu/display/SIDKB/Install+and+Configure+ServiceMix) and [Configuration](https://confluence.si.edu/display/SIDKB/Configure+ServiceMix+for+SIdora+Services) confluence pages
-> Tested with ServiceMix Versions: 6.1.0
+> Tested with ServiceMix Versions: 6.1.2
 
 ### Steps:
 1. Download and extract ServiceMix (http://servicemix.apache.org/)
- - SMX_HOME = Directory of ServiceMix after downloaded and extracted
-2. Download GitHub files
-  - GH_DIR = Directory of contents of GitHub on local file system
-3. Folders to copy (and over write when required)
-  - Copy the `Input` folder from `GH_DIR/Routes/Camera Trap` to `SMX_HOME` folder
-4. Generate the Sidora service artifacts by running the maven commands
-  - Go to the GH_DIR and run mvn clean package.  (Note: The automated unit testing on /Components/FedoraRepo requires Fedora service running as of today.  You may want to skip the unit test for FedoraRepo module)
-5. Copy SIdora beans to th ServiceMix deploy directory (and over write when required)
-  - Copy the `CameraTrap-(version).jar` from `GH_DIR/Beans/CameraTrap/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `Excel-(version).jar` from `GH_DIR/Beans/Excel/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `VelocityToolsHandler-(version).jar` from `GH_DIR/Beans/VelocityToolsHandler/target/` to the `SMX_HOME/deploy/` folder
-6. Copy SIdora Camel Components to the ServiceMix deploy directory
-  - Copy the `Extractor-(version).jar` from `GH_DIR/Components/Extractor/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `FedoraRepo-(version).jar` from `GH_DIR/Components/FedoraRepo/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `FcrepoRest-(version).jar` from `GH_DIR/Components/FcrepoRest/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `Reader-(version).jar` from `GH_DIR/Components/Reader/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `Thumbnailator-(version).jar` from `GH_DIR/Components/Thumbnailator/target/` to the `SMX_HOME/deploy/` folder
-7. Copy SIdora Tabular Services to the ServiceMix deploy directory
-  - Copy the `excel2tabular-translator-(version).jar` from `GH_DIR/Tabular/excel2tabular-translator/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `tabular-metadata-generator-(version).jar` from `GH_DIR/Tabular/tabular-metadata-generator/target/` to the `SMX_HOME/deploy/` folder
-  - Copy the `tabular-metadata-cxf-services-SMX-blueprint-(version).jar` from `GH_DIR/Tabular/tabular-metadata-cxf-blueprint/target/` to the `SMX_HOME/deploy/` folder
-8. Copy SIdora Camel Routes to the ServiceMix deploy directory
-  - Copy the `camera-trap-route.xml` from `GH_DIR/Routes/Camera Trap/Route/` to the `SMX_HOME/deploy/` folder
-  - Copy the `unified-camera-trap-route.xml` from `GH_DIR/Routes/Camera Trap/Route/` to the `SMX_HOME/deploy/` folder
-  - Copy the `wcs-route.xml` from `GH_DIR/Routes/WCS/Route/` to the `SMX_HOME/deploy/` folder
-  - Copy the `derivatives-route.xml` from `GH_DIR/Routes/Derivatives/Route/` to the `SMX_HOME/deploy/` folder
-9. Edit SMX_HOME/etc/system.properties and add following properties for Fedora and CT route settings
+  - SMX_HOME = Directory of ServiceMix after downloaded and extracted
+
+2. Edit SMX_HOME/etc/system.properties and add following properties for Fedora and CT route settings
   - si.fedora.host = URL of the Fedora repository
   - si.fedora.user = User that have rights to ingest data
   - si.fedora.password = Password for the user defined above
   - si.ct.owner = CT owner username
   - si.ct.namespace = CT namespace
   - si.ct.root = PID of CT root object
-10. Copy the sidora external properties file from the template available from Routes/Camera Trap/Karaf-config/edu.si.sidora.karaf.cfg to the SMX_HOME/etc directory and configure the values.
-    More details on properties can be found on the SIdora ServiceMix Confluence page.  
-11. Add following dependencies to the ServiceMix by running the commands from the SMX client console
+
+3. Add following dependencies to the ServiceMix by running the commands from the SMX client console
   - smx@fedora> feature:install camel-exec # Use feature vs features for SMX 6.x
   - smx@fedora> feature:install camel-groovy
   - smx@fedora> feature:install camel-velocity
@@ -57,6 +32,42 @@
   - smx@fedora> bundle:install mvn:commons-codec/commons-codec/1.10
   - smx@fedora> bundle:install mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7
   - smx@fedora> bundle:install mvn:com.google.guava/guava/18.0
+
+4. Download GitHub files
+  - GH_DIR = Directory of contents of GitHub on local file system
+
+5. Folders to copy (and over write when required)
+  - Copy the `Input` folder from `GH_DIR/Routes/Camera Trap` to `SMX_HOME` folder
+
+6. Generate the Sidora service artifacts by running the maven commands
+  - Go to the GH_DIR and run mvn clean package.  (Note: The automated unit testing on /Components/FedoraRepo requires Fedora service running as of today.  You may want to skip the unit test for FedoraRepo module)
+
+7. Copy SIdora beans to th ServiceMix deploy directory (and over write when required)
+  - Copy the `CameraTrap-(version).jar` from `GH_DIR/Beans/CameraTrap/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `Excel-(version).jar` from `GH_DIR/Beans/Excel/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `VelocityToolsHandler-(version).jar` from `GH_DIR/Beans/VelocityToolsHandler/target/` to the `SMX_HOME/deploy/` folder
+
+8. Copy SIdora Camel Components to the ServiceMix deploy directory
+  - Copy the `Extractor-(version).jar` from `GH_DIR/Components/Extractor/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `FedoraRepo-(version).jar` from `GH_DIR/Components/FedoraRepo/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `FcrepoRest-(version).jar` from `GH_DIR/Components/FcrepoRest/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `Reader-(version).jar` from `GH_DIR/Components/Reader/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `Thumbnailator-(version).jar` from `GH_DIR/Components/Thumbnailator/target/` to the `SMX_HOME/deploy/` folder
+
+9. Copy SIdora Tabular Services to the ServiceMix deploy directory
+  - Copy the `excel2tabular-translator-(version).jar` from `GH_DIR/Tabular/excel2tabular-translator/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `tabular-metadata-generator-(version).jar` from `GH_DIR/Tabular/tabular-metadata-generator/target/` to the `SMX_HOME/deploy/` folder
+  - Copy the `tabular-metadata-cxf-services-SMX-blueprint-(version).jar` from `GH_DIR/Tabular/tabular-metadata-cxf-blueprint/target/` to the `SMX_HOME/deploy/` folder
+
+10. Copy SIdora Camel Routes to the ServiceMix deploy directory
+  - Copy the `camera-trap-route.xml` from `GH_DIR/Routes/Camera Trap/Route/` to the `SMX_HOME/deploy/` folder
+  - Copy the `unified-camera-trap-route.xml` from `GH_DIR/Routes/Camera Trap/Route/` to the `SMX_HOME/deploy/` folder
+  - Copy the `wcs-route.xml` from `GH_DIR/Routes/WCS/Route/` to the `SMX_HOME/deploy/` folder
+  - Copy the `derivatives-route.xml` from `GH_DIR/Routes/Derivatives/Route/` to the `SMX_HOME/deploy/` folder
+
+11. Copy the sidora external properties file from the template available from Routes/Camera Trap/Karaf-config/etc/edu.si.sidora.karaf.cfg to the SMX_HOME/etc directory and configure the values.
+    More details on the external properties can be found on the SIdora ServiceMix Confluence page.  
+
 12. Start ServiceMix
   - Linux: SMX_HOME/bin/servicemix 
   - Windows: SMX_HOME/bin/servicemix.bat
