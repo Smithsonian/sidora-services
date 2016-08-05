@@ -89,6 +89,8 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&deleteAfterRead=true")
                     .routeId("CameraTrapDeploymentsPulldownFromS3")
+                    //auto pulldown route is disabled by default.  enable from hawtio or karaf console as necessary
+                    .noAutoStartup()
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} " + CT_PIPELINE_NAME + " CameraTrapDeploymentsPulldownFromS3: Starting AWS S3 Automatic Pulldown for Processing...")
                     .to("file:"+stageDirPath+"?fileName=${header.CamelAwsS3Key}" +
                             "&delay={{si.ct.file.pollDelay}}" +
