@@ -35,7 +35,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 /**
  * This filter is being used with the file component in camel routes and will determine whether
@@ -72,8 +74,8 @@ public class DeploymentPackageProcessFilter<T> implements GenericFileFilter<T> {
             throw new IllegalArgumentException("The directory file count threshold is required for filter to function");
         }
 
-        try {
-            directoryFileCount = Files.list(Paths.get(processDirPath)).count();
+        try (Stream<Path> files = Files.list(Paths.get(processDirPath))) {
+            directoryFileCount = files.count();
 
             if (directoryFileCount < processDirThreshold){
                 isAcceptable = true;
