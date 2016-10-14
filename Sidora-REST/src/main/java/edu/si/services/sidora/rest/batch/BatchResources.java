@@ -45,10 +45,11 @@ public class BatchResources {
     @Path(value = "/batch/process/addResourceObjects/{parentId}")
     @Produces("text/xml")
     public Response batchProcessAddResourceObjectsRequest(@PathParam("parentId") String parentId,
-                                     @QueryParam("title") String title,
-                                     @Multipart(value = "resourceZipFileURL", type = "text/plain") String resourceZipFileURL,
-                                     @Multipart(value = "metadataFileURL", type = "text/plain") String metadataFileURL,
-                                     @Multipart(value = "contentModel") String contentModel) {
+                                                          @QueryParam("title") String title,
+                                                          @Multipart(value = "resourceZipFileURL", type = "text/plain") String resourceZipFileURL,
+                                                          @Multipart(value = "metadataFileURL", type = "text/plain") String metadataFileURL,
+                                                          @Multipart(value = "contentModel") String contentModel,
+                                                          @Multipart(value = "resourceOwner") String resourceOwner) {
         return null;
     }
 

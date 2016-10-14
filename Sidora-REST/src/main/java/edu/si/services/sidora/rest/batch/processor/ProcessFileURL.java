@@ -96,13 +96,21 @@ public class ProcessFileURL implements Processor {
 
         LOG.info("FileList:{}", resourceFileList);
 
-        //out.setHeaders(updateHeaders(dataOutputDir, exchange.getIn().getHeaders()));
+        out.setHeaders(updateHeaders(dataOutputDir, exchange.getIn().getHeaders()));
         out.setHeader("resourceList", resourceFileList);
 
     }
 
     private Map<String, Object> updateHeaders(File file, Map<String, Object> oldHeaders)
     {
+        String parent = null;
+
+        if (file.getParentFile() != null)
+        {
+            parent = file.getParentFile().getName();
+            LOG.debug("CamelFileParent: {}", file.getParentFile());
+        }
+
         Map<String, Object> headers = new HashMap<String, Object>(oldHeaders);
 
 //      FIXME: Use Camel GenericFile to correctly populate these fields!!!
@@ -115,7 +123,8 @@ public class ProcessFileURL implements Processor {
         headers.put("CamelFilePath", file.getPath());
         headers.put("CamelFileAbsolutePath", file.getAbsolutePath());
         headers.put("CamelFileAbsolute", false);
-        headers.put("CamelFileParent", file.getParentFile().getName());
+        headers.put("CamelFileParent", parent);
+        headers.put("CamelFileParentDir", file.getAbsolutePath());
 
         return headers;
     }

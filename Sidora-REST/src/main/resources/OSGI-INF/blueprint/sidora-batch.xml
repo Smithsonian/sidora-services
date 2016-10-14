@@ -127,11 +127,9 @@
 
         <route id="BatchProcessAddResourceObjectsRequest">
             <from uri="direct:batchProcessAddResourceObjectsRequest"/>
-            <!--<log message="======================= [ Starting NewBatchResource ] ======================="
+            <log message="${id}: Starting Batch Request - Add Resource Objects..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
-            &lt;!&ndash;<to uri="log:body2?level=INFO&amp;showAll=true&amp;multiline=true"/>&ndash;&gt;
-            -->
             <!-- These Headers are giving me a headache!!! -->
             <removeHeaders pattern="User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|CamelHttpUri|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod"/>
 
@@ -143,6 +141,7 @@
                     target/stagingDir/
                 </simple>
             </setHeader>
+
             <setHeader headerName="processingDir">
                 <simple>
                     target/BatchResourceData/
@@ -150,14 +149,6 @@
             </setHeader>
 
             <process ref="processFileURL"/>
-
-            <setHeader headerName="CamelFileAbsolutePathStore">
-                <simple>
-                    ${header.CamelFileAbsolutePath}
-                </simple>
-            </setHeader>
-
-            <to uri="log:body2?level=INFO&amp;showBody=true&amp;multiline=true"/>
 
             <to uri="direct:processResources"/>
 
@@ -168,6 +159,9 @@
                 </simple>
             </setBody>
 
+            <log message="${id}: Finished Batch Request - Add Resource Objects..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
         </route>
 
         <route id="BatchProcessAddResourceObjectsRequestStatus">
@@ -175,13 +169,9 @@
             <bean ref="statusResponseControllerBean"/>
         </route>
 
-        <route id="BatchProcessProcessResources">
+        <route id="BatchProcessResources">
             <from uri="direct:processResources"/>
-            <log message="${id}: Starting resource processing ..."
-                 loggingLevel="INFO"
-                 logName="{{edu.si.batch}}"/>
-
-            <log message="Batch Process: CamelFileAbsolutePath: ${header.CamelFileAbsolutePath}"
+            <log message="${id}: Starting Batch Resources Processing..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
@@ -205,15 +195,15 @@
                 </simple>
             </setHeader>
 
+            <log message="${id}: Parent PID - ${header.parentId}  Resource Count - ${header.ResourceCount}"
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
             <setBody>
                 <simple>
                     ${header.resourceList}
                 </simple>
             </setBody>
-
-            <log message="${id}: Parent PID - ${header.parentId}  Resource Count - ${header.ResourceCount}"
-                 loggingLevel="INFO"
-                 logName="{{edu.si.batch}}"/>
 
             <!-- There may be several kinds of resources with zero or more instances. -->
             <!--<split strategyRef="pidAggregator">-->
@@ -228,26 +218,27 @@
                      loggingLevel="INFO"
                      logName="{{edu.si.batch}}"/>
 
+                <setHeader headerName="resourceFileName">
+                    <simple>
+                        ${body}
+                    </simple>
+                </setHeader>
+
+                <setHeader headerName="titleNode">
+                    <simple>
+                        title
+                    </simple>
+                </setHeader>
+
                 <setHeader headerName="titleLabel">
                     <xpath resultType="java.lang.String" headerName="metadataXML">
                         concat(//mods:title/text(), function:simple(&#39;(${property.CamelSplitIndex})&#39;))
                     </xpath>
                 </setHeader>
 
-                <log message="${id}: Title/Label - ${header.titleLabel}"
+                <log message="${id}: Title/Label: ${header.titleLabel} For Resource: ${header.resourceFileName}"
                      loggingLevel="INFO"
                      logName="{{edu.si.batch}}"/>
-
-
-                <log message="${id}: Split Resource - ${body}"
-                     loggingLevel="INFO"
-                     logName="{{edu.si.batch}}"/>
-
-                <setBody>
-                    <simple resultType="java.lang.String" trim="true">
-                        ${body}
-                    </simple>
-                </setBody>
 
                 <to uri="direct:addResource"/>
 
@@ -256,104 +247,173 @@
                      logName="{{edu.si.batch}}"/>
             </split>
 
-            <log message="${id}: Finished resource processing."
+            <log message="${id}: Finished Batch Resource Processing."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>
 
-
-
         <route id="BatchProcessAddResource">
             <from uri="direct:addResource"/>
-            <log message="${id}: Started Resource processing ..."
+            <log message="${id}: Started Batch Process: Add Resource..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
-            <log message="===================(0)=====================\nBody:\n${body}\nHeaders:\${headers}"
-                 loggingLevel="INFO"
-                 logName="{{edu.si.batch}}"/>
+            <toD id="fedoraCreate" uri="fedora:create?pid=null&amp;owner=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}"/>
 
-            <to uri="reader:file"/>
-
-            <toD id="fedoraCreate" uri="fedora:create?pid=null&amp;owner=${header.parentId}&amp;namespace=si&amp;label=${header.titleLabel}"/>
-
-            <log message="======================(1)==================\nHeaders:\${headers}"
-                 loggingLevel="INFO"
-                 logName="{{edu.si.batch}}"/>
-
-            <toD id="fedoraAddDatastream" uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false"/>
-
-            <!--<multicast>-->
-            <!--<to uri="direct:createThumbnail"/>-->
-            <!-- <to uri="direct:createArchivalImage" /> -->
-            <!-- We may also want a DISPLAY datastream. -->
-            <!--</multicast>-->
 
             <to uri="velocity:file:Input/templates/BatchResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-            <!--<to uri="direct:addFITSDataStream"/>
-            <to uri="direct:addMODSDataStream"/>-->
 
-            <!-- The current route only handles JPG. -->
+            <!-- Need the Mime Type for the OBJ datastream -->
+            <to uri="direct:addFITSDataStream"/>
+            <to uri="fedora:hasConcept?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>
+
+            <setBody>
+                <simple>
+                    ${header.resourceFileName}
+                </simple>
+            </setBody>
+
+            <to uri="reader:file"/>
+
+            <toD id="fedoraAddDatastream" uri="fedora:addDatastream?name=OBJ&amp;type=${header.dsMIME}&amp;group=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false"/>
+            
+            <to uri="direct:addMODSDataStream"/>
+
+            <log message="${id}: Batch Process: Found: ${header.dsMIME}"
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <log message="${id}: Finished Batch Process: Add Resource..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+        </route>
+
+        <route id="BachProcessAddFITSDataStream">
+            <from uri="direct:addFITSDataStream"/>
+            <log message="${id}: Started processing FITS ..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <recipientList>
+                <simple>
+                    exec:fits?args=-i ${header.CamelFileParentDir}/${header.resourceFileName}
+                </simple>
+            </recipientList>
+
             <choice>
-                <!-- If the image is a JPEG? Do nothing. -->
+                <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
+                        ${header.CamelExecExitValue} == 0
                     </simple>
-                    <log message="${id}: Batch Process: Found JPEG."
-                         loggingLevel="INFO"
+                    <setHeader headerName="dsMIME">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
+                        <log message="${id}: FITS MIME: ${header.FITSmimeType}"
+                             loggingLevel="DEBUG"
+                             logName="{{edu.si.batch}}"/>
+                    </setHeader>
+                    <log message="${id}: Exec FITS. BODY: ${body}"
+                         loggingLevel="DEBUG"
                          logName="{{edu.si.batch}}"/>
-                    <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
-                <!-- Just warn for now. -->
                 <otherwise>
-                    <log message="${id}: Batch Process: Found non-JPEG Image."
-                         loggingLevel="WARN"
+                    <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
+                         loggingLevel="ERROR"
                          logName="{{edu.si.batch}}"/>
                 </otherwise>
             </choice>
 
-            <log message="${id}: Finished Image processing."
+            <log message="${id}: Finished processing FITS."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>
 
-        <!--<route id="UnifiedCameraTrapAddMODSDataStream">
+        <route id="BatchProcessAddMODSDataStream">
             <from uri="direct:addMODSDataStream"/>
             <log message="${id}: Started processing MODS ..."
                  loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
+                 logName="{{edu.si.batch}}"/>
 
-            &lt;!&ndash; Get the FITS XML and use XPATH to get the created date from it. &ndash;&gt;
-            &lt;!&ndash;
-            <setHeader headerName="FITSCreatedDate">
-                <xpath logNamespaces="false" resultType="java.lang.String">
-                    //fits:fileinfo/fits:created[@toolname="Exiftool"]
-                </xpath>
-            </setHeader>
-            <log message="${id}: MODS FITS Created Date - ${header.FITSCreatedDate}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-            &ndash;&gt;
-
-            &lt;!&ndash; TODO - The Image ID has .JPG appended and we may want to make this consistent. &ndash;&gt;
-            &lt;!&ndash; Add a MODS datastream for concept metadata. &ndash;&gt;
+            <!-- Add a MODS datastream for metadata. -->
             <setBody>
                 <simple>
-                    ${header.ManifestXML}
+                    ${header.metadataXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
+
+            <to uri="xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
+
             <log message="${id}: MODS XML -\n${body}"
-                 loggingLevel="DEBUG"
-                 logName="{{si.ct.id}}"/>
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id}: Finished processing MODS."
                  loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-        </route>-->
+                 logName="{{edu.si.batch}}"/>
+        </route>
+
+        <!--<choice> &lt;!&ndash; Filter by content model. &ndash;&gt;
+            <when> &lt;!&ndash; If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." &ndash;&gt;
+                <spel>
+                    #{(request.headers[ContentModels].contains('info:fedora/si:imageCModel') or
+                      request.headers[ContentModels].contains('info:fedora/si:generalImageCModel')) and
+                      request.headers[DSID] == 'OBJ'}
+                </spel>
+                <log message="${id} Derivatives: Found Image."
+                     loggingLevel="DEBUG"
+                     logName="edu.si.derivatives"/>
+                <to uri="direct:processDerivativesImage"/>
+            </when>
+            <when> &lt;!&ndash; If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." &ndash;&gt;
+                <spel>
+                    #{request.headers[ContentModels].contains('info:fedora/si:fieldbookCModel') and
+                      request.headers[DSID] == 'OBJ'}
+                </spel>
+                <log message="${id} Derivatives: Found PDF."
+                     loggingLevel="DEBUG"
+                     logName="edu.si.derivatives"/>
+                <to uri="direct:processDerivativesPDF"/>
+            </when>
+            <when> &lt;!&ndash; If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." &ndash;&gt;
+                <spel>
+                    #{request.headers[ContentModels].contains('info:fedora/si:datasetCModel') and
+                      request.headers[DSID] == 'OBJ'}
+                </spel>
+                <log message="${id} Derivatives: Found Dataset."
+                     loggingLevel="DEBUG"
+                     logName="edu.si.derivatives"/>
+                <to uri="direct:processDerivativesDataset"/>
+            </when>
+            <when> &lt;!&ndash; If sp-audioCModel, and the DSID is "OBJ" - process the audio file." &ndash;&gt;
+                <spel>
+                    #{request.headers[ContentModels].contains('info:fedora/islandora:sp-audioCModel') and
+                      request.headers[DSID] == 'OBJ'}
+                </spel>
+                <log message="${id} Derivatives: Found Audio."
+                     loggingLevel="DEBUG"
+                     logName="edu.si.derivatives"/>
+                <to uri="direct:processDerivativesAudio"/>
+            </when>
+
+            <when> &lt;!&ndash; If sp_videoCModel, and the DSID is "OBJ" - process the video file." &ndash;&gt;
+                <spel>
+                    #{request.headers[ContentModels].contains('info:fedora/islandora:sp_videoCModel') and
+                      request.headers[DSID] == 'OBJ'}
+                </spel>
+                <log message="${id} Derivatives: Found Video."
+                     loggingLevel="DEBUG"
+                     logName="edu.si.derivatives"/>
+                <to uri="direct:processDerivativesVideo"/>
+            </when>
+
+            <otherwise> &lt;!&ndash; No supported content model was found. &ndash;&gt;
+                <log message="${id} Derivatives: No message processing required."/>
+            </otherwise>
+        </choice>-->
     </camelContext>
 
 </blueprint>

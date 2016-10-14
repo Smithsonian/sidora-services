@@ -138,7 +138,7 @@ private static final String PORT_PATH = "8282/sidora/rest";
             FileUtils.deleteDirectory(tempConfigDirectory);
         }
         if(batchProcessDataDirectory.exists()){
-            //FileUtils.deleteDirectory(batchProcessDataDirectory);
+            FileUtils.deleteDirectory(batchProcessDataDirectory);
         }
     }
 
@@ -173,8 +173,12 @@ private static final String PORT_PATH = "8282/sidora/rest";
         builder.addTextBody("resourceZipFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/image-resources.zip", ContentType.TEXT_PLAIN);
         // Add metadata xml file URL upload
         builder.addTextBody("metadataFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/batch.xml", ContentType.TEXT_PLAIN);
-        // Add content model  string
+        // Add content model string
         builder.addTextBody("contentModel", "si:generalImageCModel", ContentType.TEXT_PLAIN);
+        // Add resourceOwner string
+        builder.addTextBody("resourceOwner", parentPid, ContentType.TEXT_PLAIN); //using parentPid for testing so things are easier to find from fedora admin
+        // Add title string
+        builder.addTextBody("title", "TestTitle", ContentType.TEXT_PLAIN);
 
         post.setEntity(builder.build());
 
