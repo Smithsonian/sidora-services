@@ -48,12 +48,6 @@
     </properties>
 
 
-<!-- Used undeclared dependencies found:
-[WARNING]    org.apache.httpcomponents:httpcore:jar:4.4:test
-[WARNING]    org.apache.cxf:cxf-core:jar:3.1.5:compile
-[WARNING]    javax.ws.rs:javax.ws.rs-api:jar:2.0.1:compile
--->
-
     <dependencies>
         <!-- must be first to avoid library conflict, Only needed during testing so scope is test -->
         <dependency>
@@ -85,29 +79,59 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-blueprint</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-cxf</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-cxf-transport</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Will pull other CXF modules such cxf-core and cxf-rt-transports-http, check the pom for more information -->
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-frontend-jaxrs</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-transports-http-jetty</artifactId>
+            <scope>provided</scope>
         </dependency>
+        <!--<dependency>
+            <groupId>com.yourmediashelf.fedora.client</groupId>
+            <artifactId>fedora-client-core</artifactId>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>log4j-over-slf4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-bundle</artifactId>
+            <scope>runtime</scope>
+        </dependency>-->
 
         <!-- Logging -->
         <dependency>
@@ -120,11 +144,11 @@
             <artifactId>slf4j-log4j12</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--<dependency>
+        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <scope>test</scope>
-        </dependency>-->
+        </dependency>
 
         <!-- testing -->
         <dependency>
@@ -177,13 +201,13 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <!--<scope>test</scope>-->
+            <scope>provided</scope>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-stream</artifactId>
             <version>2.16.3</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
@@ -248,9 +272,10 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Description>${project.description}</Bundle-Description>
+                        <!--<Import-Package>*;resolution:="optional"</Import-Package>-->
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
-                        <!--<Import-Package>
+                        <Import-Package>
                             javax.wsdl,
                             javax.xml.bind,
                             javax.xml.bind.annotation,
@@ -259,11 +284,12 @@
                             org.apache.commons.httpclient,
                             org.apache.commons.httpclient.methods,
                             org.osgi.service.blueprint,
+                            !bsh,
                             *;resolution:=optional
                         </Import-Package>
                         <Export-Package>
                             edu.si.services.sidora.rest.batch.*
-                        </Export-Package>-->
+                        </Export-Package>
                     </instructions>
                 </configuration>
             </plugin>
@@ -271,7 +297,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
+                <!--<configuration>
                     <systemProperties>
                         <property>
                             <name>fedoraUrl</name>
@@ -286,7 +312,7 @@
                             <value>${fedoraUrl}</value>
                         </property>
                     </systemProperties>
-                </configuration>
+                </configuration>-->
             </plugin>
 
             <!-- to run the example using mvn camel:run -->

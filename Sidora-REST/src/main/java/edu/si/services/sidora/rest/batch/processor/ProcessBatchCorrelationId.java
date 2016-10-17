@@ -35,10 +35,10 @@ import java.util.UUID;
 /**
  * @author jbirkhimer
  */
-public class ProcessCorrelationID implements Processor {
+public class ProcessBatchCorrelationId implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception {
-        exchange.getIn().setHeader("correlationID", UUID.randomUUID().toString());
+        exchange.getIn().setHeader("batchCorrelationID", UUID.randomUUID().toString());
     }
 }

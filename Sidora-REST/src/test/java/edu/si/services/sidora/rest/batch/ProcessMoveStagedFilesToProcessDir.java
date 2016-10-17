@@ -25,46 +25,48 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch.model;
+package edu.si.services.sidora.rest.batch;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Handler;
+import org.apache.camel.Processor;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Random;
-import java.util.UUID;
+import java.io.File;
 
 /**
  * @author jbirkhimer
  */
-public class StatusResponseControllerBean {
-    private String parentPID;
+public class ProcessMoveStagedFilesToProcessDir implements Processor {
+    private static final Logger LOG = LoggerFactory.getLogger(ProcessMoveStagedFilesToProcessDir.class);
+
     private String batchCorrelationId;
-    private Integer resourcesProcessed;
-    private boolean finished = false;
-    private Integer max = 10;
+    private String stagingDir;
+    private String processingDir;
+    private File from, to;
 
-    //@Handler
-    public String newBatchResourceStatus(Exchange exchange) throws Exception {
-        parentPID = exchange.getIn().getHeader("parentId", String.class);
+    @Override
+    public void process(Exchange exchange) throws Exception {
         batchCorrelationId = exchange.getIn().getHeader("batchCorrelationId", String.class);
-        finished = false;
-        Random r = new Random();
-        resourcesProcessed = r.nextInt((max - 0) + 1) + 0;
+        stagingDir = exchange.getIn().getHeader("stagingDir", String.class);
+        processingDir = exchange.getIn().getHeader("processingDir", String.class);
 
-        if (resourcesProcessed == max) {
-            finished = true;
-        }
+        //move the resources dir
+        from = new File(stagingDir + batchCorrelationId);
+        to = new File(processingDir + batchCorrelationId);
+        LOG.info("Mov Resource Directory From: {} / To: {}", from, to);
+        FileUtils.moveDirectory(from, to);
 
-        StringBuilder responceMessage = new StringBuilder();
-        //responceMessage.append("******* New Batch Resource for ParentPID = " + parentPID + " ********\n");
-        //responceMessage.append("******* Correlation ID = " + batchCorrelationId + " ********");
-        responceMessage.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        responceMessage.append("<Batch>"
-                + "<ParentPID>" + parentPID + "</ParentPID><batchCorrelationId>" + batchCorrelationId + "</batchCorrelationId>"
-                + "<ResourcesProcessed>" + resourcesProcessed + "</ResourcesProcessed>"
-                + "<BatchDone>" + finished + "</BatchDone>"
-                + "</Batch>");
-        return responceMessage.toString();
+/*        //Move the matadata file
+        from = new File(stagingDir + batchCorrelationId + "/metadata.xml");
+        to = new File(processingDir + batchCorrelationId);
+        LOG.info("Metadata From: {} / To: {}", from, to);
+        //FileUtils.moveFileToDirectory(from, to, false);*/
+
+
+
+
+
     }
-
 }
