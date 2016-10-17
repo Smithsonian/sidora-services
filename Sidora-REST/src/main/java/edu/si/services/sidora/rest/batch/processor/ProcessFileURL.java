@@ -51,7 +51,7 @@ import java.util.StringJoiner;
  */
 public class ProcessFileURL implements Processor {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessFileURL.class);
-    private String correlationID;
+    private String batchCorrelationId;
     private String stagingDir;
     private String processingDir;
     //private String targetLoc;
@@ -61,29 +61,29 @@ public class ProcessFileURL implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
         out = exchange.getOut();
-        correlationID = exchange.getIn().getHeader("correlationID", String.class);
-        stagingDir = "target/staging/";
+        batchCorrelationId = exchange.getIn().getHeader("batchCorrelationId", String.class);
+        stagingDir = exchange.getIn().getHeader("stagingDir", String.class);
         processingDir = exchange.getIn().getHeader("processingDir", String.class);
-        //targetLoc = processingDir + correlationID;
+        //targetLoc = processingDir + batchCorrelationId;
 
         //Set location to extract to
-        dataOutputDir = new File(processingDir + correlationID);
+        dataOutputDir = new File(processingDir + batchCorrelationId);
 
         //Save the file from URL to temp file
         URL resourceFileURL = new URL("file://" + exchange.getIn().getHeader("resourceZipFileURL", String.class));
-        //tempfile = FileUtil.createTempFile(correlationID, ".zip", new File(stagingDir));
-        tempfile = new File(stagingDir + correlationID + ".zip");
-        LOG.info("Saving URL Resource To Temp File:{}", tempfile);
+        //tempfile = FileUtil.createTempFile(batchCorrelationId, ".zip", new File(stagingDir));
+        tempfile = new File(stagingDir + batchCorrelationId + ".zip");
+        LOG.debug("Saving URL Resource To Temp File:{}", tempfile);
         FileUtils.copyURLToFile(resourceFileURL, tempfile);
         //Extract the zip archive
-        LOG.info("Headers Before Extractor: {}", exchange.getIn().getHeaders());
+        LOG.debug("Headers Before Extractor: {}", exchange.getIn().getHeaders());
         exchange.getContext().createProducerTemplate().sendBody("extractor:extract?location=" + processingDir, tempfile);
-        LOG.info("Headers After Extractor: {}", exchange.getIn().getHeaders());
+        LOG.debug("Headers After Extractor: {}", exchange.getIn().getHeaders());
 
         //Now grab the metadata file from URL
         URL metadataFileURL = new URL("file://" + exchange.getIn().getHeader("metadataFileURL", String.class));
-        metadataFile = new File(processingDir + correlationID + "/metadata.xml");
-        LOG.info("Saving URL Resource To Temp File:{}", tempfile);
+        metadataFile = new File(processingDir + batchCorrelationId + "/metadata.xml");
+        LOG.debug("Saving URL Resource To Temp File:{}", tempfile);
         FileUtils.copyURLToFile(metadataFileURL, metadataFile);
 
         String[] files = dataOutputDir.list(new FilenameFilter() {
@@ -94,7 +94,7 @@ public class ProcessFileURL implements Processor {
 
         String resourceFileList = Arrays.toString(files).replace("[", "").replace("]", "").replace(", ", ",");
 
-        LOG.info("FileList:{}", resourceFileList);
+        LOG.debug("FileList:{}", resourceFileList);
 
         out.setHeaders(updateHeaders(dataOutputDir, exchange.getIn().getHeaders()));
         out.setHeader("resourceList", resourceFileList);

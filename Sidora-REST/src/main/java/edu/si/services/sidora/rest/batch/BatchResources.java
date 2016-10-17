@@ -38,25 +38,26 @@ import java.net.URL;
  * @author jbirkhimer
  */
 
-@Path("/")
+//@Path("/")
 public class BatchResources {
 
     @POST
     @Path(value = "/batch/process/addResourceObjects/{parentId}")
     @Produces("text/xml")
     public Response batchProcessAddResourceObjectsRequest(@PathParam("parentId") String parentId,
-                                                          @QueryParam("title") String title,
+                                                          /*@QueryParam("titleField") String titleField,*/
                                                           @Multipart(value = "resourceZipFileURL", type = "text/plain") String resourceZipFileURL,
                                                           @Multipart(value = "metadataFileURL", type = "text/plain") String metadataFileURL,
                                                           @Multipart(value = "contentModel") String contentModel,
-                                                          @Multipart(value = "resourceOwner") String resourceOwner) {
+                                                          @Multipart(value = "resourceOwner") String resourceOwner,
+                                                          @Multipart(value = "titleField", required = false) String titleField) {
         return null;
     }
 
     @GET
-    @Path(value = "/batch/process/addResourceObjects/{parentId}/{correlationId}")
+    @Path(value = "/batch/process/addResourceObjects/{parentId}/{batchCorrelationId}")
     @Produces("text/xml")
-    public Response batchProcessAddResourceObjectsRequestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationID) {
+    public Response batchProcessAddResourceObjectsRequestStatus(@PathParam("parentId") String parentId, @PathParam("batchCorrelationId") String batchCorrelationId) {
         return null;
     }
 

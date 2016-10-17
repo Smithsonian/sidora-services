@@ -29,22 +29,27 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
-           xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
            xmlns:cxf="http://cxf.apache.org/blueprint/core"
-           xmlns:camel="http://camel.apache.org/schema/blueprint"
+           xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
            xmlns:camel-cxf="http://camel.apache.org/schema/blueprint/cxf"
            xsi:schemaLocation="
              http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+             http://camel.apache.org/schema/blueprint/cxf http://camel.apache.org/schema/blueprint/cxf/camel-cxf.xsd
              http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd
-             http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd">
+             http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd
+             http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
 
     <!-- OSGI blueprint property placeholder -->
     <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
         as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
-    <cm:property-placeholder id="sidora.karaf.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none">
+    <cm:property-placeholder id="sidora.karaf.batch.properties" persistent-id="edu.si.sidora.batch.karaf" update-strategy="none">
         <cm:default-properties>
             <cm:property name="edu.si.batch" value="edu.si.batch"/>
             <cm:property name="service.address" value="/sidora/rest"/> <!-- http://localhost:8181/cxf/sidora/rest -->
+            <cm:property name="batch.staging.dir" value="staging/"/>
+            <cm:property name="batch.data.dir" value="BatchResourceData/"/>
+            <cm:property name="si.fedora.host" value="http://localhost:8080/fedora"/>
+            <cm:property name="si.fedora.user" value="camelBatchProcess"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
@@ -54,17 +59,27 @@
         </cxf:features>
     </cxf:bus>
 
+    <!--<jaxrs:server id="tabularMetadataService" address="${service.address}">
+        <jaxrs:serviceBeans>
+            <ref component-id="batchService" />
+        </jaxrs:serviceBeans>
+
+       &lt;!&ndash; <jaxrs:providers>
+            <ref component-id="jaxbProvider"/>
+        </jaxrs:providers>&ndash;&gt;
+    </jaxrs:server>-->
+
     <!-- Defined the server endpoint to create the cxf-rs consumer -->
     <camel-cxf:rsServer id="rsServer" address="${service.address}"
                   serviceClass="edu.si.services.sidora.rest.batch.BatchResources"
                   loggingFeatureEnabled="true">
-        <camel-cxf:providers>
+        <!--<camel-cxf:providers>
             <ref component-id="jaxbProvider"/>
-        </camel-cxf:providers>
+        </camel-cxf:providers>-->
     </camel-cxf:rsServer>
 
     <bean id="batchService" class="edu.si.services.sidora.rest.batch.BatchResources"/>
-    <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+    <!--<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
         <property name="marshallerProperties">
             <map>
                 <entry>
@@ -75,21 +90,24 @@
                 </entry>
             </map>
         </property>
-    </bean>
+    </bean>-->
 
-    <bean id="processCorrelationID" class="edu.si.services.sidora.rest.batch.processor.ProcessCorrelationID"/>
+    <bean id="processBatchCorrelationId" class="edu.si.services.sidora.rest.batch.processor.ProcessBatchCorrelationId"/>
+
     <bean id="processFileURL" class="edu.si.services.sidora.rest.batch.processor.ProcessFileURL"/>
-    <!--<bean id="processMoveStagedFilesToProcessDir" class="edu.si.services.sidora.rest.batch.processor.ProcessMoveStagedFilesToProcessDir"/>-->
-
-    <!--<bean id="responseControllerBean" class="edu.si.services.sidora.rest.batch.model.ResponseControllerBean"/>-->
 
     <bean id="statusResponseControllerBean" class="edu.si.services.sidora.rest.batch.model.StatusResponseControllerBean"/>
 
-    <!--<bean id="fcrepoConfiguration" class="edu.si.services.camel.fcrepo.FcrepoConfiguration">
-        <property name="fedoraHost" value="${si.fedora.host}"/>
-        <property name="authUsername" value="${si.fedora.user}"/>
-        <property name="authPassword" value="${si.fedora.password}"/>
-    </bean>-->
+
+    <bean id="fedoraSettings" class="edu.si.services.fedorarepo.FedoraSettings">
+        <argument index="0" value="${si.fedora.host}" type="java.lang.String"/>
+        <argument index="1" value="${si.fedora.user}" type="java.lang.String"/>
+        <argument index="2" value="${si.fedora.password}" type="java.lang.String"/>
+    </bean>
+
+    <bean id="fedora" class="edu.si.services.fedorarepo.FedoraComponent">
+        <property name="settings" ref="fedoraSettings"/>
+    </bean>
 
     <!-- The camel route context -->
     <camelContext id="RestService"
@@ -110,12 +128,12 @@
         -->
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties"/>
+                             location="blueprint:sidora.karaf.batch.properties,file:${karaf.home}/etc/edu.si.sidora.batch.cfg"/>
 
         <route id="SidoraRESTService">
             <!-- Just need to ignoreDeleteMethodMessageBody -->
-            <from uri="cxfrs://bean://rsServer?bindingStyle=SimpleConsumer"/>
-            <log message="======================= Starting ======================="
+            <from uri="cxfrs://bean://rsServer?bindingStyle=SimpleConsumer&amp;resourceClasses=edu.si.services.sidora.rest.batch.processor.ProcessBatchCorrelationId"/>
+            <log message="======================= Starting SidoraRESTService Request ======================="
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
@@ -133,18 +151,22 @@
             <!-- These Headers are giving me a headache!!! -->
             <removeHeaders pattern="User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|CamelHttpUri|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod"/>
 
-            <!-- Give the Batch Process a correlationID -->
-            <process ref="processCorrelationID"/>
+            <!-- Give the Batch Process a batchCorrelationId -->
+            <process ref="processBatchCorrelationId"/>
+
+            <log message="${id}: Batch Request CorrelationId: ${header.batchCorrelationID}"
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
 
             <setHeader headerName="stagingDir">
                 <simple>
-                    target/stagingDir/
+                    {{batch.staging.dir}}
                 </simple>
             </setHeader>
 
             <setHeader headerName="processingDir">
                 <simple>
-                    target/BatchResourceData/
+                    {{batch.data.dir}}
                 </simple>
             </setHeader>
 
@@ -155,7 +177,7 @@
             <!-- Set the REST response message -->
             <setBody>
                 <simple>
-                    &lt;Batch&gt;&lt;ParentPID&gt;${header.parentId}&lt;/ParentPID&gt;&lt;CorrelationID&gt;${header.correlationID}&lt;/CorrelationID&gt;&lt;/Batch&gt;
+                    &lt;Batch&gt;&lt;ParentPID&gt;${header.parentId}&lt;/ParentPID&gt;&lt;CorrelationID&gt;${header.batchCorrelationId}&lt;/CorrelationID&gt;&lt;/Batch&gt;
                 </simple>
             </setBody>
 
@@ -211,11 +233,11 @@
                 <tokenize token="," xml="false" trim="true"/>
 
                 <log message="Batch Process: Split Body: ${body}"
-                     loggingLevel="INFO"
+                     loggingLevel="DEBUG"
                      logName="{{edu.si.batch}}"/>
 
                 <log message="${id}: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
-                     loggingLevel="INFO"
+                     loggingLevel="DEBUG"
                      logName="{{edu.si.batch}}"/>
 
                 <setHeader headerName="resourceFileName">
@@ -224,12 +246,14 @@
                     </simple>
                 </setHeader>
 
+                <!-- header is an XSLT param -->
                 <setHeader headerName="titleNode">
                     <simple>
                         title
                     </simple>
                 </setHeader>
 
+                <!-- header is an XSLT param -->
                 <setHeader headerName="titleLabel">
                     <xpath resultType="java.lang.String" headerName="metadataXML">
                         concat(//mods:title/text(), function:simple(&#39;(${property.CamelSplitIndex})&#39;))
@@ -258,7 +282,7 @@
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
-            <toD id="fedoraCreate" uri="fedora:create?pid=null&amp;owner=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}"/>
+            <toD uri="fedora:create?pid=null&amp;owner=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}"/>
 
 
             <to uri="velocity:file:Input/templates/BatchResourceTemplate.vsl"/>
@@ -346,7 +370,7 @@
             <to uri="xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
 
             <log message="${id}: MODS XML -\n${body}"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{edu.si.batch}}"/>
 
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>

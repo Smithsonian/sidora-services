@@ -86,6 +86,11 @@ private static final String PORT_PATH = "8282/sidora/rest";
      */
     @BeforeClass
     public static void setupSysPropsTempResourceDir() throws IOException {
+        FileInputStream propFile = new FileInputStream( "src/test/resources/test.properties");
+        Properties p = new Properties(System.getProperties());
+        p.load(propFile);
+        System.setProperties(p);
+
         //Create and Copy the Input dir xslt, etc. files used in the camera trap route
         tempInputDirectory = new File("Input");
         if(!tempInputDirectory.exists()){
@@ -98,7 +103,7 @@ private static final String PORT_PATH = "8282/sidora/rest";
         //Copy the Input src files to the CameraTrap root so the camel route can find them
         FileUtils.copyDirectory(inputSrcDirLoc, tempInputDirectory);
 
-        batchProcessDataDirectory = new File("target/BatchProcessData");
+        batchProcessDataDirectory = new File(System.getProperty("batch.data.dir"));
         if(batchProcessDataDirectory.exists()){
             FileUtils.deleteDirectory(batchProcessDataDirectory);
         }
@@ -112,17 +117,12 @@ private static final String PORT_PATH = "8282/sidora/rest";
         //Set the karaf.home property use by the camera trap route
         System.setProperty("karaf.home", "Karaf-config");
 
-
-        FileInputStream propFile = new FileInputStream( "src/test/resources/test.properties");
-        Properties p = new Properties(System.getProperties());
-        p.load(propFile);
-        System.setProperties(p);
     }
 
 
     @Override
     protected String[] loadConfigAdminConfigurationFile() {
-        return new String[]{"src/test/resources/test.properties", "edu.si.sidora.karaf"};
+        return new String[]{"src/test/resources/test.properties", "edu.si.sidora.batch.karaf"};
     }
 
     /**
@@ -138,7 +138,7 @@ private static final String PORT_PATH = "8282/sidora/rest";
             FileUtils.deleteDirectory(tempConfigDirectory);
         }
         if(batchProcessDataDirectory.exists()){
-            FileUtils.deleteDirectory(batchProcessDataDirectory);
+            //FileUtils.deleteDirectory(batchProcessDataDirectory);
         }
     }
 
@@ -159,26 +159,63 @@ private static final String PORT_PATH = "8282/sidora/rest";
     }
 
     @Test
-    public void testMultipartPostWithParametersAndPayload() throws Exception {
+    public void batchProcess_AddResourceObjects_TitleInMetadataTest() throws Exception {
         String parentPid = "si:390403";
         String id = "";
 
         String expectedResponseBody = "<Batch><ParentPID>" + parentPid + "</ParentPID><CorrelationID>" + id + "</CorrelationID></Batch>";
 
-        HttpPost post = new HttpPost("http://localhost:" + PORT_PATH + "/batch/process/addResourceObjects/" + parentPid + "?query=abcd");
+        HttpPost post = new HttpPost("http://localhost:" + PORT_PATH + "/batch/process/addResourceObjects/" + parentPid + "?titleField=abcd");
 
         MultipartEntityBuilder builder = MultipartEntityBuilder.create().setMode(HttpMultipartMode.STRICT);
 
         // Add zip file URL upload
         builder.addTextBody("resourceZipFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/image-resources.zip", ContentType.TEXT_PLAIN);
         // Add metadata xml file URL upload
-        builder.addTextBody("metadataFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/batch.xml", ContentType.TEXT_PLAIN);
+        builder.addTextBody("metadataFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/metadataWithTitle.xml", ContentType.TEXT_PLAIN);
         // Add content model string
         builder.addTextBody("contentModel", "si:generalImageCModel", ContentType.TEXT_PLAIN);
         // Add resourceOwner string
         builder.addTextBody("resourceOwner", parentPid, ContentType.TEXT_PLAIN); //using parentPid for testing so things are easier to find from fedora admin
         // Add title string
-        builder.addTextBody("title", "TestTitle", ContentType.TEXT_PLAIN);
+        //builder.addTextBody("titleField", "Test-Title", ContentType.TEXT_PLAIN);
+
+        post.setEntity(builder.build());
+
+        HttpResponse response = httpClient.execute(post);
+        assertEquals(200, response.getStatusLine().getStatusCode());
+        String responseBody = EntityUtils.toString(response.getEntity());
+        System.out.println("======================== [ RESPONSE ] ========================\n" + responseBody);
+
+
+        /*HttpResponse response2 = httpClient.execute(post);
+        assertEquals(200, response2.getStatusLine().getStatusCode());
+        String response2Body = EntityUtils.toString(response2.getEntity());
+        System.out.println("======================== [ RESPONSE ] ========================\n" + response2Body);*/
+
+    }
+
+    //@Test
+    public void batchProcess_AddResourceObjects_TitleInParamTest() throws Exception {
+        String parentPid = "si:390403";
+        String id = "";
+
+        String expectedResponseBody = "<Batch><ParentPID>" + parentPid + "</ParentPID><CorrelationID>" + id + "</CorrelationID></Batch>";
+
+        HttpPost post = new HttpPost("http://localhost:" + PORT_PATH + "/batch/process/addResourceObjects/" + parentPid);
+
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create().setMode(HttpMultipartMode.STRICT);
+
+        // Add zip file URL upload
+        builder.addTextBody("resourceZipFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/image-resources.zip", ContentType.TEXT_PLAIN);
+        // Add metadata xml file URL upload
+        builder.addTextBody("metadataFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/metadatWithEmptyTitle.xml", ContentType.TEXT_PLAIN);
+        // Add content model string
+        builder.addTextBody("contentModel", "si:generalImageCModel", ContentType.TEXT_PLAIN);
+        // Add resourceOwner string
+        builder.addTextBody("resourceOwner", parentPid, ContentType.TEXT_PLAIN); //using parentPid for testing so things are easier to find from fedora admin
+        // Add title string
+        builder.addTextBody("titleField", "Test-Title", ContentType.TEXT_PLAIN);
 
         post.setEntity(builder.build());
 
@@ -198,10 +235,10 @@ private static final String PORT_PATH = "8282/sidora/rest";
     //@Test
     public void testStatus() throws Exception {
         String parentPid = "si:390403";
-        String correlationId = "a1b47c86-0922-4321-b8b3-d4d6abd8d953";
+        String batchCorrelationId = "a1b47c86-0922-4321-b8b3-d4d6abd8d953";
 
         //HttpPost post = new HttpPost("http://localhost:" + PORT_PATH + "/rest/customerservice/customers/multipart/123?query=abcd");
-        HttpGet getClient = new HttpGet("http://localhost:" + PORT_PATH + "/batch/process/addResourceObjects/" + parentPid + "/" + correlationId);
+        HttpGet getClient = new HttpGet("http://localhost:" + PORT_PATH + "/batch/process/addResourceObjects/" + parentPid + "/" + batchCorrelationId);
 
         HttpResponse response = httpClient.execute(getClient);
         assertEquals(200, response.getStatusLine().getStatusCode());
@@ -259,7 +296,7 @@ private static final String PORT_PATH = "8282/sidora/rest";
 
         //Multipart attachments
         File resourceZip = new File(getClass().getResource("/image-resource.zip").getFile());
-        File metadataFile = new File("/batch.xml");
+        File metadataFile = new File("/metadataWithTitle.xml");
         String metadata = FileUtils.readFileToString(metadataFile);
         File associationFile = new File("/general-image-association");
         String association = FileUtils.readFileToString(associationFile);
