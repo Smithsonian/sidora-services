@@ -30,23 +30,19 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>edu.si.services</groupId>
         <artifactId>services</artifactId>
         <version>1.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>sidora-deployment</artifactId>
-    <packaging>kar</packaging>
+    <modelVersion>4.0.0</modelVersion>
 
     <name>SI :: Services :: Karaf Archive</name>
+    <artifactId>sidora-deployment</artifactId>
+    <packaging>kar</packaging>
     <description>The SIdora Services Karaf Archive deployment artifact</description>
-    <properties>
-        <karaf.version>3.0.7</karaf.version>
-        <camel.version>2.16.3</camel.version>
-    </properties>
 
     <dependencies>
         <!-- SIdora Beans-->
@@ -117,7 +113,6 @@
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
                 <artifactId>karaf-maven-plugin</artifactId>
-                <version>${karaf.version}</version>
                 <extensions>true</extensions>
                 <configuration>
                     <startLevel>80</startLevel>

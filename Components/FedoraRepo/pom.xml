@@ -31,6 +31,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
+    <parent>
+        <groupId>edu.si.services</groupId>
+        <artifactId>camel</artifactId>
+        <version>1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.si.services.camel</groupId>
@@ -41,24 +48,12 @@
     <name>SI :: Services :: Components :: Fedora Commons</name>
     <!-- <url>http://oris.si.edu/sidora</url> -->
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <camel.version>2.14.1</camel.version>
-        <slf4j.version>1.7.6</slf4j.version>
-        <log4j.version>1.2.17</log4j.version>
-        <fedora.client.version>0.7</fedora.client.version>
-        <jersy.version>1.17.1</jersy.version>
-        <fedoraUrl>localhost:8080/fedora</fedoraUrl>
-    </properties>
-
     <dependencies>
 
         <dependency>
             <groupId>com.yourmediashelf.fedora.client</groupId>
             <artifactId>fedora-client-core</artifactId>
-            <version>${fedora.client.version}</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion> 
                     <groupId>org.slf4j</groupId>
@@ -74,31 +69,12 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-bundle</artifactId>
-            <version>${jersy.version}</version>
-            <scope>runtime</scope>        
+            <scope>provided</scope>
         </dependency>
-
-        <!--
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.2.1</version>
-            <scope>runtime</scope>
-        </dependency>
-        -->
-
-        <!--
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-jaxrs</artifactId>
-            <version>1.9.11</version>
-        </dependency>
-        -->
 
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
-            <version>${camel.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -106,21 +82,18 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -128,7 +101,6 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
-            <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -142,27 +114,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.5.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
             </plugin>
       
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                </configuration>
             </plugin>
 
             <!-- To generate the MANIFEST-FILE of the bundle. -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.3.7</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
@@ -188,7 +150,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.17</version>
                 <configuration>
                     <systemProperties>
                         <property>

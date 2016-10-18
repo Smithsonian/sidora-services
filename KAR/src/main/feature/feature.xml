@@ -32,12 +32,12 @@
 
     <!-- Sidora Dependencies -->
     <feature name="sidora-dependencies" version="${version}" >
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/3.11_1</bundle>	<!-- can use the file url handler as well-->
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/2.0_1</bundle> <!-- can use the file url handler as well-->
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/3.2.14.RELEASE_1</bundle>
-        <bundle dependency="true" start-level='80'>mvn:commons-codec/commons-codec/1.10</bundle>
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>
-        <bundle dependency="true" start-level='80'>mvn:com.google.guava/guava/18.0</bundle>
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/${servicemix.bundles.poi.version}</bundle>	<!-- can use the file url handler as well-->
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/${servicemix.bundles.velocity-tools.version}</bundle> <!-- can use the file url handler as well-->
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/${servicemix.bundles.spring-beans.version}</bundle>
+        <bundle dependency="true" start-level='80'>mvn:commons-codec/commons-codec/${commons-codec.bundle.version}</bundle>
+        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/${commons-httpclient.bundle.version}</bundle>
+        <bundle dependency="true" start-level='80'>mvn:com.google.guava/guava/${google-guava-version}</bundle>
     </feature>
 
     <!-- Sidora Camel Dependencies -->
