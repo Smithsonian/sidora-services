@@ -30,6 +30,7 @@ package edu.si.services.sidora.rest.batch.processor;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
+import org.apache.camel.PropertyInject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -51,40 +53,61 @@ import java.util.StringJoiner;
  */
 public class ProcessFileURL implements Processor {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessFileURL.class);
+
     private String batchCorrelationId;
+
+    @PropertyInject(value = "batch.staging.dir")
     private String stagingDir;
+
+    @PropertyInject(value = "batch.data.dir")
     private String processingDir;
-    //private String targetLoc;
+
     private Message out;
     private File tempfile, metadataFile, dataOutputDir;
 
     @Override
     public void process(Exchange exchange) throws Exception {
+
+
         out = exchange.getOut();
         batchCorrelationId = exchange.getIn().getHeader("batchCorrelationId", String.class);
-        stagingDir = exchange.getIn().getHeader("stagingDir", String.class);
-        processingDir = exchange.getIn().getHeader("processingDir", String.class);
-        //targetLoc = processingDir + batchCorrelationId;
+//        stagingDir = exchange.getIn().getHeader("stagingDir", String.class);
+//        processingDir = exchange.getIn().getHeader("processingDir", String.class);
 
         //Set location to extract to
         dataOutputDir = new File(processingDir + batchCorrelationId);
 
         //Save the file from URL to temp file
         URL resourceFileURL = new URL("file://" + exchange.getIn().getHeader("resourceZipFileURL", String.class));
-        //tempfile = FileUtil.createTempFile(batchCorrelationId, ".zip", new File(stagingDir));
         tempfile = new File(stagingDir + batchCorrelationId + ".zip");
         LOG.debug("Saving URL Resource To Temp File:{}", tempfile);
-        FileUtils.copyURLToFile(resourceFileURL, tempfile);
-        //Extract the zip archive
+
+        try {
+            FileUtils.copyURLToFile(resourceFileURL, tempfile);
+        } catch (IOException e) {
+            System.err.println("Caught IOException: Unable to copy Batch Resource file from: " + resourceFileURL + " to: " + tempfile + "\n" + e.getMessage());
+            //e.printStackTrace();
+        }
+
+        //Extract the zip archive using a producer template to the extractor component
         LOG.debug("Headers Before Extractor: {}", exchange.getIn().getHeaders());
         exchange.getContext().createProducerTemplate().sendBody("extractor:extract?location=" + processingDir, tempfile);
         LOG.debug("Headers After Extractor: {}", exchange.getIn().getHeaders());
+
+        //Delete the temp file
+        tempfile.delete();
 
         //Now grab the metadata file from URL
         URL metadataFileURL = new URL("file://" + exchange.getIn().getHeader("metadataFileURL", String.class));
         metadataFile = new File(processingDir + batchCorrelationId + "/metadata.xml");
         LOG.debug("Saving URL Resource To Temp File:{}", tempfile);
-        FileUtils.copyURLToFile(metadataFileURL, metadataFile);
+
+        try {
+            FileUtils.copyURLToFile(metadataFileURL, metadataFile);
+        } catch (IOException e) {
+            System.err.println("Caught IOException: Unable to copy Metadata file from: " + resourceFileURL + " to: " + tempfile + "\n" + e.getMessage());
+            //e.printStackTrace();
+        }
 
         String[] files = dataOutputDir.list(new FilenameFilter() {
             public boolean accept(File dir, String name) {

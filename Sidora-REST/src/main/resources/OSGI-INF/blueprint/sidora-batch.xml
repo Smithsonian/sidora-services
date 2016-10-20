@@ -42,16 +42,7 @@
     <!-- OSGI blueprint property placeholder -->
     <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
         as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
-    <cm:property-placeholder id="sidora.karaf.batch.properties" persistent-id="edu.si.sidora.batch.karaf" update-strategy="none">
-        <cm:default-properties>
-            <cm:property name="edu.si.batch" value="edu.si.batch"/>
-            <cm:property name="service.address" value="/sidora/rest"/> <!-- http://localhost:8181/cxf/sidora/rest -->
-            <cm:property name="batch.staging.dir" value="staging/"/>
-            <cm:property name="batch.data.dir" value="BatchResourceData/"/>
-            <cm:property name="si.fedora.host" value="http://localhost:8080/fedora"/>
-            <cm:property name="si.fedora.user" value="camelBatchProcess"/>
-        </cm:default-properties>
-    </cm:property-placeholder>
+    <cm:property-placeholder id="sidora.karaf.batch.properties" persistent-id="edu.si.sidora.batch" update-strategy="none"/>
 
     <cxf:bus>
         <cxf:features>
@@ -59,18 +50,8 @@
         </cxf:features>
     </cxf:bus>
 
-    <!--<jaxrs:server id="tabularMetadataService" address="${service.address}">
-        <jaxrs:serviceBeans>
-            <ref component-id="batchService" />
-        </jaxrs:serviceBeans>
-
-       &lt;!&ndash; <jaxrs:providers>
-            <ref component-id="jaxbProvider"/>
-        </jaxrs:providers>&ndash;&gt;
-    </jaxrs:server>-->
-
     <!-- Defined the server endpoint to create the cxf-rs consumer -->
-    <camel-cxf:rsServer id="rsServer" address="${service.address}"
+    <camel-cxf:rsServer id="rsServer" address="${sidora.rest.service.address}"
                   serviceClass="edu.si.services.sidora.rest.batch.BatchResources"
                   loggingFeatureEnabled="true">
         <!--<camel-cxf:providers>
@@ -97,7 +78,6 @@
     <bean id="processFileURL" class="edu.si.services.sidora.rest.batch.processor.ProcessFileURL"/>
 
     <bean id="statusResponseControllerBean" class="edu.si.services.sidora.rest.batch.model.StatusResponseControllerBean"/>
-
 
     <bean id="fedoraSettings" class="edu.si.services.fedorarepo.FedoraSettings">
         <argument index="0" value="${si.fedora.host}" type="java.lang.String"/>
@@ -131,8 +111,7 @@
                              location="blueprint:sidora.karaf.batch.properties,file:${karaf.home}/etc/edu.si.sidora.batch.cfg"/>
 
         <route id="SidoraRESTService">
-            <!-- Just need to ignoreDeleteMethodMessageBody -->
-            <from uri="cxfrs://bean://rsServer?bindingStyle=SimpleConsumer&amp;resourceClasses=edu.si.services.sidora.rest.batch.processor.ProcessBatchCorrelationId"/>
+            <from uri="cxfrs://bean://rsServer?bindingStyle=SimpleConsumer"/>
             <log message="======================= Starting SidoraRESTService Request ======================="
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
@@ -157,18 +136,6 @@
             <log message="${id}: Batch Request CorrelationId: ${header.batchCorrelationID}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
-
-            <setHeader headerName="stagingDir">
-                <simple>
-                    {{batch.staging.dir}}
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="processingDir">
-                <simple>
-                    {{batch.data.dir}}
-                </simple>
-            </setHeader>
 
             <process ref="processFileURL"/>
 
@@ -284,13 +251,12 @@
 
             <toD uri="fedora:create?pid=null&amp;owner=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}"/>
 
-
             <to uri="velocity:file:Input/templates/BatchResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- Need the Mime Type for the OBJ datastream -->
             <to uri="direct:addFITSDataStream"/>
-            <to uri="fedora:hasConcept?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>
+            <to uri="fedora:hasResource?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>
 
             <setBody>
                 <simple>
@@ -300,7 +266,7 @@
 
             <to uri="reader:file"/>
 
-            <toD id="fedoraAddDatastream" uri="fedora:addDatastream?name=OBJ&amp;type=${header.dsMIME}&amp;group=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=${header.dsMIME}&amp;group=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false"/>
             
             <to uri="direct:addMODSDataStream"/>
 
@@ -379,65 +345,6 @@
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>
-
-        <!--<choice> &lt;!&ndash; Filter by content model. &ndash;&gt;
-            <when> &lt;!&ndash; If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." &ndash;&gt;
-                <spel>
-                    #{(request.headers[ContentModels].contains('info:fedora/si:imageCModel') or
-                      request.headers[ContentModels].contains('info:fedora/si:generalImageCModel')) and
-                      request.headers[DSID] == 'OBJ'}
-                </spel>
-                <log message="${id} Derivatives: Found Image."
-                     loggingLevel="DEBUG"
-                     logName="edu.si.derivatives"/>
-                <to uri="direct:processDerivativesImage"/>
-            </when>
-            <when> &lt;!&ndash; If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." &ndash;&gt;
-                <spel>
-                    #{request.headers[ContentModels].contains('info:fedora/si:fieldbookCModel') and
-                      request.headers[DSID] == 'OBJ'}
-                </spel>
-                <log message="${id} Derivatives: Found PDF."
-                     loggingLevel="DEBUG"
-                     logName="edu.si.derivatives"/>
-                <to uri="direct:processDerivativesPDF"/>
-            </when>
-            <when> &lt;!&ndash; If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." &ndash;&gt;
-                <spel>
-                    #{request.headers[ContentModels].contains('info:fedora/si:datasetCModel') and
-                      request.headers[DSID] == 'OBJ'}
-                </spel>
-                <log message="${id} Derivatives: Found Dataset."
-                     loggingLevel="DEBUG"
-                     logName="edu.si.derivatives"/>
-                <to uri="direct:processDerivativesDataset"/>
-            </when>
-            <when> &lt;!&ndash; If sp-audioCModel, and the DSID is "OBJ" - process the audio file." &ndash;&gt;
-                <spel>
-                    #{request.headers[ContentModels].contains('info:fedora/islandora:sp-audioCModel') and
-                      request.headers[DSID] == 'OBJ'}
-                </spel>
-                <log message="${id} Derivatives: Found Audio."
-                     loggingLevel="DEBUG"
-                     logName="edu.si.derivatives"/>
-                <to uri="direct:processDerivativesAudio"/>
-            </when>
-
-            <when> &lt;!&ndash; If sp_videoCModel, and the DSID is "OBJ" - process the video file." &ndash;&gt;
-                <spel>
-                    #{request.headers[ContentModels].contains('info:fedora/islandora:sp_videoCModel') and
-                      request.headers[DSID] == 'OBJ'}
-                </spel>
-                <log message="${id} Derivatives: Found Video."
-                     loggingLevel="DEBUG"
-                     logName="edu.si.derivatives"/>
-                <to uri="direct:processDerivativesVideo"/>
-            </when>
-
-            <otherwise> &lt;!&ndash; No supported content model was found. &ndash;&gt;
-                <log message="${id} Derivatives: No message processing required."/>
-            </otherwise>
-        </choice>-->
     </camelContext>
 
 </blueprint>

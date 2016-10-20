@@ -56,13 +56,6 @@
             <version>${asm-all.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- need this dependencies for the cmd camel:run -->
-        <!--<dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-commons</artifactId>
-            <version>5.0.3</version>
-            <scope>runtime</scope>
-        </dependency>-->
 
         <!--  osgi -->
         <dependency>
@@ -108,30 +101,6 @@
             <artifactId>cxf-rt-transports-http-jetty</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>com.yourmediashelf.fedora.client</groupId>
-            <artifactId>fedora-client-core</artifactId>
-            <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>log4j-over-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>xerces</groupId>
-                    <artifactId>xercesImpl</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-bundle</artifactId>
-            <scope>runtime</scope>
-        </dependency>-->
 
         <!-- Logging -->
         <dependency>
@@ -167,25 +136,11 @@
             <artifactId>camel-http</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Needed for starting blueprint -->
-        <!--<dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <scope>provided</scope>
-        </dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!--blueprint testing -->
-        <!--<dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.commons-httpclient</artifactId>
-            <scope>test</scope>
-        </dependency>-->
-
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
@@ -203,11 +158,6 @@
             <artifactId>commons-io</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-stream</artifactId>
-            <version>2.16.3</version>
-        </dependency>-->
         <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
@@ -241,17 +191,6 @@
             <artifactId>camel-saxon</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.velocity-tools</artifactId>
-            <scope>test</scope>
-        </dependency>-->
-        <!--<dependency>
-            <groupId>edu.si.services.beans</groupId>
-            <artifactId>VelocityToolsHandler</artifactId>
-            <version>1.0</version>
-            <scope>test</scope>
-        </dependency>-->
     </dependencies>
 
     <build>
@@ -272,24 +211,8 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Description>${project.description}</Bundle-Description>
-                        <!--<Import-Package>*;resolution:="optional"</Import-Package>-->
-                        <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
-                        <Import-Package>
-                            javax.wsdl,
-                            javax.xml.bind,
-                            javax.xml.bind.annotation,
-                            javax.ws.rs,
-                            javax.ws.rs.core,
-                            org.apache.commons.httpclient,
-                            org.apache.commons.httpclient.methods,
-                            org.osgi.service.blueprint,
-                            !bsh,
-                            *;resolution:=optional
-                        </Import-Package>
-                        <Export-Package>
-                            edu.si.services.sidora.rest.batch.*
-                        </Export-Package>
+                        <Export-Package>edu.si.services.sidora.rest.batch*</Export-Package>
                     </instructions>
                 </configuration>
             </plugin>
@@ -297,22 +220,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <!--<configuration>
-                    <systemProperties>
-                        <property>
-                            <name>fedoraUrl</name>
-                            <value>${fedoraUrl}</value>
-                        </property>
-                        <property>
-                            <name>fedoraUrl</name>
-                            <value>${fedoraUrl}</value>
-                        </property>
-                        <property>
-                            <name>fedoraUrl</name>
-                            <value>${fedoraUrl}</value>
-                        </property>
-                    </systemProperties>
-                </configuration>-->
             </plugin>
 
             <!-- to run the example using mvn camel:run -->
