@@ -138,6 +138,34 @@
                  logName="{{edu.si.batch}}"/>
 
             <process ref="processFileURL"/>
+<!--
+
+            &lt;!&ndash; Stash the metadata datastream to a header &ndash;&gt;
+            <setBody>
+                <simple resultType="java.lang.String">
+                    metadata.xml
+                </simple>
+            </setBody>
+            <to uri="reader:file"/>
+            <setHeader headerName="metadataXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+
+            &lt;!&ndash; Stash the sidora datastream to a header &ndash;&gt;
+            <setBody>
+                <simple resultType="java.lang.String">
+                    sidora.xml
+                </simple>
+            </setBody>
+            <to uri="reader:file"/>
+            <setHeader headerName="sidoraXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
+-->
 
             <to uri="direct:processResources"/>
 
@@ -170,21 +198,8 @@
                 </simple>
             </setHeader>
 
-            <setBody>
-                <simple resultType="java.lang.String">
-                    metadata.xml
-                </simple>
-            </setBody>
-
-            <to uri="reader:file"/>
-
-            <setHeader headerName="metadataXML">
-                <simple>
-                    ${body}
-                </simple>
-            </setHeader>
-
-            <log message="${id}: Parent PID - ${header.parentId}  Resource Count - ${header.ResourceCount}"
+            <!-- TODO: Add validations for resources match whats in fedora -->
+            <log message="${id}: Parent PID - ${header.parentId}  Resource Count - ${header.resourceCount}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
@@ -213,13 +228,29 @@
                     </simple>
                 </setHeader>
 
+                <!-- TODO: There may different paths/node name's used for the title in the MODS -->
+                <!--
+                &lt;!&ndash; header is an XSLT param &ndash;&gt;
+                <setHeader headerName="titleNode">
+                    <simple>
+                        title
+                    </simple>
+                </setHeader>
+                &lt;!&ndash; header is an XSLT param &ndash;&gt;
+                <setHeader headerName="titleLabel">
+                    <xpath resultType="java.lang.String" headerName="metadataXML">
+                        concat(//in:titleNode/text(), function:simple(&#39;(${property.CamelSplitIndex})&#39;))
+                    </xpath>
+                </setHeader>
+                -->
+
+                <!-- TODO: for now assume path/node name for the title in the MODS-->
                 <!-- header is an XSLT param -->
                 <setHeader headerName="titleNode">
                     <simple>
                         title
                     </simple>
                 </setHeader>
-
                 <!-- header is an XSLT param -->
                 <setHeader headerName="titleLabel">
                     <xpath resultType="java.lang.String" headerName="metadataXML">
@@ -250,13 +281,14 @@
                  logName="{{edu.si.batch}}"/>
 
             <toD uri="fedora:create?pid=null&amp;owner=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}"/>
+            <to uri="fedora:hasResource?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>
 
             <to uri="velocity:file:Input/templates/BatchResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- Need the Mime Type for the OBJ datastream -->
-            <to uri="direct:addFITSDataStream"/>
-            <to uri="fedora:hasResource?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>
+            <to uri="direct:addFITSDatastream"/>
+
 
             <setBody>
                 <simple>
@@ -268,7 +300,8 @@
 
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=${header.dsMIME}&amp;group=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false"/>
             
-            <to uri="direct:addMODSDataStream"/>
+            <to uri="direct:addMODSDatastream"/>
+            <to uri="direct:addSidoraDatastream"/>
 
             <log message="${id}: Batch Process: Found: ${header.dsMIME}"
                  loggingLevel="INFO"
@@ -279,8 +312,8 @@
                  logName="{{edu.si.batch}}"/>
         </route>
 
-        <route id="BachProcessAddFITSDataStream">
-            <from uri="direct:addFITSDataStream"/>
+        <route id="BachProcessAddFITSDatastream">
+            <from uri="direct:addFITSDatastream"/>
             <log message="${id}: Started processing FITS ..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
@@ -320,8 +353,8 @@
                  logName="{{edu.si.batch}}"/>
         </route>
 
-        <route id="BatchProcessAddMODSDataStream">
-            <from uri="direct:addMODSDataStream"/>
+        <route id="BatchProcessAddMODSDatastream">
+            <from uri="direct:addMODSDatastream"/>
             <log message="${id}: Started processing MODS ..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
@@ -342,6 +375,27 @@
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id}: Finished processing MODS."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+        </route>
+
+        <route id="BatchProcessAddSidoraDatastream">
+            <from uri="direct:addSidoraDatastream"/>
+            <log message="${id}: Started processing SIDORA Datastream ..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <setBody>
+                <simple resultType="java.lang.String">
+                    ${header.sidoraXML}
+                </simple>
+            </setBody>
+
+            <!--<to uri="reader:file"/>-->
+
+            <to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA"/>
+
+            <log message="${id}: Finished processing SIDORA Datastream ..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>

@@ -31,6 +31,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
+import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -42,6 +43,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -63,7 +65,7 @@ public class ProcessFileURL implements Processor {
     private String processingDir;
 
     private Message out;
-    private File tempfile, metadataFile, dataOutputDir;
+    private File tempfile, metadataFile, sidoraDatastreamFile, dataOutputDir;
 
     @Override
     public void process(Exchange exchange) throws Exception {
@@ -97,21 +99,42 @@ public class ProcessFileURL implements Processor {
         //Delete the temp file
         tempfile.delete();
 
-        //Now grab the metadata file from URL
+        //Grab the metadata datastream file from URL
         URL metadataFileURL = new URL("file://" + exchange.getIn().getHeader("metadataFileURL", String.class));
         metadataFile = new File(processingDir + batchCorrelationId + "/metadata.xml");
-        LOG.debug("Saving URL Resource To Temp File:{}", tempfile);
+        LOG.debug("Saving URL Metadata Datastream To File:{}", metadataFile);
 
         try {
             FileUtils.copyURLToFile(metadataFileURL, metadataFile);
         } catch (IOException e) {
-            System.err.println("Caught IOException: Unable to copy Metadata file from: " + resourceFileURL + " to: " + tempfile + "\n" + e.getMessage());
+            System.err.println("Caught IOException: Unable to copy Metadata Datastream file from: " + metadataFileURL + " to: " + metadataFile + "\n" + e.getMessage());
             //e.printStackTrace();
         }
 
+        //Grab the sidora datastream file from URL
+        URL sidoraDatastreamFileURL = new URL("file://" + exchange.getIn().getHeader("sidoraDatastreamFileURL", String.class));
+        sidoraDatastreamFile = new File(processingDir + batchCorrelationId + "/sidora.xml");
+        LOG.debug("Saving URL for Sidora Datastream to File:{}", sidoraDatastreamFile);
+
+        try {
+            FileUtils.copyURLToFile(sidoraDatastreamFileURL, sidoraDatastreamFile);
+        } catch (IOException e) {
+            System.err.println("Caught IOException: Unable to copy Sidora Datastream file from: " + sidoraDatastreamFileURL + " to: " + sidoraDatastreamFile + "\n" + e.getMessage());
+            //e.printStackTrace();
+        }
+
+        //Get a list of the resources to process filtering out xml files
         String[] files = dataOutputDir.list(new FilenameFilter() {
             public boolean accept(File dir, String name) {
-                return !name.toLowerCase().endsWith(".xml");
+
+                if (name.toLowerCase().contains("sidora.xml") || name.toLowerCase().contains("metadata.xml")) {
+                    LOG.debug("Found {} filter out of resource file list", name);
+                    return false;
+                } else {
+                    LOG.debug("Found {} add it to the resource file list", name);
+                    return true;
+                }
+                //return !name.toLowerCase().endsWith(".xml");
             }
         });
 
@@ -121,6 +144,14 @@ public class ProcessFileURL implements Processor {
 
         out.setHeaders(updateHeaders(dataOutputDir, exchange.getIn().getHeaders()));
         out.setHeader("resourceList", resourceFileList);
+        out.setHeader("resourceCount", resourceFileList.length());
+
+        //Stash the metadata datastream and sidora datastream to a header
+        out.setHeader("metadataXML", FileUtils.readFileToString(metadataFile.getCanonicalFile(), Charsets.UTF_8));
+        out.setHeader("sidoraXML", FileUtils.readFileToString(sidoraDatastreamFile.getCanonicalFile(), Charsets.UTF_8));
+
+        LOG.debug("Metadata datastream: {}\nSidora datasream: {}", FileUtils.readFileToString(metadataFile.getCanonicalFile(),Charsets.UTF_8),
+                FileUtils.readFileToString(sidoraDatastreamFile.getCanonicalFile(), Charsets.UTF_8));
 
     }
 

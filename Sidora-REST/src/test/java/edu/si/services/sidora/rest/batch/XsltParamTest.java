@@ -93,7 +93,7 @@ public class XsltParamTest extends CamelTestSupport {
         }
     }
 
-    //@Test
+    @Test
     public void ManifestSchematromValidationTests() throws Exception {
         manifest = FileUtils.readFileToString(manifestFile);
 //        xsdFile = "Manifest.xsd";
@@ -141,9 +141,17 @@ public class XsltParamTest extends CamelTestSupport {
         mockEndpoint.setRetainLast(1);
         mockEndpoint.setMinimumExpectedMessageCount(1);
         //mockEndpoint.expectedHeaderReceived("CamelSchematronValidationStatus", validationStatus);
-        mockEndpoint.expectedHeaderReceived("validationStatus", validationStatus);
+        //mockEndpoint.expectedHeaderReceived("validationStatus", validationStatus);
+        mockEndpoint.expectedHeaderReceived("xsltResultTitle", titleLabel);
+        //mockEndpoint.expectedBodiesReceived(FileUtils.readFileToString(new File("src/test/resources/test-data/xslt-expected-MODS.xml")));
+
 
         template.sendBodyAndHeaders("direct:start", manifest, headers);
+
+        assertEquals(
+                FileUtils.readFileToString(new File("src/test/resources/test-data/xslt-expected-MODS.xml")),
+                mockEndpoint.getExchanges().get(0).getIn().getBody()
+        );
 
         assertMockEndpointsSatisfied();
 
@@ -214,7 +222,7 @@ public class XsltParamTest extends CamelTestSupport {
                                 + "Schematron Validation Report -\n ${header.CamelSchematronValidationReport}\n"
                                 + "*************************************************************\n")
                         .end()*/
-                        .setBody().xpath("//mods:title/text()", ns).convertBodyTo(String.class)
+                        .setHeader("xsltResultTitle").xpath("//mods:title/text()", ns).convertBodyTo(String.class)
                         .log(LoggingLevel.INFO, "Result: ${body}")
                         .to("mock:result");
             }

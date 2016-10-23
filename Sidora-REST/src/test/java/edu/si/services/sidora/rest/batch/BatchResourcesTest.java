@@ -27,6 +27,10 @@
 
 package edu.si.services.sidora.rest.batch;
 
+import org.apache.camel.Processor;
+import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.model.ProcessorDefinition;
+import org.apache.camel.model.ToDynamicDefinition;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
@@ -47,6 +51,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * @author jbirkhimer
@@ -56,6 +61,8 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
     //private static final String PORT_PATH = String.valueOf(AvailablePortFinder.getNextAvailable());
     private static final String SERVICE_ADDRESS = "/sidora/rest";
     private static final String BASE_URL = "http://localhost:8282" + SERVICE_ADDRESS;
+
+    private static final String batchCorrelationID = UUID.randomUUID().toString();
 
     private JAXBContext jaxb;
     private CloseableHttpClient httpClient;
@@ -144,24 +151,45 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
     @Test
     public void batchProcess_AddResourceObjects_TitleInMetadataTest() throws Exception {
         String parentPid = "si:390403";
-        String id = "";
 
-        String expectedResponseBody = "<Batch><ParentPID>" + parentPid + "</ParentPID><CorrelationID>" + id + "</CorrelationID></Batch>";
+        String expectedResponseBody = "<Batch><ParentPID>" + parentPid + "</ParentPID><CorrelationID>" + batchCorrelationID + "</CorrelationID></Batch>";
+
+        //Configure and use adviceWith to mock for testing purpose
+        context.getRouteDefinition("BatchProcessAddResourceObjectsRequest").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByType(ProcessorDefinition.class).selectFirst().replace().setHeader("batchCorrelationID", simple(batchCorrelationID));
+            }
+        });
 
         HttpPost post = new HttpPost(BASE_URL + "/batch/process/addResourceObjects/" + parentPid);
 
         MultipartEntityBuilder builder = MultipartEntityBuilder.create().setMode(HttpMultipartMode.STRICT);
 
         // Add zip file URL upload
-        builder.addTextBody("resourceZipFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/image-resources.zip", ContentType.TEXT_PLAIN);
+        builder.addTextBody(
+                "resourceZipFileURL",
+                "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/image-resources.zip",
+                ContentType.TEXT_PLAIN
+        );
         // Add metadata xml file URL upload
-        builder.addTextBody("metadataFileURL", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/metadataWithTitle.xml", ContentType.TEXT_PLAIN);
+        builder.addTextBody(
+                "metadataFileURL",
+                "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/metadataWithTitle.xml",
+                ContentType.TEXT_PLAIN
+        );
         // Add content model string
         builder.addTextBody("contentModel", "si:generalImageCModel", ContentType.TEXT_PLAIN);
         // Add resourceOwner string
         builder.addTextBody("resourceOwner", parentPid, ContentType.TEXT_PLAIN); //using parentPid for testing so things are easier to find from fedora admin
         // Add title string
         builder.addTextBody("titleField", "Test-Title", ContentType.TEXT_PLAIN);
+        // Add sidora datastream file URL string
+        builder.addTextBody(
+                "sidoraDatastreamFileURL",
+                "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/sidora-datastream.xml",
+                ContentType.TEXT_PLAIN
+        );
 
         post.setEntity(builder.build());
 
@@ -169,6 +197,7 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
         assertEquals(200, response.getStatusLine().getStatusCode());
         String responseBody = EntityUtils.toString(response.getEntity());
         System.out.println("======================== [ RESPONSE ] ========================\n" + responseBody);
+        assertEquals(expectedResponseBody, responseBody);
 
     }
 
