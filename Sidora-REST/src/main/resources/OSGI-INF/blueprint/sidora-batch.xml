@@ -59,6 +59,7 @@
         </camel-cxf:providers>-->
     </camel-cxf:rsServer>
 
+    <!-- Beans for the cxf-rs server -->
     <bean id="batchService" class="edu.si.services.sidora.rest.batch.BatchResources"/>
     <!--<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
         <property name="marshallerProperties">
@@ -73,24 +74,44 @@
         </property>
     </bean>-->
 
-    <bean id="processBatchCorrelationId" class="edu.si.services.sidora.rest.batch.processor.ProcessBatchCorrelationId"/>
+    <!-- This is the JDBC data source which uses a MySQL database -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="jdbc:mysql://${mysql.host}:${mysql.port}/${mysql.database}" />
+        <property name="username" value="${mysql.username}" />
+        <property name="password" value="${mysql.password}" />
+    </bean>
 
+    <!-- configure the Camel SQL component to use the JDBC data source -->
+    <bean id="sql" class="org.apache.camel.component.sql.SqlComponent">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <bean id="batchRequestBean" class="edu.si.services.sidora.rest.batch.model.BatchRequestBean" />
+
+    <!-- bean that implements Processor to generate a UUID for the Batch Request -->
+    <bean id="processCorrelationId" class="edu.si.services.sidora.rest.batch.processor.ProcessCorrelationId"/>
+
+    <!-- bean that implements Processor to grab the files sent in the batch request and put them in BatchProcessData for processing -->
     <bean id="processFileURL" class="edu.si.services.sidora.rest.batch.processor.ProcessFileURL"/>
 
     <bean id="statusResponseControllerBean" class="edu.si.services.sidora.rest.batch.model.StatusResponseControllerBean"/>
 
+    <!-- settings for the fedora component -->
     <bean id="fedoraSettings" class="edu.si.services.fedorarepo.FedoraSettings">
         <argument index="0" value="${si.fedora.host}" type="java.lang.String"/>
         <argument index="1" value="${si.fedora.user}" type="java.lang.String"/>
         <argument index="2" value="${si.fedora.password}" type="java.lang.String"/>
     </bean>
 
+    <!-- Fedora component needed to properly set the fedora username for the derivative camel route -->
     <bean id="fedora" class="edu.si.services.fedorarepo.FedoraComponent">
         <property name="settings" ref="fedoraSettings"/>
     </bean>
 
-    <!-- The camel route context -->
-    <camelContext id="RestService"
+    <!-- Batch Process route context -->
+    <!--The "unused" namespace definitions are needed to deal with the way Camel handles namespaces in XPath.-->
+    <camelContext id="SidoraRestService"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
@@ -103,12 +124,10 @@
                   xmlns:mods="http://www.loc.gov/mods/v3"
                   xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd"
                   trace="false" useMDCLogging="true" useBreadcrumb="false">
-        <!--
-          The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
-        -->
+
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:sidora.karaf.batch.properties,file:${karaf.home}/etc/edu.si.sidora.batch.cfg"/>
+                             location="blueprint:sidora.karaf.batch.properties,file:${karaf.home}/etc/edu.si.sidora.batch.cfg,file:${karaf.home}/sql/batch.process.sql.properties"/>
 
         <route id="SidoraRESTService">
             <from uri="cxfrs://bean://rsServer?bindingStyle=SimpleConsumer"/>
@@ -124,59 +143,41 @@
 
         <route id="BatchProcessAddResourceObjectsRequest">
             <from uri="direct:batchProcessAddResourceObjectsRequest"/>
-            <log message="${id}: Starting Batch Request - Add Resource Objects..."
+            <log message="${id}: Starting Batch Request - Add New Batch Request for Resource Objects..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
             <!-- These Headers are giving me a headache!!! -->
             <removeHeaders pattern="User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|CamelHttpUri|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod"/>
 
-            <!-- Give the Batch Process a batchCorrelationId -->
-            <process ref="processBatchCorrelationId"/>
+            <!-- Give the Batch Process a correlationId -->
+            <!--<process ref="processCorrelationId"/>-->
 
-            <log message="${id}: Batch Request CorrelationId: ${header.batchCorrelationID}"
+            <to uri="bean:batchRequestBean?method=createBatchRequest"/>
+
+            <setHeader headerName="correlationId">
+                <simple>
+                    ${body.[correlationId]}
+                </simple>
+            </setHeader>
+
+            <log message="${id}: Batch Request CorrelationId: ${header.correlationId}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
-            <process ref="processFileURL"/>
-<!--
+            <to uri="sql:{{sql.insertNewBatchRequest}}"/>
 
-            &lt;!&ndash; Stash the metadata datastream to a header &ndash;&gt;
-            <setBody>
-                <simple resultType="java.lang.String">
-                    metadata.xml
-                </simple>
-            </setBody>
-            <to uri="reader:file"/>
-            <setHeader headerName="metadataXML">
-                <simple>
-                    ${body}
-                </simple>
-            </setHeader>
+            <!--<process ref="processFileURL"/>-->
 
-            &lt;!&ndash; Stash the sidora datastream to a header &ndash;&gt;
-            <setBody>
-                <simple resultType="java.lang.String">
-                    sidora.xml
-                </simple>
-            </setBody>
-            <to uri="reader:file"/>
-            <setHeader headerName="sidoraXML">
-                <simple>
-                    ${body}
-                </simple>
-            </setHeader>
--->
-
-            <to uri="direct:processResources"/>
+            <!--<to uri="direct:processResources"/>-->
 
             <!-- Set the REST response message -->
             <setBody>
                 <simple>
-                    &lt;Batch&gt;&lt;ParentPID&gt;${header.parentId}&lt;/ParentPID&gt;&lt;CorrelationID&gt;${header.batchCorrelationId}&lt;/CorrelationID&gt;&lt;/Batch&gt;
+                    &lt;Batch&gt;&lt;ParentPID&gt;${header.parentId}&lt;/ParentPID&gt;&lt;CorrelationID&gt;${header.correlationId}&lt;/CorrelationID&gt;&lt;/Batch&gt;
                 </simple>
             </setBody>
 
-            <log message="${id}: Finished Batch Request - Add Resource Objects..."
+            <log message="${id}: Finished Batch Request - Add New Batch Request for Resource Objects..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>
@@ -186,9 +187,19 @@
             <bean ref="statusResponseControllerBean"/>
         </route>
 
+        <!-- route that process the Batch Requests by picking up new rows from the database
+        and when done processing then update the row to mark it as complete -->
         <route id="BatchProcessResources">
-            <from uri="direct:processResources"/>
+            <from uri="sql:{{sql.selectBatchProcess}}?onConsume={{sql.markBatchProcessComplete}}"/>
             <log message="${id}: Starting Batch Resources Processing..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <to uri="bean:batchRequestBean?method=processBatchRequest"/>
+
+            <to uri="sql:{{sql.updateBatchResourceCount}}"/>
+
+            <log message="${id}: Batch Request CorrelationId: ${header.correlationId}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
@@ -264,6 +275,10 @@
 
                 <to uri="direct:addResource"/>
 
+                <to uri="bean:batchRequestBean?method=updateProcessCount"/>
+
+                <to uri="sql:{{sql.updateBatchProcessCount}}"/>
+
                 <log message="${id}: Created Resource - ${body}."
                      loggingLevel="INFO"
                      logName="{{edu.si.batch}}"/>
@@ -288,7 +303,6 @@
 
             <!-- Need the Mime Type for the OBJ datastream -->
             <to uri="direct:addFITSDatastream"/>
-
 
             <setBody>
                 <simple>
@@ -396,6 +410,20 @@
             <to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA"/>
 
             <log message="${id}: Finished processing SIDORA Datastream ..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+        </route>
+
+        <!-- This route must be started manually and only fires once to create the table for the batch process -->
+        <route id="BatchProcessCreateTable" autoStartup="false">
+            <from uri="timer:CreateDB?delay=2000&amp;repeatCount=1" />
+            <log message="Creating DB Table for Batch Process Using {{sql.createBatchProcessRequestTable}}"
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <to uri="sql:{{sql.createBatchProcessRequestTable}}"/>
+
+            <log message="Finished creating DB Table for Batch Process..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>

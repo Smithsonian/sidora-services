@@ -64,7 +64,7 @@
     </cm:property-placeholder>
 
 
-    <bean id="processBatchCorrelationId" class="edu.si.services.sidora.rest.batch.processor.ProcessBatchCorrelationId"/>
+    <bean id="processCorrelationId" class="edu.si.services.sidora.rest.batch.processor.ProcessCorrelationId"/>
     <bean id="processFileURL" class="edu.si.services.sidora.rest.batch.processor.ProcessFileURL"/>
     <bean id="processMoveStagedFilesToProcessDir" class="edu.si.services.sidora.rest.batch.ProcessMoveStagedFilesToProcessDir"/>
 

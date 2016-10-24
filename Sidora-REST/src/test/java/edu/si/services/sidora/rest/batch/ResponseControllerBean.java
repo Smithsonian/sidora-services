@@ -49,7 +49,7 @@ public class ResponseControllerBean {
     private String contentModel;
     private String titleField;
     private String association;
-    private String batchCorrelationId;
+    private String correlationId;
 
 
 
@@ -62,12 +62,12 @@ public class ResponseControllerBean {
         resourceZipFileURL =new URL("file://" + exchange.getIn().getHeader("resourceZip", String.class));
         metadataFileURL = new URL("file://" + exchange.getIn().getHeader("metadata", String.class));
 
-        batchCorrelationId = UUID.randomUUID().toString();
-        //batchCorrelationId = exchange.getIn().getHeader()
+        correlationId = UUID.randomUUID().toString();
+        //correlationId = exchange.getIn().getHeader()
 
 
-        final File zipDestination = new File("target/BatchProcessData/" + batchCorrelationId + "/resources.zip");
-        final File metadataDestination = new File("target/BatchProcessData/" + batchCorrelationId + "/metadata.xml");
+        final File zipDestination = new File("target/BatchProcessData/" + correlationId + "/resources.zip");
+        final File metadataDestination = new File("target/BatchProcessData/" + correlationId + "/metadata.xml");
 
         try ( InputStream resourceZipFile = resourceZipFileURL.openStream();
               InputStream metadataFile = metadataFileURL.openStream();
@@ -88,11 +88,11 @@ public class ResponseControllerBean {
 
         exchange.getIn().setHeader("CamelFileAbsolutePath", zipDestination.getAbsolutePath());
         exchange.getIn().setHeader("CamelFileParent", parent);
-        exchange.getIn().setHeader("batchCorrelationId", batchCorrelationId);
+        exchange.getIn().setHeader("correlationId", correlationId);
 
         StringBuilder responceMessage = new StringBuilder();
         responceMessage.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        responceMessage.append("<Batch><ParentPID>" + parentPID + "</ParentPID><CorrelationId>" + batchCorrelationId +"</CorrelationId></Batch>");
+        responceMessage.append("<Batch><ParentPID>" + parentPID + "</ParentPID><CorrelationId>" + correlationId +"</CorrelationId></Batch>");
 
 
 

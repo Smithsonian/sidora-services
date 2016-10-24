@@ -38,7 +38,7 @@ import java.util.UUID;
  */
 public class StatusResponseControllerBean {
     private String parentPID;
-    private String batchCorrelationId;
+    private String correlationId;
     private Integer resourcesProcessed;
     private boolean finished = false;
     private Integer max = 10;
@@ -46,7 +46,7 @@ public class StatusResponseControllerBean {
     //@Handler
     public String newBatchResourceStatus(Exchange exchange) throws Exception {
         parentPID = exchange.getIn().getHeader("parentId", String.class);
-        batchCorrelationId = exchange.getIn().getHeader("batchCorrelationId", String.class);
+        correlationId = exchange.getIn().getHeader("correlationId", String.class);
         finished = false;
         Random r = new Random();
         resourcesProcessed = r.nextInt((max - 0) + 1) + 0;
@@ -57,10 +57,10 @@ public class StatusResponseControllerBean {
 
         StringBuilder responceMessage = new StringBuilder();
         //responceMessage.append("******* New Batch Resource for ParentPID = " + parentPID + " ********\n");
-        //responceMessage.append("******* Correlation ID = " + batchCorrelationId + " ********");
+        //responceMessage.append("******* Correlation ID = " + correlationId + " ********");
         responceMessage.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         responceMessage.append("<Batch>"
-                + "<ParentPID>" + parentPID + "</ParentPID><batchCorrelationId>" + batchCorrelationId + "</batchCorrelationId>"
+                + "<ParentPID>" + parentPID + "</ParentPID><correlationId>" + correlationId + "</correlationId>"
                 + "<ResourcesProcessed>" + resourcesProcessed + "</ResourcesProcessed>"
                 + "<BatchDone>" + finished + "</BatchDone>"
                 + "</Batch>");

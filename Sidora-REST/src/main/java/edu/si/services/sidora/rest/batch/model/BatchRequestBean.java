@@ -25,17 +25,11 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch.processor;
+package edu.si.services.sidora.rest.batch.model;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
-import org.apache.camel.Processor;
-import org.apache.camel.PropertyInject;
+import org.apache.camel.*;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.cxf.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,18 +37,19 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.StringJoiner;
+import java.util.UUID;
 
 /**
  * @author jbirkhimer
  */
-public class ProcessFileURL implements Processor {
-    private static final Logger LOG = LoggerFactory.getLogger(ProcessFileURL.class);
+public class BatchRequestBean {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BatchRequestBean.class);
+
+    private Message out;
 
     private String correlationId;
 
@@ -64,23 +59,53 @@ public class ProcessFileURL implements Processor {
     @PropertyInject(value = "batch.data.dir")
     private String processingDir;
 
-    private Message out;
     private File tempfile, metadataFile, sidoraDatastreamFile, dataOutputDir;
 
-    @Override
-    public void process(Exchange exchange) throws Exception {
+    /**
+     *
+     * @param headers Map of the inbound message headers
+     * @return
+     */
+    public Map<String, Object> createBatchRequest(@Headers Map<String,Object> headers) {
 
+        //correlationId, projectId, resourceCount, processCount
+        correlationId = UUID.randomUUID().toString();
 
-        out = exchange.getOut();
-        correlationId = exchange.getIn().getHeader("correlationId", String.class);
-//        stagingDir = exchange.getIn().getHeader("stagingDir", String.class);
-//        processingDir = exchange.getIn().getHeader("processingDir", String.class);
+        LOG.info("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
+
+        Map<String, Object> newBatchRequest = new HashMap<String, Object>();
+        newBatchRequest.put("correlationId", correlationId);
+        newBatchRequest.put("parentId", headers.get("parentId"));
+
+        newBatchRequest.put("resourceZipFileURL", headers.get("resourceZipFileURL"));
+        newBatchRequest.put("metadataFileURL", headers.get("metadataFileURL"));
+        newBatchRequest.put("sidoraDatastreamFileURL", headers.get("sidoraDatastreamFileURL"));
+        newBatchRequest.put("contentModel", headers.get("contentModel"));
+        newBatchRequest.put("resourceOwner", headers.get("resourceOwner"));
+        newBatchRequest.put("titleField", headers.get("titleField"));
+
+        return newBatchRequest;
+    }
+
+    /**
+     *
+     * @param exchange
+     * @param batchRequestMap
+     * @throws Exception
+     */
+    public void processBatchRequest(Exchange exchange, Map<String, Object> batchRequestMap) throws Exception {
+        out = exchange.getIn();
+
+        correlationId = batchRequestMap.get("correlationId").toString();
+        LOG.debug("===================================>>>>>>>>>>>>>>>>>>>>>>>>>>>> parentId={}", batchRequestMap.get("parentId"));
+        String parentId = batchRequestMap.get("parentId").toString();
 
         //Set location to extract to
         dataOutputDir = new File(processingDir + correlationId);
 
         //Save the file from URL to temp file
-        URL resourceFileURL = new URL("file://" + exchange.getIn().getHeader("resourceZipFileURL", String.class));
+        //URL resourceFileURL = new URL("file://" + exchange.getIn().getHeader("resourceZipFileURL", String.class));
+        URL resourceFileURL = new URL("file://" + batchRequestMap.get("resourceZipFileURL"));
         tempfile = new File(stagingDir + correlationId + ".zip");
         LOG.debug("Saving URL Resource To Temp File:{}", tempfile);
 
@@ -100,7 +125,8 @@ public class ProcessFileURL implements Processor {
         tempfile.delete();
 
         //Grab the metadata datastream file from URL
-        URL metadataFileURL = new URL("file://" + exchange.getIn().getHeader("metadataFileURL", String.class));
+        //URL metadataFileURL = new URL("file://" + exchange.getIn().getHeader("metadataFileURL", String.class));
+        URL metadataFileURL = new URL("file://" + batchRequestMap.get("metadataFileURL"));
         metadataFile = new File(processingDir + correlationId + "/metadata.xml");
         LOG.debug("Saving URL Metadata Datastream To File:{}", metadataFile);
 
@@ -112,7 +138,8 @@ public class ProcessFileURL implements Processor {
         }
 
         //Grab the sidora datastream file from URL
-        URL sidoraDatastreamFileURL = new URL("file://" + exchange.getIn().getHeader("sidoraDatastreamFileURL", String.class));
+        //URL sidoraDatastreamFileURL = new URL("file://" + exchange.getIn().getHeader("sidoraDatastreamFileURL", String.class));
+        URL sidoraDatastreamFileURL = new URL("file://" + batchRequestMap.get("sidoraDatastreamFileURL"));
         sidoraDatastreamFile = new File(processingDir + correlationId + "/sidora.xml");
         LOG.debug("Saving URL for Sidora Datastream to File:{}", sidoraDatastreamFile);
 
@@ -142,7 +169,8 @@ public class ProcessFileURL implements Processor {
 
         LOG.debug("FileList:{}", resourceFileList);
 
-        out.setHeaders(updateHeaders(dataOutputDir, exchange.getIn().getHeaders()));
+        out.setHeader("correlationId", correlationId);
+        out.setHeader("parentId", parentId);
         out.setHeader("resourceList", resourceFileList);
         out.setHeader("resourceCount", resourceFileList.length());
 
@@ -150,13 +178,29 @@ public class ProcessFileURL implements Processor {
         out.setHeader("metadataXML", FileUtils.readFileToString(metadataFile.getCanonicalFile(), Charsets.UTF_8));
         out.setHeader("sidoraXML", FileUtils.readFileToString(sidoraDatastreamFile.getCanonicalFile(), Charsets.UTF_8));
 
+        out.setHeaders(updateFileHeaders(dataOutputDir, exchange.getIn().getHeaders()));
+
         LOG.debug("Metadata datastream: {}\nSidora datasream: {}", FileUtils.readFileToString(metadataFile.getCanonicalFile(),Charsets.UTF_8),
                 FileUtils.readFileToString(sidoraDatastreamFile.getCanonicalFile(), Charsets.UTF_8));
 
     }
 
-    private Map<String, Object> updateHeaders(File file, Map<String, Object> oldHeaders)
-    {
+    /**
+     *
+     * @param processCount
+     * @return
+     */
+    public  Map<String, Object> updateProcessCount(@Header("correlationId")String correlationId,
+                                                   @ExchangeProperty("CamelSplitIndex") Integer processCount) {
+
+        Map<String, Object> updateProcessCount = new HashMap<String, Object>();
+        updateProcessCount.put("correlationId", correlationId);
+        updateProcessCount.put("processCount", processCount++);
+
+        return updateProcessCount;
+    }
+
+    private Map<String, Object> updateFileHeaders(File file, Map<String, Object> oldHeaders) {
         String parent = null;
 
         if (file.getParentFile() != null)
@@ -182,4 +226,6 @@ public class ProcessFileURL implements Processor {
 
         return headers;
     }
+
+
 }

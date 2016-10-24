@@ -45,6 +45,7 @@
 
     <properties>
         <http-components.version>4.4</http-components.version>
+        <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
     </properties>
 
 
@@ -191,6 +192,27 @@
             <artifactId>camel-saxon</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jdbc</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-sql</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -212,6 +234,7 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Description>${project.description}</Bundle-Description>
                         <Embed-Transitive>true</Embed-Transitive>
+                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
                         <Export-Package>edu.si.services.sidora.rest.batch*</Export-Package>
                     </instructions>
                 </configuration>

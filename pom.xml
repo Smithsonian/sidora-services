@@ -140,6 +140,9 @@
         <license-maven-plugin>2.11</license-maven-plugin>
         <versions-maven-plugin.version>2.2</versions-maven-plugin.version>
 
+        <mysql-connector.version>5.1.6</mysql-connector.version>
+        <commons-dhcp.version>1.4</commons-dhcp.version>
+
     </properties>
 
     <dependencyManagement>
@@ -281,6 +284,16 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.camel</groupId>
+                <artifactId>camel-jdbc</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-sql</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
                 <artifactId>camel-test</artifactId>
                 <version>${camel.version}</version>
             </dependency>
@@ -308,6 +321,16 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-dbcp</groupId>
+                <artifactId>commons-dbcp</artifactId>
+                <version>${commons-dhcp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql-connector.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cxf</groupId>

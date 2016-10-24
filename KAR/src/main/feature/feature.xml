@@ -38,6 +38,8 @@
         <bundle dependency="true" start-level='80'>mvn:commons-codec/commons-codec/${commons-codec.bundle.version}</bundle>
         <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/${commons-httpclient.bundle.version}</bundle>
         <bundle dependency="true" start-level='80'>mvn:com.google.guava/guava/${google-guava-version}</bundle>
+        <bundle dependency="true" start-level='80'>mvn:commons-dbcp/commons-dbcp/${commons-dbcp.version}</bundle>
+        <bundle dependency="true" start-level='80'>wrap:mvn:mysql/mysql-connector-java/${mysql-connector.version}</bundle>
     </feature>
 
     <!-- Sidora Camel Dependencies -->
@@ -50,6 +52,8 @@
         <feature version="${camel.version}" start-level='50'>camel-csv</feature>
         <feature version="${camel.version}" start-level='50'>camel-aws</feature>
         <feature version="${camel.version}" start-level='50'>camel-http</feature>
+        <feature version="${camel.version}" start-level='50'>camel-jdbc</feature>
+        <feature version="${camel.version}" start-level='50'>camel-sql</feature>
     </feature>
 
 </features>

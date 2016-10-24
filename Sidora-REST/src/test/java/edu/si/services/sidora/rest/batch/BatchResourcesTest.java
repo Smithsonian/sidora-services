@@ -62,7 +62,7 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
     private static final String SERVICE_ADDRESS = "/sidora/rest";
     private static final String BASE_URL = "http://localhost:8282" + SERVICE_ADDRESS;
 
-    private static final String batchCorrelationID = UUID.randomUUID().toString();
+    private static final String correlationId = UUID.randomUUID().toString();
 
     private JAXBContext jaxb;
     private CloseableHttpClient httpClient;
@@ -152,13 +152,13 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
     public void batchProcess_AddResourceObjects_TitleInMetadataTest() throws Exception {
         String parentPid = "si:390403";
 
-        String expectedResponseBody = "<Batch><ParentPID>" + parentPid + "</ParentPID><CorrelationID>" + batchCorrelationID + "</CorrelationID></Batch>";
+        String expectedResponseBody = "<Batch><ParentPID>" + parentPid + "</ParentPID><CorrelationID>" + correlationId + "</CorrelationID></Batch>";
 
         //Configure and use adviceWith to mock for testing purpose
         context.getRouteDefinition("BatchProcessAddResourceObjectsRequest").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveByType(ProcessorDefinition.class).selectFirst().replace().setHeader("batchCorrelationID", simple(batchCorrelationID));
+                weaveByType(ProcessorDefinition.class).selectFirst().replace().setHeader("correlationId", simple(correlationId));
             }
         });
 
@@ -204,10 +204,10 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
     //@Test
     public void testStatus() throws Exception {
         String parentPid = "si:390403";
-        String batchCorrelationId = "a1b47c86-0922-4321-b8b3-d4d6abd8d953";
+        String correlationId = "a1b47c86-0922-4321-b8b3-d4d6abd8d953";
 
         //HttpPost post = new HttpPost("http://localhost:" + SERVICE_ADDRESS + "/rest/customerservice/customers/multipart/123?query=abcd");
-        HttpGet getClient = new HttpGet("http://localhost:" + SERVICE_ADDRESS + "/batch/process/addResourceObjects/" + parentPid + "/" + batchCorrelationId);
+        HttpGet getClient = new HttpGet("http://localhost:" + SERVICE_ADDRESS + "/batch/process/addResourceObjects/" + parentPid + "/" + correlationId);
 
         HttpResponse response = httpClient.execute(getClient);
         assertEquals(200, response.getStatusLine().getStatusCode());
