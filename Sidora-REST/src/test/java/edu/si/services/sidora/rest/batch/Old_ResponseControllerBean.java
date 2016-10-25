@@ -39,9 +39,9 @@ import java.util.UUID;
 /**
  * @author jbirkhimer
  */
-public class ResponseControllerBean {
+public class Old_ResponseControllerBean {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ResponseControllerBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Old_ResponseControllerBean.class);
 
     private String parentPID;
     private URL resourceZipFileURL;

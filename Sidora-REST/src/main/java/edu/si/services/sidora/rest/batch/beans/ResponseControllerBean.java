@@ -25,45 +25,51 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch.model;
+package edu.si.services.sidora.rest.batch.beans;
 
+import edu.si.services.sidora.rest.batch.model.BatchRequest;
 import org.apache.camel.Exchange;
-import org.apache.camel.Handler;
 
-import java.util.Random;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author jbirkhimer
  */
-public class StatusResponseControllerBean {
+public class ResponseControllerBean {
     private String parentPID;
     private String correlationId;
-    private Integer resourcesProcessed;
-    private boolean finished = false;
-    private Integer max = 10;
+    private Integer processCount;
+    private boolean complete = false;
 
-    //@Handler
-    public String newBatchResourceStatus(Exchange exchange) throws Exception {
-        parentPID = exchange.getIn().getHeader("parentId", String.class);
-        correlationId = exchange.getIn().getHeader("correlationId", String.class);
-        finished = false;
-        Random r = new Random();
-        resourcesProcessed = r.nextInt((max - 0) + 1) + 0;
+    /**
+     *
+     * @param statusResponse
+     * @return
+     * @throws Exception
+     */
+    public String batchRequestStatus(Exchange exchange, ArrayList<HashMap<String,Object>> statusResponse) throws Exception {
 
-        if (resourcesProcessed == max) {
-            finished = true;
+        Map<String, Object> statusResponseMap = new HashMap<>();
+        for (HashMap hashMap : statusResponse) {
+            statusResponseMap.putAll(hashMap);
         }
 
+        parentPID = statusResponseMap.get("parentId").toString();
+        correlationId = statusResponseMap.get("correlationId").toString();
+        complete = (boolean) statusResponseMap.get("complete");
+        processCount = (Integer) statusResponseMap.get("processCount");
+
         StringBuilder responceMessage = new StringBuilder();
-        //responceMessage.append("******* New Batch Resource for ParentPID = " + parentPID + " ********\n");
-        //responceMessage.append("******* Correlation ID = " + correlationId + " ********");
         responceMessage.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         responceMessage.append("<Batch>"
                 + "<ParentPID>" + parentPID + "</ParentPID><correlationId>" + correlationId + "</correlationId>"
-                + "<ResourcesProcessed>" + resourcesProcessed + "</ResourcesProcessed>"
-                + "<BatchDone>" + finished + "</BatchDone>"
+                + "<ResourcesProcessed>" + processCount + "</ResourcesProcessed>"
+                + "<BatchDone>" + complete + "</BatchDone>"
                 + "</Batch>");
+
         return responceMessage.toString();
     }
 

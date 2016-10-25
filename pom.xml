@@ -141,7 +141,7 @@
         <versions-maven-plugin.version>2.2</versions-maven-plugin.version>
 
         <mysql-connector.version>5.1.6</mysql-connector.version>
-        <commons-dhcp.version>1.4</commons-dhcp.version>
+        <commons-dbcp.version>1.4</commons-dbcp.version>
 
     </properties>
 
@@ -325,7 +325,7 @@
             <dependency>
                 <groupId>commons-dbcp</groupId>
                 <artifactId>commons-dbcp</artifactId>
-                <version>${commons-dhcp.version}</version>
+                <version>${commons-dbcp.version}</version>
             </dependency>
             <dependency>
                 <groupId>mysql</groupId>

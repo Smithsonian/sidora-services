@@ -93,7 +93,7 @@ public class XsltParamTest extends CamelTestSupport {
         }
     }
 
-    @Test
+    //@Test
     public void ManifestSchematromValidationTests() throws Exception {
         manifest = FileUtils.readFileToString(manifestFile);
 //        xsdFile = "Manifest.xsd";

@@ -42,7 +42,12 @@
     <!-- OSGI blueprint property placeholder -->
     <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
         as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
-    <cm:property-placeholder id="sidora.karaf.batch.properties" persistent-id="edu.si.sidora.batch" update-strategy="none"/>
+    <cm:property-placeholder id="sidora.karaf.batch.properties" persistent-id="edu.si.sidora.batch" update-strategy="none">
+        <cm:default-properties>
+            <cm:property name="edu.si.batch" value="edu.si.batch"/>
+            <cm:property name="si.fedora.user" value="camelBatchProcess"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
 
     <cxf:bus>
         <cxf:features>
@@ -52,7 +57,7 @@
 
     <!-- Defined the server endpoint to create the cxf-rs consumer -->
     <camel-cxf:rsServer id="rsServer" address="${sidora.rest.service.address}"
-                  serviceClass="edu.si.services.sidora.rest.batch.BatchResources"
+                  serviceClass="edu.si.services.sidora.rest.batch.BatchResourcesService"
                   loggingFeatureEnabled="true">
         <!--<camel-cxf:providers>
             <ref component-id="jaxbProvider"/>
@@ -60,7 +65,7 @@
     </camel-cxf:rsServer>
 
     <!-- Beans for the cxf-rs server -->
-    <bean id="batchService" class="edu.si.services.sidora.rest.batch.BatchResources"/>
+    <bean id="batchService" class="edu.si.services.sidora.rest.batch.BatchResourcesService"/>
     <!--<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
         <property name="marshallerProperties">
             <map>
@@ -87,15 +92,9 @@
         <property name="dataSource" ref="dataSource" />
     </bean>
 
-    <bean id="batchRequestBean" class="edu.si.services.sidora.rest.batch.model.BatchRequestBean" />
+    <bean id="batchRequestControllerBean" class="edu.si.services.sidora.rest.batch.beans.BatchRequestControllerBean" />
 
-    <!-- bean that implements Processor to generate a UUID for the Batch Request -->
-    <bean id="processCorrelationId" class="edu.si.services.sidora.rest.batch.processor.ProcessCorrelationId"/>
-
-    <!-- bean that implements Processor to grab the files sent in the batch request and put them in BatchProcessData for processing -->
-    <bean id="processFileURL" class="edu.si.services.sidora.rest.batch.processor.ProcessFileURL"/>
-
-    <bean id="statusResponseControllerBean" class="edu.si.services.sidora.rest.batch.model.StatusResponseControllerBean"/>
+    <bean id="responseControllerBean" class="edu.si.services.sidora.rest.batch.beans.ResponseControllerBean"/>
 
     <!-- settings for the fedora component -->
     <bean id="fedoraSettings" class="edu.si.services.fedorarepo.FedoraSettings">
@@ -146,13 +145,11 @@
             <log message="${id}: Starting Batch Request - Add New Batch Request for Resource Objects..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
+
             <!-- These Headers are giving me a headache!!! -->
             <removeHeaders pattern="User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|CamelHttpUri|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod"/>
 
-            <!-- Give the Batch Process a correlationId -->
-            <!--<process ref="processCorrelationId"/>-->
-
-            <to uri="bean:batchRequestBean?method=createBatchRequest"/>
+            <to uri="bean:batchRequestControllerBean?method=createBatchRequest"/>
 
             <setHeader headerName="correlationId">
                 <simple>
@@ -166,9 +163,7 @@
 
             <to uri="sql:{{sql.insertNewBatchRequest}}"/>
 
-            <!--<process ref="processFileURL"/>-->
-
-            <!--<to uri="direct:processResources"/>-->
+            <!--<to uri="bean:responseControllerBean?method=batchRequestStatus"/>-->
 
             <!-- Set the REST response message -->
             <setBody>
@@ -184,7 +179,10 @@
 
         <route id="BatchProcessAddResourceObjectsRequestStatus">
             <from uri="direct:batchProcessAddResourceObjectsRequestStatus"/>
-            <bean ref="statusResponseControllerBean"/>
+            <to uri="bean:batchRequestControllerBean?method=checkBatchRequestStatus"/>
+            <to uri="sql:{{sql.checkBatchRequestStatus}}"/>
+            <to uri="bean:responseControllerBean?method=batchRequestStatus"/>
+
         </route>
 
         <!-- route that process the Batch Requests by picking up new rows from the database
@@ -195,7 +193,11 @@
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
-            <to uri="bean:batchRequestBean?method=processBatchRequest"/>
+            <log message="=================(0)============== fedora pw: {{si.fedora.user}} ==============================="
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <to uri="bean:batchRequestControllerBean?method=processBatchRequest"/>
 
             <to uri="sql:{{sql.updateBatchResourceCount}}"/>
 
@@ -226,11 +228,15 @@
                 <tokenize token="," xml="false" trim="true"/>
 
                 <log message="Batch Process: Split Body: ${body}"
-                     loggingLevel="DEBUG"
+                     loggingLevel="INFO"
+                     logName="{{edu.si.batch}}"/>
+
+                <log message="=================(0.1)============== fedora pw: {{si.fedora.user}} =============== resourceOwner = ${header.resourceOwner} ================"
+                     loggingLevel="INFO"
                      logName="{{edu.si.batch}}"/>
 
                 <log message="${id}: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
-                     loggingLevel="DEBUG"
+                     loggingLevel="INFO"
                      logName="{{edu.si.batch}}"/>
 
                 <setHeader headerName="resourceFileName">
@@ -275,7 +281,7 @@
 
                 <to uri="direct:addResource"/>
 
-                <to uri="bean:batchRequestBean?method=updateProcessCount"/>
+                <to uri="bean:batchRequestControllerBean?method=updateProcessCount"/>
 
                 <to uri="sql:{{sql.updateBatchProcessCount}}"/>
 
@@ -295,8 +301,15 @@
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
+            <log message="=================(0.2)============== fedora pw: {{si.fedora.user}} =============== resourceOwner = ${header.resourceOwner} ================"
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
             <toD uri="fedora:create?pid=null&amp;owner=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}"/>
-            <to uri="fedora:hasResource?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>
+
+            <log message="=================(0.3)============== parentPid=${header.parentId} || childPid=${header.CamelFedoraPid} =============== resourceOwner = ${header.resourceOwner} ================"
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
 
             <to uri="velocity:file:Input/templates/BatchResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
@@ -316,6 +329,8 @@
             
             <to uri="direct:addMODSDatastream"/>
             <to uri="direct:addSidoraDatastream"/>
+
+            <to uri="fedora:hasResource?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>
 
             <log message="${id}: Batch Process: Found: ${header.dsMIME}"
                  loggingLevel="INFO"

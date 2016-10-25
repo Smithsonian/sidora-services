@@ -148,7 +148,7 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
         httpClient.close();
     }
 
-    @Test
+    //@Test
     public void batchProcess_AddResourceObjects_TitleInMetadataTest() throws Exception {
         String parentPid = "si:390403";
 

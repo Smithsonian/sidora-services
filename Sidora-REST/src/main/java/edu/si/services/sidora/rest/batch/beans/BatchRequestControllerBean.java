@@ -25,7 +25,7 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch.model;
+package edu.si.services.sidora.rest.batch.beans;
 
 import org.apache.camel.*;
 import org.apache.commons.io.Charsets;
@@ -45,9 +45,9 @@ import java.util.UUID;
 /**
  * @author jbirkhimer
  */
-public class BatchRequestBean {
+public class BatchRequestControllerBean {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BatchRequestBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BatchRequestControllerBean.class);
 
     private Message out;
 
@@ -58,6 +58,9 @@ public class BatchRequestBean {
 
     @PropertyInject(value = "batch.data.dir")
     private String processingDir;
+
+    @PropertyInject(value = "si.fedora.user")
+    private String fedoraUser;
 
     private File tempfile, metadataFile, sidoraDatastreamFile, dataOutputDir;
 
@@ -72,6 +75,8 @@ public class BatchRequestBean {
         correlationId = UUID.randomUUID().toString();
 
         LOG.info("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
+
+        LOG.debug("=============================== fedora user: {} ===============================", fedoraUser);
 
         Map<String, Object> newBatchRequest = new HashMap<String, Object>();
         newBatchRequest.put("correlationId", correlationId);
@@ -98,7 +103,7 @@ public class BatchRequestBean {
 
         correlationId = batchRequestMap.get("correlationId").toString();
         LOG.debug("===================================>>>>>>>>>>>>>>>>>>>>>>>>>>>> parentId={}", batchRequestMap.get("parentId"));
-        String parentId = batchRequestMap.get("parentId").toString();
+        LOG.debug("=============================== fedora user: {} ===============================", fedoraUser);
 
         //Set location to extract to
         dataOutputDir = new File(processingDir + correlationId);
@@ -169,10 +174,18 @@ public class BatchRequestBean {
 
         LOG.debug("FileList:{}", resourceFileList);
 
+        Map<String, Object> updateResourceCount = new HashMap<String, Object>();
+        updateResourceCount.put("correlationId", correlationId);
+        updateResourceCount.put("resourceCount", files.length);
+
+        out.setBody(updateResourceCount);
+
         out.setHeader("correlationId", correlationId);
-        out.setHeader("parentId", parentId);
+        out.setHeader("parentId", batchRequestMap.get("parentId").toString());
+        out.setHeader("contentModel", batchRequestMap.get("contentModel").toString());
         out.setHeader("resourceList", resourceFileList);
         out.setHeader("resourceCount", resourceFileList.length());
+        out.setHeader("resourceOwner", batchRequestMap.get("resourceOwner").toString());
 
         //Stash the metadata datastream and sidora datastream to a header
         out.setHeader("metadataXML", FileUtils.readFileToString(metadataFile.getCanonicalFile(), Charsets.UTF_8));
@@ -190,14 +203,26 @@ public class BatchRequestBean {
      * @param processCount
      * @return
      */
-    public  Map<String, Object> updateProcessCount(@Header("correlationId")String correlationId,
+    public  Map<String, Object> updateProcessCount(@Header("correlationId") String correlationId,
                                                    @ExchangeProperty("CamelSplitIndex") Integer processCount) {
+
+        LOG.debug("=============================== updateProcessCount ===============================", fedoraUser);
 
         Map<String, Object> updateProcessCount = new HashMap<String, Object>();
         updateProcessCount.put("correlationId", correlationId);
-        updateProcessCount.put("processCount", processCount++);
+        updateProcessCount.put("processCount", ++processCount);
 
         return updateProcessCount;
+    }
+
+    public Map<String, Object> checkBatchRequestStatus(@Header("correlationId") String correlationId, @Header("parentId") String parentId) {
+
+        Map<String, Object> batchRequestStatus = new HashMap<String, Object>();
+        batchRequestStatus.put("correlationId", correlationId);
+        batchRequestStatus.put("parentId", parentId);
+
+        return batchRequestStatus;
+
     }
 
     private Map<String, Object> updateFileHeaders(File file, Map<String, Object> oldHeaders) {

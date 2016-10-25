@@ -39,7 +39,7 @@ import java.net.URL;
  */
 
 @Path("/")
-public class BatchResources {
+public class BatchResourcesService {
 
     @POST
     @Path(value = "/batch/process/addResourceObjects/{parentId}")
