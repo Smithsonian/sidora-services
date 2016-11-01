@@ -24,7 +24,7 @@
         <xsl:param name="filename"/>
  
 <!-- This section opens a file for the Project concept object and writes metadata.   -->        
-<!--        <xsl:result-document href="/Users/sternb/Documents/{$filename}"> -->
+        <!-- <xsl:result-document href="/Users/sternb/Documents/{$filename}"> -->
             
  <!-- This is the in-line datastream content for the descriptive metadata.  -->                                                
             <eac-cpf xmlns="urn:isbn:1-931666-33-4" xmlns:eac="urn:isbn:1-931666-33-4" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -68,9 +68,9 @@
                             <placeEntry localType="address"></placeEntry>
                             <placeEntry localType="region"></placeEntry>
                             <xsl:element name="placeEntry">
-                                <xsl:attribute name="countryCode"><xsl:value-of select="CountryCode"></xsl:value-of></xsl:attribute>
-                                <xsl:attribute name="latitude"><xsl:value-of select="ProjectLatitude"></xsl:value-of></xsl:attribute>
-                                <xsl:attribute name="longitude"><xsl:value-of select="ProjectLongitude"></xsl:value-of></xsl:attribute>
+                                <xsl:attribute name="countryCode"></xsl:attribute>
+                                <xsl:attribute name="latitude"></xsl:attribute>
+                                <xsl:attribute name="longitude"></xsl:attribute>
                             </xsl:element>                        
                         </place>
                         <functions>
@@ -95,7 +95,7 @@
                 </cpfDescription>
             </eac-cpf>
               
-<!--        </xsl:result-document>  -->
+    <!--    </xsl:result-document> -->
         
     </xsl:template>
 </xsl:stylesheet>
