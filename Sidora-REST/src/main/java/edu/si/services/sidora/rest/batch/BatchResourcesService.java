@@ -44,14 +44,14 @@ public class BatchResourcesService {
     @POST
     @Path(value = "/batch/process/addResourceObjects/{parentId}")
     @Produces("text/xml")
-    public Response batchProcessAddResourceObjectsRequest(@PathParam("parentId") String parentId,
-                                                          /*@QueryParam("titleField") String titleField,*/
-                                                          @Multipart(value = "resourceZipFileURL", type = "text/plain") String resourceZipFileURL,
-                                                          @Multipart(value = "metadataFileURL", type = "text/plain") String metadataFileURL,
-                                                          @Multipart(value = "sidoraDatastreamFileURL", type = "text/plain") String sidoraDatastreamFileURL,
-                                                          @Multipart(value = "contentModel") String contentModel,
-                                                          @Multipart(value = "resourceOwner") String resourceOwner,
-                                                          @Multipart(value = "titleField", required = false) String titleField) {
+    public Response addResourceObjects(@PathParam("parentId") String parentId,
+                                       @QueryParam("codebookPID") String codebookPID,
+                                       @Multipart(value = "resourceFileList") String resourceFileList,
+                                       @Multipart(value = "ds_MODS") String ds_MODS,
+                                       @Multipart(value = "ds_Sidora") String ds_Sidora,
+                                       @Multipart(value = "contentModel") String contentModel,
+                                       @Multipart(value = "resourceOwner") String resourceOwner,
+                                       @Multipart(value = "titleField", required = false) String titleField) {
         return null;
     }
 
@@ -59,18 +59,15 @@ public class BatchResourcesService {
     @Path(value = "/batch/process/addResourceObjects/{parentId}/{correlationId}")
     @Produces("text/xml")
     public Response batchProcessAddResourceObjectsRequestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationId) {
+        //TODO: Replace this endpoint with batchProcessRequestStatus
         return null;
     }
 
-    /*@POST
-    @Path("/{id}")
-    public Response multipartPostWithParametersAndPayload(
-            @QueryParam("query") String abc, @PathParam("id") String id,
-            @Multipart(value = "part1", type = "image/jpeg") DataHandler dh1,
-            @Multipart(value = "part2", type = "image/jpeg") DataHandler dh2,
-            @Multipart(value = "body", type = "text/xml") Object request) {
+    @GET
+    @Path(value = "/batch/process/requestStatus/{parentId}/{correlationId}")
+    @Produces("text/xml")
+    public Response requestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationId) {
         return null;
-    }*/
-
+    }
 
 }

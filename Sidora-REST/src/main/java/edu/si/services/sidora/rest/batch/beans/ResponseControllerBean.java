@@ -27,13 +27,11 @@
 
 package edu.si.services.sidora.rest.batch.beans;
 
-import edu.si.services.sidora.rest.batch.model.BatchRequest;
 import org.apache.camel.Exchange;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author jbirkhimer
@@ -56,6 +54,10 @@ public class ResponseControllerBean {
         for (HashMap hashMap : statusResponse) {
             statusResponseMap.putAll(hashMap);
         }
+
+        //final ObjectMapper mapper = new ObjectMapper(); // jackson's objectmapper
+//        final ObjectMapper mapper = new ObjectMapper();
+//        final BatchRequest pojo = mapper.convertValue(statusResponseMap, BatchRequest.class);
 
         parentPID = statusResponseMap.get("parentId").toString();
         correlationId = statusResponseMap.get("correlationId").toString();

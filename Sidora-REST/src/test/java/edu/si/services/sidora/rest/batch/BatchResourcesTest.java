@@ -168,13 +168,13 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
 
         // Add zip file URL upload
         builder.addTextBody(
-                "resourceZipFileURL",
+                "resourceFileList",
                 "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/image-resources.zip",
                 ContentType.TEXT_PLAIN
         );
         // Add metadata xml file URL upload
         builder.addTextBody(
-                "metadataFileURL",
+                "ds_MODS",
                 "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/metadataWithTitle.xml",
                 ContentType.TEXT_PLAIN
         );
@@ -186,7 +186,7 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
         builder.addTextBody("titleField", "Test-Title", ContentType.TEXT_PLAIN);
         // Add sidora datastream file URL string
         builder.addTextBody(
-                "sidoraDatastreamFileURL",
+                "ds_Sidora",
                 "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/sidora-datastream.xml",
                 ContentType.TEXT_PLAIN
         );

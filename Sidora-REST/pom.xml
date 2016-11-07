@@ -40,7 +40,7 @@
     <artifactId>sidora-rest</artifactId>
     <packaging>bundle</packaging>
 
-    <name>SI :: Services :: Sirdora :: REST</name>
+    <name>SI :: Services :: Sidora :: REST</name>
     <description>Sidora REST Services</description>
 
     <properties>
@@ -215,6 +215,23 @@
             <artifactId>mysql-connector-java</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- MIME Type Detection -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -237,7 +254,9 @@
                         <Bundle-Description>${project.description}</Bundle-Description>
                         <Embed-Transitive>true</Embed-Transitive>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
-                        <Export-Package>edu.si.services.sidora.rest.batch*</Export-Package>
+                        <Export-Package>
+                            edu.si.services.sidora.rest.batch
+                        </Export-Package>
                     </instructions>
                 </configuration>
             </plugin>

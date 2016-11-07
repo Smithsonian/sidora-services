@@ -28,16 +28,18 @@
 package edu.si.services.sidora.rest.batch.beans;
 
 import org.apache.camel.*;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
+import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -66,28 +68,38 @@ public class BatchRequestControllerBean {
 
     /**
      *
-     * @param headers Map of the inbound message headers
+     * @param exchange
      * @return
      */
-    public Map<String, Object> createBatchRequest(@Headers Map<String,Object> headers) {
+    public Map<String, Object> db_insertBatchRequest(Exchange exchange) {
 
-        //correlationId, projectId, resourceCount, processCount
+        out = exchange.getIn();
+
+        Map<String, Object> headers = out.getHeaders();
+
         correlationId = UUID.randomUUID().toString();
 
-        LOG.info("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
+        //String resourceXML = out.getBody(String.class);
 
-        LOG.debug("=============================== fedora user: {} ===============================", fedoraUser);
+        //out.setHeader("resourceXML", resourceXML);
+        out.setHeader("correlationId", correlationId);
+
+        LOG.info("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
 
         Map<String, Object> newBatchRequest = new HashMap<String, Object>();
         newBatchRequest.put("correlationId", correlationId);
         newBatchRequest.put("parentId", headers.get("parentId"));
-
-        newBatchRequest.put("resourceZipFileURL", headers.get("resourceZipFileURL"));
-        newBatchRequest.put("metadataFileURL", headers.get("metadataFileURL"));
-        newBatchRequest.put("sidoraDatastreamFileURL", headers.get("sidoraDatastreamFileURL"));
+        newBatchRequest.put("resourceFileList", headers.get("resourceFileList"));
+        newBatchRequest.put("resourceXML", headers.get("resourceXML"));
+        newBatchRequest.put("ds_MODS", headers.get("ds_MODS"));
+        newBatchRequest.put("ds_Sidora", headers.get("ds_Sidora"));
         newBatchRequest.put("contentModel", headers.get("contentModel"));
         newBatchRequest.put("resourceOwner", headers.get("resourceOwner"));
         newBatchRequest.put("titleField", headers.get("titleField"));
+        newBatchRequest.put("codebookPID", headers.get("codebookPID"));
+        newBatchRequest.put("resourceCount", headers.get("resourceCount"));
+
+        LOG.debug("New Batch Process Request MAP: {}", newBatchRequest);
 
         return newBatchRequest;
     }
@@ -95,107 +107,61 @@ public class BatchRequestControllerBean {
     /**
      *
      * @param exchange
-     * @param batchRequestMap
+     * @return
+     */
+    public Map<String, Object> db_insertResource(Exchange exchange) throws URISyntaxException {
+
+        out = exchange.getIn();
+        Map<String, Object> headers = out.getHeaders();
+
+        String resourceFile = out.getBody(String.class);
+
+        Map<String, Object> newBatchResource = new HashMap<String, Object>();
+        newBatchResource.put("correlationId", headers.get("correlationId"));
+        newBatchResource.put("resourceFile", resourceFile);
+        newBatchResource.put("parentId", headers.get("parentId"));
+        newBatchResource.put("contentModel", headers.get("contentModel"));
+        newBatchResource.put("resourceOwner", headers.get("resourceOwner"));
+
+        LOG.debug("New Batch Resource MAP: {} || resourceFile: {}", newBatchResource, resourceFile);
+
+        return newBatchResource;
+
+    }
+
+    /**
+     *
+     * @param exchange
      * @throws Exception
      */
-    public void processBatchRequest(Exchange exchange, Map<String, Object> batchRequestMap) throws Exception {
+    public void processBatchRequest(Exchange exchange) throws Exception {
+
         out = exchange.getIn();
 
+        Map<String, Object> batchRequestMap = (Map<String, Object>) out.getBody();
+
+        LOG.debug("processBatchRequest - batchRequestMap MAP: {}", batchRequestMap);
+
         correlationId = batchRequestMap.get("correlationId").toString();
-        LOG.debug("===================================>>>>>>>>>>>>>>>>>>>>>>>>>>>> parentId={}", batchRequestMap.get("parentId"));
-        LOG.debug("=============================== fedora user: {} ===============================", fedoraUser);
 
-        //Set location to extract to
-        dataOutputDir = new File(processingDir + correlationId);
-
-        //Save the file from URL to temp file
-        //URL resourceFileURL = new URL("file://" + exchange.getIn().getHeader("resourceZipFileURL", String.class));
-        URL resourceFileURL = new URL("file://" + batchRequestMap.get("resourceZipFileURL"));
-        tempfile = new File(stagingDir + correlationId + ".zip");
-        LOG.debug("Saving URL Resource To Temp File:{}", tempfile);
-
-        try {
-            FileUtils.copyURLToFile(resourceFileURL, tempfile);
-        } catch (IOException e) {
-            System.err.println("Caught IOException: Unable to copy Batch Resource file from: " + resourceFileURL + " to: " + tempfile + "\n" + e.getMessage());
-            //e.printStackTrace();
-        }
-
-        //Extract the zip archive using a producer template to the extractor component
-        LOG.debug("Headers Before Extractor: {}", exchange.getIn().getHeaders());
-        exchange.getContext().createProducerTemplate().sendBody("extractor:extract?location=" + processingDir, tempfile);
-        LOG.debug("Headers After Extractor: {}", exchange.getIn().getHeaders());
-
-        //Delete the temp file
-        tempfile.delete();
-
-        //Grab the metadata datastream file from URL
-        //URL metadataFileURL = new URL("file://" + exchange.getIn().getHeader("metadataFileURL", String.class));
-        URL metadataFileURL = new URL("file://" + batchRequestMap.get("metadataFileURL"));
-        metadataFile = new File(processingDir + correlationId + "/metadata.xml");
-        LOG.debug("Saving URL Metadata Datastream To File:{}", metadataFile);
-
-        try {
-            FileUtils.copyURLToFile(metadataFileURL, metadataFile);
-        } catch (IOException e) {
-            System.err.println("Caught IOException: Unable to copy Metadata Datastream file from: " + metadataFileURL + " to: " + metadataFile + "\n" + e.getMessage());
-            //e.printStackTrace();
-        }
-
-        //Grab the sidora datastream file from URL
-        //URL sidoraDatastreamFileURL = new URL("file://" + exchange.getIn().getHeader("sidoraDatastreamFileURL", String.class));
-        URL sidoraDatastreamFileURL = new URL("file://" + batchRequestMap.get("sidoraDatastreamFileURL"));
-        sidoraDatastreamFile = new File(processingDir + correlationId + "/sidora.xml");
-        LOG.debug("Saving URL for Sidora Datastream to File:{}", sidoraDatastreamFile);
-
-        try {
-            FileUtils.copyURLToFile(sidoraDatastreamFileURL, sidoraDatastreamFile);
-        } catch (IOException e) {
-            System.err.println("Caught IOException: Unable to copy Sidora Datastream file from: " + sidoraDatastreamFileURL + " to: " + sidoraDatastreamFile + "\n" + e.getMessage());
-            //e.printStackTrace();
-        }
-
-        //Get a list of the resources to process filtering out xml files
-        String[] files = dataOutputDir.list(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-
-                if (name.toLowerCase().contains("sidora.xml") || name.toLowerCase().contains("metadata.xml")) {
-                    LOG.debug("Found {} filter out of resource file list", name);
-                    return false;
-                } else {
-                    LOG.debug("Found {} add it to the resource file list", name);
-                    return true;
-                }
-                //return !name.toLowerCase().endsWith(".xml");
-            }
-        });
-
-        String resourceFileList = Arrays.toString(files).replace("[", "").replace("]", "").replace(", ", ",");
-
-        LOG.debug("FileList:{}", resourceFileList);
-
-        Map<String, Object> updateResourceCount = new HashMap<String, Object>();
-        updateResourceCount.put("correlationId", correlationId);
-        updateResourceCount.put("resourceCount", files.length);
-
-        out.setBody(updateResourceCount);
+        /*Map<String, Object> resourceList = new HashMap<String, Object>();
+        resourceList.put("correlationId", correlationId);
+        //out.setBody(resourceList);*/
+        out.setBody(correlationId);
 
         out.setHeader("correlationId", correlationId);
         out.setHeader("parentId", batchRequestMap.get("parentId").toString());
         out.setHeader("contentModel", batchRequestMap.get("contentModel").toString());
-        out.setHeader("resourceList", resourceFileList);
-        out.setHeader("resourceCount", resourceFileList.length());
+        //out.setHeader("resourceList", resourceFileList);
+        out.setHeader("resourceCount", batchRequestMap.get("resourceCount").toString());
         out.setHeader("resourceOwner", batchRequestMap.get("resourceOwner").toString());
 
         //Stash the metadata datastream and sidora datastream to a header
-        out.setHeader("metadataXML", FileUtils.readFileToString(metadataFile.getCanonicalFile(), Charsets.UTF_8));
-        out.setHeader("sidoraXML", FileUtils.readFileToString(sidoraDatastreamFile.getCanonicalFile(), Charsets.UTF_8));
+        out.setHeader("ds_MODS", batchRequestMap.get("ds_MODS").toString());
+        out.setHeader("ds_SIDORA", batchRequestMap.get("ds_Sidora").toString());
 
-        out.setHeaders(updateFileHeaders(dataOutputDir, exchange.getIn().getHeaders()));
-
-        LOG.debug("Metadata datastream: {}\nSidora datasream: {}", FileUtils.readFileToString(metadataFile.getCanonicalFile(),Charsets.UTF_8),
-                FileUtils.readFileToString(sidoraDatastreamFile.getCanonicalFile(), Charsets.UTF_8));
-
+        //Header is not null if resource is a csv for codebook
+        out.setHeader("codebookPID", batchRequestMap.get("codebookPID").toString());
     }
 
     /**
@@ -206,8 +172,6 @@ public class BatchRequestControllerBean {
     public  Map<String, Object> updateProcessCount(@Header("correlationId") String correlationId,
                                                    @ExchangeProperty("CamelSplitIndex") Integer processCount) {
 
-        LOG.debug("=============================== updateProcessCount ===============================", fedoraUser);
-
         Map<String, Object> updateProcessCount = new HashMap<String, Object>();
         updateProcessCount.put("correlationId", correlationId);
         updateProcessCount.put("processCount", ++processCount);
@@ -215,7 +179,8 @@ public class BatchRequestControllerBean {
         return updateProcessCount;
     }
 
-    public Map<String, Object> checkBatchRequestStatus(@Header("correlationId") String correlationId, @Header("parentId") String parentId) {
+    public Map<String, Object> checkBatchRequestStatus(@Header("correlationId") String correlationId,
+                                                       @Header("parentId") String parentId) {
 
         Map<String, Object> batchRequestStatus = new HashMap<String, Object>();
         batchRequestStatus.put("correlationId", correlationId);
@@ -225,32 +190,35 @@ public class BatchRequestControllerBean {
 
     }
 
-    private Map<String, Object> updateFileHeaders(File file, Map<String, Object> oldHeaders) {
-        String parent = null;
+    public void getMIMEType(Exchange exchange) throws URISyntaxException, MalformedURLException {
 
-        if (file.getParentFile() != null)
-        {
-            parent = file.getParentFile().getName();
-            LOG.debug("CamelFileParent: {}", file.getParentFile());
-        }
+        /**
+         * TODO:
+         *
+         * Need to make sure that mimetypes are consistent with what's used in workbench.
+         * See link for workbench mimetype list
+         *
+         * https://github.com/Smithsonian/sidora-workbench/blob/master/workbench/includes/utils.inc#L1119
+         *
+         */
 
-        Map<String, Object> headers = new HashMap<String, Object>(oldHeaders);
+        out = exchange.getIn();
 
-//      FIXME: Use Camel GenericFile to correctly populate these fields!!!
-        headers.put("CamelFileLength", file.length());
-        headers.put("CamelFileLastModified", file.lastModified());
-        headers.put("CamelFileNameOnly", file.getName());
-        headers.put("CamelFileNameConsumed", file.getName());
-        headers.put("CamelFileName", file.getName());
-        headers.put("CamelFileRelativePath", file.getPath());
-        headers.put("CamelFilePath", file.getPath());
-        headers.put("CamelFileAbsolutePath", file.getAbsolutePath());
-        headers.put("CamelFileAbsolute", false);
-        headers.put("CamelFileParent", parent);
-        headers.put("CamelFileParentDir", file.getAbsolutePath());
+        URL url = new URL(out.getHeader("resourceFileName", String.class));
 
-        return headers;
+        URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+
+        String resourceFile = uri.toASCIIString();
+
+        LOG.debug("Checking {} for MIME Type", resourceFile);
+
+        String mimeType = null;
+
+        mimeType = new Tika().detect(resourceFile);
+
+        LOG.debug("Batch Process " + resourceFile + " || MIME=" + mimeType);
+
+        out.setHeader("dsMIME", mimeType);
     }
-
 
 }

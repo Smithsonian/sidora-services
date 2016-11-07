@@ -40,6 +40,7 @@
         <bundle dependency="true" start-level='80'>mvn:com.google.guava/guava/${google-guava-version}</bundle>
         <bundle dependency="true" start-level='80'>mvn:commons-dbcp/commons-dbcp/${commons-dbcp.version}</bundle>
         <bundle dependency="true" start-level='80'>wrap:mvn:mysql/mysql-connector-java/${mysql-connector.version}</bundle>
+        <bundle dependency="true" start-level='80'>mvn:org.apache.tika/tika-core/${apache-tika}</bundle>
     </feature>
 
     <!-- Sidora Camel Dependencies -->

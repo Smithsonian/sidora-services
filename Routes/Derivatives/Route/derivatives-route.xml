@@ -132,7 +132,15 @@
             <log message="${id} Derivatives: Starting processing ..."
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
-            <log message="${id} Derivatives: Processing PID: ${headers.pid}  Method Name: ${headers.methodName}  Origin: {{si.fedora.user}}"/>
+            
+            
+            <setHeader headerName="origin">
+                <xpath>
+                    /atom:entry/atom:author/atom:name/text()
+                </xpath>
+            </setHeader>
+
+            <log message="${id} Derivatives: Processing PID: ${headers.pid}  Method Name: ${headers.methodName}  Origin: ${header.origin}"/>
             <log message="${id} Derivatives: Processing BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
@@ -148,7 +156,26 @@
                 <xpath>
                     /atom:entry/atom:author/atom:name = '{{si.fedora.user}}'
                 </xpath>
-                <log message="${id} Derivatives: No message processing required."/>
+                <log message="${id} Derivatives: Filtered ${header.origin} - No message processing required."/>
+                <stop/>
+            </filter>
+
+            <!-- Get the DSID from the Atom message if any. -->
+            <setHeader headerName="DSID">
+                <xpath resultType="java.lang.String">
+                    /atom:entry/atom:category[@scheme="fedora-types:dsID"]/@term
+                </xpath>
+            </setHeader>
+            <log message="${id} Derivatives: Atom DSID: ${headers.DSID}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Filter for messages where DSID is not OBJ that do not need derivatives processing.-->
+            <filter>
+                <simple>
+                    ${header.DSID} != 'OBJ'
+                </simple>
+                <log message="${id} Derivatives: Filtered ${header.DSID} - No derivative processing required."/>
                 <stop/>
             </filter>
             
@@ -175,21 +202,14 @@
             <log message="${id} Derivatives: PID: ${headers.pid}  Method Name: ${headers.methodName}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+
             <setHeader headerName="CamelFedoraPid">
                 <simple>
                     ${headers.pid}
                 </simple>
             </setHeader>
 
-            <!-- Get the DSID from the Atom message if any. -->
-            <setHeader headerName="DSID">
-                <xpath resultType="java.lang.String">
-                    /atom:entry/atom:category[@scheme="fedora-types:dsID"]/@term
-                </xpath>
-            </setHeader>
-            <log message="${id} Derivatives: Atom DSID: ${headers.DSID}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.derivatives"/>
+
 
             <!-- Get the Content Models for the FDO and put them on a list. -->
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
@@ -847,6 +867,11 @@
                 <when>
                     <simple>
                         ${header.dsMIME} == 'audio/vnd.wave' ||
+                        ${header.dsMIME} == 'audio/vnd.wav' ||
+                        ${header.dsMIME} == 'audio/x-wav' ||
+                        ${header.dsMIME} == 'audio/vorbis' ||
+                        ${header.dsMIME} == 'audio/x-ms-wma' ||
+                        ${header.dsMIME} == 'audio/x-aac' ||
                         ${header.dsMIME} == 'audio/x-aiff'
                     </simple>
                     <!-- Make an MP3 derivative. -->
@@ -1046,6 +1071,9 @@
                         ${header.dsMIME} == 'video/m4v' ||
                         ${header.dsMIME} == 'video/quicktime' ||
                         ${header.dsMIME} == 'video/avi' ||
+                        ${header.dsMIME} == 'video/x-msvideo' ||
+                        ${header.dsMIME} == 'video/ogg' ||
+                        ${header.dsMIME} == 'video/x-m4v' ||
                         ${header.dsMIME} == 'video/x-matroska'
                     </simple>
 
@@ -1061,6 +1089,7 @@
                     <simple>
                         ${header.dsMIME} == 'audio/mp4' ||
                         ${header.dsMIME} == 'audio/ogg' ||
+                        ${header.dsMIME} == 'audio/vorbis' ||
                         ${header.dsMIME} == 'audio/m4a'
                     </simple>
 
