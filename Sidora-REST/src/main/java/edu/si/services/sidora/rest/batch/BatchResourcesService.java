@@ -47,8 +47,8 @@ public class BatchResourcesService {
     public Response addResourceObjects(@PathParam("parentId") String parentId,
                                        @QueryParam("codebookPID") String codebookPID,
                                        @Multipart(value = "resourceFileList") String resourceFileList,
-                                       @Multipart(value = "ds_MODS") String ds_MODS,
-                                       @Multipart(value = "ds_Sidora") String ds_Sidora,
+                                       @Multipart(value = "ds_metadata") String ds_metadata,
+                                       @Multipart(value = "ds_sidora") String ds_sidora,
                                        @Multipart(value = "contentModel") String contentModel,
                                        @Multipart(value = "resourceOwner") String resourceOwner,
                                        @Multipart(value = "titleField", required = false) String titleField) {

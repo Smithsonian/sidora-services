@@ -56,14 +56,6 @@
         </cxf:features>
     </cxf:bus>
 
-    <!--<jaxrs:server id="fedoraRestService"
-                  address="http://localhost:8080/fedora/objects/"
-                  staticSubresourceResolution="true">
-        <jaxrs:serviceBeans>
-            <ref bean="someService"/>
-        </jaxrs:serviceBeans>
-    </jaxrs:server>-->
-
     <!-- Defined the server endpoint to create the cxf-rs consumer -->
     <camel-cxf:rsServer id="rsServer" address="${sidora.rest.service.address}"
                   serviceClass="edu.si.services.sidora.rest.batch.BatchResourcesService"
@@ -96,8 +88,8 @@
     <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
         <property name="outFilter">
             <set>
-                <value>ds_MODSXML</value>
-                <value>ds_SIDORAXML</value>
+                <value>ds_metadataXML</value>
+                <value>ds_sidoraXML</value>
             </set>
         </property>
     </bean>
@@ -134,18 +126,6 @@
 
     <bean id="pidAggregator" class="edu.si.services.fedorarepo.aggregators.PidAggregationStrategy"/>
 
-    <!-- settings for the fedora component -->
-    <bean id="fedoraSettings" class="edu.si.services.fedorarepo.FedoraSettings" scope="singleton">
-        <argument index="0" value="${si.fedora.host}" type="java.lang.String"/>
-        <argument index="1" value="${si.fedora.batch.user}" type="java.lang.String"/>
-        <argument index="2" value="${si.fedora.password}" type="java.lang.String"/>
-    </bean>
-
-    <!-- Fedora component needed to properly set the fedora username to camelBatchUser for the derivative camel route -->
-    <bean id="fedora" class="edu.si.services.fedorarepo.FedoraComponent">
-        <property name="settings" ref="fedoraSettings"/>
-    </bean>
-
     <!-- Batch Process route context -->
     <!--The "unused" namespace definitions are needed to deal with the way Camel handles namespaces in XPath.-->
     <camelContext id="SidoraRestService"
@@ -159,6 +139,7 @@
                   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                   xmlns:eac="urn:isbn:1-931666-33-4"
                   xmlns:mods="http://www.loc.gov/mods/v3"
+                  xmlns:fgdc="http://localhost/"
                   xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd"
                   trace="false" useMDCLogging="true" useBreadcrumb="false">
 
@@ -287,7 +268,7 @@
             </setHeader>
 
             <!-- TODO: Add validations for resources match whats in fedora -->
-            <log message="${id}: Batch Request Parent PID=${header.parentId},  Resource Count=${header.resourceCount}"
+            <log message="${id}: Batch Request Parent PID=${header.CamelFedoraPid},  Resource Count=${header.resourceCount}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
@@ -303,7 +284,7 @@
                      loggingLevel="DEBUG"
                      logName="{{edu.si.batch}}"/>
 
-                <setHeader headerName="resourceFileName">
+                <setHeader headerName="ds_resourceFile">
                     <simple>
                         ${body[resourceFile]}
                     </simple>
@@ -319,6 +300,10 @@
                      loggingLevel="INFO"
                      logName="{{edu.si.batch}}"/>
             </split>
+
+            <log message="${id}: Created Resource Objects - ${header.PIDAggregation}."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
 
             <log message="${id}: Finished Batch Resource Processing."
                  loggingLevel="INFO"
@@ -346,15 +331,15 @@
                 <simple></simple>
             </setBody>
 
-            <toD uri="cxfrs://${header.ds_MODS}" pattern="InOut" id="httpGetModsDataStreamFile"/>
+            <toD uri="cxfrs://${header.ds_metadata}" pattern="InOut" id="httpGetDataStreamFile"/>
 
-            <setHeader headerName="ds_MODSXML">
+            <setHeader headerName="ds_metadataXML">
                 <simple resultType="java.lang.String">
                     ${body}
                 </simple>
             </setHeader>
 
-            <!-- TODO: for now assume path/node name for the title in the MODS-->
+            <!-- TODO: for now assume path/node name for the title in the metadata-->
             <!-- header is an XSLT param -->
             <setHeader headerName="titleNode">
                 <simple>
@@ -363,12 +348,12 @@
             </setHeader>
             <!-- header is an XSLT param -->
             <setHeader headerName="titleLabel">
-                <xpath resultType="java.lang.String" headerName="ds_MODSXML">
-                    concat(//mods:title/text(), function:simple(&#39;(${property.CamelSplitIndex})&#39;))
+                <xpath resultType="java.lang.String" headerName="ds_metadataXML">
+                    concat(//*[local-name()='title']/text(), function:simple(&#39;(${property.CamelSplitIndex})&#39;))
                 </xpath>
             </setHeader>
 
-            <log message="${id}: Batch Process Title/Label: ${header.titleLabel} For Resource: ${header.resourceFileName}"
+            <log message="${id}: Batch Process Title/Label: ${header.titleLabel} For Resource: ${header.ds_resourceFile}"
                  loggingLevel="DEBUG"
                  logName="{{edu.si.batch}}"/>
 
@@ -426,10 +411,9 @@
                 <simple></simple>
             </setBody>
 
-            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFileName}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.ds_resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
 
-
-            <!-- add codebook relationship when needed-->
+            <!-- add MODS or (FGDC and codebook relationship) -->
             <choice>
                 <when>
                     <simple>${header.coodebookPID} != null</simple>
@@ -442,13 +426,24 @@
                     <setBody>
                         <simple></simple>
                     </setBody>
-                    <to uri="direct:addFGDCDatastream"/>
+                    <!--<to uri="direct:addFGDCDatastream"/>-->
+
+                    <setHeader headerName="dsID">
+                        <simple>FGDC</simple>
+                    </setHeader>
+
+                    <!-- add codebook relationship -->
+                    <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/relationships/new?predicate=info:fedora/fedora-system:def/relations-external%23hasCodebook&amp;subject=info:fedora/${header.CamelFedoraPid}&amp;object=info:fedora/${header.codebookPID}&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addCodebookRelationship"/>
                 </when>
                 <otherwise>
-                    <to uri="direct:addMODSDatastream"/>
+                    <!--<to uri="direct:addMODSDatastream"/>-->
+                    <setHeader headerName="dsID">
+                        <simple>MODS</simple>
+                    </setHeader>
                 </otherwise>
             </choice>
 
+            <to uri="direct:addMetadataDatastream"/>
             <to uri="direct:addSidoraDatastream"/>
 
             <setHeader headerName="Exchange.HTTP_METHOD">
@@ -464,25 +459,39 @@
 
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.parentId}/relationships/new?predicate=info:fedora/fedora-system:def/relations-external%23hasResource&amp;subject=info:fedora/${header.parentId}&amp;object=info:fedora/${header.CamelFedoraPid}&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addRelationship"/>
 
-            <!-- add codebook relationship when needed-->
-            <choice>
-                <when>
-                    <simple>${header.coodebookPID} != null</simple>
-
-                    <setHeader headerName="Exchange.HTTP_METHOD">
-                        <simple>
-                            POST
-                        </simple>
-                    </setHeader>
-                    <setBody>
-                        <simple></simple>
-                    </setBody>
-
-                    <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/relationships/new?predicate=info:fedora/fedora-system:def/relations-external%23hasCodebook&amp;subject=info:fedora/${header.CamelFedoraPid}&amp;object=info:fedora/${header.codebookPID}&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addCodebookRelationship"/>
-                </when>
-            </choice>
-
             <log message="${id}: Finished Batch Process: Add Resource..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+        </route>
+
+        <route id="BatchProcessAddMetadataDatastream">
+            <from uri="direct:addMetadataDatastream"/>
+            <log message="${id}: Started processing ${header.dsID} ..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <!-- Add a datastream for metadata. -->
+            <setBody>
+                <simple>
+                    ${header.ds_metadataXML}
+                </simple>
+            </setBody>
+
+            <to uri="xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
+
+            <log message="${id}: ${header.dsID} XML -\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
+
+            <setHeader headerName="Exchange.HTTP_METHOD">
+                <simple>
+                    POST
+                </simple>
+            </setHeader>
+
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/${header.dsID}?mimeType=text/xml&amp;controlGroup=X&amp;dsLabel=${header.dsID}%20Record&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addMetadataDatastream"/>
+
+            <log message="${id}: Finished processing ${header.dsID}."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>
@@ -496,7 +505,7 @@
             <!-- Add a FGDC datastream for metadata. -->
             <setBody>
                 <simple>
-                    ${header.ds_MODSXML}
+                    ${header.ds_metadataXML}
                 </simple>
             </setBody>
 
@@ -528,7 +537,7 @@
             <!-- Add a MODS datastream for metadata. -->
             <setBody>
                 <simple>
-                    ${header.ds_MODSXML}
+                    ${header.ds_metadataXML}
                 </simple>
             </setBody>
 
@@ -570,7 +579,7 @@
 
             <!--<to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA"/>-->
 
-            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/SIDORA?dsLocation=${header.ds_SIDORA}&amp;mimeType=text/xml&amp;controlGroup=X&amp;dsLabel=SIDORA&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addSidoraDatastream"/>
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/SIDORA?dsLocation=${header.ds_sidora}&amp;mimeType=text/xml&amp;controlGroup=X&amp;dsLabel=SIDORA&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addSidoraDatastream"/>
 
             <log message="${id}: Finished processing SIDORA Datastream ..."
                  loggingLevel="INFO"
@@ -585,7 +594,7 @@
 
             <recipientList>
                 <simple>
-                    exec:fits?args=-i ${header.CamelFileParentDir}/${header.resourceFileName}
+                    exec:fits?args=-i ${header.CamelFileParentDir}/${header.ds_resourceFile}
                 </simple>
             </recipientList>
 
@@ -604,7 +613,7 @@
                     <log message="${id}: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="{{edu.si.batch}}"/>
-                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
+                    <!--<to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>-->
                 </when>
                 <otherwise>
                     <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"

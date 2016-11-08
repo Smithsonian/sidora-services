@@ -174,7 +174,7 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
         );
         // Add metadata xml file URL upload
         builder.addTextBody(
-                "ds_MODS",
+                "ds_metadata",
                 "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/metadataWithTitle.xml",
                 ContentType.TEXT_PLAIN
         );
@@ -186,7 +186,7 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
         builder.addTextBody("titleField", "Test-Title", ContentType.TEXT_PLAIN);
         // Add sidora datastream file URL string
         builder.addTextBody(
-                "ds_Sidora",
+                "ds_sidora",
                 "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-REST/src/test/resources/test-data/sidora-datastream.xml",
                 ContentType.TEXT_PLAIN
         );

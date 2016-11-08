@@ -79,9 +79,6 @@ public class BatchRequestControllerBean {
 
         correlationId = UUID.randomUUID().toString();
 
-        //String resourceXML = out.getBody(String.class);
-
-        //out.setHeader("resourceXML", resourceXML);
         out.setHeader("correlationId", correlationId);
 
         LOG.info("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
@@ -91,8 +88,8 @@ public class BatchRequestControllerBean {
         newBatchRequest.put("parentId", headers.get("parentId"));
         newBatchRequest.put("resourceFileList", headers.get("resourceFileList"));
         newBatchRequest.put("resourceXML", headers.get("resourceXML"));
-        newBatchRequest.put("ds_MODS", headers.get("ds_MODS"));
-        newBatchRequest.put("ds_Sidora", headers.get("ds_Sidora"));
+        newBatchRequest.put("ds_metadata", headers.get("ds_metadata"));
+        newBatchRequest.put("ds_sidora", headers.get("ds_sidora"));
         newBatchRequest.put("contentModel", headers.get("contentModel"));
         newBatchRequest.put("resourceOwner", headers.get("resourceOwner"));
         newBatchRequest.put("titleField", headers.get("titleField"));
@@ -144,21 +141,17 @@ public class BatchRequestControllerBean {
 
         correlationId = batchRequestMap.get("correlationId").toString();
 
-        /*Map<String, Object> resourceList = new HashMap<String, Object>();
-        resourceList.put("correlationId", correlationId);
-        //out.setBody(resourceList);*/
         out.setBody(correlationId);
 
         out.setHeader("correlationId", correlationId);
         out.setHeader("parentId", batchRequestMap.get("parentId").toString());
         out.setHeader("contentModel", batchRequestMap.get("contentModel").toString());
-        //out.setHeader("resourceList", resourceFileList);
         out.setHeader("resourceCount", batchRequestMap.get("resourceCount").toString());
         out.setHeader("resourceOwner", batchRequestMap.get("resourceOwner").toString());
 
         //Stash the metadata datastream and sidora datastream to a header
-        out.setHeader("ds_MODS", batchRequestMap.get("ds_MODS").toString());
-        out.setHeader("ds_SIDORA", batchRequestMap.get("ds_Sidora").toString());
+        out.setHeader("ds_metadata", batchRequestMap.get("ds_metadata").toString());
+        out.setHeader("ds_sidora", batchRequestMap.get("ds_sidora").toString());
 
         //Header is not null if resource is a csv for codebook
         out.setHeader("codebookPID", batchRequestMap.get("codebookPID").toString());
@@ -204,7 +197,7 @@ public class BatchRequestControllerBean {
 
         out = exchange.getIn();
 
-        URL url = new URL(out.getHeader("resourceFileName", String.class));
+        URL url = new URL(out.getHeader("ds_resourceFile", String.class));
 
         URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
 
