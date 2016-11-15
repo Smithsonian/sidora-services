@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+    <batch_id>ramlani58123a396719c</batch_id>
+    <file>/opt/sidora/smx/Sidora-Batch-Test-Files/audio/581231f5e6aa8_Maid_with_the_Flaxen_Hair.mp3</file>
+    <file>/opt/sidora/smx/Sidora-Batch-Test-Files/audio/581231f5e9bf2_Yamaha-TG100-Whistle-C5.wav</file>
+</batch>
+
+<!--
+
+<batch>
+<batch_id>ramlani581b5f5309e7c</batch_id>
+<file>http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/default/files/ramlani581b5f5309e7c_Yamaha-TG100-Whistle-C5.wav</file>
+<file>http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/default/files/ramlani581b5f5309e7c_Maid%20with%20the%20Flaxen%20Hair.mp3</file>
+<file>http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/default/files/ramlani581b5f5309e7c_Sleep%20Away.mp3</file>
+</batch>
+
+-->

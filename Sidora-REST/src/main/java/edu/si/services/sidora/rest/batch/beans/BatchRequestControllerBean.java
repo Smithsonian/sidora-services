@@ -85,14 +85,17 @@ public class BatchRequestControllerBean {
 
         Map<String, Object> newBatchRequest = new HashMap<String, Object>();
         newBatchRequest.put("correlationId", correlationId);
+        newBatchRequest.put("resourceOwner", headers.get("resourceOwner"));
         newBatchRequest.put("parentId", headers.get("parentId"));
         newBatchRequest.put("resourceFileList", headers.get("resourceFileList"));
-        newBatchRequest.put("resourceXML", headers.get("resourceXML"));
+        //newBatchRequest.put("resourceXML", headers.get("resourceXML"));
+
         newBatchRequest.put("ds_metadata", headers.get("ds_metadata"));
         newBatchRequest.put("ds_sidora", headers.get("ds_sidora"));
-        newBatchRequest.put("contentModel", headers.get("contentModel"));
-        newBatchRequest.put("resourceOwner", headers.get("resourceOwner"));
-        newBatchRequest.put("titleField", headers.get("titleField"));
+        newBatchRequest.put("association", headers.get("association"));
+
+        //newBatchRequest.put("contentModel", headers.get("contentModel"));
+        //newBatchRequest.put("titleField", headers.get("titleField"));
         newBatchRequest.put("codebookPID", headers.get("codebookPID"));
         newBatchRequest.put("resourceCount", headers.get("resourceCount"));
 
@@ -106,19 +109,25 @@ public class BatchRequestControllerBean {
      * @param exchange
      * @return
      */
-    public Map<String, Object> db_insertResource(Exchange exchange) throws URISyntaxException {
+    public Map<String, Object> db_insertResource(Exchange exchange) throws URISyntaxException, MalformedURLException {
 
         out = exchange.getIn();
         Map<String, Object> headers = out.getHeaders();
 
-        String resourceFile = out.getBody(String.class);
+        URL url = new URL(out.getBody(String.class));
+
+        URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+
+        String resourceFile = uri.toASCIIString();
+
+        //String resourceFile = out.getBody(String.class);
 
         Map<String, Object> newBatchResource = new HashMap<String, Object>();
         newBatchResource.put("correlationId", headers.get("correlationId"));
         newBatchResource.put("resourceFile", resourceFile);
-        newBatchResource.put("parentId", headers.get("parentId"));
-        newBatchResource.put("contentModel", headers.get("contentModel"));
-        newBatchResource.put("resourceOwner", headers.get("resourceOwner"));
+        //newBatchResource.put("parentId", headers.get("parentId"));
+        //newBatchResource.put("contentModel", headers.get("contentModel"));
+        //newBatchResource.put("resourceOwner", headers.get("resourceOwner"));
 
         LOG.debug("New Batch Resource MAP: {} || resourceFile: {}", newBatchResource, resourceFile);
 
@@ -145,16 +154,19 @@ public class BatchRequestControllerBean {
 
         out.setHeader("correlationId", correlationId);
         out.setHeader("parentId", batchRequestMap.get("parentId").toString());
-        out.setHeader("contentModel", batchRequestMap.get("contentModel").toString());
+        //out.setHeader("contentModel", batchRequestMap.get("contentModel").toString());
         out.setHeader("resourceCount", batchRequestMap.get("resourceCount").toString());
         out.setHeader("resourceOwner", batchRequestMap.get("resourceOwner").toString());
 
         //Stash the metadata datastream and sidora datastream to a header
         out.setHeader("ds_metadata", batchRequestMap.get("ds_metadata").toString());
         out.setHeader("ds_sidora", batchRequestMap.get("ds_sidora").toString());
+        out.setHeader("association", batchRequestMap.get("association").toString());
 
         //Header is not null if resource is a csv for codebook
-        out.setHeader("codebookPID", batchRequestMap.get("codebookPID").toString());
+        if (batchRequestMap.get("codebookPID") != null) {
+            out.setHeader("codebookPID", batchRequestMap.get("codebookPID").toString());
+        }
     }
 
     /**
@@ -170,6 +182,66 @@ public class BatchRequestControllerBean {
         updateProcessCount.put("processCount", ++processCount);
 
         return updateProcessCount;
+    }
+
+    /**
+     *
+     * @param exchange
+     * @return
+     */
+    public  Map<String, Object> updateResourceCreated(Exchange exchange) {
+        
+        out = exchange.getIn();
+        correlationId = out.getHeader("correlationId", String.class);
+        String resourceFile = out.getHeader("ds_resourceFile", String.class);
+        String pid = out.getHeader("CamelFedoraPid", String.class);
+        String titleField = out.getHeader("titleField", String.class);
+
+        Map<String, Object> updateResourceCreated = new HashMap<String, Object>();
+        updateResourceCreated.put("correlationId", correlationId);
+        updateResourceCreated.put("resourceFile", resourceFile);
+        updateResourceCreated.put("pid", pid);
+        updateResourceCreated.put("titleField", titleField);
+
+        updateResourceCreated.put("resource_created", checkStatusCode(out.getHeader("CamelHttpResponceCode", Integer.class)));
+
+        return updateResourceCreated;
+    }
+
+    public Map<String, Object> updateDsDcCreated(Exchange exchange) {
+
+        out = exchange.getIn();
+        correlationId = out.getHeader("correlationId", String.class);
+        String resourceFile = out.getHeader("ds_resourceFile", String.class);
+
+        Map<String, Object> updateDsDcCreated= new HashMap<String, Object>();
+        updateDsDcCreated.put("correlationId", correlationId);
+        updateDsDcCreated.put("resourceFile", resourceFile);
+
+        updateDsDcCreated.put("ds_dc_created", checkStatusCode(out.getHeader("CamelHttpResponceCode", Integer.class)));
+
+        return updateDsDcCreated;
+    }
+
+    /**
+     *
+     * @param exchange
+     * @return
+     */
+    public  Map<String, Object> updateRelsExtCreated(Exchange exchange) {
+
+        out = exchange.getIn();
+        correlationId = out.getHeader("correlationId", String.class);
+        String resourceFile = out.getHeader("ds_resourceFile", String.class);
+        String pid = out.getHeader("CamelFedoraPid", String.class);
+
+        Map<String, Object> updateResourceCreated = new HashMap<String, Object>();
+        updateResourceCreated.put("correlationId", correlationId);
+        updateResourceCreated.put("resourceFile", resourceFile);
+        updateResourceCreated.put("pid", pid);
+        updateResourceCreated.put("resource_created", true);
+
+        return updateResourceCreated;
     }
 
     public Map<String, Object> checkBatchRequestStatus(@Header("correlationId") String correlationId,
@@ -212,6 +284,14 @@ public class BatchRequestControllerBean {
         LOG.debug("Batch Process " + resourceFile + " || MIME=" + mimeType);
 
         out.setHeader("dsMIME", mimeType);
+    }
+
+    private boolean checkStatusCode(Integer camelHttpResponceCode) {
+        if (camelHttpResponceCode != 200 || camelHttpResponceCode != 201) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

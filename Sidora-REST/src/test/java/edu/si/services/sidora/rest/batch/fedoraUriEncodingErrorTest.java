@@ -25,36 +25,22 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch.client;
+package edu.si.services.sidora.rest.batch;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
-import org.apache.camel.PropertyInject;
-import org.apache.cxf.common.util.Base64Utility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 /**
  * @author jbirkhimer
  */
-public class RequestProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(RequestProcessor.class);
+public class fedoraUriEncodingErrorTest {
 
-    @PropertyInject(value = "si.fedora.batch.user")
-    private String fedoraBatchUser;
+    public static void main(String[] args) throws IOException, URISyntaxException {
+        String params = "file:/opt/sidora/smx/Sidora-Batch-Test-Files/audio/581231f5e6aa8_Maid%20with%20the%20Flaxen%20Hair.mp3";
 
-    @PropertyInject(value = "si.fedora.password")
-    private String fedoraPasword;
-
-    private Message out;
-
-    public void setAuthorization(Exchange exchange) {
-        Message inMessage = exchange.getIn();
-        inMessage.setHeader("Authorization", "Basic " + base64Encode(fedoraBatchUser + ":" + fedoraPasword));
+        URL fileUrl = new URL(params);
+        File cFile = new File(fileUrl.toURI()).getCanonicalFile();
     }
-
-    private String base64Encode(String input) {
-        return Base64Utility.encode(input.getBytes());
-    }
-
 }

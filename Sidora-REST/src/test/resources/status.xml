@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Batch>
+    <ParentPID>si:390403</ParentPID>
+    <resourceOwner>ramlani</resourceOwner>
+    <CorrelationID>5c033cfc-c113-4cd7-a8da-60f50b3cfa45</CorrelationID>
+    <ResourceCount>2</ResourceCount>
+    <ResourcesProcessed>1</ResourcesProcessed>
+    <BatchDone>false</BatchDone>
+    <contentModel>si:generalImageCModel</contentModel>
+    <resources>
+        <resource>
+            <file>
+                http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/default/files/ramlani5829d917c5b0b_create_res.pdf
+            </file>
+            <pid>si:123456</pid>
+            <titleField>some batch title(0)</titleField>
+            <contentModel>si:generalImageCModel</contentModel>
+            <resourceObjectCreated>true</resourceObjectCreated>
+            <dsDcCreated>true</dsDcCreated>
+            <dsRelsExtCreated>true</dsRelsExtCreated>
+            <dsObjCreated>true</dsObjCreated>
+            <dsSidoraCreated>true</dsSidoraCreated>
+            <complete>true</complete>
+        </resource>
+        <resource>
+            <file>
+                http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/default/files/ramlani5829d917c5b0b_another_resource.pdf
+            </file>
+            <pid>si:123457</pid>
+            <titleField>some batch title(1)</titleField>
+            <resourceObjectCreated>true</resourceObjectCreated>
+            <dsDcCreated>true</dsDcCreated>
+            <dsRelsExtCreated>false</dsRelsExtCreated>
+            <dsObjCreated>false</dsObjCreated>
+            <dsSidoraCreated>false</dsSidoraCreated>
+            <complete>false</complete>
+        </resource>
+    </resources>
+</Batch>
