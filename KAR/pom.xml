@@ -106,6 +106,13 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
+        <!-- Sidora REST  Batch Service -->
+        <dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-rest</artifactId>
+            <version>1.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
