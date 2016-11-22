@@ -251,14 +251,6 @@
                  logName="{{edu.si.batch}}"/>
         </route>
 
-        <!-- TODO: replace this with direct:batchProcessRequestStatus -->
-        <route id="BatchProcessAddResourceObjectsRequestStatus">
-            <from uri="direct:batchProcessAddResourceObjectsRequestStatus"/>
-            <to uri="bean:batchRequestControllerBean?method=checkStatus"/>
-            <to uri="sql:{{sql.checkRequestStatus}}"/>
-            <to uri="bean:responseControllerBean?method=batchRequestStatus"/>
-        </route>
-
         <route id="BatchProcessRequestStatus">
             <from uri="direct:requestStatus"/>
             <to uri="bean:batchRequestControllerBean?method=checkStatus"/>

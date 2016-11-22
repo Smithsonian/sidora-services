@@ -55,14 +55,6 @@ public class BatchResourcesService {
     }
 
     @GET
-    @Path(value = "/batch/process/addResourceObjects/{parentId}/{correlationId}")
-    @Produces("text/xml")
-    public Response batchProcessAddResourceObjectsRequestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationId) {
-        //TODO: Replace this endpoint with batchProcessRequestStatus
-        return null;
-    }
-
-    @GET
     @Path(value = "/batch/process/requestStatus/{parentId}/{correlationId}")
     @Produces("text/xml")
     public Response requestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationId) {
