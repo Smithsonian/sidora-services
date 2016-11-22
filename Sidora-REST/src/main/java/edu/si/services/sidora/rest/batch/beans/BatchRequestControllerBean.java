@@ -71,66 +71,6 @@ public class BatchRequestControllerBean {
     /**
      *
      * @param exchange
-     * @return
-     */
-    public void db_insertBatchRequest(Exchange exchange) {
-
-        out = exchange.getIn();
-
-        Map<String, Object> headers = out.getHeaders();
-
-        correlationId = UUID.randomUUID().toString();
-
-        out.setHeader("correlationId", correlationId);
-
-        LOG.debug("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
-
-        Map<String, Object> newBatchRequest = new HashMap<String, Object>();
-        newBatchRequest.put("correlationId", correlationId);
-        newBatchRequest.put("resourceOwner", headers.get("resourceOwner"));
-        newBatchRequest.put("parentId", headers.get("parentId"));
-        newBatchRequest.put("resourceFileList", headers.get("resourceFileList"));
-        newBatchRequest.put("ds_metadata", headers.get("ds_metadata"));
-        newBatchRequest.put("ds_sidora", headers.get("ds_sidora"));
-        newBatchRequest.put("association", headers.get("association"));
-        newBatchRequest.put("codebookPID", headers.get("codebookPID"));
-        newBatchRequest.put("resourceCount", headers.get("resourceCount"));
-
-        LOG.debug("New Batch Process Request MAP: {}", newBatchRequest);
-
-        //return newBatchRequest;
-    }
-
-    /**
-     *
-     * @param exchange
-     * @return
-     */
-    public Map<String, Object> db_insertResource(Exchange exchange) throws URISyntaxException, MalformedURLException {
-
-        out = exchange.getIn();
-        Map<String, Object> headers = out.getHeaders();
-
-        URL url = new URL(out.getBody(String.class));
-
-        URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
-
-        String resourceFile = uri.toASCIIString();
-
-        Map<String, Object> newBatchResource = new HashMap<String, Object>();
-        newBatchResource.put("correlationId", headers.get("correlationId"));
-        newBatchResource.put("resourceFile", resourceFile);
-        newBatchResource.put("parentId", headers.get("parentId"));
-        newBatchResource.put("resourceOwner", headers.get("resourceOwner"));
-
-        LOG.debug("New Batch Resource MAP: {} || resourceFile: {}", newBatchResource, resourceFile);
-
-        return newBatchResource;
-    }
-
-    /**
-     *
-     * @param exchange
      * @throws Exception
      */
     public void processBatchRequest(Exchange exchange) throws Exception {
@@ -182,33 +122,9 @@ public class BatchRequestControllerBean {
         updateCreatedStatus.put("titleField", titleField);
         updateCreatedStatus.put("contentModel", contentModel);
 
-
         updateCreatedStatus.put(datastream, checkStatusCode(out.getHeader("CamelHttpResponseCode", Integer.class)));
 
         return updateCreatedStatus;
-    }
-
-    /**
-     *
-     * @param exchange
-     * @return
-     */
-    public Map<String, Object> updateStatus(Exchange exchange) {
-
-        out = exchange.getIn();
-        correlationId = out.getHeader("correlationId", String.class);
-        String resourceFile = out.getHeader("resourceFile", String.class);
-        Integer processCount = out.getExchange().getProperty("CamelSplitIndex", Integer.class);
-        Boolean request_complete = out.getExchange().getProperty("CamelSplitComplete", Boolean.class);
-
-        Map<String, Object> updateStatus = new HashMap<String, Object>();
-        updateStatus.put("correlationId", correlationId);
-        updateStatus.put("processCount", ++processCount);
-        updateStatus.put("request_complete", request_complete);
-        //updateStatus.put("resource_complete", complete);
-        updateStatus.put("resourceFile", resourceFile);
-
-        return updateStatus;
     }
 
     public Map<String, Object> checkStatus(@Header("correlationId") String correlationId,

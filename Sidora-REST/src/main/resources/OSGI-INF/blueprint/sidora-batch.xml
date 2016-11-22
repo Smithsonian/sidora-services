@@ -65,25 +65,20 @@
         </camel-cxf:providers>-->
     </camel-cxf:rsServer>
 
-    <!-- Defined the client endpoint to create the cxf-rs producer -->
-    <!--<camel-cxf:rsClient id="rsClient" address="${si.fedora.host}/objects"
-                        serviceClass="edu.si.services.sidora.rest.batch.client.FedoraService"
-                        username="${si.fedora.user}"
-                        password="${si.fedora.password}"
-                        loggingFeatureEnabled="true">
-        &lt;!&ndash;<camel-cxf:headers>
-            <cxf:entry key="Charset" value="UTF-8"/>
-        </camel-cxf:headers>&ndash;&gt;
-        &lt;!&ndash;<camel-cxf:providers>
-            <ref component-id="jaxbProvider"/>
-        </camel-cxf:providers>&ndash;&gt;
-    </camel-cxf:rsClient>-->
-
     <!-- Beans for the cxf-rs server -->
     <bean id="batchService" class="edu.si.services.sidora.rest.batch.BatchResourcesService"/>
-
-    <!-- Beans for the cxf-rs client -->
-    <!--<bean id="batchClient" class="edu.si.services.sidora.rest.batch.client.FedoraService"/>-->
+    <!--<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+        <property name="marshallerProperties">
+            <map>
+                <entry>
+                    <key>
+                        <value>jaxb.formatted.output</value>
+                    </key>
+                    <value type="java.lang.Boolean">true</value>
+                </entry>
+            </map>
+        </property>
+    </bean>-->
 
     <bean id="requestProcessor" class="edu.si.services.sidora.rest.batch.client.RequestProcessor"/>
 
@@ -97,19 +92,6 @@
             </set>
         </property>
     </bean>
-
-    <!--<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
-        <property name="marshallerProperties">
-            <map>
-                <entry>
-                    <key>
-                        <value>jaxb.formatted.output</value>
-                    </key>
-                    <value type="java.lang.Boolean">true</value>
-                </entry>
-            </map>
-        </property>
-    </bean>-->
 
     <!-- This is the JDBC data source which uses a MySQL database -->
     <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
@@ -211,7 +193,6 @@
                 </xpath>
             </setHeader>
 
-            <!--<to uri="bean:batchRequestControllerBean?method=db_insertBatchRequest"/>-->
             <to uri="bean:batchRequestControllerBean?method=createCorrelationId"/>
             <to uri="sql:{{sql.insertNewBatchRequest}}"/>
 
@@ -231,7 +212,6 @@
                     </simple>
                 </setHeader>
 
-                <!--<to uri="bean:batchRequestControllerBean?method=db_insertResource"/>-->
                 <to uri="sql:{{sql.insertResources}}"/>
 
                 <log message="========================[ ResourceFile: ${header.resourceFile} ]============================="
@@ -328,7 +308,6 @@
                     </simple>
                 </setHeader>
 
-                <!--<to uri="bean:batchRequestControllerBean?method=updateStatus"/>-->
                 <to uri="sql:{{sql.markRequestComplete}}"/>
 
 

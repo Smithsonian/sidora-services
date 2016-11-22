@@ -77,9 +77,6 @@ public class ResponseControllerBean {
         String contentModel = statusResponse.get(0).get("contentModel").toString();
         String codebookPID = statusRequestMap.get("codebookPID") == null ? "" : String.valueOf(statusRequestMap.get("codebookPID"));
 
-
-
-
         StringBuilder resources = new StringBuilder();
         Map<String, Object> statusResponseMap = new HashMap<>();
 
@@ -89,8 +86,8 @@ public class ResponseControllerBean {
             resources.append(
                     "        <resource>\n" +
                     "            <file>" + statusResponseMap.get("resourceFile") + "</file>\n" +
-                    "            <pid>" + statusResponseMap.get("parentId") + "</pid>\n" +
-                    "            <titleField>" + statusResponseMap.get("titleField") + "</titleField>\n" +
+                    "            <pid>" + statusResponseMap.get("pid") + "</pid>\n" +
+                    "            <title>" + statusResponseMap.get("titleLabel") + "</title>\n" +
                     "            <resourceObjectCreated>" + statusResponseMap.get("resource_created") + "</resourceObjectCreated>\n" +
                     "            <dsDcCreated>" + statusResponseMap.get("ds_dc_created") + "</dsDcCreated>\n" +
                     "            <dsRelsExtCreated>" + statusResponseMap.get("ds_relsExt_created") + "</dsRelsExtCreated>\n" +
