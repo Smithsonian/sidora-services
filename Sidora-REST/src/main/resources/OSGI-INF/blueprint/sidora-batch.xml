@@ -266,7 +266,6 @@
             <to uri="sql:{{sql.checkRequestStatus}}?outputHeader=batchRequest&amp;outputType=SelectList"/>
             <to uri="sql:{{sql.checkResourceStatus}}"/>
             <to uri="bean:responseControllerBean?method=batchRequestStatus"/>
-
         </route>
 
         <!-- route that process the Batch Requests by picking up new rows from the database
