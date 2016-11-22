@@ -54,22 +54,6 @@ public class BatchResourcesService {
         return null;
     }
 
-
-    /*@POST
-    @Path(value = "/batch/process/addResourceObjects/{parentId}")
-    @Produces("text/xml")
-    public Response addResourceObjects(@PathParam("parentId") String parentId,
-                                       @QueryParam("codebookPID") String codebookPID,
-                                       @QueryParam("ds_dc") String ds_dc,
-                                       @Multipart(value = "resourceFileList") String resourceFileList,
-                                       @Multipart(value = "ds_metadata") String ds_metadata,
-                                       @Multipart(value = "ds_sidora") String ds_sidora,
-                                       @Multipart(value = "contentModel") String contentModel,
-                                       @Multipart(value = "resourceOwner") String resourceOwner,
-                                       @Multipart(value = "titleField", required = false) String titleField) {
-        return null;
-    }*/
-
     @GET
     @Path(value = "/batch/process/addResourceObjects/{parentId}/{correlationId}")
     @Produces("text/xml")

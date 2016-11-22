@@ -52,26 +52,28 @@ public class BatchRequestControllerBean {
     private static final Logger LOG = LoggerFactory.getLogger(BatchRequestControllerBean.class);
 
     private Message out;
-
     private String correlationId;
-
-    @PropertyInject(value = "batch.staging.dir")
-    private String stagingDir;
-
-    @PropertyInject(value = "batch.data.dir")
-    private String processingDir;
-
-    @PropertyInject(value = "si.fedora.user")
-    private String fedoraUser;
-
-    private File tempfile, metadataFile, sidoraDatastreamFile, dataOutputDir;
 
     /**
      *
      * @param exchange
      * @return
      */
-    public Map<String, Object> db_insertBatchRequest(Exchange exchange) {
+    public void createCorrelationId(Exchange exchange) {
+
+        out = exchange.getIn();
+
+        correlationId = UUID.randomUUID().toString();
+
+        out.setHeader("correlationId", correlationId);
+    }
+
+    /**
+     *
+     * @param exchange
+     * @return
+     */
+    public void db_insertBatchRequest(Exchange exchange) {
 
         out = exchange.getIn();
 
@@ -81,27 +83,22 @@ public class BatchRequestControllerBean {
 
         out.setHeader("correlationId", correlationId);
 
-        LOG.info("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
+        LOG.debug("New Batch Process request from {} with ParentId={}, CorrelationId={}", headers.get("operationName"), headers.get("parentId"), correlationId);
 
         Map<String, Object> newBatchRequest = new HashMap<String, Object>();
         newBatchRequest.put("correlationId", correlationId);
         newBatchRequest.put("resourceOwner", headers.get("resourceOwner"));
         newBatchRequest.put("parentId", headers.get("parentId"));
         newBatchRequest.put("resourceFileList", headers.get("resourceFileList"));
-        //newBatchRequest.put("resourceXML", headers.get("resourceXML"));
-
         newBatchRequest.put("ds_metadata", headers.get("ds_metadata"));
         newBatchRequest.put("ds_sidora", headers.get("ds_sidora"));
         newBatchRequest.put("association", headers.get("association"));
-
-        //newBatchRequest.put("contentModel", headers.get("contentModel"));
-        //newBatchRequest.put("titleField", headers.get("titleField"));
         newBatchRequest.put("codebookPID", headers.get("codebookPID"));
         newBatchRequest.put("resourceCount", headers.get("resourceCount"));
 
         LOG.debug("New Batch Process Request MAP: {}", newBatchRequest);
 
-        return newBatchRequest;
+        //return newBatchRequest;
     }
 
     /**
@@ -120,19 +117,15 @@ public class BatchRequestControllerBean {
 
         String resourceFile = uri.toASCIIString();
 
-        //String resourceFile = out.getBody(String.class);
-
         Map<String, Object> newBatchResource = new HashMap<String, Object>();
         newBatchResource.put("correlationId", headers.get("correlationId"));
         newBatchResource.put("resourceFile", resourceFile);
-        //newBatchResource.put("parentId", headers.get("parentId"));
-        //newBatchResource.put("contentModel", headers.get("contentModel"));
-        //newBatchResource.put("resourceOwner", headers.get("resourceOwner"));
+        newBatchResource.put("parentId", headers.get("parentId"));
+        newBatchResource.put("resourceOwner", headers.get("resourceOwner"));
 
         LOG.debug("New Batch Resource MAP: {} || resourceFile: {}", newBatchResource, resourceFile);
 
         return newBatchResource;
-
     }
 
     /**
@@ -154,7 +147,6 @@ public class BatchRequestControllerBean {
 
         out.setHeader("correlationId", correlationId);
         out.setHeader("parentId", batchRequestMap.get("parentId").toString());
-        //out.setHeader("contentModel", batchRequestMap.get("contentModel").toString());
         out.setHeader("resourceCount", batchRequestMap.get("resourceCount").toString());
         out.setHeader("resourceOwner", batchRequestMap.get("resourceOwner").toString());
 
@@ -171,56 +163,29 @@ public class BatchRequestControllerBean {
 
     /**
      *
-     * @param processCount
-     * @return
-     */
-    public  Map<String, Object> updateProcessCount(@Header("correlationId") String correlationId,
-                                                   @ExchangeProperty("CamelSplitIndex") Integer processCount) {
-
-        Map<String, Object> updateProcessCount = new HashMap<String, Object>();
-        updateProcessCount.put("correlationId", correlationId);
-        updateProcessCount.put("processCount", ++processCount);
-
-        return updateProcessCount;
-    }
-
-    /**
-     *
      * @param exchange
      * @return
      */
-    public  Map<String, Object> updateResourceCreated(Exchange exchange) {
+    public Map<String, Object> updateCreatedStatus(Exchange exchange, String datastream) {
         
         out = exchange.getIn();
         correlationId = out.getHeader("correlationId", String.class);
-        String resourceFile = out.getHeader("ds_resourceFile", String.class);
+        String resourceFile = out.getHeader("resourceFile", String.class);
         String pid = out.getHeader("CamelFedoraPid", String.class);
         String titleField = out.getHeader("titleField", String.class);
+        String contentModel = out.getHeader("contentModel", String.class);
 
-        Map<String, Object> updateResourceCreated = new HashMap<String, Object>();
-        updateResourceCreated.put("correlationId", correlationId);
-        updateResourceCreated.put("resourceFile", resourceFile);
-        updateResourceCreated.put("pid", pid);
-        updateResourceCreated.put("titleField", titleField);
+        Map<String, Object> updateCreatedStatus = new HashMap<String, Object>();
+        updateCreatedStatus.put("correlationId", correlationId);
+        updateCreatedStatus.put("resourceFile", resourceFile);
+        updateCreatedStatus.put("pid", pid);
+        updateCreatedStatus.put("titleField", titleField);
+        updateCreatedStatus.put("contentModel", contentModel);
 
-        updateResourceCreated.put("resource_created", checkStatusCode(out.getHeader("CamelHttpResponceCode", Integer.class)));
 
-        return updateResourceCreated;
-    }
+        updateCreatedStatus.put(datastream, checkStatusCode(out.getHeader("CamelHttpResponseCode", Integer.class)));
 
-    public Map<String, Object> updateDsDcCreated(Exchange exchange) {
-
-        out = exchange.getIn();
-        correlationId = out.getHeader("correlationId", String.class);
-        String resourceFile = out.getHeader("ds_resourceFile", String.class);
-
-        Map<String, Object> updateDsDcCreated= new HashMap<String, Object>();
-        updateDsDcCreated.put("correlationId", correlationId);
-        updateDsDcCreated.put("resourceFile", resourceFile);
-
-        updateDsDcCreated.put("ds_dc_created", checkStatusCode(out.getHeader("CamelHttpResponceCode", Integer.class)));
-
-        return updateDsDcCreated;
+        return updateCreatedStatus;
     }
 
     /**
@@ -228,23 +193,25 @@ public class BatchRequestControllerBean {
      * @param exchange
      * @return
      */
-    public  Map<String, Object> updateRelsExtCreated(Exchange exchange) {
+    public Map<String, Object> updateStatus(Exchange exchange) {
 
         out = exchange.getIn();
         correlationId = out.getHeader("correlationId", String.class);
-        String resourceFile = out.getHeader("ds_resourceFile", String.class);
-        String pid = out.getHeader("CamelFedoraPid", String.class);
+        String resourceFile = out.getHeader("resourceFile", String.class);
+        Integer processCount = out.getExchange().getProperty("CamelSplitIndex", Integer.class);
+        Boolean request_complete = out.getExchange().getProperty("CamelSplitComplete", Boolean.class);
 
-        Map<String, Object> updateResourceCreated = new HashMap<String, Object>();
-        updateResourceCreated.put("correlationId", correlationId);
-        updateResourceCreated.put("resourceFile", resourceFile);
-        updateResourceCreated.put("pid", pid);
-        updateResourceCreated.put("resource_created", true);
+        Map<String, Object> updateStatus = new HashMap<String, Object>();
+        updateStatus.put("correlationId", correlationId);
+        updateStatus.put("processCount", ++processCount);
+        updateStatus.put("request_complete", request_complete);
+        //updateStatus.put("resource_complete", complete);
+        updateStatus.put("resourceFile", resourceFile);
 
-        return updateResourceCreated;
+        return updateStatus;
     }
 
-    public Map<String, Object> checkBatchRequestStatus(@Header("correlationId") String correlationId,
+    public Map<String, Object> checkStatus(@Header("correlationId") String correlationId,
                                                        @Header("parentId") String parentId) {
 
         Map<String, Object> batchRequestStatus = new HashMap<String, Object>();
@@ -269,7 +236,7 @@ public class BatchRequestControllerBean {
 
         out = exchange.getIn();
 
-        URL url = new URL(out.getHeader("ds_resourceFile", String.class));
+        URL url = new URL(out.getHeader("resourceFile", String.class));
 
         URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
 
@@ -286,8 +253,8 @@ public class BatchRequestControllerBean {
         out.setHeader("dsMIME", mimeType);
     }
 
-    private boolean checkStatusCode(Integer camelHttpResponceCode) {
-        if (camelHttpResponceCode != 200 || camelHttpResponceCode != 201) {
+    private boolean checkStatusCode(Integer camelHttpResponseCode) {
+        if (camelHttpResponseCode != 200 || camelHttpResponseCode != 201) {
             return true;
         } else {
             return false;

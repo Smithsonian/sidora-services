@@ -1,17 +1,19 @@
-<?xml version="1.0"?>
-<data>
-    <id>114</id>
+<?xml version="1.0" encoding="UTF-8"?>
+<association>
+    <id>73</id>
     <content_model>si:generalImageCModel</content_model>
     <form_name>General Image Description</form_name>
     <dsid>MODS</dsid>
     <title_field>
         <item0>mods</item0>
-        <item1>titleInfo</item1>
-        <item2>title</item2>
+        <item0>titleInfo</item0>
+        <item1>title</item1>
     </title_field>
-    <transform>mods_to_dc.xsl</transform>
+    <transform>
+        http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/all/modules/islandora_xml_forms-7.x-1.7/builder/transforms/mods_to_dc.xsl
+    </transform>
     <self_transform>No Transform</self_transform>
     <template></template>
     <in_db>1</in_db>
     <enabled>1</enabled>
-</data>
+</association>

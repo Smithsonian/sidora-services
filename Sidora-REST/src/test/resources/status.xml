@@ -7,6 +7,7 @@
     <ResourcesProcessed>1</ResourcesProcessed>
     <BatchDone>false</BatchDone>
     <contentModel>si:generalImageCModel</contentModel>
+    <codebookPID></codebookPID>
     <resources>
         <resource>
             <file>
@@ -18,8 +19,11 @@
             <resourceObjectCreated>true</resourceObjectCreated>
             <dsDcCreated>true</dsDcCreated>
             <dsRelsExtCreated>true</dsRelsExtCreated>
+            <dsDcMetadata></dsDcMetadata>
             <dsObjCreated>true</dsObjCreated>
             <dsSidoraCreated>true</dsSidoraCreated>
+            <parentChildRelationshipCreated></parentChildRelationshipCreated>
+            <codebookRelationshipCreated></codebookRelationshipCreated>
             <complete>true</complete>
         </resource>
         <resource>
@@ -32,7 +36,10 @@
             <dsDcCreated>true</dsDcCreated>
             <dsRelsExtCreated>false</dsRelsExtCreated>
             <dsObjCreated>false</dsObjCreated>
+            <dsDcMetadata></dsDcMetadata>
             <dsSidoraCreated>false</dsSidoraCreated>
+            <parentChildRelationshipCreated></parentChildRelationshipCreated>
+            <codebookRelationshipCreated></codebookRelationshipCreated>
             <complete>false</complete>
         </resource>
     </resources>

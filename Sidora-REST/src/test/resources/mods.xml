@@ -1,59 +1,30 @@
-<?xml version="1.0"?>
-<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink">
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink">
     <titleInfo>
-        <title>pdf_batch_111416</title>
-        <subTitle>this should show up in dc</subTitle>
+        <title>Title changed on 111716</title>
     </titleInfo>
-    <name type="personal">
-        <namePart>personal name</namePart>
-        <role>
-            <roleTerm authority="marcrelator" type="text">nn1</roleTerm>
-        </role>
-    </name>
-    <name type="personal">
-        <namePart>personal name2</namePart>
-        <role>
-            <roleTerm authority="marcrelator" type="text">nn2</roleTerm>
-        </role>
-    </name>
-    <typeOfResource>text</typeOfResource>
-    <genre authority="lctgm"/>
-    <originInfo>
-        <dateIssued></dateIssued>
-        <publisher></publisher>
-        <place>
-            <placeTerm authority="marccountry" type="code"/>
-        </place>
-        <place>
-            <placeTerm type="text"/>
-        </place>
-    </originInfo>
-    <language>
-        <languageTerm authority="iso639-2b" type="code"/>
-    </language>
-    <abstract></abstract>
-    <identifier type="local"/>
-    <physicalDescription>
-        <form authority="marcform">text</form>
-        <extent></extent>
-    </physicalDescription>
-    <note></note>
+    <abstract>description changed</abstract>
     <subject>
-        <topic></topic>
-        <geographic></geographic>
-        <temporal></temporal>
-        <hierarchicalGeographic>
-            <continent>North America</continent>
-            <country></country>
-            <province></province>
-            <region></region>
-            <county></county>
-            <city></city>
-            <citySection></citySection>
-        </hierarchicalGeographic>
-        <cartographics>
-            <coordinates></coordinates>
-        </cartographics>
+        <topic/>
+        <geographic/>
     </subject>
+    <name type="corporate">
+        <namePart/>
+        <role>
+            <roleTerm authority="marcrelator" type="text"/>
+        </role>
+    </name>
+    <identifier/>
+    <genre/>
+    <note/>
+    <originInfo>
+        <dateCaptured/>
+    </originInfo>
+    <location>
+        <physicalLocation/>
+        <holdingSimple>
+            <copyInformation>
+                <subLocation/>
+            </copyInformation>
+        </holdingSimple>
+    </location>
 </mods>

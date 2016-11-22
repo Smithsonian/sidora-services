@@ -1,36 +1,10 @@
-<!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
-  ~ use this file except in compliance with the License.You may obtain a copy of
-  ~ the License at: http://www.apache.org/licenses/
-  ~
-  ~ This software and accompanying documentation is supplied without
-  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
-  ~ (1) expressly disclaim any warranties, express or implied, including but not
-  ~ limited to any implied warranties of merchantability, fitness for a
-  ~ particular purpose, title or non-infringement; (2) do not assume any legal
-  ~ liability or responsibility for the accuracy, completeness, or usefulness of
-  ~ the software; (3) do not represent that use of the software would not
-  ~ infringe privately owned rights; (4) do not warrant that the software
-  ~ is error-free or will be maintained, supported, updated or enhanced;
-  ~ (5) will not be liable for any indirect, incidental, consequential special
-  ~ or punitive damages of any kind or nature, including but not limited to lost
-  ~ profits or loss of data, on any basis arising from contract, tort or
-  ~ otherwise, even if any of the parties has been warned of the possibility of
-  ~ such loss or damage.
-  ~
-  ~ This distribution includes several third-party libraries, each with their own
-  ~ license terms. For a complete copy of all copyright and license terms, including
-  ~ those of third-party libraries, please see the product release notes.
-  -->
-
-<xsl:stylesheet version="1.0"
-                xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="xml" indent="yes" encoding="utf-8"/>
 
     <xsl:param name="titleLabel"/>
-    <xsl:param name="titleNode"/>
+    <xsl:param name="titlePath"/>
+    <!--<xsl:param name="camelSplitIndex"/>-->
+
 
     <xsl:template match="@*|node()">
         <xsl:copy>
@@ -38,7 +12,32 @@
         </xsl:copy>
     </xsl:template>
 
-    <xsl:template match="*[local-name() = $titleNode]/text()">
+    <xsl:template match="*[local-name() = $titlePath]/text()">
         <xsl:value-of select="$titleLabel"/>
     </xsl:template>
+
+
+    <!--<xsl:template match="@*|node()">
+        <xsl:variable name="path-to-title">
+            <xsl:for-each select="ancestor-or-self::node()">
+                <xsl:value-of select="name()" />
+                <xsl:if test="position()!=last()">
+                    <xsl:text>/</xsl:text>
+                </xsl:if>
+            </xsl:for-each>
+        </xsl:variable>
+        <xsl:choose>
+            <xsl:when test="$titlePath=$path-to-title">
+                <xsl:copy>
+                    <xsl:value-of select="concat(., '(', $camelSplitIndex, ')')"/>
+                </xsl:copy>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:copy>
+                    <xsl:apply-templates select="@*|node()"/>
+                </xsl:copy>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>-->
+
 </xsl:stylesheet>

@@ -93,6 +93,7 @@
                 <value>ds_metadataXML</value>
                 <value>ds_sidoraXML</value>
                 <value>ds_dcXML</value>
+                <value>associationXML</value>
             </set>
         </property>
     </bean>
@@ -210,7 +211,8 @@
                 </xpath>
             </setHeader>
 
-            <to uri="bean:batchRequestControllerBean?method=db_insertBatchRequest"/>
+            <!--<to uri="bean:batchRequestControllerBean?method=db_insertBatchRequest"/>-->
+            <to uri="bean:batchRequestControllerBean?method=createCorrelationId"/>
             <to uri="sql:{{sql.insertNewBatchRequest}}"/>
 
             <log message="${id}: Batch Request CorrelationId: ${header.correlationId}"
@@ -223,8 +225,18 @@
                     //file/text()
                 </xpath>
 
-                <to uri="bean:batchRequestControllerBean?method=db_insertResource"/>
+                <setHeader headerName="resourceFile">
+                    <simple resultType="java.lang.String">
+                        ${body}
+                    </simple>
+                </setHeader>
+
+                <!--<to uri="bean:batchRequestControllerBean?method=db_insertResource"/>-->
                 <to uri="sql:{{sql.insertResources}}"/>
+
+                <log message="========================[ ResourceFile: ${header.resourceFile} ]============================="
+                     loggingLevel="DEBUG"
+                     logName="{{edu.si.batch}}"/>
             </split>
 
             <!-- Set the REST response message -->
@@ -242,27 +254,25 @@
         <!-- TODO: replace this with direct:batchProcessRequestStatus -->
         <route id="BatchProcessAddResourceObjectsRequestStatus">
             <from uri="direct:batchProcessAddResourceObjectsRequestStatus"/>
-            <to uri="bean:batchRequestControllerBean?method=checkBatchRequestStatus"/>
-            <to uri="sql:{{sql.checkBatchRequestStatus}}"/>
+            <to uri="bean:batchRequestControllerBean?method=checkStatus"/>
+            <to uri="sql:{{sql.checkRequestStatus}}"/>
             <to uri="bean:responseControllerBean?method=batchRequestStatus"/>
 
         </route>
 
         <route id="BatchProcessRequestStatus">
             <from uri="direct:requestStatus"/>
-            <to uri="bean:batchRequestControllerBean?method=checkBatchRequestStatus"/>
-            <to uri="sql:{{sql.checkBatchRequestStatus}}"/>
+            <to uri="bean:batchRequestControllerBean?method=checkStatus"/>
+            <to uri="sql:{{sql.checkRequestStatus}}?outputHeader=batchRequest&amp;outputType=SelectList"/>
+            <to uri="sql:{{sql.checkResourceStatus}}"/>
             <to uri="bean:responseControllerBean?method=batchRequestStatus"/>
 
         </route>
 
-        <!-- TODO: Detailed Status of the batch process -->
-        <!-- TODO: Adding DC datastream - may need to update the title in the DC datastream-->
-        <!-- TODO: Detailed Status of the batch process -->
         <!-- route that process the Batch Requests by picking up new rows from the database
         and when done processing then update the row to mark it as complete -->
         <route id="BatchProcessResources">
-            <from uri="sql:{{sql.selectBatchProcess}}?onConsume={{sql.markBatchProcessComplete}}"/>
+            <from uri="sql:{{sql.selectBatchRequest}}?onConsume={{sql.markRequestConsumed}}"/>
             <log message="${id}: Starting Batch Resources Processing..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
@@ -270,7 +280,11 @@
             <!-- Setup the authorization header for http calls to fedora REST endpoint -->
             <to uri="bean:requestProcessor?method=setAuthorization"/>
 
+            <!-- setting up headers and body from sql polling consumer -->
             <to uri="bean:batchRequestControllerBean?method=processBatchRequest"/>
+
+            <!-- process associations information -->
+            <to uri="direct:processAssociationInfo"/>
 
             <to uri="sql:{{sql.selectResources}}"/>
 
@@ -284,13 +298,9 @@
                 </simple>
             </setHeader>
 
-            <!-- TODO: Add validations for resources match whats in fedora -->
             <log message="${id}: Batch Request Parent PID=${header.CamelFedoraPid},  Resource Count=${header.resourceCount}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
-
-            <!-- process associations information -->
-            <to uri="direct:processAssociationInfo"/>
 
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator"> <!-- pidAggregator stores pids to ${header.PIDAggregation} -->
@@ -304,17 +314,33 @@
                      loggingLevel="DEBUG"
                      logName="{{edu.si.batch}}"/>
 
-                <setHeader headerName="ds_resourceFile">
+                <setHeader headerName="resourceFile">
                     <simple>
                         ${body[resourceFile]}
                     </simple>
                 </setHeader>
 
+                <to uri="sql:{{sql.markResourceConsumed}}"/>
+
                 <to uri="direct:addResource"/>
 
-                <to uri="bean:batchRequestControllerBean?method=updateProcessCount"/>
+                <setHeader headerName="processCount">
+                    <simple>
+                        ${property.CamelSplitIndex}++
+                    </simple>
+                </setHeader>
 
                 <to uri="sql:{{sql.updateBatchProcessCount}}"/>
+
+                <setHeader headerName="request_complete">
+                    <simple>
+                        ${property.CamelSplitComplete}
+                    </simple>
+                </setHeader>
+
+                <!--<to uri="bean:batchRequestControllerBean?method=updateStatus"/>-->
+                <to uri="sql:{{sql.markRequestComplete}}"/>
+
 
                 <log message="${id}: Created Resource - ${body}."
                      loggingLevel="INFO"
@@ -341,14 +367,11 @@
                     GET
                 </simple>
             </setHeader>
-            <setHeader headerName="Content-Type">
-                <constant>text/xml</constant>
-            </setHeader>
-            <setHeader headerName="Accept">
-                <constant>application/xml</constant>
-            </setHeader>
+            <setBody>
+                <constant/>
+            </setBody>
 
-            <toD uri="cxfrs://${header.association}" pattern="InOut" id="httpGetAssociation"/>
+            <toD uri="cxfrs://${header.association}?headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="httpGetAssociation"/>
 
             <setHeader headerName="associationXML">
                 <simple resultType="java.lang.String">
@@ -357,31 +380,29 @@
             </setHeader>
 
             <setHeader headerName="contentModel">
-                <xpath resultType="java.lang.String">
+                <xpath resultType="java.lang.String" headerName="associationXML">
                     //content_model/text()
                 </xpath>
             </setHeader>
 
             <setHeader headerName="dsID">
-                <xpath resultType="java.lang.String">
+                <xpath resultType="java.lang.String" headerName="associationXML">
                     //dsid/text()
                 </xpath>
             </setHeader>
 
-            <setHeader headerName="transform">
-                <xpath resultType="java.lang.String">
+            <setHeader headerName="mods_to_dc_XSL">
+                <xpath resultType="java.lang.String" headerName="associationXML">
                     //transform/text()
                 </xpath>
             </setHeader>
 
-            <setHeader headerName="titleNode">
-                <xpath>
-                    string-join((//title_field/item0/text(), //title_field/item1/text(), //title_field/item/text()
+            <!-- header is an XSLT param -->
+            <setHeader headerName="titlePath">
+                <xpath resultType="java.lang.String" headerName="associationXML">
+                    //association/title_field/*[last()]
                 </xpath>
             </setHeader>
-
-
-
 
             <log message="${id}: Finished processing Association Info."
                  loggingLevel="INFO"
@@ -396,55 +417,27 @@
 
             <to uri="direct:setupMetadata"/>
 
-            <!-- Create a new resource object -->
-            <setHeader headerName="Exchange.HTTP_METHOD">
-                <simple>
-                    POST
-                </simple>
-            </setHeader>
-            <setHeader headerName="Content-Type">
-                <constant>text/xml</constant>
-            </setHeader>
-            <setBody>
-                <simple></simple>
-            </setBody>
+            <to uri="direct:createNewResource"/>
 
-            <!--<toD uri="fedora:create?pid=null&amp;owner=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}"/>-->
-
-            <!-- Http call to create a new resource object -->
-            <toD uri="cxfrs://{{si.fedora.host}}/objects/new?ownerId=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="newFedoraObject"/>
-
-            <setHeader headerName="CamelFedoraPid">
-                <simple resultType="java.lang.String">
-                    ${body}
-                </simple>
-            </setHeader>
-
-            <to uri="bean:batchRequestControllerBean?method=updateResourceCreated"/>
-            <!--<to uri="sql:{{sql.updatePidForNewResourceObject}}"/>-->
-            <to uri="sql:{{sql.updateResourceCreated}}"/>
-
-            <!-- set dsID for (MODS and update DC) or (FGDC) -->
             <choice>
                 <when>
-                    <simple>${header.codebookPID} != null</simple>
-                    <setHeader headerName="dsID">
-                        <simple>FGDC</simple>
-                    </setHeader>
-                </when>
-                <otherwise>
-                    <setHeader headerName="dsID">
-                        <simple>MODS</simple>
-                    </setHeader>
+                    <simple>${header.dsID} == 'MODS'</simple>
                     <to uri="direct:updateDCDatastream"/>
-                </otherwise>
+                </when>
             </choice>
 
             <to uri="direct:addRelsExtDatastream"/>
             <to uri="direct:addMetadataDatastream"/>
             <to uri="direct:addSidoraDatastream"/>
             <to uri="direct:addOBJDatastream"/>
+            <!--<to uri="direct:addFITSDatastream"/>-->
             <to uri="direct:addRelationships"/>
+
+            <setHeader headerName="resource_complete">
+                <simple resultType="java.lang.Boolean">true</simple>
+            </setHeader>
+
+            <to uri="sql:{{sql.markResourceComplete}}"/>
 
             <log message="${id}: Finished Batch Process: Add Resource..."
                  loggingLevel="INFO"
@@ -473,22 +466,18 @@
                 <simple></simple>
             </setBody>
             <!-- http call to get the metadata file -->
-            <toD uri="cxfrs://${header.ds_metadata}" pattern="InOut" id="httpGetDataStreamFile"/>
+            <toD uri="cxfrs://${header.ds_metadata}?headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="httpGetDataStreamFile"/>
 
-            <!-- header is an XSLT param -->
-            <!--<setHeader headerName="titleNode">
-                <xpath>
-                    path from association
-                </xpath>
-            </setHeader>-->
+            <convertBodyTo type="java.lang.String"/>
+
             <!-- header is an XSLT param -->
             <setHeader headerName="titleLabel">
                 <xpath resultType="java.lang.String">
-                    concat(//*[local-name()='title']/text(), function:simple(&#39;(${property.CamelSplitIndex})&#39;))
+                    concat(//*[local-name()=function:simple(&#39;${header.titlePath}&#39;)]/text(), function:simple(&#39;(${property.CamelSplitIndex})&#39;))
                 </xpath>
             </setHeader>
 
-            <log message="${id}: Batch Process Title/Label: ${header.titleLabel} For Resource: ${header.ds_resourceFile}"
+            <log message="${id}: Batch Process Title/Label: ${header.titleLabel} For Resource: ${header.resourceFile}"
                  loggingLevel="DEBUG"
                  logName="{{edu.si.batch}}"/>
 
@@ -501,7 +490,47 @@
                 </simple>
             </setHeader>
 
+            <log message="${id}: Batch Process Title/Label: ${header.titleLabel} For Resource: ${header.resourceFile}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
+
             <log message="${id}: Finished setting up Metadata ..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+        </route>
+
+        <route id="BatchProcessCreateNewResource">
+            <from uri="direct:createNewResource"/>
+            <log message="${id}: Started creating new resource..."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <!-- Create a new resource object -->
+            <setHeader headerName="Exchange.HTTP_METHOD">
+                <simple>
+                    POST
+                </simple>
+            </setHeader>
+            <setHeader headerName="Content-Type">
+                <constant>text/xml</constant>
+            </setHeader>
+            <setBody>
+                <constant/>
+            </setBody>
+
+            <!-- Http call to create a new resource object -->
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/new?ownerId=${header.resourceOwner}&amp;namespace=si&amp;label=${header.titleLabel}&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="newFedoraObject"/>
+
+            <setHeader headerName="CamelFedoraPid">
+                <simple resultType="java.lang.String">
+                    ${body}
+                </simple>
+            </setHeader>
+
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, resource_created)"/>
+            <to uri="sql:{{sql.updateResourceCreated}}"/>
+
+            <log message="${id}: Finished creating new resource..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
         </route>
@@ -512,31 +541,33 @@
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
-            <!--<setHeader headerName="Exchange.HTTP_METHOD">
-                <simple>
-                    GET
-                </simple>
-            </setHeader>
-            <setBody>
-                <simple></simple>
-            </setBody>
-
-            <toD uri="cxfrs://${header.ds_dc}?headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="httpGetDCDatastream"/>-->
-
             <setBody>
                 <simple>
                     ${header.ds_metadataXML}
                 </simple>
             </setBody>
 
-            <!--<to uri="xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>-->
-            <to uri="xslt:file:/home/ramlani/sidora/sidora0.4/sites/all/modules/islandora_xml_forms-7.x-1.7/builder/transforms/mods_to_dc.xsl?saxon=true"/>
+            <!--<log message="=============[ MODS original ]==============\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>-->
+
+            <toD uri="xslt:{{extract.mods.from.collection.xsl}}"/>
+
+            <!--<log message="=============[ MODS after extract_mods_from_collection.xsl ]==============\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>-->
+
+            <toD uri="xslt:${header.mods_to_dc_XSL}?saxon=true"/>
+
+            <!--<log message="=============[ MODS after extract_mods_from_collection.xsl AND mods_to_dc.xsl ]==============\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>-->
 
             <log message="${id}: DC XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{edu.si.batch}}"/>
 
-            <!-- Add a datastream for dc. -->
+            <!-- Update dc datastream -->
             <setHeader headerName="Exchange.HTTP_METHOD">
                 <simple>
                     POST
@@ -545,8 +576,7 @@
 
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/DC?headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="updateDCDatastream"/>
 
-            <to uri="bean:batchRequestControllerBean?method=updateDsDcCreated"/>
-            <!--<to uri="sql:{{sql.updatePidForNewResourceObject}}"/>-->
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_dc_created)"/>
             <to uri="sql:{{sql.updateDsDcCreated}}"/>
 
             <log message="${id}: Finished processing DC."
@@ -562,8 +592,6 @@
 
             <to uri="velocity:file:Input/templates/BatchResourceTemplate.vsl"/>
 
-            <!--<to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>-->
-
             <!-- Add a datastream for RELS-EXT. -->
             <setHeader headerName="Exchange.HTTP_METHOD">
                 <simple>
@@ -573,7 +601,7 @@
 
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/RELS-EXT?controlGroup=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;mimeType=application/rdf+xml&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addRels-ExtDatastream"/>
 
-            <to uri="bean:batchRequestControllerBean?method=updateRelsExtCreated"/>
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_relsExt_created)"/>
             <to uri="sql:{{sql.updateDsRelsExtCreated}}"/>
 
             <log message="${id}: Finished processing RELS-EXT."
@@ -594,8 +622,6 @@
                 </simple>
             </setBody>
 
-            <!--<to uri="xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>-->
-
             <log message="${id}: ${header.dsID} XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{edu.si.batch}}"/>
@@ -607,6 +633,9 @@
             </setHeader>
 
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/${header.dsID}?mimeType=text/xml&amp;controlGroup=X&amp;dsLabel=${header.dsID}%20Record&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addMetadataDatastream"/>
+
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_metadata_created)"/>
+            <to uri="sql:{{sql.updateDsMetadataCreated}}"/>
 
             <log message="${id}: Finished processing ${header.dsID}."
                  loggingLevel="INFO"
@@ -625,12 +654,13 @@
                 </simple>
             </setHeader>
             <setBody>
-                <simple></simple>
+                <constant/>
             </setBody>
 
-            <!--<to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA"/>-->
-
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/SIDORA?dsLocation=${header.ds_sidora}&amp;mimeType=text/xml&amp;controlGroup=X&amp;dsLabel=SIDORA&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addSidoraDatastream"/>
+
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_sidora_created)"/>
+            <to uri="sql:{{sql.updateDsSidoraCreated}}"/>
 
             <log message="${id}: Finished processing SIDORA Datastream ..."
                  loggingLevel="INFO"
@@ -644,14 +674,11 @@
                  logName="{{edu.si.batch}}"/>
 
             <!-- Need the Mime Type for the OBJ datastream -->
-            <!--<to uri="direct:addFITSDatastream"/>-->
             <to uri="bean:batchRequestControllerBean?method=getMIMEType"/>
 
             <log message="${id}: Batch Process: Found: ${header.dsMIME}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
-
-            <!--<toD uri="fedora:addDatastream?name=OBJ&amp;type=${header.dsMIME}&amp;group=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false"/>-->
 
             <setHeader headerName="Exchange.HTTP_METHOD">
                 <simple>
@@ -660,10 +687,13 @@
             </setHeader>
 
             <setBody>
-                <simple></simple>
+                <constant/>
             </setBody>
 
-            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.ds_resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.titleLabel}&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
+
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_obj_created)"/>
+            <to uri="sql:{{sql.updateDsObjCreated}}"/>
 
             <log message="${id}: Finished processing OBJ."
                  loggingLevel="INFO"
@@ -683,15 +713,19 @@
                 </simple>
             </setHeader>
             <setBody>
-                <simple></simple>
+                <constant/>
             </setBody>
 
             <filter>
                 <simple>
                     ${header.dsID} == 'FGDC'
                 </simple>
+
                 <!-- add codebook relationship -->
                 <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/relationships/new?predicate=info:fedora/fedora-system:def/relations-external%23hasCodebook&amp;subject=info:fedora/${header.CamelFedoraPid}&amp;object=info:fedora/${header.codebookPID}&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addCodebookRelationship"/>
+
+                <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, codebook_relationship_created)"/>
+                <to uri="sql:{{sql.updateCodebookRelationshipCreated}}"/>
             </filter>
 
             <setHeader headerName="Exchange.HTTP_METHOD">
@@ -700,12 +734,14 @@
                 </simple>
             </setHeader>
             <setBody>
-                <simple></simple>
+                <constant/>
             </setBody>
 
-            <!--<to uri="fedora:hasResource?parentPid=${header.parentId}&amp;childPid=${header.CamelFedoraPid}"/>-->
             <!-- add relationship to parent -->
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.parentId}/relationships/new?predicate=info:fedora/fedora-system:def/relations-external%23hasResource&amp;subject=info:fedora/${header.parentId}&amp;object=info:fedora/${header.CamelFedoraPid}&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addRelationship"/>
+
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, parent_child_resource_relationship_created)"/>
+            <to uri="sql:{{sql.updateParentChildResourceRelationshipCreated}}"/>
 
             <log message="${id}: Finished processing Relationships for ${header.dsID}."
                  loggingLevel="INFO"
@@ -721,7 +757,7 @@
 
             <recipientList>
                 <simple>
-                    exec:fits?args=-i ${header.CamelFileParentDir}/${header.ds_resourceFile}
+                    exec:fits?args=-i ${header.CamelFileParentDir}/${header.resourceFile}
                 </simple>
             </recipientList>
 
