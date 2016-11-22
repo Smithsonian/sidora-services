@@ -257,7 +257,6 @@
             <to uri="bean:batchRequestControllerBean?method=checkStatus"/>
             <to uri="sql:{{sql.checkRequestStatus}}"/>
             <to uri="bean:responseControllerBean?method=batchRequestStatus"/>
-
         </route>
 
         <route id="BatchProcessRequestStatus">
