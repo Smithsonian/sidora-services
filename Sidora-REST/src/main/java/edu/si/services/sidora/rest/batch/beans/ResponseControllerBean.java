@@ -27,6 +27,9 @@
 
 package edu.si.services.sidora.rest.batch.beans;
 
+import edu.si.services.sidora.rest.batch.model.responce.BatchRequestResponse;
+import edu.si.services.sidora.rest.batch.model.status.BatchStatus;
+import edu.si.services.sidora.rest.batch.model.status.ResourceStatus;
 import org.apache.camel.Exchange;
 import org.apache.camel.Header;
 import org.apache.camel.Message;
@@ -34,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,80 +51,63 @@ public class ResponseControllerBean {
     private String correlationId;
     private Integer processCount;
     private boolean request_complete;
-    /**
-     *
-     * @param exchange
-     * @return
-     * @throws Exception
-     */
-    public String batchRequestStatus(Exchange exchange, @Header("batchRequest") ArrayList<HashMap<String,Object>> requestMap, ArrayList<HashMap<String,Object>> statusResponse) throws Exception {
 
-        //final ObjectMapper mapper = new ObjectMapper(); // jackson's objectmapper
-//        final ObjectMapper mapper = new ObjectMapper();
-//        final BatchRequest pojo = mapper.convertValue(statusResponseMap, BatchRequest.class);
+    public BatchStatus batchStatus(Exchange exchange, @Header("batchRequest") ArrayList<HashMap<String, Object>> requestMap, ArrayList<HashMap<String, Object>> statusResponse) {
 
         out = exchange.getIn();
 
         Map<String, Object> statusRequestMap = new HashMap<>();
         statusRequestMap.putAll(requestMap.get(0));
 
-        LOG.debug("====================[ batchRequestMap ]=====================\n{}", Arrays.toString(statusRequestMap.entrySet().toArray()));
+        BatchStatus batchStatus = new BatchStatus();
 
-        correlationId = statusRequestMap.get("correlationId").toString();
-        parentPID = statusRequestMap.get("parentId").toString();
-        String resourceOwner = statusRequestMap.get("resourceOwner").toString();
-        request_complete = (boolean) statusRequestMap.get("request_complete");
-        Integer resourceCount = (Integer) statusRequestMap.get("resourceCount");
-        processCount = (Integer) statusRequestMap.get("processCount");
-        String contentModel = statusResponse.get(0).get("contentModel").toString();
+        batchStatus.setParentPID(statusRequestMap.get("parentId").toString());
+        batchStatus.setResourceOwner(statusRequestMap.get("resourceOwner").toString());
+        batchStatus.setCorrelationId(statusRequestMap.get("correlationId").toString());
+        batchStatus.setResourceCount((Integer) statusRequestMap.get("resourceCount"));
+        batchStatus.setResourcesProcessed((Integer) statusRequestMap.get("processCount"));
+        batchStatus.setBatchDone((boolean) statusRequestMap.get("request_complete"));
+        batchStatus.setContentModel(statusResponse.get(0).get("contentModel").toString());
         String codebookPID = statusRequestMap.get("codebookPID") == null ? "" : String.valueOf(statusRequestMap.get("codebookPID"));
+        batchStatus.setCodebookPID(codebookPID);
 
-        StringBuilder resources = new StringBuilder();
-        Map<String, Object> statusResponseMap = new HashMap<>();
+        ArrayList<ResourceStatus> resourceStatusArrayList = new ArrayList<>();
 
         for (HashMap hashMap : statusResponse) {
-            statusResponseMap.putAll(hashMap);
+            ResourceStatus resourceStatus = new ResourceStatus();
+            resourceStatus.setFile(String.valueOf(hashMap.get("resourceFile")));
+            resourceStatus.setPid(String.valueOf(hashMap.get("pid")));
+            resourceStatus.setTitle(String.valueOf(hashMap.get("titleLabel")));
+            resourceStatus.setResourceObjectCreated((Boolean) hashMap.get("resource_created"));
+            resourceStatus.setDsDcCreated((Boolean) hashMap.get("ds_dc_created"));
+            resourceStatus.setDsRelsExtCreated((Boolean) hashMap.get("ds_relsExt_created"));
+            resourceStatus.setDsMetadata((Boolean) hashMap.get("ds_metadata_created"));
+            resourceStatus.setDsObjCreated((Boolean) hashMap.get("ds_obj_created"));
+            resourceStatus.setDsTnCreated((Boolean) hashMap.get("ds_obj_created"));
+            resourceStatus.setDsSidoraCreated((Boolean) hashMap.get("ds_sidora_created"));
+            resourceStatus.setParentChildRelationshipCreated((Boolean) hashMap.get("parent_child_resource_relationship_created"));
+            resourceStatus.setCodebookRelationshipCreated((Boolean) hashMap.get("codebook_relationship_created"));
+            resourceStatus.setComplete((Boolean) hashMap.get("resource_complete"));
 
-            resources.append(
-                    "        <resource>\n" +
-                    "            <file>" + statusResponseMap.get("resourceFile") + "</file>\n" +
-                    "            <pid>" + statusResponseMap.get("pid") + "</pid>\n" +
-                    "            <title>" + statusResponseMap.get("titleLabel") + "</title>\n" +
-                    "            <resourceObjectCreated>" + statusResponseMap.get("resource_created") + "</resourceObjectCreated>\n" +
-                    "            <dsDcCreated>" + statusResponseMap.get("ds_dc_created") + "</dsDcCreated>\n" +
-                    "            <dsRelsExtCreated>" + statusResponseMap.get("ds_relsExt_created") + "</dsRelsExtCreated>\n" +
-                    "            <dsDcMetadata>" + statusResponseMap.get("ds_metadata_created") + "</dsDcMedtadat>\n" +
-                    "            <dsObjCreated>" + statusResponseMap.get("ds_obj_created") + "</dsObjCreated>\n" +
-                    "            <dsSidoraCreated>" + statusResponseMap.get("ds_sidora_created") + "</dsSidoraCreated>\n" +
-                    "            <parentChildRelationshipCreated>" + statusResponseMap.get("parent_child_resource_relationship_created") + "</parentChildRelationshipCreated>\n" +
-                    "            <codebookRelationshipCreated>" + statusResponseMap.get("codebook_relationship_created") + "</codebookRelationshipCreated>\n" +
-                    "            <complete>" + statusResponseMap.get("resource_complete") + "</complete>\n" +
-                    "        </resource>\n"
-            );
-
+            resourceStatusArrayList.add(resourceStatus);
         }
 
-        //LOG.debug("====================[ Resources ]=====================\n{}", resources.toString());
+        batchStatus.setResources(resourceStatusArrayList);
 
-        StringBuilder responceMessage = new StringBuilder();
-        responceMessage.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        responceMessage.append(
-                "<Batch>\n" +
-                "    <ParentPID>" + parentPID + "</ParentPID>\n" +
-                "    <resourceOwner>"+ resourceOwner +"</resourceOwner>\n" +
-                "    <CorrelationID>"+ correlationId +"</CorrelationID>\n" +
-                "    <ResourceCount>"+ resourceCount +"</ResourceCount>\n" +
-                "    <ResourcesProcessed>"+ processCount +"</ResourcesProcessed>\n" +
-                "    <BatchDone>"+ request_complete +"</BatchDone>\n" +
-                "    <contentModel>"+ contentModel +"</contentModel>\n" +
-                "    <codebookPID>" + codebookPID + "</codebookPID>\n" +
-                "    <resources>\n" +
-                         resources +
-                "    </resources>\n" +
-                "</Batch>"
-        );
-
-        return responceMessage.toString();
+        return batchStatus;
     }
 
+
+    public BatchRequestResponse batchRequestResponse(Exchange exchange) {
+
+        out = exchange.getIn();
+
+        BatchRequestResponse batchRequestResponse = new BatchRequestResponse();
+
+        batchRequestResponse.setParentPID(String.valueOf(out.getHeader("parentId")));
+        batchRequestResponse.setCorrelationId(String.valueOf(out.getHeader("correlationId")));
+
+        return batchRequestResponse;
+
+    }
 }

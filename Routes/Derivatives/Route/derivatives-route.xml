@@ -1187,9 +1187,21 @@
 
             <!-- Make an MP4 derivative. -->
             <!-- Create a video derivative using ffmpeg. -->
-            <recipientList>
+
+            <!--
+            this ffmpeg incantation causes issues when using the nux dextop version of ffmpeg since it uses the aac audio codec
+            however will work with the custom built ffmpeg rpm which uses libfdk_aac audio codec
+            -->
+            <!--<recipientList>
                 <simple>
                     exec:ffmpeg?args=-nostats -nostdin -i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec libfdk_aac -ab 128k -ac 2 -async 1 ${header.CamelFileNameProduced}.mp4
+                </simple>
+            </recipientList>-->
+
+            <!-- ffmpeg incantation for nux dextop version of ffmpeg that uses the aac audio codec -->
+            <recipientList>
+                <simple>
+                    exec:ffmpeg?args=-nostats -nostdin -i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec aac -ab 128k -ac 2 -async 1  -strict -2 ${header.CamelFileNameProduced}.mp4
                 </simple>
             </recipientList>
 

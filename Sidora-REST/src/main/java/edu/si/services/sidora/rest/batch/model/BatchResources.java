@@ -25,40 +25,26 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch;
+package edu.si.services.sidora.rest.batch.model;
 
-import org.apache.cxf.jaxrs.ext.multipart.Multipart;
-import org.apache.cxf.message.Attachment;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
-import java.net.URL;
+import java.util.ArrayList;
 
 /**
  * @author jbirkhimer
  */
+public class BatchResources {
 
-@Path("/")
-public class BatchResourcesService {
+    private ArrayList<BatchResource> resources;
 
-    @POST
-    @Path(value = "/batch/process/addResourceObjects/{parentId}")
-    @Produces({"application/xml","application/json"})
-    public Response addResourceObjects(@PathParam("parentId") String parentId,
-                                       @QueryParam("codebookPID") String codebookPID,
-                                       @Multipart(value = "resourceFileList") String resourceFileList,
-                                       @Multipart(value = "ds_metadata") String ds_metadata,
-                                       @Multipart(value = "ds_sidora") String ds_sidora,
-                                       @Multipart(value = "association") String association,
-                                       @Multipart(value = "resourceOwner") String resourceOwner) {
-        return null;
+    public BatchResources(ArrayList<BatchResource> resources) {
+        this.resources = resources;
     }
 
-    @GET
-    @Path(value = "/batch/process/requestStatus/{parentId}/{correlationId}")
-    @Produces({"application/xml","application/json"})
-    public Response requestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationId) {
-        return null;
+    public ArrayList<BatchResource> getResources() {
+        return resources;
     }
 
+    public void setResources(ArrayList<BatchResource> resources) {
+        this.resources = resources;
+    }
 }

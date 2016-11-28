@@ -87,26 +87,6 @@ public class associationXSLTTest extends CamelTestSupport {
     }
 
     /**
-     * Testing getting title field path from association xml, update the mods title, and create dc from mods
-     * @throws Exception
-     */
-    @Test
-    public void associationTitleFieldPathTest() throws Exception {
-
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/association.xml"));
-        String associationXSLT = FileUtils.readFileToString(new File("src/test/resources/xslt/batch_association_title_field.xsl"));
-        String mods_to_dcXSLT = FileUtils.readFileToString(new File("src/test/resources/xslt/mods_to_dc.xsl"));
-
-        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
-
-        template.sendBody("direct:titleFieldPath", associationXML);
-
-        assertEquals("/mods/titleInfo/title",mockEndpoint.getExchanges().get(0).getIn().getBody());
-
-        assertMockEndpointsSatisfied();
-    }
-
-    /**
      * Testing updating title field from path created from association xml
      * @throws Exception
      */
@@ -211,10 +191,6 @@ public class associationXSLTTest extends CamelTestSupport {
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("direct:titleFieldPath")
-                        .to("xslt:file:src/test/resources/xslt/batch_association_title_field.xsl?saxon=true")
-                        .to("mock:result");
-
                 from("direct:updateModsTitleField")
                         .to("xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
                         .setBody(xpath("//*[local-name()='title']/text()", String.class))

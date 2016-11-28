@@ -25,40 +25,44 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch;
+package edu.si.services.sidora.rest.batch.model.responce;
 
-import org.apache.cxf.jaxrs.ext.multipart.Multipart;
-import org.apache.cxf.message.Attachment;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
-import java.net.URL;
+import javax.xml.bind.annotation.*;
 
 /**
  * @author jbirkhimer
  */
+@XmlRootElement(name = "Batch")
+@XmlAccessorType(XmlAccessType.NONE)
+@XmlType(propOrder = {"parentPID", "correlationId"})
+public class BatchRequestResponse {
 
-@Path("/")
-public class BatchResourcesService {
+    @XmlElement(name = "ParentPID")
+    private String parentPID;
 
-    @POST
-    @Path(value = "/batch/process/addResourceObjects/{parentId}")
-    @Produces({"application/xml","application/json"})
-    public Response addResourceObjects(@PathParam("parentId") String parentId,
-                                       @QueryParam("codebookPID") String codebookPID,
-                                       @Multipart(value = "resourceFileList") String resourceFileList,
-                                       @Multipart(value = "ds_metadata") String ds_metadata,
-                                       @Multipart(value = "ds_sidora") String ds_sidora,
-                                       @Multipart(value = "association") String association,
-                                       @Multipart(value = "resourceOwner") String resourceOwner) {
-        return null;
+    @XmlElement(name = "CorrelationID")
+    private String correlationId;
+
+    public BatchRequestResponse(){}
+
+    public BatchRequestResponse(String parentPID, String correlationId) {
+        this.parentPID = parentPID;
+        this.correlationId = correlationId;
     }
 
-    @GET
-    @Path(value = "/batch/process/requestStatus/{parentId}/{correlationId}")
-    @Produces({"application/xml","application/json"})
-    public Response requestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationId) {
-        return null;
+    public String getParentPID() {
+        return parentPID;
     }
 
+    public void setParentPID(String parentPID) {
+        this.parentPID = parentPID;
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
+    }
+
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+    }
 }

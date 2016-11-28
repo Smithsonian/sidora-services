@@ -60,14 +60,21 @@
     <camel-cxf:rsServer id="rsServer" address="${sidora.rest.service.address}"
                   serviceClass="edu.si.services.sidora.rest.batch.BatchResourcesService"
                   loggingFeatureEnabled="true">
-        <!--<camel-cxf:providers>
+        <camel-cxf:providers>
             <ref component-id="jaxbProvider"/>
-        </camel-cxf:providers>-->
+            <ref component-id="jsonProvider"/>
+        </camel-cxf:providers>
+        <camel-cxf:outInterceptors>
+            <bean class="org.apache.cxf.jaxrs.provider.jsonp.JsonpPostStreamInterceptor">
+                <!-- default is ');' -->
+                <property name="paddingEnd" value=")"/>
+            </bean>
+        </camel-cxf:outInterceptors>
     </camel-cxf:rsServer>
 
     <!-- Beans for the cxf-rs server -->
     <bean id="batchService" class="edu.si.services.sidora.rest.batch.BatchResourcesService"/>
-    <!--<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+    <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
         <property name="marshallerProperties">
             <map>
                 <entry>
@@ -78,7 +85,9 @@
                 </entry>
             </map>
         </property>
-    </bean>-->
+    </bean>
+
+    <bean id="jsonProvider" class="org.apache.cxf.jaxrs.provider.json.JSONProvider"/>
 
     <bean id="requestProcessor" class="edu.si.services.sidora.rest.batch.client.RequestProcessor"/>
 
@@ -219,12 +228,8 @@
                      logName="{{edu.si.batch}}"/>
             </split>
 
-            <!-- Set the REST response message -->
-            <setBody>
-                <simple>
-                    &lt;Batch&gt;&lt;ParentPID&gt;${header.parentId}&lt;/ParentPID&gt;&lt;CorrelationID&gt;${header.correlationId}&lt;/CorrelationID&gt;&lt;/Batch&gt;
-                </simple>
-            </setBody>
+            <!-- send the xml response body -->
+            <to uri="bean:responseControllerBean?method=batchRequestResponse"/>
 
             <log message="${id}: Finished Batch Request - Add Resource Objects..."
                  loggingLevel="INFO"
@@ -236,7 +241,7 @@
             <to uri="bean:batchRequestControllerBean?method=checkStatus"/>
             <to uri="sql:{{sql.checkRequestStatus}}?outputHeader=batchRequest&amp;outputType=SelectList"/>
             <to uri="sql:{{sql.checkResourceStatus}}"/>
-            <to uri="bean:responseControllerBean?method=batchRequestStatus"/>
+            <to uri="bean:responseControllerBean?method=batchStatus"/>
         </route>
 
         <!-- route that process the Batch Requests by picking up new rows from the database
@@ -399,6 +404,22 @@
             <to uri="direct:addMetadataDatastream"/>
             <to uri="direct:addSidoraDatastream"/>
             <to uri="direct:addOBJDatastream"/>
+
+            <!-- add thumbnail for audio resources -->
+            <filter>
+                <simple>
+                    ${header.dsMIME} == 'audio/mpeg' ||
+                    ${header.dsMIME} == 'audio/vnd.wave' ||
+                    ${header.dsMIME} == 'audio/vnd.wav' ||
+                    ${header.dsMIME} == 'audio/x-wav' ||
+                    ${header.dsMIME} == 'audio/vorbis' ||
+                    ${header.dsMIME} == 'audio/x-ms-wma' ||
+                    ${header.dsMIME} == 'audio/x-aac' ||
+                    ${header.dsMIME} == 'audio/x-aiff'
+                </simple>
+                <to uri="direct:addTNDatastream"/>
+            </filter>
+
             <!--<to uri="direct:addFITSDatastream"/>-->
             <to uri="direct:addRelationships"/>
 
@@ -668,6 +689,33 @@
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
+        </route>
+
+        <route id="BatchProcessAddTNDatastream">
+            <from uri="direct:addTNDatastream"/>
+            <log message="${id}: Batch Process: Audio Resource Found: ${header.dsMIME}"
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
+
+            <setHeader headerName="Exchange.HTTP_METHOD">
+                <simple>
+                    POST
+                </simple>
+            </setHeader>
+
+            <setBody>
+                <constant/>
+            </setBody>
+
+            <!-- Create a audio thumbnail TN. -->
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/TN?dsLocation={{audio.thumbnail.png}}&amp;mimeType=image/jpg&amp;controlGroup=M&amp;dsLabel=TN&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addTNDatastream"/>
+
+            <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_tn_created)"/>
+            <to uri="sql:{{sql.updateDsTnCreated}}"/>
+
+            <log message="${id}: Finished processing TN."
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
         </route>
 
         <route id="BatchProcessAddRelationships">
