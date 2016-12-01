@@ -52,6 +52,13 @@ public class ResponseControllerBean {
     private Integer processCount;
     private boolean request_complete;
 
+    /**
+     * Return The Detailed Status for a Batch Request as a POJO for JAXB/JSON Databinding
+     * @param exchange
+     * @param requestMap
+     * @param statusResponse
+     * @return
+     */
     public BatchStatus batchStatus(Exchange exchange, @Header("batchRequest") ArrayList<HashMap<String, Object>> requestMap, ArrayList<HashMap<String, Object>> statusResponse) {
 
         out = exchange.getIn();
@@ -98,6 +105,11 @@ public class ResponseControllerBean {
     }
 
 
+    /**
+     * Responce for a New Batch Request as a POJO for JAXB/JSON Databinding
+     * @param exchange
+     * @return
+     */
     public BatchRequestResponse batchRequestResponse(Exchange exchange) {
 
         out = exchange.getIn();

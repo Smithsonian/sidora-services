@@ -232,6 +232,12 @@
             <artifactId>tika-core</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.j256.simplemagic</groupId>
+            <artifactId>simplemagic</artifactId>
+            <version>1.9</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -252,10 +258,13 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Description>${project.description}</Bundle-Description>
+                        <!--<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>-->
                         <Embed-Transitive>true</Embed-Transitive>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
                         <Export-Package>
-                            edu.si.services.sidora.rest.batch
+                            edu.si.services.sidora.rest.batch,
+                            edu.si.services.sidora.rest.batch.beans,
+                            edu.si.services.sidora.rest.batch.client
                         </Export-Package>
                     </instructions>
                 </configuration>

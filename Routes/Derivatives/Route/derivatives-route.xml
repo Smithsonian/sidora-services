@@ -860,6 +860,7 @@
                     </simple>
                     <!-- Just copy it. -->
                     <to uri="fedora:addDatastream?name=PROXY_MP3&amp;type=audio/mpeg&amp;dsLabel=PROXY_MP3&amp;group=M&amp;versionable=false"/>
+
                     <log message="${id} Derivatives: No processing required copying mp3 directly to PROXY_MP3."
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
@@ -878,7 +879,7 @@
                     <!-- Create an audio derivative using the lame encoder. -->
                     <recipientList>
                         <simple>
-                            exec:lame?args= -V5 --vbr-new - -
+                            exec:lame?args=-V5 --vbr-new - -
                         </simple>
                     </recipientList>
                     <choice>
@@ -894,7 +895,8 @@
                         </when>
                         <otherwise>
                             <log message="${id} Derivatives: LAME processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
-                                 loggingLevel="ERROR"/>
+                                 loggingLevel="ERROR"
+                                 logName="edu.si.derivatives"/>
                         </otherwise>
                     </choice>
 

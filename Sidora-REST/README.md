@@ -26,17 +26,17 @@ The example below is for a test server where the MySQL database is co-located wi
 ```bash
 # mysql -u root -p
 
-mysql> CREATE DATABASE IF NOT EXISTS camelBatch;
-mysql> GRANT ALL ON camelBatch.* TO <camel-batch-user>@localhost IDENTIFIED BY '<camel-batch-secret>';
+mysql> CREATE DATABASE IF NOT EXISTS sidora;
+mysql> GRANT ALL ON sidora.* TO <camel-batch-user>@localhost IDENTIFIED BY '<camel-batch-secret>';
 
 ############################################################################
 ## sql that creates two table for the batch process
 # MySQL 5.7
 ############################################################################
 
-#sql.createBatchProcessRequestTable=CREATE TABLE IF NOT EXISTS camelBatch.camelBatchRequests (correlationId CHAR(36) NOT NULL, parentId TEXT NOT NULL, resourceFileList TEXT NOT NULL, ds_metadata TEXT NOT NULL, ds_sidora TEXT NOT NULL, association TEXT NOT NULL, resourceOwner TEXT NOT NULL, codebookPID TEXT DEFAULT NULL, resourceCount INT(10) NULL, processCount INT(10) NOT NULL DEFAULT 0, request_consumed BOOLEAN NOT NULL DEFAULT false, request_complete BOOLEAN NOT NULL DEFAULT false, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (correlationId));
+#sql.createBatchProcessRequestTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchRequests (correlationId CHAR(36) NOT NULL, parentId TEXT NOT NULL, resourceFileList TEXT NOT NULL, ds_metadata TEXT NOT NULL, ds_sidora TEXT NOT NULL, association TEXT NOT NULL, resourceOwner TEXT NOT NULL, codebookPID TEXT DEFAULT NULL, resourceCount INT(10) NULL, processCount INT(10) NOT NULL DEFAULT 0, request_consumed BOOLEAN NOT NULL DEFAULT false, request_complete BOOLEAN NOT NULL DEFAULT false, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (correlationId));
 
-#sql.createBatchResourceFilesTable=CREATE TABLE IF NOT EXISTS camelBatch.camelBatchResources (correlationId CHAR(36) NOT NULL, resourceFile TEXT NOT NULL, parentId TEXT NOT NULL, pid TEXT DEFAULT NULL, contentModel TEXT DEFAULT NULL, resourceOwner TEXT NOT NULL, titleLabel TEXT DEFAULT NULL, resource_created BOOLEAN NOT NULL DEFAULT false, ds_relsExt_created BOOLEAN NOT NULL DEFAULT false, ds_metadata_created BOOLEAN NOT NULL DEFAULT false, ds_sidora_created BOOLEAN NOT NULL DEFAULT false, ds_dc_created BOOLEAN NOT NULL DEFAULT false, ds_obj_created BOOLEAN NOT NULL DEFAULT false, ds_tn_created BOOLEAN NOT NULL DEFAULT false, codebook_relationship_created BOOLEAN NOT NULL DEFAULT false, parent_child_resource_relationship_created BOOLEAN NOT NULL DEFAULT false, resource_consumed BOOLEAN NOT NULL DEFAULT false, resource_complete BOOLEAN NOT NULL DEFAULT 0, created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+#sql.createBatchResourceFilesTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchResources (correlationId CHAR(36) NOT NULL, resourceFile TEXT NOT NULL, parentId TEXT NOT NULL, pid TEXT DEFAULT NULL, contentModel TEXT DEFAULT NULL, resourceOwner TEXT NOT NULL, titleLabel TEXT DEFAULT NULL, resource_created BOOLEAN NOT NULL DEFAULT false, ds_relsExt_created BOOLEAN NOT NULL DEFAULT false, ds_metadata_created BOOLEAN NOT NULL DEFAULT false, ds_sidora_created BOOLEAN NOT NULL DEFAULT false, ds_dc_created BOOLEAN NOT NULL DEFAULT false, ds_obj_created BOOLEAN NOT NULL DEFAULT false, ds_tn_created BOOLEAN NOT NULL DEFAULT false, codebook_relationship_created BOOLEAN NOT NULL DEFAULT false, parent_child_resource_relationship_created BOOLEAN NOT NULL DEFAULT false, resource_consumed BOOLEAN NOT NULL DEFAULT false, resource_complete BOOLEAN NOT NULL DEFAULT 0, created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 
 
 ############################################################################
@@ -44,9 +44,9 @@ mysql> GRANT ALL ON camelBatch.* TO <camel-batch-user>@localhost IDENTIFIED BY '
 # MySQL 5.1 has issues with two columns with "DEFAULT CURRENT_TIMESTAMP"
 ############################################################################
 
-sql.createBatchProcessRequestTable=CREATE TABLE IF NOT EXISTS camelBatch.camelBatchRequests (correlationId CHAR(36) NOT NULL, parentId TEXT NOT NULL, resourceFileList TEXT NOT NULL, ds_metadata TEXT NOT NULL, ds_sidora TEXT NOT NULL, association TEXT NOT NULL, resourceOwner TEXT NOT NULL, codebookPID TEXT DEFAULT NULL, resourceCount INT(10) NULL, processCount INT(10) NOT NULL DEFAULT 0, request_consumed BOOLEAN NOT NULL DEFAULT false, request_complete BOOLEAN NOT NULL DEFAULT false, created TIMESTAMP DEFAULT '0000-00-00 00:00:00', updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (correlationId));
+sql.createBatchProcessRequestTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchRequests (correlationId CHAR(36) NOT NULL, parentId TEXT NOT NULL, resourceFileList TEXT NOT NULL, ds_metadata TEXT NOT NULL, ds_sidora TEXT NOT NULL, association TEXT NOT NULL, resourceOwner TEXT NOT NULL, codebookPID TEXT DEFAULT NULL, resourceCount INT(10) NULL, processCount INT(10) NOT NULL DEFAULT 0, request_consumed BOOLEAN NOT NULL DEFAULT false, request_complete BOOLEAN NOT NULL DEFAULT false, created TIMESTAMP DEFAULT '0000-00-00 00:00:00', updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (correlationId));
 
-sql.createBatchResourceFilesTable=CREATE TABLE IF NOT EXISTS camelBatch.camelBatchResources (correlationId CHAR(36) NOT NULL, resourceFile TEXT NOT NULL, parentId TEXT NOT NULL, pid TEXT DEFAULT NULL, contentModel TEXT DEFAULT NULL, resourceOwner TEXT NOT NULL, titleLabel TEXT DEFAULT NULL, resource_created BOOLEAN NOT NULL DEFAULT false, ds_relsExt_created BOOLEAN NOT NULL DEFAULT false, ds_metadata_created BOOLEAN NOT NULL DEFAULT false, ds_sidora_created BOOLEAN NOT NULL DEFAULT false, ds_dc_created BOOLEAN NOT NULL DEFAULT false, ds_obj_created BOOLEAN NOT NULL DEFAULT false, ds_tn_created BOOLEAN NOT NULL DEFAULT false, codebook_relationship_created BOOLEAN NOT NULL DEFAULT false, parent_child_resource_relationship_created BOOLEAN NOT NULL DEFAULT false, resource_consumed BOOLEAN NOT NULL DEFAULT false, resource_complete BOOLEAN NOT NULL DEFAULT false, created_date TIMESTAMP DEFAULT '0000-00-00 00:00:00', updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+sql.createBatchResourceFilesTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchResources (correlationId CHAR(36) NOT NULL, resourceFile TEXT NOT NULL, parentId TEXT NOT NULL, pid TEXT DEFAULT NULL, contentModel TEXT DEFAULT NULL, resourceOwner TEXT NOT NULL, titleLabel TEXT DEFAULT NULL, resource_created BOOLEAN NOT NULL DEFAULT false, ds_relsExt_created BOOLEAN NOT NULL DEFAULT false, ds_metadata_created BOOLEAN NOT NULL DEFAULT false, ds_sidora_created BOOLEAN NOT NULL DEFAULT false, ds_dc_created BOOLEAN NOT NULL DEFAULT false, ds_obj_created BOOLEAN NOT NULL DEFAULT false, ds_tn_created BOOLEAN NOT NULL DEFAULT false, codebook_relationship_created BOOLEAN NOT NULL DEFAULT false, parent_child_resource_relationship_created BOOLEAN NOT NULL DEFAULT false, resource_consumed BOOLEAN NOT NULL DEFAULT false, resource_complete BOOLEAN NOT NULL DEFAULT false, created_date TIMESTAMP DEFAULT '0000-00-00 00:00:00', updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 
 mysql> FLUSH PRIVILEGES;
 
@@ -59,7 +59,7 @@ mysql> EXIT;
 
 mysql> SELECT User FROM mysql.user;
 mysql> SHOW DATABASES;
-mysql> USE camelBatch;
+mysql> USE sidora;
 mysql> SELECT DATABASE();
 mysql> SHOW TABLES;
 mysql> DESCRIBE camelBatchRequests;
@@ -83,7 +83,7 @@ mysql> SHOW DATABASES;
 | Database           |
 +--------------------+
 | information_schema |
-| camelBatch         |
+| sidora             |
 | fedora3            |
 | mysql              |
 | performance_schema |
@@ -91,7 +91,7 @@ mysql> SHOW DATABASES;
 +--------------------+
 6 rows in set (0.00 sec)
 
-mysql> USE camelBatch;
+mysql> USE sidora;
 Reading table information for completion of table and column names
 You can turn off this feature to get a quicker startup with -A
 
@@ -101,13 +101,13 @@ mysql> SELECT DATABASE();
 +------------+
 | DATABASE() |
 +------------+
-| camelBatch |
+| sidora     |
 +------------+
 1 row in set (0.00 sec)
 
 mysql> SHOW TABLES;
 +----------------------+
-| Tables_in_camelBatch |
+| Tables_in_sidora |
 +----------------------+
 | camelBatchRequests   |
 | camelBatchResources  |
@@ -152,6 +152,7 @@ mysql> DESCRIBE camelBatchResources;
 | ds_sidora_created                          | tinyint(1) | NO   |     | 0                 |                             |
 | ds_dc_created                              | tinyint(1) | NO   |     | 0                 |                             |
 | ds_obj_created                             | tinyint(1) | NO   |     | 0                 |                             |
+| ds_tn_created                              | tinyint(1) | NO   |     | 0                 |                             |
 | codebook_relationship_created              | tinyint(1) | NO   |     | 0                 |                             |
 | parent_child_resource_relationship_created | tinyint(1) | NO   |     | 0                 |                             |
 | resource_consumed                          | tinyint(1) | NO   |     | 0                 |                             |
@@ -159,14 +160,14 @@ mysql> DESCRIBE camelBatchResources;
 | created_date                               | timestamp  | NO   |     | CURRENT_TIMESTAMP |                             |
 | updated_date                               | datetime   | YES  |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
 +--------------------------------------------+------------+------+-----+-------------------+-----------------------------+
-19 rows in set (0.00 sec)
+20 rows in set (0.00 sec)
 ```
 
 ## ServiceMix setup and configuration:
 ### Copy batch.process.sql.properties from `Sidora-REST/src/test/resources/sql` to `<smx-install>/sql/`
 ```bash
 # mkdir <smx-install>/sql
-# cp sidora-services/Sidora-REST/src/test/resources/sql/batch.process.sql.properties <smx-install>/sql/
+# cp sidora-services/Routes/Sidora-Batch/Karaf-config/sql/batch.process.sql.properties <smx-install>/sql/
 ```
 
 ### Create camel batch karaf config `<smx-install>/etc/edu.si.sidora.batch.cfg`
@@ -234,21 +235,30 @@ sidora.rest.service.address=/sidora/rest
 # MySQL database setup
 mysql.host=localhost
 mysql.port=3306
-mysql.database=camelBatch
+mysql.database=sidora
 mysql.username=<camelMySQL-user>
 mysql.password=<camelMySQL-password>
 ```
 
 # Deploy the Sidora-REST service to ServiceMix
 - Shutdown ServiceMIX
-- Compile sidora-services
+- Clone sidora-services git repo
+- Create edu.si.sidora.batch.cgf from step above
+- Create batch.process.sql.properties from step above
+- Compile sidora-services from git clone
 - Deploy sidora-deployment.kar
+- Deploy sidora-batch.xml camel route
+- Copy batch xslt and templates to SMX
 - Start ServiceMix and check logs for errors
+- Set sidora-batch.xml bundle to start-level 85
 
 ```batch
-# cd <sidora-services>
+# cd <sidora-services> (git clone of sidora-services, may need to swith to correct branch)
 # mvn clean install -DskipTests=true
 # cp <sidora-services>/KAR/target/sidora-development <smx-install>/deploy/
+# cp <sidora-services>/Routes/Sidora-Batch/Karaf-config/deploy/sidora-batch.xml <smx-install>/deploy/
+# cp <sidora-services>/Routes/Sidora-Batch/Karaf-config/Input/templates/BatchResourceTemplate.vsl <smx-install>/Input/
+# cp <sidora-services>/Routes/Sidora-Batch/Karaf-config/Input/xslt/BatchProcess_ManifestResource.xsl <smx-install>/Input/
 ```
 
 # Testing Batch Resource REST Service

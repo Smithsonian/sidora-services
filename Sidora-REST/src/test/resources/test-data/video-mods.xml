@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <titleInfo>
+        <title>batch-video-test</title>
+        <subTitle>1 videos</subTitle>
+    </titleInfo>
+    <name type="personal">
+        <namePart/>
+        <role>
+            <roleTerm authority="marcrelator" type="text"/>
+        </role>
+    </name>
+    <typeOfResource>moving image</typeOfResource>
+    <genre></genre>
+    <originInfo>
+        <dateIssued></dateIssued>
+        <publisher></publisher>
+        <place>
+            <placeTerm authority="marccountry"/>
+        </place>
+        <place>
+            <placeTerm type="text"/>
+        </place>
+    </originInfo>
+    <language>
+        <languageTerm authority="iso639-2b" type="code"/>
+    </language>
+    <abstract></abstract>
+    <identifier/>
+    <physicalDescription>
+        <form authority="marccategory">videorecording</form>
+        <extent></extent>
+    </physicalDescription>
+    <note></note>
+    <subject>
+        <topic></topic>
+        <geographic></geographic>
+        <temporal></temporal>
+        <hierarchicalGeographic>
+            <continent>North America</continent>
+            <country></country>
+            <province></province>
+            <region></region>
+            <county></county>
+            <city></city>
+            <citySection></citySection>
+        </hierarchicalGeographic>
+        <cartographics>
+            <coordinates></coordinates>
+        </cartographics>
+    </subject>
+</mods>

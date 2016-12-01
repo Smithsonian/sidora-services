@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <titleInfo>
+        <title>batch-audio-test</title>
+    </titleInfo>
+    <abstract>batch ingest</abstract>
+    <subject>
+        <topic></topic>
+        <geographic></geographic>
+    </subject>
+    <name type="corporate">
+        <namePart/>
+        <role>
+            <roleTerm authority="marcrelator" type="text"/>
+        </role>
+    </name>
+    <identifier/>
+    <genre></genre>
+    <note></note>
+    <originInfo>
+        <dateCaptured></dateCaptured>
+    </originInfo>
+    <location>
+        <physicalLocation></physicalLocation>
+        <holdingSimple>
+            <copyInformation>
+                <subLocation/>
+            </copyInformation>
+        </holdingSimple>
+    </location>
+</mods>

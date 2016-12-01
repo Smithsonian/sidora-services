@@ -27,10 +27,8 @@
 
 package edu.si.services.sidora.rest.batch;
 
-import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.model.ProcessorDefinition;
-import org.apache.camel.model.ToDynamicDefinition;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
@@ -44,7 +42,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import javax.xml.bind.JAXBContext;
 import java.io.File;
@@ -53,7 +50,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.UUID;
 
-/**
+/**TODO: Fix Tests
  * @author jbirkhimer
  */
 public class BatchResourcesTest extends CamelBlueprintTestSupport {
@@ -134,7 +131,7 @@ public class BatchResourcesTest extends CamelBlueprintTestSupport {
 
     @Override
     protected String getBlueprintDescriptor() {
-        return "/OSGI-INF/blueprint/sidora-batch.xml";
+        return "/Routes/Sidora-Batch/sidora-batch.xml";
     }
 
     public void setUp() throws Exception {

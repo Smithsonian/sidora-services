@@ -27,8 +27,6 @@
 
 package edu.si.services.sidora.rest.batch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.si.services.sidora.rest.batch.model.BatchResource;
 import edu.si.services.sidora.rest.batch.model.responce.BatchRequestResponse;
 import edu.si.services.sidora.rest.batch.model.status.BatchStatus;
 import edu.si.services.sidora.rest.batch.model.status.ResourceStatus;
@@ -41,8 +39,11 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
+
+import static org.junit.Assert.assertEquals;
+
 
 /**
  * @author jbirkhimer
@@ -52,20 +53,31 @@ public class BatchXMLResponseOutputTests {
 
     @Test
     public void requestXMLtest() throws JAXBException, FileNotFoundException {
+        String expectedOutput = getExpectedOutput("request");
+
+        StringWriter sw = new StringWriter();
 
         JAXBContext contextObj = JAXBContext.newInstance(BatchRequestResponse.class);
 
         Marshaller marshallerObj = contextObj.createMarshaller();
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
-
         BatchRequestResponse requestStatus = new BatchRequestResponse("si:390403", "61f8627d-445e-45ae-82dc-78a2518fcde6");
 
-        marshallerObj.marshal(requestStatus, new FileOutputStream("target/BatchRequestResponse.xml"));
+        //marshallerObj.marshal(requestStatus, new FileOutputStream("target/BatchRequestResponse.xml"));
+        marshallerObj.marshal(requestStatus, sw);
+
+        LOG.info("Request XML Generated:\n{}", sw.toString());
+
+        assertEquals(expectedOutput, sw.toString());
     }
 
     @Test
     public void statusXMLtest() throws JAXBException, FileNotFoundException {
+
+        String expectedOutput = getExpectedOutput("status");
+
+        StringWriter sw = new StringWriter();
 
         JAXBContext contextObj = JAXBContext.newInstance(BatchStatus.class);
 
@@ -86,69 +98,83 @@ public class BatchXMLResponseOutputTests {
 
         BatchStatus batchStatus = new BatchStatus("si:390403", "ramlani", "61f8627d-445e-45ae-82dc-78a2518fcde6", 3, 3, true, "si:generalImageCModel", null, list);
 
-        marshallerObj.marshal(batchStatus, new FileOutputStream("target/BatchStatus.xml"));
+        //marshallerObj.marshal(batchStatus, new FileOutputStream("target/BatchStatus.xml"));
+        marshallerObj.marshal(batchStatus, sw);
+
+        LOG.info("Status XML Generated:\n{}", sw.toString());
+
+        assertEquals(expectedOutput, sw.toString());
     }
 
-    @Test
-    public void objectMapper() {
+    private String getExpectedOutput(String expected) {
+        String expectedResult = "";
 
-        ArrayList<HashMap<String, Object>> requestMap = getRequestMap();
-
-        ArrayList<HashMap<String, Object>> statusResponse = getStatusResponse();
-
-
-        //Map<String, Object> statusRequestMap = new HashMap<>();
-        //statusRequestMap.putAll(requestMap.get(0));
-
-        final ObjectMapper mapper = new ObjectMapper(); // jackson's objectmapper
-        final BatchStatus batchStatus = mapper.convertValue(requestMap.get(0), BatchStatus.class);
-
-        LOG.info("BatchRequestResponse Object:{}", batchStatus.toString());
-
+        if (expected.equals("request")) {
+            expectedResult = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                    "<Batch>\n" +
+                    "    <ParentPID>si:390403</ParentPID>\n" +
+                    "    <CorrelationID>61f8627d-445e-45ae-82dc-78a2518fcde6</CorrelationID>\n" +
+                    "</Batch>\n";
+        } else if (expected.equals("status")) {
+            expectedResult = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                    "<Batch>\n" +
+                    "    <BatchDone>true</BatchDone>\n" +
+                    "    <CorrelationID>61f8627d-445e-45ae-82dc-78a2518fcde6</CorrelationID>\n" +
+                    "    <ParentPID>si:390403</ParentPID>\n" +
+                    "    <resourceOwner>ramlani</resourceOwner>\n" +
+                    "    <ResourceCount>3</ResourceCount>\n" +
+                    "    <ResourcesProcessed>3</ResourcesProcessed>\n" +
+                    "    <contentModel>si:generalImageCModel</contentModel>\n" +
+                    "    <resources>\n" +
+                    "        <resource>\n" +
+                    "            <file>http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Hydrangeas.jpg</file>\n" +
+                    "            <pid>si:392370</pid>\n" +
+                    "            <title>pdf_batch_111416(0)</title>\n" +
+                    "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
+                    "            <dsDcCreated>true</dsDcCreated>\n" +
+                    "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
+                    "            <dsMetadata>true</dsMetadata>\n" +
+                    "            <dsObjCreated>true</dsObjCreated>\n" +
+                    "            <dsTnCreated>true</dsTnCreated>\n" +
+                    "            <dsSidoraCreated>true</dsSidoraCreated>\n" +
+                    "            <parentChildRelationshipCreated>false</parentChildRelationshipCreated>\n" +
+                    "            <codebookRelationshipCreated>true</codebookRelationshipCreated>\n" +
+                    "            <complete>true</complete>\n" +
+                    "        </resource>\n" +
+                    "        <resource>\n" +
+                    "            <file>http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Chrysanthemum.jpg</file>\n" +
+                    "            <pid>si:392371</pid>\n" +
+                    "            <title>pdf_batch_111416(0)</title>\n" +
+                    "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
+                    "            <dsDcCreated>true</dsDcCreated>\n" +
+                    "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
+                    "            <dsMetadata>true</dsMetadata>\n" +
+                    "            <dsObjCreated>true</dsObjCreated>\n" +
+                    "            <dsTnCreated>true</dsTnCreated>\n" +
+                    "            <dsSidoraCreated>false</dsSidoraCreated>\n" +
+                    "            <parentChildRelationshipCreated>true</parentChildRelationshipCreated>\n" +
+                    "            <codebookRelationshipCreated>true</codebookRelationshipCreated>\n" +
+                    "            <complete>true</complete>\n" +
+                    "        </resource>\n" +
+                    "        <resource>\n" +
+                    "            <file>http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Desert.jpg</file>\n" +
+                    "            <pid>si:392372</pid>\n" +
+                    "            <title>pdf_batch_111416(0)</title>\n" +
+                    "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
+                    "            <dsDcCreated>true</dsDcCreated>\n" +
+                    "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
+                    "            <dsMetadata>true</dsMetadata>\n" +
+                    "            <dsObjCreated>true</dsObjCreated>\n" +
+                    "            <dsTnCreated>true</dsTnCreated>\n" +
+                    "            <dsSidoraCreated>false</dsSidoraCreated>\n" +
+                    "            <parentChildRelationshipCreated>true</parentChildRelationshipCreated>\n" +
+                    "            <codebookRelationshipCreated>true</codebookRelationshipCreated>\n" +
+                    "            <complete>true</complete>\n" +
+                    "        </resource>\n" +
+                    "    </resources>\n" +
+                    "</Batch>\n";
+        }
+        return expectedResult;
     }
 
-    private ArrayList<HashMap<String, Object>> getStatusResponse() {
-
-        ObjectMapper m = new ObjectMapper();
-
-        BatchResource resource1 = new BatchResource("61f8627d-445e-45ae-82dc-78a2518fcde6", "http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Hydrangeas.jpg", "si:390403", "si:392370", "si:generalImageCModel", "ramlani", "pdf_batch_111416(0)", true, true, true, true, true, true, false, true, true, true, true, "2016-11-22 11:00:32", "2016-11-22 11:00:38");
-
-        BatchResource resource2 = new BatchResource("61f8627d-445e-45ae-82dc-78a2518fcde6", "http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_1_ramlani_Chrysanthemum.jpg", "si:390403", "si:392371", "si:generalImageCModel", "ramlani", "pdf_batch_111416(1)", true, true, true, true, true, true, false, true, true, true, true, "2016-11-22 11:00:32", "2016-11-22 11:00:41");
-
-        BatchResource resource3 = new BatchResource("61f8627d-445e-45ae-82dc-78a2518fcde6", "http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_2_ramlani_Desert.jpg", "si:390403", "si:392372", "si:generalImageCModel", "ramlani", "pdf_batch_111416(2)", true, true, true, true, true, true, false, true, true, true, true, "2016-11-22 11:00:32", "2016-11-22 11:00:44");
-
-
-        // SQL result put in batchRequest camel header
-        ArrayList<HashMap<String, Object>> statusResponse = new ArrayList<>();
-        statusResponse.add(m.convertValue(resource1, HashMap.class));
-        statusResponse.add(m.convertValue(resource2, HashMap.class));
-        statusResponse.add(m.convertValue(resource3, HashMap.class));
-
-        return statusResponse;
-    }
-
-    private ArrayList<HashMap<String, Object>> getRequestMap() {
-        // Setting up request
-        HashMap<String, Object> request = new HashMap<>();
-        request.put("correlationId", "f469e72e-078d-4422-838f-146d84efb0c9");
-        request.put("parentId", "si:390403");
-        request.put("resourceFileList", "http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/imageFiles.xml");
-        request.put("ds_metadata", "http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/metadata.xml");
-        request.put("ds_sidora", "http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/sidora.xml");
-        request.put("association", "http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/association.xml");
-        request.put("resourceOwner", "ramlani");
-        request.put("codebookPID", "null");
-        request.put("resourceCount", 3);
-        request.put("processCount", 3);
-        request.put("request_consumed", true);
-        request.put("request_complete", true);
-        request.put("created", "2016-11-21 13:43:24.0");
-        request.put("updated", "2016-11-21 13:43:28.0");
-
-        // SQL result put in batchRequest camel header
-        ArrayList<HashMap<String, Object>> requestMap = new ArrayList<>();
-        requestMap.add(request);
-
-        return requestMap;
-    }
 }

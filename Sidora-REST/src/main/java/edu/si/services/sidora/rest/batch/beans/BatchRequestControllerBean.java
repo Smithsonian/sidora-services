@@ -55,7 +55,7 @@ public class BatchRequestControllerBean {
     private String correlationId;
 
     /**
-     *
+     * Generating Random UUID for CorrelationId
      * @param exchange
      * @return
      */
@@ -69,7 +69,7 @@ public class BatchRequestControllerBean {
     }
 
     /**
-     *
+     * Set Camel Headers For New Batch Requests
      * @param exchange
      * @throws Exception
      */
@@ -102,7 +102,7 @@ public class BatchRequestControllerBean {
     }
 
     /**
-     *
+     * Set the Datastream Created in Resource Table Based on HTTP Response From Fedora
      * @param exchange
      * @return
      */
@@ -127,17 +127,12 @@ public class BatchRequestControllerBean {
         return updateCreatedStatus;
     }
 
-    public Map<String, Object> checkStatus(@Header("correlationId") String correlationId,
-                                                       @Header("parentId") String parentId) {
-
-        Map<String, Object> batchRequestStatus = new HashMap<String, Object>();
-        batchRequestStatus.put("correlationId", correlationId);
-        batchRequestStatus.put("parentId", parentId);
-
-        return batchRequestStatus;
-
-    }
-
+    /**
+     * Check Resource MimeType using Apache Tika
+     * @param exchange
+     * @throws URISyntaxException
+     * @throws MalformedURLException
+     */
     public void getMIMEType(Exchange exchange) throws URISyntaxException, MalformedURLException {
 
         /**
@@ -169,6 +164,11 @@ public class BatchRequestControllerBean {
         out.setHeader("dsMIME", mimeType);
     }
 
+    /**
+     * Check Status Response Codes
+     * @param camelHttpResponseCode
+     * @return
+     */
     private boolean checkStatusCode(Integer camelHttpResponseCode) {
         if (camelHttpResponseCode != 200 || camelHttpResponseCode != 201) {
             return true;

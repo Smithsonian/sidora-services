@@ -34,7 +34,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.net.URL;
 
-/**
+/** Batch REST API
  * @author jbirkhimer
  */
 
