@@ -90,7 +90,7 @@ public class ResponseControllerBean {
             resourceStatus.setDsRelsExtCreated((Boolean) hashMap.get("ds_relsExt_created"));
             resourceStatus.setDsMetadata((Boolean) hashMap.get("ds_metadata_created"));
             resourceStatus.setDsObjCreated((Boolean) hashMap.get("ds_obj_created"));
-            resourceStatus.setDsTnCreated((Boolean) hashMap.get("ds_obj_created"));
+            resourceStatus.setDsTnCreated((Boolean) hashMap.get("ds_tn_created"));
             resourceStatus.setDsSidoraCreated((Boolean) hashMap.get("ds_sidora_created"));
             resourceStatus.setParentChildRelationshipCreated((Boolean) hashMap.get("parent_child_resource_relationship_created"));
             resourceStatus.setCodebookRelationshipCreated((Boolean) hashMap.get("codebook_relationship_created"));
