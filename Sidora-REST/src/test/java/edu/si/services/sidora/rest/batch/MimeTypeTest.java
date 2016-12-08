@@ -49,7 +49,8 @@ public class MimeTypeTest {
 
     @Test
     public void mimeTypeTest() throws URISyntaxException {
-        String string = "test-data/mimetype-test-files/x.wav";
+        //String string = "test-data/mimetype-test-files/x.wav";
+        String string = "http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/default/files/ramlani5841b5edb5789_si_389249.ogg";
 
         URI path2 = new URI(string);
 

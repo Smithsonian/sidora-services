@@ -61,13 +61,14 @@
         <!-- Note that activemq dependency is only used for testing! -->
         <activemq.version>5.12.1</activemq.version>
         <activemq.version>5.12.3</activemq.version> <!-- Servicemix version -->
-        <apache-poi.version>3.14_1</apache-poi.version>
+        <apache-poi.version>3.15_1</apache-poi.version>
         <poi-ooxml-version>3.15</poi-ooxml-version>
         <asm-all.version>4.0</asm-all.version>
         <!--<asm-all.version>5.1</asm-all.version>-->
         <build-helper-maven-plugin-version>1.10</build-helper-maven-plugin-version>
         <camel.version>2.16.3</camel.version>
         <commons-codec.bundle.version>1.10</commons-codec.bundle.version>
+        <commons-collections4.version>4.1</commons-collections4.version> <!-- used by apache poi 3.15 -->
         <commons-httpclient.bundle.version>3.1_7</commons-httpclient.bundle.version>
         <commons-io.version>2.4</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
@@ -320,6 +321,11 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>${commons-collections4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
                 <artifactId>commons-csv</artifactId>
                 <version>${commons-csv-version}</version>
             </dependency>
@@ -384,6 +390,11 @@
                 <artifactId>org.apache.servicemix.bundles.commons-httpclient</artifactId>
                 <version>${commons-httpclient.bundle.version}</version>
             </dependency>
+            <!--<dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi</artifactId>
+                <version>${apache-poi.version}</version>
+            </dependency>-->
             <dependency>
                 <groupId>org.apache.servicemix.bundles</groupId>
                 <artifactId>org.apache.servicemix.bundles.poi</artifactId>

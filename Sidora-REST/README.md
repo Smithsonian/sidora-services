@@ -34,9 +34,9 @@ mysql> GRANT ALL ON sidora.* TO <camel-batch-user>@localhost IDENTIFIED BY '<cam
 # MySQL 5.7
 ############################################################################
 
-#sql.createBatchProcessRequestTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchRequests (correlationId CHAR(36) NOT NULL, parentId TEXT NOT NULL, resourceFileList TEXT NOT NULL, ds_metadata TEXT NOT NULL, ds_sidora TEXT NOT NULL, association TEXT NOT NULL, resourceOwner TEXT NOT NULL, codebookPID TEXT DEFAULT NULL, resourceCount INT(10) NULL, processCount INT(10) NOT NULL DEFAULT 0, request_consumed BOOLEAN NOT NULL DEFAULT false, request_complete BOOLEAN NOT NULL DEFAULT false, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (correlationId));
+sql.createBatchProcessRequestTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchRequests (correlationId CHAR(36) NOT NULL, parentId TEXT NOT NULL, resourceFileList TEXT NOT NULL, ds_metadata TEXT NOT NULL, ds_sidora TEXT NOT NULL, association TEXT NOT NULL, resourceOwner TEXT NOT NULL, codebookPID TEXT DEFAULT NULL, resourceCount INT(10) NULL, processCount INT(10) NOT NULL DEFAULT 0, request_consumed BOOLEAN NOT NULL DEFAULT false, request_complete BOOLEAN NOT NULL DEFAULT false, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (correlationId));
 
-#sql.createBatchResourceFilesTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchResources (correlationId CHAR(36) NOT NULL, resourceFile TEXT NOT NULL, parentId TEXT NOT NULL, pid TEXT DEFAULT NULL, contentModel TEXT DEFAULT NULL, resourceOwner TEXT NOT NULL, titleLabel TEXT DEFAULT NULL, resource_created BOOLEAN NOT NULL DEFAULT false, ds_relsExt_created BOOLEAN NOT NULL DEFAULT false, ds_metadata_created BOOLEAN NOT NULL DEFAULT false, ds_sidora_created BOOLEAN NOT NULL DEFAULT false, ds_dc_created BOOLEAN NOT NULL DEFAULT false, ds_obj_created BOOLEAN NOT NULL DEFAULT false, ds_tn_created BOOLEAN NOT NULL DEFAULT false, codebook_relationship_created BOOLEAN NOT NULL DEFAULT false, parent_child_resource_relationship_created BOOLEAN NOT NULL DEFAULT false, resource_consumed BOOLEAN NOT NULL DEFAULT false, resource_complete BOOLEAN NOT NULL DEFAULT 0, created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+sql.createBatchResourceFilesTable=CREATE TABLE IF NOT EXISTS sidora.camelBatchResources (correlationId CHAR(36) NOT NULL, resourceFile TEXT NOT NULL, parentId TEXT NOT NULL, pid TEXT DEFAULT NULL, contentModel TEXT DEFAULT NULL, resourceOwner TEXT NOT NULL, titleLabel TEXT DEFAULT NULL, resource_created BOOLEAN NOT NULL DEFAULT false, ds_relsExt_created BOOLEAN NOT NULL DEFAULT false, ds_metadata_created BOOLEAN NOT NULL DEFAULT false, ds_sidora_created BOOLEAN NOT NULL DEFAULT false, ds_dc_created BOOLEAN NOT NULL DEFAULT false, ds_obj_created BOOLEAN NOT NULL DEFAULT false, ds_tn_created BOOLEAN NOT NULL DEFAULT false, codebook_relationship_created BOOLEAN NOT NULL DEFAULT false, parent_child_resource_relationship_created BOOLEAN NOT NULL DEFAULT false, resource_consumed BOOLEAN NOT NULL DEFAULT false, resource_complete BOOLEAN NOT NULL DEFAULT 0, created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 
 
 ############################################################################
@@ -71,7 +71,7 @@ mysql> SELECT User FROM mysql.user;
 +-------------------+
 | User              |
 +-------------------+
-| camelBatchProcess |
+| camelBatchUser    |
 | fedora            |
 | mysql.sys         |
 | root              |

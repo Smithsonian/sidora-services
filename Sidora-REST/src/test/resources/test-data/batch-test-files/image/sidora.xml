@@ -1,0 +1,7 @@
+<sidora>
+    <model>si:generalImageCModel</model>
+    <form>General Image Description</form>
+    <ontology_location_id>GeneralImage_GeneralImage</ontology_location_id>
+    <meta_requirements_fulfilled>TRUE</meta_requirements_fulfilled>
+    <initial_dsid>MODS</initial_dsid>
+</sidora>
