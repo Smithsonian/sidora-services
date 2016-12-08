@@ -29,7 +29,7 @@ package edu.si.services.sidora.rest.batch.model;
 
 import javax.xml.bind.annotation.XmlType;
 
-/**
+/** POJO for Batch Resource
  * @author jbirkhimer
  */
 @XmlType(propOrder = {"file", "pid", "title", "resourceObjectCreated", "dsDcCreated", "dsRelsExtCreated", "dsDcMetadata", "dsObjCreated", "dsSidoraCreated", "parentChildRelationshipCreated", "codebookRelationshipCreated", "complete"})

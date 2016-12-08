@@ -30,7 +30,6 @@ package edu.si.services.sidora.rest.batch;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.junit4.CamelTestSupport;
@@ -41,7 +40,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -55,8 +53,6 @@ public class associationXSLTTest extends CamelTestSupport {
 
     //Temp directories created for testing
     private static File tempInputDirectory;
-
-    //private Namespaces ns = new Namespaces("mods", "http://www.loc.gov/mods/v3");
 
     /**
      * Sets up the Temp directories used by the

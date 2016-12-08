@@ -30,7 +30,7 @@ package edu.si.services.sidora.rest.batch.model.status;
 import javax.xml.bind.annotation.*;
 import java.util.ArrayList;
 
-/**
+/** JAXB annotated POJO for Batch Status
  * @author jbirkhimer
  */
 @XmlRootElement(name = "Batch")

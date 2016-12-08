@@ -27,24 +27,21 @@
 
 package edu.si.services.sidora.rest.batch.beans;
 
-import org.apache.camel.*;
-import org.apache.commons.io.FileUtils;
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
+/** This class generated the UUID for CorrelationId's and provides helper methods for the camel route.
  * @author jbirkhimer
  */
 public class BatchRequestControllerBean {
@@ -99,6 +96,8 @@ public class BatchRequestControllerBean {
         if (batchRequestMap.get("codebookPID") != null) {
             out.setHeader("codebookPID", batchRequestMap.get("codebookPID").toString());
         }
+
+        LOG.debug("Return Headers and Body:\nHeaders:\n{}\nBody:\n{}", out.getHeaders(), out.getBody());
     }
 
     /**
@@ -114,6 +113,7 @@ public class BatchRequestControllerBean {
         String pid = out.getHeader("CamelFedoraPid", String.class);
         String titleField = out.getHeader("titleField", String.class);
         String contentModel = out.getHeader("contentModel", String.class);
+        Integer statusCode = out.getHeader("CamelHttpResponseCode", Integer.class);
 
         Map<String, Object> updateCreatedStatus = new HashMap<String, Object>();
         updateCreatedStatus.put("correlationId", correlationId);
@@ -122,7 +122,9 @@ public class BatchRequestControllerBean {
         updateCreatedStatus.put("titleField", titleField);
         updateCreatedStatus.put("contentModel", contentModel);
 
-        updateCreatedStatus.put(datastream, checkStatusCode(out.getHeader("CamelHttpResponseCode", Integer.class)));
+        updateCreatedStatus.put(datastream, checkStatusCode(statusCode));
+
+        LOG.info("Updating dB Status: CorrelationId: {}, Resource File: {}, Datastream: {}, Status Code: {}", correlationId, resourceFile, datastream, statusCode);
 
         return updateCreatedStatus;
     }

@@ -34,7 +34,7 @@ import org.apache.cxf.common.util.Base64Utility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Setting the Fedora Auth UN/PW
+/** Setting the Fedora Auth UN/PW for Fedora REST calls
  * @author jbirkhimer
  */
 public class RequestProcessor {

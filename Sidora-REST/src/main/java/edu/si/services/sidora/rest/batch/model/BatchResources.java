@@ -29,7 +29,7 @@ package edu.si.services.sidora.rest.batch.model;
 
 import java.util.ArrayList;
 
-/**
+/** POJO for Batch Resources
  * @author jbirkhimer
  */
 public class BatchResources {

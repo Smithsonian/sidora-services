@@ -159,14 +159,16 @@
         <!-- CXFRS Batch API binding to camel routes -->
         <route id="SidoraRESTService">
             <from uri="cxfrs://bean://rsServer?bindingStyle=SimpleConsumer"/>
-            <log message="{id}: Starting SidoraRESTService Request for: ${header.operationName} ... "
+            <log message="${id}: Starting SidoraRESTService Request for: ${header.operationName} ... "
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
             <recipientList>
                 <simple>direct:${header.operationName}</simple>
             </recipientList>
-
+            <log message="${id}: Finished SidoraRESTService Request for: ${header.operationName} ... "
+                 loggingLevel="INFO"
+                 logName="{{edu.si.batch}}"/>
         </route>
 
         <route id="BatchProcessAddResourceObjects">
@@ -289,7 +291,7 @@
             <split strategyRef="pidAggregator"> <!-- pidAggregator stores pids to ${header.PIDAggregation} -->
                 <simple>${body}</simple>
 
-                <log message="{id}: Batch Process: Split Body: ${body}"
+                <log message="${id}: Batch Process: Split Body: ${body}"
                      loggingLevel="DEBUG"
                      logName="{{edu.si.batch}}"/>
 
@@ -322,7 +324,6 @@
                 </setHeader>
 
                 <to uri="sql:{{sql.markRequestComplete}}"/>
-
 
                 <log message="${id}: Created Resource - ${body}."
                      loggingLevel="INFO"

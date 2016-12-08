@@ -28,11 +28,9 @@
 package edu.si.services.sidora.rest.batch;
 
 import org.apache.cxf.jaxrs.ext.multipart.Multipart;
-import org.apache.cxf.message.Attachment;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-import java.net.URL;
 
 /** Batch REST API
  * @author jbirkhimer
