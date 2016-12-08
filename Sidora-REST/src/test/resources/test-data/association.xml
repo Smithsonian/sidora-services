@@ -9,7 +9,7 @@
         <item0>titleInfo</item0>
         <item1>title</item1>
     </title_field>
-    <transform>http://sidora0c.myquotient.net/~ramlani/sidora/sidora0.4/sites/all/modules/islandora_xml_forms-7.x-1.7/builder/transforms/mods_to_dc.xsl</transform>
+    <transform>file://sidora-services/Sidora-REST/src/test/resources/xslt/mods_to_dc.xsl</transform>
     <self_transform>No Transform</self_transform>
     <template></template>
     <in_db>1</in_db>

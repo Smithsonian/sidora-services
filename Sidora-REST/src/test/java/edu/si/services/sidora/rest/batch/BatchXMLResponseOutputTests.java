@@ -41,6 +41,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -50,6 +51,10 @@ import static org.junit.Assert.assertEquals;
  */
 public class BatchXMLResponseOutputTests {
     private static final Logger LOG = LoggerFactory.getLogger(BatchXMLResponseOutputTests.class);
+
+    private static String correlationId = UUID.randomUUID().toString();
+    //Flag to save to file (optional)
+    private static boolean save2file = false;
 
     @Test
     public void requestXMLtest() throws JAXBException, FileNotFoundException {
@@ -62,9 +67,11 @@ public class BatchXMLResponseOutputTests {
         Marshaller marshallerObj = contextObj.createMarshaller();
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
-        BatchRequestResponse requestStatus = new BatchRequestResponse("si:390403", "61f8627d-445e-45ae-82dc-78a2518fcde6");
+        BatchRequestResponse requestStatus = new BatchRequestResponse("si:000001", correlationId);
 
-        //marshallerObj.marshal(requestStatus, new FileOutputStream("target/BatchRequestResponse.xml"));
+        if (save2file) {
+            marshallerObj.marshal(requestStatus, new FileOutputStream("target/BatchRequestResponse.xml"));
+        }
         marshallerObj.marshal(requestStatus, sw);
 
         LOG.info("Request XML Generated:\n{}", sw.toString());
@@ -85,20 +92,22 @@ public class BatchXMLResponseOutputTests {
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
 
-        ResourceStatus resource1 = new ResourceStatus("http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Hydrangeas.jpg", "si:392370", "pdf_batch_111416(0)", true, true, true, true, true, true, true, false, true, true);
+        ResourceStatus resource1 = new ResourceStatus("image_Hydrangeas.jpg", "si:000002", "image(1)", true, true, true, true, true, true, true, false, true, true);
 
-        ResourceStatus resource2 = new ResourceStatus("http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Chrysanthemum.jpg", "si:392371", "pdf_batch_111416(0)", true, true, true, true, true, true, false, true, true, true);
+        ResourceStatus resource2 = new ResourceStatus("image_Chrysanthemum.jpg", "si:000003", "image(2)", true, true, true, true, true, true, false, true, true, true);
 
-        ResourceStatus resource3 = new ResourceStatus("http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Desert.jpg", "si:392372", "pdf_batch_111416(0)", true, true, true, true, true, true, false, true, true, true);
+        ResourceStatus resource3 = new ResourceStatus("image_Desert.jpg", "si:000004", "image(3)", true, true, true, true, true, true, false, true, true, true);
 
         ArrayList<ResourceStatus> list = new ArrayList<>();
         list.add(resource1);
         list.add(resource2);
         list.add(resource3);
 
-        BatchStatus batchStatus = new BatchStatus("si:390403", "ramlani", "61f8627d-445e-45ae-82dc-78a2518fcde6", 3, 3, true, "si:generalImageCModel", null, list);
+        BatchStatus batchStatus = new BatchStatus("si:000001", "batchUser", correlationId, 3, 3, true, "si:generalImageCModel", null, list);
 
-        //marshallerObj.marshal(batchStatus, new FileOutputStream("target/BatchStatus.xml"));
+        if (save2file) {
+            marshallerObj.marshal(batchStatus, new FileOutputStream("target/BatchStatus.xml"));
+        }
         marshallerObj.marshal(batchStatus, sw);
 
         LOG.info("Status XML Generated:\n{}", sw.toString());
@@ -112,24 +121,24 @@ public class BatchXMLResponseOutputTests {
         if (expected.equals("request")) {
             expectedResult = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
                     "<Batch>\n" +
-                    "    <ParentPID>si:390403</ParentPID>\n" +
-                    "    <CorrelationID>61f8627d-445e-45ae-82dc-78a2518fcde6</CorrelationID>\n" +
+                    "    <ParentPID>si:000001</ParentPID>\n" +
+                    "    <CorrelationID>" + correlationId + "</CorrelationID>\n" +
                     "</Batch>\n";
         } else if (expected.equals("status")) {
             expectedResult = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
                     "<Batch>\n" +
                     "    <BatchDone>true</BatchDone>\n" +
-                    "    <CorrelationID>61f8627d-445e-45ae-82dc-78a2518fcde6</CorrelationID>\n" +
-                    "    <ParentPID>si:390403</ParentPID>\n" +
-                    "    <resourceOwner>ramlani</resourceOwner>\n" +
+                    "    <CorrelationID>"+ correlationId + "</CorrelationID>\n" +
+                    "    <ParentPID>si:000001</ParentPID>\n" +
+                    "    <resourceOwner>batchUser</resourceOwner>\n" +
                     "    <ResourceCount>3</ResourceCount>\n" +
                     "    <ResourcesProcessed>3</ResourcesProcessed>\n" +
                     "    <contentModel>si:generalImageCModel</contentModel>\n" +
                     "    <resources>\n" +
                     "        <resource>\n" +
-                    "            <file>http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Hydrangeas.jpg</file>\n" +
-                    "            <pid>si:392370</pid>\n" +
-                    "            <title>pdf_batch_111416(0)</title>\n" +
+                    "            <file>image_Hydrangeas.jpg</file>\n" +
+                    "            <pid>si:000002</pid>\n" +
+                    "            <title>image(1)</title>\n" +
                     "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
                     "            <dsDcCreated>true</dsDcCreated>\n" +
                     "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
@@ -142,9 +151,9 @@ public class BatchXMLResponseOutputTests {
                     "            <complete>true</complete>\n" +
                     "        </resource>\n" +
                     "        <resource>\n" +
-                    "            <file>http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Chrysanthemum.jpg</file>\n" +
-                    "            <pid>si:392371</pid>\n" +
-                    "            <title>pdf_batch_111416(0)</title>\n" +
+                    "            <file>image_Chrysanthemum.jpg</file>\n" +
+                    "            <pid>si:000003</pid>\n" +
+                    "            <title>image(2)</title>\n" +
                     "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
                     "            <dsDcCreated>true</dsDcCreated>\n" +
                     "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
@@ -157,9 +166,9 @@ public class BatchXMLResponseOutputTests {
                     "            <complete>true</complete>\n" +
                     "        </resource>\n" +
                     "        <resource>\n" +
-                    "            <file>http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/image/batch_0_ramlani_Desert.jpg</file>\n" +
-                    "            <pid>si:392372</pid>\n" +
-                    "            <title>pdf_batch_111416(0)</title>\n" +
+                    "            <file>image_Desert.jpg</file>\n" +
+                    "            <pid>si:000004</pid>\n" +
+                    "            <title>image(3)</title>\n" +
                     "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
                     "            <dsDcCreated>true</dsDcCreated>\n" +
                     "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +

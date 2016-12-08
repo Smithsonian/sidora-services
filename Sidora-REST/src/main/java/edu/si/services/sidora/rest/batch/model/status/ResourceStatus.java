@@ -29,7 +29,7 @@ package edu.si.services.sidora.rest.batch.model.status;
 
 import javax.xml.bind.annotation.XmlType;
 
-/**
+/** JAXB annotated POJO for Batch Resource Status
  * @author jbirkhimer
  */
 @XmlType(propOrder = {"file", "pid", "title", "resourceObjectCreated", "dsDcCreated", "dsRelsExtCreated", "dsMetadata", "dsObjCreated", "dsTnCreated", "dsSidoraCreated", "parentChildRelationshipCreated", "codebookRelationshipCreated", "complete"})

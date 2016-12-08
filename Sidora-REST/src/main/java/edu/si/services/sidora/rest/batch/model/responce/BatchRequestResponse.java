@@ -29,7 +29,7 @@ package edu.si.services.sidora.rest.batch.model.responce;
 
 import javax.xml.bind.annotation.*;
 
-/**
+/** JAXB annotated POJO for Batch Requests
  * @author jbirkhimer
  */
 @XmlRootElement(name = "Batch")

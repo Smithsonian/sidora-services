@@ -40,17 +40,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
+/** This class is used to create the POJO that JAXB will use to return XML as a response
  * @author jbirkhimer
  */
 public class ResponseControllerBean {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseControllerBean.class);
 
     private Message out;
-    private String parentPID;
-    private String correlationId;
-    private Integer processCount;
-    private boolean request_complete;
 
     /**
      * Return The Detailed Status for a Batch Request as a POJO for JAXB/JSON Databinding
@@ -106,7 +102,7 @@ public class ResponseControllerBean {
 
 
     /**
-     * Responce for a New Batch Request as a POJO for JAXB/JSON Databinding
+     * Response for a New Batch Request as a POJO for JAXB/JSON Databinding
      * @param exchange
      * @return
      */
