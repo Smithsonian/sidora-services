@@ -1,8 +1,8 @@
 <sidora>
     <model>si:datasetCModel</model>
-    <form>Tabular Data Set Object</form>
+    <form>Tabular Data Object 2016</form>
     <ontology_location_id>Datasets</ontology_location_id>
     <meta_requirements_fulfilled>TRUE</meta_requirements_fulfilled>
-    <initial_dsid>FGDC</initial_dsid>
-    <parent>si:390403</parent>
+    <initial_dsid>DESCMETA</initial_dsid>
+    <parent>si:403189</parent>
 </sidora>

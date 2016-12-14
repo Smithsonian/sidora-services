@@ -407,11 +407,11 @@
                 </xpath>
             </setHeader>
 
+            <to uri="xslt:file:Input/xslt/BatchAssociationTitlePath.xsl?saxon=true"/>
+
             <!-- header is an XSLT param -->
             <setHeader headerName="titlePath">
-                <xpath resultType="java.lang.String" headerName="associationXML">
-                    //association/title_field/*[last()]
-                </xpath>
+                <simple>${body}</simple>
             </setHeader>
 
             <log message="${id}: Finished processing Association Info."
@@ -426,17 +426,8 @@
                  logName="{{edu.si.batch}}"/>
 
             <to uri="direct:setupMetadata"/>
-
             <to uri="direct:createNewResource"/>
-
-            <!--<choice>
-                <when>
-                    <simple>${header.dsID} == 'MODS'</simple>
-                    <to uri="direct:updateDCDatastream"/>
-                </when>
-            </choice>-->
             <to uri="direct:updateDCDatastream"/>
-
             <to uri="direct:addRelsExtDatastream"/>
             <to uri="direct:addMetadataDatastream"/>
             <to uri="direct:addSidoraDatastream"/>
@@ -489,35 +480,6 @@
 
             <convertBodyTo type="java.lang.String"/>
 
-            <!-- header is an XSLT param -->
-            <setHeader headerName="titleLabel">
-                <xpath resultType="java.lang.String">
-                    concat(//*[local-name()=in:header(&#39;titlePath&#39;)]/text(), &#39;(&#39;, function:simple(&#39;${property.CamelSplitIndex}++&#39;), &#39;)&#39;)
-                </xpath>
-            </setHeader>
-
-            <!--<choice>
-                <when>
-                    <simple>${property.CamelSplitIndex} == 0</simple>
-                    <setHeader headerName="titleLabel">
-                        <xpath resultType="java.lang.String">
-                            //*[local-name()=in:header(&#39;titlePath&#39;)]/text()
-                        </xpath>
-                    </setHeader>
-                </when>
-                <otherwise>
-                    <setHeader headerName="titleLabel">
-                        <xpath resultType="java.lang.String">
-                            concat(//*[local-name()=in:header(&#39;titlePath&#39;)]/text(), function:simple(&#39;(${exchangeProperty.CamelSplitIndex})&#39;))
-                        </xpath>
-                    </setHeader>
-                </otherwise>
-            </choice>-->
-
-            <log message="${id}: Batch Process Title/Label: ${header.titleLabel} For Resource: ${header.resourceFile}"
-                 loggingLevel="DEBUG"
-                 logName="{{edu.si.batch}}"/>
-
             <to uri="xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
 
             <!-- store the metadata with updated title -->
@@ -526,6 +488,9 @@
                     ${body}
                 </simple>
             </setHeader>
+
+            <!-- Get the titleLabel and stash in header -->
+            <to uri="bean:batchRequestControllerBean?method=setTitleLabel"/>
 
             <log message="${id}: Batch Process Title/Label: ${header.titleLabel} For Resource: ${header.resourceFile}"
                  loggingLevel="DEBUG"
@@ -785,7 +750,7 @@
 
             <filter>
                 <simple>
-                    ${header.dsID} == 'FGDC'
+                    ${header.dsID} == 'DESCMETA'
                 </simple>
 
                 <!-- add codebook relationship -->

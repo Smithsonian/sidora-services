@@ -29,6 +29,8 @@ package edu.si.services.sidora.rest.batch.beans;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.builder.xml.Namespaces;
+import org.apache.camel.builder.xml.XPathBuilder;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,6 +166,21 @@ public class BatchRequestControllerBean {
         LOG.debug("Batch Process " + resourceFile + " || MIME=" + mimeType);
 
         out.setHeader("dsMIME", mimeType);
+    }
+
+    /**
+     * Setting the titleLabel header
+     * NOTE: xslt does not work with dynamic xpath set from a param. xslt ver. 3.0 has an evaluate() function that could work and replace this method.
+     * @param exchange
+     */
+    public void setTitleLabel(Exchange exchange) {
+
+        out = exchange.getIn();
+
+        String titleLabel = XPathBuilder.xpath("/" + out.getHeader("titlePath", String.class) + "/text()", String.class)
+                .evaluate(exchange.getContext(), out.getBody());
+
+        out.setHeader("titleLabel", titleLabel);
     }
 
     /**
