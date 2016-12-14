@@ -407,11 +407,17 @@
                 </xpath>
             </setHeader>
 
+            <setBody>
+                <simple resultType="java.lang.String">
+                    ${header.associationXML}
+                </simple>
+            </setBody>
+
             <to uri="xslt:file:Input/xslt/BatchAssociationTitlePath.xsl?saxon=true"/>
 
             <!-- header is an XSLT param -->
             <setHeader headerName="titlePath">
-                <simple>${body}</simple>
+                <simple resultType="java.lang.String">${body}</simple>
             </setHeader>
 
             <log message="${id}: Finished processing Association Info."
