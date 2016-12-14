@@ -44,103 +44,163 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * Testing incrementing resource titles
- *
- *
+/** Integration Tests from association and metadata to DC
  * @author jbirkhimer
  */
-public class BatchTitleTest extends CamelTestSupport {
+public class Metadata2DCTest extends CamelTestSupport {
+
+    //Camel Headers Map
+    private Map<String, Object> headers;
 
     //Temp directories created for testing
     private static File tempInputDirectory;
 
     /**
-     * Testing title field with increment for audio
+     * Testing metadata to dc transforms for audio
      * @throws Exception
      */
     @Test
-    public void audioTitleTest() throws Exception {
+    public void audioDCTest() throws Exception {
+
+        String metadata_to_dc_XSL = "xslt/mods_to_dc.xsl";
 
         String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/metadata.xml"));
         String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/association.xml"));
 
-        runTitleTest(metadataXML, associationXML, "batch-audio-test");
+        String expectedDC = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<oai_dc:dc xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                "           xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
+                "           xmlns:srw_dc=\"info:srw/schema/1/dc-schema\"\n" +
+                "           xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\"\n" +
+                "           xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">\n" +
+                "   <dc:title>batch-audio-test(1)</dc:title>\n" +
+                "   <dc:description>batch ingest</dc:description>\n" +
+                "</oai_dc:dc>\n";
+
+        runDCTest(metadataXML, associationXML, metadata_to_dc_XSL, expectedDC);
     }
 
     /**
-     * Testing title field with increment for codebook
+     * Testing metadata to dc transforms for codebook
      * @throws Exception
      */
     @Test
-    public void codebookTitleTest() throws Exception {
+    public void codebookDCTest() throws Exception {
+
+        String metadata_to_dc_XSL = "xslt/SIdoraConcept2DC.xsl";
 
         String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/codebook/metadata.xml"));
         String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/codebook/association.xml"));
-        
-        runTitleTest(metadataXML, associationXML, "batch-codebook-test");
+
+        String expectedDC = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><oai_dc:dc xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\"><dc:title>batch-codebook-test(1)</dc:title><dc:type>Tabular Data Object</dc:type></oai_dc:dc>";
+
+        runDCTest(metadataXML, associationXML, metadata_to_dc_XSL, expectedDC);
     }
 
     /**
-     * Testing title field with increment for image
+     * Testing metadata to dc transforms for image
      * @throws Exception
      */
     @Test
-    public void imageTitleTest() throws Exception {
+    public void imageDCTest() throws Exception {
+
+        String metadata_to_dc_XSL = "xslt/mods_to_dc.xsl";
 
         String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/image/metadata.xml"));
         String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/image/association.xml"));
 
-        runTitleTest(metadataXML, associationXML, "batch-image-test");
+        String expectedDC = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<oai_dc:dc xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                "           xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
+                "           xmlns:srw_dc=\"info:srw/schema/1/dc-schema\"\n" +
+                "           xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\"\n" +
+                "           xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">\n" +
+                "   <dc:title>batch-image-test(1)</dc:title>\n" +
+                "   <dc:description>jjjjj</dc:description>\n" +
+                "   <dc:subject>ttt1--tt2</dc:subject>\n" +
+                "</oai_dc:dc>\n";
+
+        runDCTest(metadataXML, associationXML, metadata_to_dc_XSL, expectedDC);
     }
 
     /**
-     * Testing title field with increment for pdf
+     * Testing metadata to dc transforms for pdf
      * @throws Exception
      */
     @Test
-    public void pdfTitleTest() throws Exception {
+    public void pdfDCTest() throws Exception {
+
+        String metadata_to_dc_XSL = "xslt/mods_to_dc.xsl";
 
         String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/pdf/metadata.xml"));
         String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/pdf/association.xml"));
 
-        runTitleTest(metadataXML, associationXML, "batch-pdf-test");
+        String expectedDC = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<oai_dc:dc xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                "           xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
+                "           xmlns:srw_dc=\"info:srw/schema/1/dc-schema\"\n" +
+                "           xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\"\n" +
+                "           xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">\n" +
+                "   <dc:title>batch-pdf-test(1)</dc:title>\n" +
+                "   <dc:contributor>corporate (artist)</dc:contributor>\n" +
+                "   <dc:creator>personal</dc:creator>\n" +
+                "   <dc:type>Text</dc:type>\n" +
+                "   <dc:format>text</dc:format>\n" +
+                "   <dc:subject/>\n" +
+                "   <dc:coverage>North America</dc:coverage>\n" +
+                "</oai_dc:dc>\n";
+
+        runDCTest(metadataXML, associationXML, metadata_to_dc_XSL, expectedDC);
     }
 
     /**
-     * Testing title field with increment for video
+     * Testing metadata to dc transforms for video
      * @throws Exception
      */
     @Test
-    public void videoTitleTest() throws Exception {
+    public void videoDCTest() throws Exception {
+
+        String metadata_to_dc_XSL = "xslt/mods_to_dc.xsl";
 
         String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/video/metadata.xml"));
         String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/video/association.xml"));
 
-        runTitleTest(metadataXML, associationXML, "batch-video-test");
+        String expectedDC = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<oai_dc:dc xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                "           xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
+                "           xmlns:srw_dc=\"info:srw/schema/1/dc-schema\"\n" +
+                "           xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\"\n" +
+                "           xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">\n" +
+                "   <dc:title>batch-video-test(1): 1 videos</dc:title>\n" +
+                "   <dc:type>MovingImage</dc:type>\n" +
+                "   <dc:format>videorecording</dc:format>\n" +
+                "   <dc:subject/>\n" +
+                "   <dc:coverage>North America</dc:coverage>\n" +
+                "</oai_dc:dc>\n";
+
+        runDCTest(metadataXML, associationXML, metadata_to_dc_XSL, expectedDC);
     }
-    
 
     /**
-     * Testing title field with increment
+     * Metadata to dc transform test
      * @throws Exception
      */
-    public void runTitleTest(String metadataXML, String associationXML, String title) throws Exception {
+    public void runDCTest(String metadataXML, String associationXML, String metadata_to_dc_XSL, String expectedDC) throws Exception {
 
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
-        mockEndpoint.expectedMessageCount(4);
 
         Exchange exchange = new DefaultExchange(context);
 
         exchange.getIn().setHeader("ds_metadataXML", metadataXML);
+        exchange.getIn().setHeader("metadata_to_dc_XSL", metadata_to_dc_XSL);
+        exchange.setProperty("CamelSplitIndex", 0);
         exchange.getIn().setBody(associationXML);
 
-        template.send("direct:start", exchange);
+        template.send("direct:Start", exchange);
 
-        assertEquals(title + "(1)", mockEndpoint.getExchanges().get(0).getIn().getHeader("titleLabel"));
-        assertEquals(title + "(2)", mockEndpoint.getExchanges().get(1).getIn().getHeader("titleLabel"));
-        assertEquals(title + "(3)", mockEndpoint.getExchanges().get(2).getIn().getHeader("titleLabel"));
-        assertEquals(title + "(4)", mockEndpoint.getExchanges().get(3).getIn().getHeader("titleLabel"));
+        //template.sendBodyAndHeaders("direct:metadata_to_dc", metadataXML, headers);
+
+        assertEquals(expectedDC, mockEndpoint.getExchanges().get(0).getIn().getBody(String.class));
 
         assertMockEndpointsSatisfied();
     }
@@ -154,12 +214,14 @@ public class BatchTitleTest extends CamelTestSupport {
                 from("direct:start")
                         .to("xslt:file:Input/xslt/BatchAssociationTitlePath.xsl?saxon=true")
                         .setHeader("titlePath", simple("${body}"))
-                        .setBody(simple("1,2,3,4"))
-                        .split().tokenize(",")
                         .setBody(simple("${header.ds_metadataXML}", String.class))
                         .to("xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
                         .to("bean:batchRequestControllerBean?method=setTitleLabel")
-                        .log(LoggingLevel.INFO, "Metadata = ${body}")
+                        //.log(LoggingLevel.INFO, "XSLT Title Transform:\n${body}")
+                        .toD("xslt:{{extract.mods.from.collection.xsl}}")
+                        .log(LoggingLevel.INFO, "Extract Transform:\n${body}")
+                        .toD("xslt:${header.metadata_to_dc_XSL}?saxon=true")
+                        .log(LoggingLevel.INFO, "Mods to DC Transform:\n${body}")
                         .log(LoggingLevel.INFO, "TitlePath = ${header.titlePath}")
                         .log(LoggingLevel.INFO, "TitleLabel = ${header.titleLabel}")
                         .to("mock:result");
@@ -212,4 +274,10 @@ public class BatchTitleTest extends CamelTestSupport {
         }
     }
 
+    @Override
+    protected Properties useOverridePropertiesWithPropertiesComponent() {
+        Properties extra = new Properties();
+        extra.put("extract.mods.from.collection.xsl", "xslt/extract_mods_from_collection.xsl");
+        return extra;
+    }
 }

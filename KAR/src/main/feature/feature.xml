@@ -33,7 +33,7 @@
     <!-- Sidora Dependencies -->
     <feature name="sidora-dependencies" version="${version}" >
         <bundle dependency="true" start-level='80'>mvn:commons-codec/commons-codec/${commons-codec.bundle.version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:commons-collections/commons-collections4/${commons-collections4.version}</bundle>
+        <bundle dependency="true" start-level='80'>mvn:org.apache.commons/commons-collections4/${commons-collections4.version}</bundle>
         <!--<bundle dependency="true" start-level='80'>mvn:org.apache.poi/poi/${apache-poi.version}</bundle>-->
         <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/${servicemix.bundles.poi.version}</bundle>
         <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/${servicemix.bundles.velocity-tools.version}</bundle>
