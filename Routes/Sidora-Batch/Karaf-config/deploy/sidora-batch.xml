@@ -756,7 +756,7 @@
 
             <filter>
                 <simple>
-                    ${header.dsID} == 'DESCMETA'
+                    ${header.codebookPID}
                 </simple>
 
                 <!-- add codebook relationship -->
