@@ -44,7 +44,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-/** Integration Tests from association and metadata to DC
+/** Integration Test from association and metadata t 
  * @author jbirkhimer
  */
 public class Metadata2DCTest extends CamelTestSupport {
@@ -196,7 +196,7 @@ public class Metadata2DCTest extends CamelTestSupport {
         exchange.setProperty("CamelSplitIndex", 0);
         exchange.getIn().setBody(associationXML);
 
-        template.send("direct:Start", exchange);
+        template.send("direct:start", exchange);
 
         //template.sendBodyAndHeaders("direct:metadata_to_dc", metadataXML, headers);
 

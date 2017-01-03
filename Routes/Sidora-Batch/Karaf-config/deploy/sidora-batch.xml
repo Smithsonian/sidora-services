@@ -413,7 +413,7 @@
                 </simple>
             </setBody>
 
-            <to uri="xslt:file:Input/xslt/BatchAssociationTitlePath.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/BatchAssociationTitlePath.xsl?saxon=true"/>
 
             <!-- header is an XSLT param -->
             <setHeader headerName="titlePath">
@@ -486,7 +486,7 @@
 
             <convertBodyTo type="java.lang.String"/>
 
-            <to uri="xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
 
             <!-- store the metadata with updated title -->
             <setHeader headerName="ds_metadataXML">
@@ -601,7 +601,7 @@
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
 
-            <to uri="velocity:file:Input/templates/BatchResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/BatchResourceTemplate.vsl"/>
 
             <!-- Add a datastream for RELS-EXT. -->
             <setHeader headerName="Exchange.HTTP_METHOD">

@@ -102,6 +102,11 @@
             <artifactId>cxf-rt-transports-http-jetty</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-rs-extension-providers</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Logging -->
         <dependency>
@@ -225,6 +230,11 @@
             <artifactId>jackson-databind</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.codehaus.jettison</groupId>
+            <artifactId>jettison</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- MIME Type Detection -->
         <dependency>
@@ -238,9 +248,29 @@
             <version>1.9</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.11.1.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
+        <!-- Copy test resources to output folder target/test-classes -->
+        <testResources>
+            <!-- don't forget to specify the default test resources directory -->
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+
+            <!-- add the Sidora-Batch Karaf-config directories -->
+            <testResource>
+                <directory>../Routes/Sidora-Batch</directory>
+            </testResource>
+
+        </testResources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
