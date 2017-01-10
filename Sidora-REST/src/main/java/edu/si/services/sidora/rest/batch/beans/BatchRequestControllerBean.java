@@ -31,6 +31,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.builder.xml.XPathBuilder;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,6 +182,14 @@ public class BatchRequestControllerBean {
                 .evaluate(exchange.getContext(), out.getBody());
 
         out.setHeader("titleLabel", titleLabel);
+    }
+
+    public void setExtension(Exchange exchange) {
+        out = exchange.getIn();
+
+        String objDsLabelExtension = FilenameUtils.getExtension(out.getHeader("resourceFile", String.class));
+
+        out.setHeader("objDsLabelExtension", objDsLabelExtension);
     }
 
     /**

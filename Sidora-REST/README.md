@@ -2,9 +2,9 @@
 ### A new Fedora user must be created for Derivatives to be created during Batch Process:
 add camelBatchProcess user to `fedora-users.xml`
 ```bash
-# vi <fedora-install>/server/config.fedora-users.xml
+# vi <fedora-install>/server/config/fedora-users.xml
 
-<?xml version='1.0' ?>
+<?xml version='1.0' ?>Add
   <users>
     ...
     <user name="<fedora-batch-user>" password="<fedora-batch-user-password">
