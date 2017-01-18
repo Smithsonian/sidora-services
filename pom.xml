@@ -43,7 +43,7 @@
         <module>Beans</module>
         <module>Tabular</module>
         <module>KAR</module>
-        <module>Sidora-REST</module>
+        <module>Sidora-Batch</module>
     </modules>
 
     <properties>

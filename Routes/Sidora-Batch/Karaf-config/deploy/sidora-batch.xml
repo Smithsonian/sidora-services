@@ -57,7 +57,7 @@
     </cxf:bus>
 
     <!-- Defined the server endpoint to create the cxf-rs consumer -->
-    <camel-cxf:rsServer id="rsServer" address="${sidora.rest.service.address}"
+    <camel-cxf:rsServer id="rsServer" address="${sidora.batch.service.address}"
                   serviceClass="edu.si.services.sidora.rest.batch.BatchResourcesService"
                   loggingFeatureEnabled="true">
         <camel-cxf:providers>

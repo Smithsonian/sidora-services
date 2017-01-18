@@ -1,4 +1,4 @@
-# Sidora-REST Service Setup and Configuration:
+# Sidora-Batch Service Setup and Configuration:
 ### A new Fedora user must be created for Derivatives to be created during Batch Process:
 add camelBatchProcess user to `fedora-users.xml`
 ```bash
@@ -164,7 +164,7 @@ mysql> DESCRIBE camelBatchResources;
 ```
 
 ## ServiceMix setup and configuration:
-### Copy batch.process.sql.properties from `Sidora-REST/src/test/resources/sql` to `<smx-install>/sql/`
+### Copy batch.process.sql.properties from `Sidora-Batch/src/test/resources/sql` to `<smx-install>/sql/`
 ```bash
 # mkdir <smx-install>/sql
 # cp sidora-services/Routes/Sidora-Batch/Karaf-config/sql/batch.process.sql.properties <smx-install>/sql/
@@ -240,7 +240,7 @@ mysql.username=<camelMySQL-user>
 mysql.password=<camelMySQL-password>
 ```
 
-# Deploy the Sidora-REST service to ServiceMix
+# Deploy the Sidora-Batch service to ServiceMix
 - Shutdown ServiceMIX
 - Clone sidora-services git repo
 - Create edu.si.sidora.batch.cgf from step above

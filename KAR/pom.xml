@@ -106,10 +106,10 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
-        <!-- Sidora REST  Batch Service -->
+        <!-- Sidora Batch Service -->
         <dependency>
             <groupId>edu.si.services</groupId>
-            <artifactId>sidora-rest</artifactId>
+            <artifactId>sidora-batch</artifactId>
             <version>1.0</version>
         </dependency>
 

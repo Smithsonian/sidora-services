@@ -37,11 +37,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>sidora-rest</artifactId>
+    <artifactId>sidora-batch</artifactId>
     <packaging>bundle</packaging>
 
-    <name>SI :: Services :: Sidora :: REST</name>
-    <description>Sidora REST Services</description>
+    <name>SI :: Services :: Sidora :: Batch</name>
+    <description>Sidora Batch Services</description>
 
     <properties>
         <http-components.version>4.4</http-components.version>
