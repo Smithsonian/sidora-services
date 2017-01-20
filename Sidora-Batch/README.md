@@ -230,7 +230,7 @@ si.fedora.password=<fedora-password>
 si.fedora.batch.user=<fedora-batch-user>
 
 # The REST endpoint for the Batch Process
-sidora.rest.service.address=/sidora/rest
+sidora.batch.service.address=/sidora/batch
 
 # MySQL database setup
 mysql.host=localhost
@@ -270,7 +270,7 @@ mysql.password=<camelMySQL-password>
 -F "ds_sidora=http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/sidora.xml" \
 -F "association=http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/association.xml" \
 -F "resourceOwner=ramlani" \
--X POST http://localhost:8181/cxf/sidora/rest/batch/process/addResourceObjects/si:390403
+-X POST http://localhost:8181/cxf/sidora/batch/addResourceObjects/si:390403
 ```
 
 ## FGDC / codebook Batch Testing Curl (query param ie. 'http://...?codebookPID=si:123456'):
@@ -281,10 +281,10 @@ mysql.password=<camelMySQL-password>
 -F "ds_sidora=http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/acodebook/sidora_ramlani5821e4a34a2aa.xml" \
 -F "association=http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/audio/association.xml" \
 -F "resourceOwner=ramlani" \
--X POST http://localhost:8181/cxf/sidora/rest/batch/process/addResourceObjects/si:390403?codebookPID=si:123456
+-X POST http://localhost:8181/cxf/sidora/batch/addResourceObjects/si:390403?codebookPID=si:123456
 ```
 
 ## Testing Batch Status Curl:
 ```bash
-# curl -v -X GET http://localhost:8181/cxf/sidora/rest/batch/process/requestStatus/[parentId]/[correlationId]
+# curl -v -X GET http://localhost:8181/cxf/sidora/batch/requestStatus/[parentId]/[correlationId]
 ```

@@ -69,7 +69,7 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
     // Flag to use MySql Server for testing otherwise Derby embedded dB will be used for testing.
     private static final Boolean USE_MYSQL_DB = false;
 
-    private static final String SERVICE_ADDRESS = "/sidora/rest";
+    private static final String SERVICE_ADDRESS = "/sidora/batch";
     private static final String BASE_URL = "http://localhost:8282" + SERVICE_ADDRESS;
 
     //Default Test Params
@@ -125,7 +125,7 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
             }
         });
 
-        HttpPost post = new HttpPost(BASE_URL + "/batch/process/addResourceObjects/" + parentPid);
+        HttpPost post = new HttpPost(BASE_URL + "/addResourceObjects/" + parentPid);
 
         MultipartEntityBuilder builder = MultipartEntityBuilder.create().setMode(HttpMultipartMode.STRICT);
 
@@ -198,7 +198,7 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
             }
         });
 
-        HttpGet getClient = new HttpGet(BASE_URL + "/batch/process/requestStatus/" + parentPid + "/" + correlationId);
+        HttpGet getClient = new HttpGet(BASE_URL + "/requestStatus/" + parentPid + "/" + correlationId);
 
         HttpResponse response = httpClient.execute(getClient);
         assertEquals(200, response.getStatusLine().getStatusCode());
