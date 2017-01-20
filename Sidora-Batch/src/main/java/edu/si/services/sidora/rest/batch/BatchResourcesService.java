@@ -40,7 +40,7 @@ import javax.ws.rs.core.Response;
 public class BatchResourcesService {
 
     @POST
-    @Path(value = "/batch/process/addResourceObjects/{parentId}")
+    @Path(value = "/addResourceObjects/{parentId}")
     @Produces({"application/xml","application/json"})
     public Response addResourceObjects(@PathParam("parentId") String parentId,
                                        @QueryParam("codebookPID") String codebookPID,
@@ -53,7 +53,7 @@ public class BatchResourcesService {
     }
 
     @GET
-    @Path(value = "/batch/process/requestStatus/{parentId}/{correlationId}")
+    @Path(value = "/requestStatus/{parentId}/{correlationId}")
     @Produces({"application/xml","application/json"})
     public Response requestStatus(@PathParam("parentId") String parentId, @PathParam("correlationId") String correlationId) {
         return null;
