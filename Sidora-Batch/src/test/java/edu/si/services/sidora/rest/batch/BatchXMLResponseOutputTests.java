@@ -115,6 +115,42 @@ public class BatchXMLResponseOutputTests {
         assertEquals(expectedOutput, sw.toString());
     }
 
+    @Test
+    public void statusXMLInQueueTest() throws JAXBException, FileNotFoundException {
+
+        String expectedOutput = getExpectedOutput("statusInQueue");
+
+        StringWriter sw = new StringWriter();
+
+        JAXBContext contextObj = JAXBContext.newInstance(BatchStatus.class);
+
+        Marshaller marshallerObj = contextObj.createMarshaller();
+        marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+
+        ResourceStatus resource1 = new ResourceStatus("image_Hydrangeas.jpg", null, null, true, true, true, true, true, true, true, false, true, true);
+
+        ResourceStatus resource2 = new ResourceStatus("image_Chrysanthemum.jpg", null, null, true, true, true, true, true, true, false, true, true, true);
+
+        ResourceStatus resource3 = new ResourceStatus("image_Desert.jpg", null, null, true, true, true, true, true, true, false, true, true, true);
+
+        ArrayList<ResourceStatus> list = new ArrayList<>();
+        list.add(resource1);
+        list.add(resource2);
+        list.add(resource3);
+
+        BatchStatus batchStatus = new BatchStatus("si:000001", "batchUser", correlationId, 3, 3, true, "si:generalImageCModel", null, list);
+
+        if (save2file) {
+            marshallerObj.marshal(batchStatus, new FileOutputStream("target/BatchStatus.xml"));
+        }
+        marshallerObj.marshal(batchStatus, sw);
+
+        LOG.info("Status XML Generated:\n{}", sw.toString());
+
+        assertEquals(expectedOutput, sw.toString());
+    }
+
     private String getExpectedOutput(String expected) {
         String expectedResult = "";
 
@@ -169,6 +205,58 @@ public class BatchXMLResponseOutputTests {
                     "            <file>image_Desert.jpg</file>\n" +
                     "            <pid>si:000004</pid>\n" +
                     "            <title>image(3)</title>\n" +
+                    "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
+                    "            <dsDcCreated>true</dsDcCreated>\n" +
+                    "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
+                    "            <dsMetadata>true</dsMetadata>\n" +
+                    "            <dsObjCreated>true</dsObjCreated>\n" +
+                    "            <dsTnCreated>true</dsTnCreated>\n" +
+                    "            <dsSidoraCreated>false</dsSidoraCreated>\n" +
+                    "            <parentChildRelationshipCreated>true</parentChildRelationshipCreated>\n" +
+                    "            <codebookRelationshipCreated>true</codebookRelationshipCreated>\n" +
+                    "            <complete>true</complete>\n" +
+                    "        </resource>\n" +
+                    "    </resources>\n" +
+                    "</Batch>\n";
+        } else if (expected.equals("statusInQueue")) {
+            expectedResult = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                    "<Batch>\n" +
+                    "    <BatchDone>true</BatchDone>\n" +
+                    "    <CorrelationID>"+ correlationId + "</CorrelationID>\n" +
+                    "    <ParentPID>si:000001</ParentPID>\n" +
+                    "    <resourceOwner>batchUser</resourceOwner>\n" +
+                    "    <ResourceCount>3</ResourceCount>\n" +
+                    "    <ResourcesProcessed>3</ResourcesProcessed>\n" +
+                    "    <contentModel>si:generalImageCModel</contentModel>\n" +
+                    "    <resources>\n" +
+                    "        <resource>\n" +
+                    "            <file>image_Hydrangeas.jpg</file>\n" +
+                    "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
+                    "            <dsDcCreated>true</dsDcCreated>\n" +
+                    "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
+                    "            <dsMetadata>true</dsMetadata>\n" +
+                    "            <dsObjCreated>true</dsObjCreated>\n" +
+                    "            <dsTnCreated>true</dsTnCreated>\n" +
+                    "            <dsSidoraCreated>true</dsSidoraCreated>\n" +
+                    "            <parentChildRelationshipCreated>false</parentChildRelationshipCreated>\n" +
+                    "            <codebookRelationshipCreated>true</codebookRelationshipCreated>\n" +
+                    "            <complete>true</complete>\n" +
+                    "        </resource>\n" +
+                    "        <resource>\n" +
+                    "            <file>image_Chrysanthemum.jpg</file>\n" +
+                    "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
+                    "            <dsDcCreated>true</dsDcCreated>\n" +
+                    "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
+                    "            <dsMetadata>true</dsMetadata>\n" +
+                    "            <dsObjCreated>true</dsObjCreated>\n" +
+                    "            <dsTnCreated>true</dsTnCreated>\n" +
+                    "            <dsSidoraCreated>false</dsSidoraCreated>\n" +
+                    "            <parentChildRelationshipCreated>true</parentChildRelationshipCreated>\n" +
+                    "            <codebookRelationshipCreated>true</codebookRelationshipCreated>\n" +
+                    "            <complete>true</complete>\n" +
+                    "        </resource>\n" +
+                    "        <resource>\n" +
+                    "            <file>image_Desert.jpg</file>\n" +
                     "            <resourceObjectCreated>true</resourceObjectCreated>\n" +
                     "            <dsDcCreated>true</dsDcCreated>\n" +
                     "            <dsRelsExtCreated>true</dsRelsExtCreated>\n" +
