@@ -217,12 +217,26 @@
                     GET
                 </simple>
             </setHeader>
+
+            <toD uri="cxfrs://${header.association}?headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="httpGetAssociation"/>
+
+            <setHeader headerName="contentModel">
+                <xpath resultType="java.lang.String">
+                    //content_model/text()
+                </xpath>
+            </setHeader>
+
+            <!--<setHeader headerName="Exchange.HTTP_METHOD">
+                <simple>
+                    GET
+                </simple>
+            </setHeader>
             <setHeader headerName="Content-Type">
                 <constant>text/xml</constant>
             </setHeader>
             <setHeader headerName="Accept">
                 <constant>application/xml</constant>
-            </setHeader>
+            </setHeader>-->
 
             <toD uri="cxfrs://${header.resourceFileList}" pattern="InOut" id="httpGetResourceList"/>
 
@@ -262,6 +276,8 @@
             <!-- send the xml response body -->
             <to uri="bean:responseControllerBean?method=batchRequestResponse"/>
 
+            <removeHeader headerName="resourceXML"/>
+
             <log message="${id}: Finished Batch Request - Add Resource Objects..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
@@ -275,6 +291,17 @@
             <!--<to uri="bean:batchRequestControllerBean?method=checkStatus"/>-->
             <to uri="sql:{{sql.checkRequestStatus}}?outputHeader=batchRequest&amp;outputType=SelectList"/>
             <to uri="sql:{{sql.checkResourceStatus}}"/>
+
+            <log message="=================================[ START RequestStatus ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+            <log message="=================================[ END RequestStatus ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="bean:responseControllerBean?method=batchStatus"/>
             <log message="${id}: Finished Batch Request Status..."
                  loggingLevel="INFO"
@@ -284,10 +311,22 @@
         <!-- route that process the Batch Requests by picking up new rows from the database
         and when done processing then update the row to mark it as complete -->
         <route id="BatchProcessResources">
-            <from uri="sql:{{sql.selectBatchRequest}}?onConsume={{sql.markRequestConsumed}}"/>
+            <from uri="sql:{{sql.selectBatchRequest}}?onConsume={{sql.markRequestComplete}}"/>
             <log message="${id}: Starting Batch Resources Processing..."
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
+
+            <log message="=================================[ START BatchProcessResource ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+            <log message="=================================[ END BatchProcessResource ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="sql:{{sql.markRequestConsumed}}"/>
 
             <!-- Setup the authorization header for http calls to fedora REST endpoint -->
             <to uri="bean:requestProcessor?method=setAuthorization"/>
@@ -350,7 +389,7 @@
                     </simple>
                 </setHeader>
 
-                <to uri="sql:{{sql.markRequestComplete}}"/>
+                <!--<to uri="sql:{{sql.markRequestComplete}}"/>-->
 
                 <log message="${id}: Created Resource - ${body}."
                      loggingLevel="INFO"
