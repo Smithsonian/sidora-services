@@ -79,8 +79,8 @@ public class ResponseControllerBean {
         for (HashMap hashMap : statusResponse) {
             ResourceStatus resourceStatus = new ResourceStatus();
             resourceStatus.setFile(String.valueOf(hashMap.get("resourceFile")));
-            resourceStatus.setPid(String.valueOf(hashMap.get("pid")));
-            resourceStatus.setTitle(String.valueOf(hashMap.get("titleLabel")));
+            resourceStatus.setPid(String.valueOf(hashMap.get("pid")) == null ? "" : String.valueOf(hashMap.get("pid")));
+            resourceStatus.setTitle(String.valueOf(hashMap.get("titleLabel")) == null ? "" : String.valueOf(hashMap.get("titleLabel")));
             resourceStatus.setResourceObjectCreated((Boolean) hashMap.get("resource_created"));
             resourceStatus.setDsDcCreated((Boolean) hashMap.get("ds_dc_created"));
             resourceStatus.setDsRelsExtCreated((Boolean) hashMap.get("ds_relsExt_created"));
