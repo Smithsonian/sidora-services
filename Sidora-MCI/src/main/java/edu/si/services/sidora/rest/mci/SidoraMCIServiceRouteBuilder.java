@@ -71,7 +71,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
                 .log(LoggingLevel.INFO, LOG_NAME, "===============================[ START AddMCIProject ]==================================")
                 .to("log:{{edu.si.mci}}?maxChars=100000&showAll=true&level=WARN")
-                .toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
+                .toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
                 .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProject ]===================================")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");
 
@@ -108,7 +108,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "================================[ Body For XSLT ]===================================")
                 .log(LoggingLevel.INFO, LOG_NAME, "${body}")
                 .log(LoggingLevel.INFO, LOG_NAME, "================================[ Body For XSLT STOP ]===================================")
-                .toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
+                .toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
                 .removeHeader("mciProject")
                 .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProjectMultipart ]===================================")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");

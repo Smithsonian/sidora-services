@@ -52,7 +52,7 @@ public class MCIService {
      * @return
      */
     @POST
-    @Path(value = "/mci/{ownerId}/addProject")
+    @Path(value = "/{ownerId}/addProject")
     @Produces({"application/xml","application/json"})
     //@Consumes("application/xml")
     @Consumes("*/*")
@@ -66,11 +66,11 @@ public class MCIService {
      *
      * @param ownerId
      * @param option
-     * @param mciProjectString
+     * @param mciProject
      * @return
      */
     @POST
-    @Path(value = "/mci/{ownerId}/addProject")
+    @Path(value = "/{ownerId}/addProject")
     @Produces({"application/xml","application/json"})
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response addProjectMultipart(
