@@ -44,6 +44,8 @@
         <module>Tabular</module>
         <module>KAR</module>
         <module>Sidora-Batch</module>
+        <module>Sidora-MCI</module>
+
     </modules>
 
     <properties>

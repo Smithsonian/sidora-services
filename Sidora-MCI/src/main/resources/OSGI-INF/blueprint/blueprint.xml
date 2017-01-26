@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+		   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		   xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+		   xmlns:cxf="http://cxf.apache.org/blueprint/core"
+		   xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
+		   xmlns:camel-cxf="http://camel.apache.org/schema/blueprint/cxf"
+		   xmlns:util="http://www.springframework.org/schema/util"
+		   xsi:schemaLocation="
+             http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+             http://camel.apache.org/schema/blueprint/cxf http://camel.apache.org/schema/blueprint/cxf/camel-cxf.xsd
+             http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd
+             http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd
+             http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+	<!-- OSGI blueprint property placeholder -->
+	<!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
+        as it would cause the camel context to reload and error out any in-flight ingestion processes. -->
+	<cm:property-placeholder id="sidora.karaf.mci.properties" persistent-id="edu.si.sidora.mci" update-strategy="reload">
+		<cm:default-properties>
+			<cm:property name="edu.si.mci" value="edu.si.mci"/>
+			<cm:property name="si.fedora.mci.user" value="camelBatchProcess"/>
+		</cm:default-properties>
+	</cm:property-placeholder>
+
+	<cxf:bus>
+		<cxf:features>
+			<cxf:logging/>
+		</cxf:features>
+	</cxf:bus>
+
+	<!-- Defined the server endpoint to create the cxf-rs consumer -->
+	<camel-cxf:rsServer id="rsServer" address="${sidora.mci.service.address}"
+						serviceClass="edu.si.services.sidora.rest.mci.MCIService"
+						loggingFeatureEnabled="true">
+		<camel-cxf:serviceBeans>
+			<!-- Beans for the cxf-rs server -->
+			<bean id="mciService" class="edu.si.services.sidora.rest.mci.MCIService"/>
+		</camel-cxf:serviceBeans>
+		<camel-cxf:providers>
+			<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+				<property name="marshallerProperties">
+					<map>
+						<entry>
+							<key>
+								<value>jaxb.formatted.output</value>
+							</key>
+							<value type="java.lang.Boolean">true</value>
+						</entry>
+					</map>
+				</property>
+			</bean>
+			<bean id="jsonProvider" class="org.apache.cxf.jaxrs.provider.json.JSONProvider"/>
+		</camel-cxf:providers>
+	</camel-cxf:rsServer>
+
+	<bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+		<property name="outFilter">
+			<set>
+				<!--<value>someHeaderName</value>-->
+			</set>
+		</property>
+	</bean>
+
+	<bean id="mciRoutes" class="edu.si.services.sidora.rest.mci.SidoraMCIServiceRouteBuilder"/>
+
+	<!-- MCI route context -->
+	<!--The "unused" namespace definitions are needed to deal with the way Camel handles namespaces in XPath.-->
+	<camelContext id="Sidora-MCI-Rest-Service"
+				  xmlns="http://camel.apache.org/schema/blueprint"
+				  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				  xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
+				  xmlns:findObjects="http://www.fedora.info/definitions/1/0/types/"
+				  xmlns:ri="http://www.w3.org/2005/sparql-results#"
+				  xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
+				  xmlns:fedora="info:fedora/fedora-system:def/relations-external#"
+				  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+				  xmlns:eac="urn:isbn:1-931666-33-4"
+				  xmlns:mods="http://www.loc.gov/mods/v3"
+				  xmlns:fgdc="http://localhost/"
+				  xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
+				  xmlns:dc="http://purl.org/dc/elements/1.1/"
+				  xmlns:srw_dc="info:srw/schema/1/dc-schema"
+				  xsi:schemaLocation="http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd"
+				  trace="false" useMDCLogging="true" useBreadcrumb="false">
+
+		<!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
+		<propertyPlaceholder id="properties" location="blueprint:sidora.karaf.mci.properties, file:${karaf.home}/etc/edu.si.sidora.mci.cfg"/>
+
+		<routeBuilder ref="mciRoutes"/>
+
+	</camelContext>
+
+</blueprint>
