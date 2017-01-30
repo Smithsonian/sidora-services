@@ -157,10 +157,10 @@
             <exception>java.sql.SQLException</exception>
             <exception>com.mysql.jdbc.exceptions.jdbc4.CommunicationsException</exception>
             <exception>org.springframework.jdbc.CannotGetJdbcConnectionException</exception>
-            <redeliveryPolicy useExponentialBackOff="{{batch.net.redelivery.useExponentialBackOff}}"
-                              backOffMultiplier="{{batch.net.redelivery.backOffMultiplier}}"
-                              redeliveryDelay="{{batch.net.redelivery.redeliveryDelay}}"
-                              maximumRedeliveries="{{batch.net.redelivery.maximumRedeliveries}}"
+            <redeliveryPolicy useExponentialBackOff="{{batch.sql.redelivery.useExponentialBackOff}}"
+                              backOffMultiplier="{{batch.sql.redelivery.backOffMultiplier}}"
+                              redeliveryDelay="{{batch.sql.redelivery.redeliveryDelay}}"
+                              maximumRedeliveries="{{batch.sql.redelivery.maximumRedeliveries}}"
                               retryAttemptedLogLevel="WARN"
                               retriesExhaustedLogLevel="WARN"
                               logExhaustedMessageHistory="false"/>

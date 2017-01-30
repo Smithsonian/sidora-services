@@ -230,7 +230,7 @@ si.fedora.password=<fedora-password>
 si.fedora.batch.user=<fedora-batch-user>
 
 # The REST endpoint for the Batch Process
-sidora.batch.service.address=/sidora/batch
+sidora.batch.service.address=/sidora/rest/batch/process
 
 # MySQL database setup
 mysql.host=localhost
@@ -262,29 +262,30 @@ mysql.password=<camelMySQL-password>
 ```
 
 # Testing Batch Resource REST Service
+(see sidora-services/Sidora-Batch/test/resources/test-data/batch-test-files for example xml files used for curl requests)
 ## Batch Resource Testing Curl:
 ```bash
 # curl -v -H "Content-Type:multipart/form-data" \
--F "resourceFileList=http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/imageFiles.xml" \
--F "ds_metadata=http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/metadata.xml" \
--F "ds_sidora=http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/sidora.xml" \
--F "association=http://localhost/~jbirkhimer/Sidora-Batch-Test-Files/image/association.xml" \
--F "resourceOwner=ramlani" \
--X POST http://localhost:8181/cxf/sidora/batch/addResourceObjects/si:390403
+-F "resourceFileList=http://.../resourceFileList.xml" \
+-F "ds_metadata=http://.../ds_metadata.xml" \
+-F "ds_sidora=http://.../ds_sidora.xml" \
+-F "association=http://.../association.xml" \
+-F "resourceOwner=resourceOwner" \
+-X POST http://localhost:8181/cxf/sidora/rest/batch/processaddResourceObjects/[parentId]
 ```
 
 ## FGDC / codebook Batch Testing Curl (query param ie. 'http://...?codebookPID=si:123456'):
 ```bash
 # curl -v -H "Content-Type:multipart/form-data" \
--F "resourceFileList=http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/codebook/files_ramlani5821e4a34a2aa.xml" \
--F "ds_metadata=http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/codebook/batch_ramlani5821e4a34a2aa.xml" \
--F "ds_sidora=http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/acodebook/sidora_ramlani5821e4a34a2aa.xml" \
--F "association=http://sidora0c.myquotient.net/~jbirkhimer/Sidora-Batch-Test-Files/audio/association.xml" \
--F "resourceOwner=ramlani" \
--X POST http://localhost:8181/cxf/sidora/batch/addResourceObjects/si:390403?codebookPID=si:123456
+-F "resourceFileList=http://.../resourceFileList.xml" \
+-F "ds_metadata=http://.../ds_metadata.xml" \
+-F "ds_sidora=http://.../ds_sidora.xml" \
+-F "association=http://.../association.xml" \
+-F "resourceOwner=resourceOwner" \
+-X POST http://localhost:8181/cxf/sidora/rest/batch/processaddResourceObjects/[parentId]?codebookPID=[codebookPID]
 ```
 
 ## Testing Batch Status Curl:
 ```bash
-# curl -v -X GET http://localhost:8181/cxf/sidora/batch/requestStatus/[parentId]/[correlationId]
+# curl -v -X GET http://localhost:8181/cxf/sidora/rest/batch/processrequestStatus/[parentId]/[correlationId]
 ```
