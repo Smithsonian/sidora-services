@@ -132,7 +132,15 @@
             <log message="${id} Derivatives: Starting processing ..."
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
-            <log message="${id} Derivatives: Processing PID: ${headers.pid}  Method Name: ${headers.methodName}  Origin: {{si.fedora.user}}"/>
+            
+            
+            <setHeader headerName="origin">
+                <xpath>
+                    /atom:entry/atom:author/atom:name/text()
+                </xpath>
+            </setHeader>
+
+            <log message="${id} Derivatives: Processing PID: ${headers.pid}  Method Name: ${headers.methodName}  Origin: ${header.origin}"/>
             <log message="${id} Derivatives: Processing BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
@@ -148,7 +156,26 @@
                 <xpath>
                     /atom:entry/atom:author/atom:name = '{{si.fedora.user}}'
                 </xpath>
-                <log message="${id} Derivatives: No message processing required."/>
+                <log message="${id} Derivatives: Filtered ${header.origin} - No message processing required."/>
+                <stop/>
+            </filter>
+
+            <!-- Get the DSID from the Atom message if any. -->
+            <setHeader headerName="DSID">
+                <xpath resultType="java.lang.String">
+                    /atom:entry/atom:category[@scheme="fedora-types:dsID"]/@term
+                </xpath>
+            </setHeader>
+            <log message="${id} Derivatives: Atom DSID: ${headers.DSID}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Filter for messages where DSID is not OBJ that do not need derivatives processing.-->
+            <filter>
+                <simple>
+                    ${header.DSID} != 'OBJ'
+                </simple>
+                <log message="${id} Derivatives: Filtered ${header.DSID} - No derivative processing required."/>
                 <stop/>
             </filter>
             
@@ -175,21 +202,14 @@
             <log message="${id} Derivatives: PID: ${headers.pid}  Method Name: ${headers.methodName}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+
             <setHeader headerName="CamelFedoraPid">
                 <simple>
                     ${headers.pid}
                 </simple>
             </setHeader>
 
-            <!-- Get the DSID from the Atom message if any. -->
-            <setHeader headerName="DSID">
-                <xpath resultType="java.lang.String">
-                    /atom:entry/atom:category[@scheme="fedora-types:dsID"]/@term
-                </xpath>
-            </setHeader>
-            <log message="${id} Derivatives: Atom DSID: ${headers.DSID}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.derivatives"/>
+
 
             <!-- Get the Content Models for the FDO and put them on a list. -->
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
@@ -840,6 +860,7 @@
                     </simple>
                     <!-- Just copy it. -->
                     <to uri="fedora:addDatastream?name=PROXY_MP3&amp;type=audio/mpeg&amp;dsLabel=PROXY_MP3&amp;group=M&amp;versionable=false"/>
+
                     <log message="${id} Derivatives: No processing required copying mp3 directly to PROXY_MP3."
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
@@ -847,13 +868,18 @@
                 <when>
                     <simple>
                         ${header.dsMIME} == 'audio/vnd.wave' ||
+                        ${header.dsMIME} == 'audio/vnd.wav' ||
+                        ${header.dsMIME} == 'audio/x-wav' ||
+                        ${header.dsMIME} == 'audio/vorbis' ||
+                        ${header.dsMIME} == 'audio/x-ms-wma' ||
+                        ${header.dsMIME} == 'audio/x-aac' ||
                         ${header.dsMIME} == 'audio/x-aiff'
                     </simple>
                     <!-- Make an MP3 derivative. -->
                     <!-- Create an audio derivative using the lame encoder. -->
                     <recipientList>
                         <simple>
-                            exec:lame?args= -V5 --vbr-new - -
+                            exec:lame?args=-V5 --vbr-new - -
                         </simple>
                     </recipientList>
                     <choice>
@@ -869,7 +895,8 @@
                         </when>
                         <otherwise>
                             <log message="${id} Derivatives: LAME processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
-                                 loggingLevel="ERROR"/>
+                                 loggingLevel="ERROR"
+                                 logName="edu.si.derivatives"/>
                         </otherwise>
                     </choice>
 
@@ -1046,6 +1073,9 @@
                         ${header.dsMIME} == 'video/m4v' ||
                         ${header.dsMIME} == 'video/quicktime' ||
                         ${header.dsMIME} == 'video/avi' ||
+                        ${header.dsMIME} == 'video/x-msvideo' ||
+                        ${header.dsMIME} == 'video/ogg' ||
+                        ${header.dsMIME} == 'video/x-m4v' ||
                         ${header.dsMIME} == 'video/x-matroska'
                     </simple>
 
@@ -1061,6 +1091,7 @@
                     <simple>
                         ${header.dsMIME} == 'audio/mp4' ||
                         ${header.dsMIME} == 'audio/ogg' ||
+                        ${header.dsMIME} == 'audio/vorbis' ||
                         ${header.dsMIME} == 'audio/m4a'
                     </simple>
 
@@ -1158,9 +1189,21 @@
 
             <!-- Make an MP4 derivative. -->
             <!-- Create a video derivative using ffmpeg. -->
+
+            <!--
+            this ffmpeg incantation causes issues when using the nux dextop version of ffmpeg since it uses the aac audio codec
+            however will work with the custom built ffmpeg rpm which uses libfdk_aac audio codec
+            -->
+            <!--<recipientList>
+                <simple>
+                    exec:ffmpeg?args=-nostats -nostdin -i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec libfdk_aac -ab 128k -ac 2 -async 1 ${header.CamelFileNameProduced}.mp4
+                </simple>
+            </recipientList>-->
+
+            <!-- ffmpeg incantation for nux dextop version of ffmpeg that uses the aac audio codec -->
             <recipientList>
                 <simple>
-                    exec:/usr/local/bin/ffmpeg?args=-nostats -nostdin -i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec libfdk_aac -ab 128k -ac 2 -async 1 ${header.CamelFileNameProduced}.mp4
+                    exec:ffmpeg?args=-nostats -nostdin -i ${header.CamelFileNameProduced} -f mp4 -vcodec libx264 -preset medium -acodec aac -ab 128k -ac 2 -async 1  -strict -2 ${header.CamelFileNameProduced}.mp4
                 </simple>
             </recipientList>
 
@@ -1208,7 +1251,7 @@
 
             <recipientList>
                 <simple>
-                    exec:/usr/local/bin/ffprobe?args=-v error -select_streams v:0 -show_entries stream=duration -of compact=print_section=0:nokey=1 ${header.videoInput}&amp;useStderrOnEmptyStdout=true
+                    exec:ffprobe?args=-v error -select_streams v:0 -show_entries stream=duration -of compact=print_section=0:nokey=1 ${header.videoInput}&amp;useStderrOnEmptyStdout=true
                 </simple>
             </recipientList>
 
@@ -1273,8 +1316,8 @@
             <!-- Create a video thumbnail using ffmpeg. -->
             <recipientList>
                 <simple>
-                    <!--exec:/usr/local/bin/ffmpeg?args=-ss ${header.videoThumbnailTimePosition} -i ${header.CamelFileNameProduced}.mp4 -vf thumbnail -frames:v 1 ${header.CamelFileNameProduced}-TN.jpg&amp;useStderrOnEmptyStdout=true-->
-                    exec:/usr/local/bin/ffmpeg?args=-ss ${header.videoThumbnailTimePosition} -i ${header.videoInput} -vcodec mjpeg -vframes 1 -an -f rawvideo ${header.CamelFileNameProduced}-TN.jpg
+                    <!--exec:ffmpeg?args=-ss ${header.videoThumbnailTimePosition} -i ${header.CamelFileNameProduced}.mp4 -vf thumbnail -frames:v 1 ${header.CamelFileNameProduced}-TN.jpg&amp;useStderrOnEmptyStdout=true-->
+                    exec:ffmpeg?args=-ss ${header.videoThumbnailTimePosition} -i ${header.videoInput} -vcodec mjpeg -vframes 1 -an -f rawvideo ${header.CamelFileNameProduced}-TN.jpg
                 </simple>
                 <!-- alt command that picks the best image for a thumbnail "ffmpeg -i - -vf thumbnail -frames:v 1 -" -->
             </recipientList>

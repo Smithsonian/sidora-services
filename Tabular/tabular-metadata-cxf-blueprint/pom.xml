@@ -36,6 +36,7 @@
         <groupId>edu.si.sidora</groupId>
         <artifactId>tabular-metadata</artifactId>
         <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>tabular-metadata-cxf-services-SMX-blueprint</artifactId>
@@ -44,38 +45,11 @@
     <name>SI :: Services :: Tabular :: CXF Tabular Metadata Generator</name>
     <description>SMX OSGi Blueprint CXF service for developing metadata from tabular data files.</description>
 
-    <properties>
-        <java.version>1.8</java.version>
-        <!--<spring.version>4.2.0.RELEASE</spring.version>-->
-        <camel.version>2.16.3</camel.version>
-        <cxf.version>3.1.5</cxf.version>
-        <spring.version>3.2.14.RELEASE_1</spring.version>
-        <jaxb.api.version>2.2</jaxb.api.version>
-        <servicemix.specs.version>2.5.0</servicemix.specs.version>
-        <javax-inject.bundle.version>1.0.0</javax-inject.bundle.version>
-        <google.guava.version>18.0</google.guava.version>
-        <slf4j.version>1.7.12</slf4j.version>
-        <log4j.version>1.2.17</log4j.version>
-        <commons-httpclient.bundle.version>3.1_7</commons-httpclient.bundle.version>
-        <commons-codec.bundle.version>1.10</commons-codec.bundle.version>
-        <build-helper-maven-plugin-version>1.8</build-helper-maven-plugin-version>
-        <maven-resources-plugin-version>2.6</maven-resources-plugin-version>
-        <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
-        <maven-bundle-plugin.version>3.0.0</maven-bundle-plugin.version>
-        <maven-eclipse-plugin.version>2.9</maven-eclipse-plugin.version>
-        <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
-        <jetty-plugin-version>9.2.10.v20150310</jetty-plugin-version>
-        <jacoco.version>0.7.5.201505241946</jacoco.version>
-        <asm-all.version>5.1</asm-all.version>
-        <servlet.version>2.5</servlet.version>
-    </properties>
-
     <dependencies>
         <!-- Needs to be first in the list of dependencies -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-all</artifactId>
-            <version>${asm-all.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -91,12 +65,10 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-blueprint</artifactId>
-            <version>${camel.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-cxf</artifactId>
-            <version>${camel.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
@@ -105,19 +77,16 @@
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-transports-http</artifactId>
-            <version>${cxf.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-transports-http-jetty</artifactId>
-            <version>${cxf.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-rs-client</artifactId>
-            <version>${cxf.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -125,7 +94,6 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
-            <version>${servlet.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -139,35 +107,30 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
-            <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test-blueprint</artifactId>
-            <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>xmlunit</groupId>
             <artifactId>xmlunit</artifactId>
-            <version>1.6</version>
             <scope>test</scope>
         </dependency>
         <!--blueprint testing -->
         <dependency>
             <groupId>org.apache.servicemix.bundles</groupId>
             <artifactId>org.apache.servicemix.bundles.commons-httpclient</artifactId>
-            <version>${commons-httpclient.bundle.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -175,25 +138,21 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
 

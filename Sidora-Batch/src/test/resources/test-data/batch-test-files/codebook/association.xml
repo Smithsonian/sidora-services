@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<association>
+    <id>346</id>
+    <content_model>si:datasetCModel</content_model>
+    <form_name>Tabular Dataset object 2016</form_name>
+    <dsid>DESCMETA</dsid>
+    <title_field>
+        <item0>primaryTitle</item0>
+        <item1>titleText</item1>
+    </title_field>
+    <transform>http://si-oris-app07.si.edu/sites/all/modules/sidora_specific/transforms/SIdoraConcept2DC.xsl</transform>
+    <self_transform>SIdoraConceptSelfTransform.xsl</self_transform>
+    <template></template>
+    <in_db>1</in_db>
+    <enabled>1</enabled>
+</association>
+
+

@@ -1,0 +1,8 @@
+<sidora>
+    <model>islandora:sp-audioCModel</model>
+    <form>Sidora Audio Mods Form</form>
+    <ontology_location_id>Audio</ontology_location_id>
+    <meta_requirements_fulfilled>TRUE</meta_requirements_fulfilled>
+    <initial_dsid>MODS</initial_dsid>
+    <parent>si:390403</parent>
+</sidora>

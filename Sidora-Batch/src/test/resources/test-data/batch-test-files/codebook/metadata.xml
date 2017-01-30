@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SIdoraConcept>
+    <resourceType>Tabular Data Object</resourceType>
+    <primaryTitle>
+        <titleText>batch-codebook-test</titleText>
+    </primaryTitle>
+    <altTitle type="1">
+        <titleText>1</titleText>
+    </altTitle>
+    <altTitle type="2">
+        <titleText>2</titleText>
+    </altTitle>
+    <summaryDescription>1</summaryDescription>
+    <keyword type="1">
+        <value>1</value>
+    </keyword>
+    <keyword type="2">
+        <value>2</value>
+    </keyword>
+    <identifier type="1">
+        <value>1</value>
+    </identifier>
+    <identifier type="2">
+        <value>2</value>
+    </identifier>
+    <rights type="1">
+        <value>1</value>
+        <note>1</note>
+    </rights>
+    <rights type="2">
+        <value>2</value>
+        <note>2</note>
+    </rights>
+    <source type="1">
+        <value>1</value>
+        <note>1</note>
+    </source>
+    <source type="2">
+        <value>2</value>
+        <note>2</note>
+    </source>
+    <relationship type="1" id="1">
+        <value>1</value>
+        <note>1</note>
+    </relationship>
+    <relationship type="2" id="2">
+        <value>2</value>
+        <note>2</note>
+    </relationship>
+    <note type="1">1</note>
+    <note type="2">2</note>
+    <timePeriod type="1">
+        <intervalname>1</intervalname>
+        <date type="1">
+            <year>2016</year>
+            <month>1</month>
+            <day>1</day>
+        </date>
+        <date type="2">
+            <year>2016</year>
+            <month>2</month>
+            <day>2</day>
+        </date>
+    </timePeriod>
+    <timePeriod type="2">
+        <intervalname>2</intervalname>
+        <date type="2">
+            <year>2016</year>
+            <month>3</month>
+            <day>3</day>
+        </date>
+        <date type="3">
+            <year>2016</year>
+            <month>4</month>
+            <day>4</day>
+        </date>
+    </timePeriod>
+    <place type="1">
+        <geogname type="1">1</geogname>
+        <geogname type="2">2</geogname>
+        <boundedby>
+            <northlat>1</northlat>
+            <westlong>1</westlong>
+            <southlat>1</southlat>
+            <eastlong>1</eastlong>
+        </boundedby>
+        <timePeriod type="1">
+            <intervalname>1</intervalname>
+            <date type="1">
+                <year>2016</year>
+                <month>1</month>
+                <day>1</day>
+            </date>
+            <date type="2">
+                <year>2016</year>
+                <month>2</month>
+                <day>2</day>
+            </date>
+        </timePeriod>
+        <note>1</note>
+    </place>
+    <place type="2">
+        <geogname type="1">1</geogname>
+        <geogname type="2">2</geogname>
+        <boundedby>
+            <northlat>2</northlat>
+            <westlong>2</westlong>
+            <southlat>2</southlat>
+            <eastlong>2</eastlong>
+        </boundedby>
+        <timePeriod type="2">
+            <intervalname>2</intervalname>
+            <date type="2">
+                <year>2016</year>
+                <month>2</month>
+                <day>2</day>
+            </date>
+            <date type="3">
+                <year>2016</year>
+                <month>3</month>
+                <day>3</day>
+            </date>
+        </timePeriod>
+        <note>2</note>
+    </place>
+    <actor role="pi" id="123">
+        <persname>
+            <firstname>1</firstname>
+            <middlename>1</middlename>
+            <lastname>1</lastname>
+            <suffix>1</suffix>
+            <contactInfo type="1">
+                <address1>1</address1>
+                <address2>1</address2>
+                <city>1</city>
+                <state>1</state>
+                <postalCode>1</postalCode>
+                <country>1</country>
+                <phone type="1">1</phone>
+                <phone type="2">2</phone>
+                <email type="1">1</email>
+                <email type="2">2</email>
+            </contactInfo>
+            <contactInfo type="2">
+                <address1>2</address1>
+                <address2>2</address2>
+                <city>2</city>
+                <state>2</state>
+                <postalCode>2</postalCode>
+                <country>2</country>
+                <phone type="1">1</phone>
+                <phone type="2">2</phone>
+                <email type="1">1</email>
+                <email type="2">2</email>
+            </contactInfo>
+        </persname>
+    </actor>
+    <actor role="co-pi" id="123">
+        <persname>
+            <firstname>2</firstname>
+            <middlename>2</middlename>
+            <lastname>2</lastname>
+            <suffix>2</suffix>
+            <contactInfo type="2">
+                <address1>2</address1>
+                <address2>2</address2>
+                <city>2</city>
+                <state>2</state>
+                <postalCode>2</postalCode>
+                <country>2</country>
+                <phone type="1">1</phone>
+                <phone type="2">2</phone>
+                <email type="1">1</email>
+                <email type="2">2</email>
+            </contactInfo>
+            <contactInfo type="3">
+                <address1>3</address1>
+                <address2>3</address2>
+                <city>3</city>
+                <state>33</state>
+                <postalCode>3</postalCode>
+                <country>3</country>
+                <phone type="2">2</phone>
+                <phone type="3">3</phone>
+                <email type="2">2</email>
+                <email type="3">3</email>
+            </contactInfo>
+        </persname>
+    </actor>
+    <actor role="1">
+        <corpname>1</corpname>
+    </actor>
+    <actor role="2">
+        <corpname>2</corpname>
+    </actor>
+    <actor>
+        <taxonName>
+            <genus>1</genus>
+            <species>1</species>
+            <scientificNameAuthorship>1</scientificNameAuthorship>
+        </taxonName>
+    </actor>
+    <actor>
+        <taxonName>
+            <genus>2</genus>
+            <species>2</species>
+            <scientificNameAuthorship>2</scientificNameAuthorship>
+        </taxonName>
+    </actor>
+    <format type="1">
+        <value>1</value>
+        <note>1</note>
+    </format>
+    <format type="2">
+        <value>2</value>
+        <note>2</note>
+    </format>
+    <method type="1">
+        <p>1</p>
+        <note>1</note>
+    </method>
+    <method type="2">
+        <p>2</p>
+        <note>2</note>
+    </method>
+    <technique type="1">
+        <value>1</value>
+        <note>1</note>
+    </technique>
+    <technique type="2">
+        <value>2</value>
+        <note>2</note>
+    </technique>
+    <measurements>
+        <measurementText>1</measurementText>
+        <measurement type="1" value="1" units="1"/>
+        <measurement type="2" value="2" units="2"/>
+        <timePeriod type="1">
+            <intervalname>1</intervalname>
+            <date type="1">
+                <year>2016</year>
+                <month>1</month>
+                <day>1</day>
+            </date>
+            <date type="2">
+                <year>2016</year>
+                <month>2</month>
+                <day>2</day>
+            </date>
+        </timePeriod>
+        <accuracy>1</accuracy>
+        <note>1</note>
+    </measurements>
+    <measurements>
+        <measurementText>2</measurementText>
+        <measurement type="2" value="2" units="2"/>
+        <measurement type="3" value="3" units="3"/>
+        <timePeriod type="2">
+            <intervalname>2</intervalname>
+            <date type="2">
+                <year>2016</year>
+                <month>2</month>
+                <day>2</day>
+            </date>
+            <date type="3">
+                <year>2016</year>
+                <month>3</month>
+                <day>3</day>
+            </date>
+        </timePeriod>
+        <accuracy>2</accuracy>
+        <note>2</note>
+    </measurements>
+</SIdoraConcept>

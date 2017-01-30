@@ -38,6 +38,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
@@ -124,6 +125,13 @@ public class BasicCasesIT {
                         return name.startsWith("three-sheet");
                     }
                 });
+
+        // According to the Files.listFiles javadoc
+        // "There is no guarantee that the name strings in the resulting array will appear in any specific order;
+        // they are not, in particular, guaranteed to appear in alphabetical order."
+        // So we must sort them for this test to pass.
+        Arrays.sort(checkFiles);
+
         for (int i = 0; i < checkFiles.length; i++) {
             log.debug("Using {} for checkfile.", checkFiles[i]);
             final URL checkFile = checkFiles[i].toURI().toURL();

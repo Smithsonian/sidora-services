@@ -147,7 +147,8 @@ public class ThumbnailatorComponentTest extends CamelTestSupport
                 public Object call() throws Exception
                 {
                     InputStream input = this.getClass().getResourceAsStream(String.format("/%s", name));
-                    template.sendBodyAndHeader("direct:start", input, Exchange.FILE_NAME, constant(name));
+                    //template.sendBodyAndHeader("direct:start", input, Exchange.FILE_NAME, constant(name));
+                    template.sendBodyAndHeader("direct:start", input, Exchange.FILE_NAME, name);
                     return null;
                 }
             });

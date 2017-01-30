@@ -1,0 +1,8 @@
+<sidora>
+    <model>si:fieldbookCModel</model>
+    <form>Digitized Text (PDF)</form>
+    <ontology_location_id>DigitizedTextPdf</ontology_location_id>
+    <meta_requirements_fulfilled>FALSE</meta_requirements_fulfilled>
+    <initial_dsid>MODS</initial_dsid>
+    <parent>si:390403</parent>
+</sidora>

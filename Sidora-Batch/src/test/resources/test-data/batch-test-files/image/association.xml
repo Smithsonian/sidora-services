@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<association>
+    <id>73</id>
+    <content_model>si:generalImageCModel</content_model>
+    <form_name>General Image Description</form_name>
+    <dsid>MODS</dsid>
+    <title_field>
+        <item0>mods</item0>
+        <item0>titleInfo</item0>
+        <item1>title</item1>
+    </title_field>
+    <transform>file://sidora-services/Sidora-Batch/src/test/resources/xslt/mods_to_dc.xsl</transform>
+    <self_transform>No Transform</self_transform>
+    <template></template>
+    <in_db>1</in_db>
+    <enabled>1</enabled>
+</association>

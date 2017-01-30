@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<association>
+    <content_model>islandora:sp_videoCModel</content_model>
+    <form_name>Video MODS form</form_name>
+    <dsid>MODS</dsid>
+    <title_field>
+        <item0>titleInfo</item0>
+        <item1>title</item1>
+    </title_field>
+    <transform>file://sidora-services/Sidora-Batch/src/test/resources/xslt/mods_to_dc.xsl</transform>
+    <template></template>
+    <id>islandora_video_mods_form</id>
+    <in_db></in_db>
+    <enabled>1</enabled>
+</association>
