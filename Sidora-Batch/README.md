@@ -271,7 +271,7 @@ mysql.password=<camelMySQL-password>
 -F "ds_sidora=http://.../ds_sidora.xml" \
 -F "association=http://.../association.xml" \
 -F "resourceOwner=resourceOwner" \
--X POST http://localhost:8181/cxf/sidora/rest/batch/processaddResourceObjects/[parentId]
+-X POST http://localhost:8181/cxf/sidora/rest/batch/process/addResourceObjects/[parentId]
 ```
 
 ## FGDC / codebook Batch Testing Curl (query param ie. 'http://...?codebookPID=si:123456'):
@@ -282,10 +282,10 @@ mysql.password=<camelMySQL-password>
 -F "ds_sidora=http://.../ds_sidora.xml" \
 -F "association=http://.../association.xml" \
 -F "resourceOwner=resourceOwner" \
--X POST http://localhost:8181/cxf/sidora/rest/batch/processaddResourceObjects/[parentId]?codebookPID=[codebookPID]
+-X POST http://localhost:8181/cxf/sidora/rest/batch/process/addResourceObjects/[parentId]?codebookPID=[codebookPID]
 ```
 
 ## Testing Batch Status Curl:
 ```bash
-# curl -v -X GET http://localhost:8181/cxf/sidora/rest/batch/processrequestStatus/[parentId]/[correlationId]
+# curl -v -X GET http://localhost:8181/cxf/sidora/rest/batch/process/requestStatus/[parentId]/[correlationId]
 ```
