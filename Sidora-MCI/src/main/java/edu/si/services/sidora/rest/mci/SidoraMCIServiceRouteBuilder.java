@@ -32,6 +32,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.cxf.helpers.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,9 +72,32 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
                 .log(LoggingLevel.INFO, LOG_NAME, "===============================[ START AddMCIProject ]==================================")
                 .to("log:{{edu.si.mci}}?maxChars=100000&showAll=true&level=WARN")
-                .toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
+                .setHeader("fileName", simple("${id}"))
+                .toD("file:MCI_Inbox?fileName=${header.fileName}.xml")
+                .log(LoggingLevel.INFO, LOG_NAME, "Payload Received - File Created: ${header.fileName}.xml")
+                .doTry()
+                .setHeader("CamelXsltFileName", simple("MCI_Inbox/${header.fileName}-transform.xml"))
+                .toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true&output=file")
+                .log(LoggingLevel.INFO, "Transform Successful for ${header.CamelXsltFileName}.xml")
+                .doCatch(net.sf.saxon.trans.XPathException.class)
+                .log(LoggingLevel.ERROR, "Transform Failed for file ${header.fileName} :: Exception Caught: ${property.CamelExceptionCaught} ")
+                .setBody().simple("Transform Failed for file ${header.fileName} :: Exception Caught: ${property.CamelExceptionCaught} ")
+                .end()
                 .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProject ]===================================")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");
+
+
+
+/*                .routeId("AddMCIProject")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
+                .log(LoggingLevel.INFO, LOG_NAME, "===============================[ START AddMCIProject ]==================================")
+                .to("log:{{edu.si.mci}}?maxChars=100000&showAll=true&level=WARN")
+                //.toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
+                .toD("file:MCI_Inbox")
+                .log(LoggingLevel.INFO, LOG_NAME, "===============================[ BODY ]==================================\n${body}")
+                .setBody().simple("Payload Received - File Created for ${id}")
+                .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProject ]===================================")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");*/
 
         /**
          * Add Project XML From Multipart With Parameters And Payload
@@ -112,6 +136,16 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .removeHeader("mciProject")
                 .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProjectMultipart ]===================================")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");
+
+
+        /**
+         * 1. Create New Fedora object ( fedora:create?pid=null&amp;owner={{si.mci.owner}}&amp;namespace={{si.mci.namespace}} )
+         * 2. Transform incoming MCI XML payload to create the DESCMETA for the concept
+         * 3. Add the DESCMETA DS to the New Fedora Object ( fedora:addDatastream?name=DESCMETA&amp;group=X&amp;dsLabel=DESCMETA%20Record&amp;versionable=true )
+         * 4. Add Relation from MCI parent to the child MCI Project ( fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid} )
+         * 5. Add the incoming XML payload to the new MCI Project Concept OBJ DS ( <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/xml&amp;group=M&amp;dsLabel=${header.objLable}&amp;versionable=true"/> )
+         *
+         */
 
 
     }

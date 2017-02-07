@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Fields>
+<Field Type="Text" Name="Title" DisplayName="Project Title">Training Workshop "Preventing Illicit Trafficking/Protecting Cultural Heritage" Workshop April 24-27, 2017</Field>
+<Field Type="Boolean" Name="Confidential" DisplayName="Confidential">False</Field>
+<Field Type="Text" Name="TemporaryRequest" DisplayName="Temporary Request #">MCI#6638.3</Field>
+<Field Type="User" Name="Initiator" DisplayName="Initiator">i:0#.w|us\johnsonjs</Field>
+<Field Type="Text" Name="Status" DisplayName="Approval Status">Waiting for MCI Admin to Complete Approval</Field>
+<Field Type="Text" Name="ConservationGroup" DisplayName="Conservation Group">Conservation, Technical Studies</Field>
+<Field Type="Note" Name="Project_x0020_Summary" DisplayName="Project Summary">HSI/ICE Training Workshop #13 - Preventing Illicit Trafficking/Protecting Cultural Heritage - April 24-27, 2017</Field>
+  <Field Type="Note" Name="Request" DisplayName="Request (Action)">Lead, on behalf of the Smithsonian Institution, in the design, implementation and conduct of training workshop #13  Preventing Illicit Trafficking/Protecting Cultural Heritage - April 24-27, 2017 to be carried out in collaboration with colleagues from SI's Office of international Relations, US Department of Homeland Security and the US Department of State to include:
+
+1. Primary responsibility for course design and schedule, logistical aspects, organization of museum-based, object centered sessions, and production of course materials.
+2. Facilitation during the course
+3. Course presentations on museum and cultural heritage issues.</Field>
+<Field Type="Note" Name="Purpose" DisplayName="Purpose of Analysis/Conservation">The workshops are designed to provide specialized training to DHS Homeland Security Investigations (HSI) special agents, with additional participation of agents from Customs and Board Patrol (CBP) and personnel from US Embassy Attache Offices, and DOJ US Attorney's Offices. The focus is on cultural heritage materials, especially antiquities, with emphasis on those from at-risk areas of the world, and on the legal instruments, investigative procedures, and special considerations, applicable to these materials, in undertaking case investigations of possible illicit import, export and trafficking of these materials.
+
+The Smithsonian Institution hosts these trainings, as a federal partner organization with special expertise and collections appropriate for the workshop focus, with funding support for travel costs from the US Department of State's Cultural Heritage Center, with additional support from the US Department of Homeland Security.
+
+The goals of the sessions pertaining specifically to the Smithsonian include:
+
+1. Introduction to collections from parts of the world that are at particular risk of trafficking (including areas with rich traditions, underedeveloped site or other protections, and areas engaged in conflicts).
+2. Introduction to the complexity in identifying and determining date and place of origin and related questions of authenticity of objects.
+3. Introduction to perspectives, skill sets and methods used by a variety of museum experts, related to the study of cultural heritage objects.
+4. Facilitate the development of resource networks for the participants related to cultural heritage materials casework.
+
+In addition, other goals specific to MCI include exposure of the workshop participants to a variety of scientific approaches, with particular emphasis on questions that instrumental analysis might answer. 
+
+For more background information see MCI#6603 which documents the first 10 offerings of the course.
+</Field>
+</Fields>

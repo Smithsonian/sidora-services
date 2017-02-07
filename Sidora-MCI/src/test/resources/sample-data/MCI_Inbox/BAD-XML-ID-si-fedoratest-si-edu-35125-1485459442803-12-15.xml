@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Fields>
+  <Field Type="Text" Name="Title" DisplayName="Project Title">Training Workshop "Preventing Illicit Trafficking/Protecting Cultural Heritage" Workshop April 24-27, 2017</Field>
+  <Field Type="Boolean" Name="Confidential" DisplayName="Confidential">False</Field>
+  <Field Type="Text" Name="TemporaryRequest" DisplayName="Temporary Request #">MCI#6638.3</Field>
+  <Field Type="User" Name="Initiator" DisplayName="Initiator">i:0#.w|us\johnsonjs</Field>
+  <Field Type="Text" Name="Status" DisplayName="Approval Status">Waiting for MCI Admin to Complete Approval</Field>
+  <Field Type="Text" Name="ConservationGroup" DisplayName="Conservation Group">Conservation, Technical Studies</Field>
+  <Field Type="Note" Name="Project_x0020_Summary" DisplayName="Project Summary">HSI/ICE Training Workshop #13 - Preventing Illicit Trafficking/Protecting Cultural Heritage - April 24-27, 2017</Field>
+  <Field Type="Note" Name="Request" DisplayName="Request (Action)">Lead, on behalf of the Smithsonian Institution, in the design, implementation and conduct of training workshop #13  Preventing Illicit Trafficking/Protecting Cultural Heritage - April 24-27, 2017 to be carried out in collaboration with colleagues from SI's Office of international Relations, US Department of Homeland Security and the US Department of State to include:
+
+1. Primary responsibility for course design and schedule, logistical aspects, organization of museum-based, object centered sessions, and production of course materials.
+2. Facilitation during the course
+3. Course presentations on museum and cultural heritage issues.</Field>
+  <Field Type="Note" Name="Purpose" DisplayName="Purpose of Analysis/Conservation">The workshops are designed to provide specialized training to DHS Homeland Security Investigations (HSI) special agents, with additional participation of agents from Customs and Board Patrol (CBP) and personnel from US Embassy Attache Offices, and DOJ US Attorney's Offices. The focus is on cultural heritage materials, especially antiquities, with emphasis on those from at-risk areas of the world, and on the legal instruments, investigative procedures, and special considerations, applicable to these materials, in undertaking case investigations of possible illicit import, export and trafficking of these materials.
+
+The Smithsonian Institution hosts these trainings, as a federal partner organization with special expertise and collections appropriate for the workshop focus, with funding support for travel costs from the US Department of State's Cultural Heritage Center, with additional support from the US Department of Homeland Security.
+
+The goals of the sessions pertaining specifically to the Smithsonian include:
+
+1. Introduction to collections from parts of the world that are at particular risk of trafficking (including areas with rich traditions, underedeveloped site or other protections, and areas engaged in conflicts).
+2. Introduction to the complexity in identifying and determining date and place of origin and related questions of authenticity of objects.
+3. Introduction to perspectives, skill sets and methods used by a variety of museum experts, related to the study of cultural heritage objects.
+4. Facilitate the development of resource networks for the participants related to cultural heritage materials casework.
+
+In addition, other goals specific to MCI include exposure of the workshop participants to a variety of scientific approaches, with particular emphasis on questions that instrumental analysis might answer. 
+
+For more background information see MCI#6603 which documents the first 10 offerings of the course.
+</Field>
+  <Field Type="Number" Name="MCI_ID" DisplayName="MCI #">6,638.3</Field>
+  <Field Type="Text" Name="ObjectTitle" DisplayName="Object Title">n/a</Field>
+  <Field Type="Note" Name="Object_x0020_Description" DisplayName="Object Description"></Field>
+  <Field Type="Text" Name="Accession_x0020__x0023_" DisplayName="Accession #"></Field>
+  <Field Type="Text" Name="Case_x0020_File_x0020__x0023_" DisplayName="Case File #"></Field>
+  <Field Type="Text" Name="IRMS_x0020__x0023_" DisplayName="IRMS #"></Field>
+  <Field Type="Text" Name="Related_x0020__x0023_" DisplayName="Related MCI #">MCI#6603, MCI#6638, MCI#6638.2</Field>
+  <Field Type="Text" Name="IDNum" DisplayName="Other ID #"></Field>
+  <Field Type="Number" Name="ObjectNum" DisplayName="# of Objects">0</Field>
+  <Field Type="Note" Name="Notes" DisplayName="Notes">Most MCI staff will be requested to participate - in particular during MCI tours during the program.</Field>
+  <Field Type="Note" Name="StaffNotes" DisplayName="Notes of Staff"></Field>
+  <Field Type="Lookup" Name="MCI_x0020_Contact" DisplayName="MCI Contact"></Field>
+  <Field Type="Text" Name="Object_x0020_Artist" DisplayName="Object Artist/Manufacturer"></Field>
+  <Field Type="Text" Name="Object_x0020_Owner" DisplayName="Object Owner"></Field>
+  <Field Type="Note" Name="Cultural_x0020_Provenience" DisplayName="Geographic/Cultural Provenience"></Field>
+  <Field Type="Text" Name="Textual_x0020_Date" DisplayName="Textual Date"></Field>	  
+  <Field Type="Text" Name="Year" DisplayName="Year"></Field>
+  <Field Type="Text" Name="SampleMaterial" DisplayName="Sample/Material"></Field>
+  <Field Type="Text" Name="Special_x0020_Equipment" DisplayName="Special Equipment"></Field>
+  <Field Type="Note" Name="Techniques" DisplayName="Materials/Techniques of Manufacture"></Field>
+  <Field Type="Text" Name="Dimensions" DisplayName="Dimensions"></Field>
+  <Field Type="DateTime" Name="RequestDate" DisplayName="Date of Request">2/1/2017</Field>
+  <Field Type="DateTime" Name="ApprovalDate" DisplayName="Date of Approval"></Field>
+  <Field Type="DateTime" Name="Deadline" DisplayName="Date of Deadline">4/30/2017</Field>
+  <Field Type="DateTime" Name="Date_x0020_Completed" DisplayName="Date Completed"></Field>
+  <Field Type="Text" Name="FiscalYear" DisplayName="Fiscal Year">2017</Field>
+  <Field Type="Text" Name="Object_x0020_Curator" DisplayName="Object Curator"></Field>
+  <Field Type="Text" Name="Object_x0020_Curator_x0020_Email" DisplayName="Object Curator Email"></Field>
+  <Field Type="Text" Name="Principal_x0020_Investigator" DisplayName="Principal Investigator"></Field>
+  <Field Type="Text" Name="Principal_x0020_Investigator_x0020_E" DisplayName="Principal Investigator Email"></Field>
+  <Field Type="Text" Name="Collaborator" DisplayName="Collaborator"></Field>
+  <Field Type="Text" Name="Collaborator_x0020_E" DisplayName="Collaborator Email"></Field>
+  <Field Type="User" Name="Requestor" DisplayName="Requestor">Johnson, Jessica S.</Field>
+  <Field Type="Text" Name="Requestor_x0020_Email" DisplayName="Requestor Email">JohnsonJS@si.edu</Field>
+  <Field Type="Text" Name="Requesting_x0020_Unit" DisplayName="Requesting Unit">MCI - Museum Conservation Institute</Field>
+  <Field Type="Text" Name="Requestor_x0020_Phone" DisplayName="Requestor Phone">301-238-1218</Field>
+  <Field Type="Text" Name="Requestor_x0020_Address" DisplayName="Requestor Address">4210 Silver Hill Rd</Field>
+  <Field Type="Text" Name="RequestorCity" DisplayName="Requestor City">Suitland</Field>
+<Field Type="Text" Name="RequestorState" DisplayName="Requestor State">MD</Field>
+<Field Type="Text" Name="RequestorZIP" DisplayName="Requestor ZIP">20746</Field>
+  <Field Type="Text" Name="AltEmail" DisplayName="Requestor Alternate Email"></Field>   
+  <Field Type="Boolean" Name="OnBehalfOf" DisplayName="On Behalf Of">False</Field>
+  <Field Type="Text" Name="NonSIName" DisplayName="Non SI Name"></Field> 
+  <Field Type="Text" Name="NonSIEmail" DisplayName="Non SI Email"></Field> 
+  <Field Type="Text" Name="NonSIPhone" DisplayName="Non SI Phone Number"></Field> 
+  <Field Type="Text" Name="NonSIOrganization" DisplayName="Non SI Organization"></Field>   
+  <Field Type="Note" Name="NonSIAddress" DisplayName="Non SI Address"></Field>
+  <Field Type="User" Name="Approving_x0020_Official_x0020_N" DisplayName="Approving Official Name"></Field>
+  <Field Type="Text" Name="Approving_x0020_Unit" DisplayName="Approving Unit"></Field>
+  <Field Type="Text" Name="Approving_x0020_Official_x0020_E" DisplayName="Approving Official Email"></Field>
+<Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\johnsonjs</Field>
+<Field Type="Text" Name="folderholderemail" DisplayName="Folder Holder Email">JohnsonJS@si.edu</Field>
+<Field Type="Text" Name="FolderHolderPhone" DisplayName="Pholder Holder Phone">301-238-1218</Field>
+  <Field Type="Text" Name="KeywordType1" DisplayName="Keyword Type 1"></Field>
+  <Field Type="Text" Name="KeywordType2" DisplayName="Keyword Type 2"></Field>
+  <Field Type="Text" Name="KeywordType3" DisplayName="Keyword Type 3"></Field>
+  <Field Type="Text" Name="Keyword1" DisplayName="Keyword 1">trafficking</Field>
+  <Field Type="Text" Name="Keyword2" DisplayName="Keyword 2">cultural heritage</Field>
+  <Field Type="Text" Name="Keyword3" DisplayName="Keyword 3">workshop</Field>
+  <Field Type="Text" Name="HC_x0020_Approver" DisplayName="HC Approver">Johnson, Jessica S.</Field>
+  <Field Type="DateTime" Name="HC_x0020_Signature_x0020_Date" DisplayName="HC Signature Date">2/1/2017</Field>
+  <Field Type="Note" Name="HC_x0020_Comments" DisplayName="HC Comments">Johnson, Jessica S. (Approve) 2/1/2017 11:33 AM - 2/1/2017 11:47 AM
+(Johnson, Jessica S.) </Field>
+  <Field Type="Text" Name="HTS_x0020_Approver" DisplayName="HTS Approver">Douglas, Janet</Field>
+  <Field Type="DateTime" Name="HTS_x0020_Signature_x0020_Date" DisplayName="HTS Signature Date">2/2/2017</Field>
+  <Field Type="Note" Name="HTS_x0020_Comments" DisplayName="HTS Comments">
+Douglas, Janet (Approve) 2/1/2017 11:33 AM - 2/2/2017 9:42 AM(Douglas, Janet)</Field>
+  <Field Type="Text" Name="Deputy_x0020_Approver" DisplayName="Deputy Approver">DePriest, Paula</Field>
+  <Field Type="DateTime" Name="Deputy_x0020_Signature_x0020_Date" DisplayName="Deputy Signature Date">2/2/2017</Field>
+  <Field Type="Note" Name="Deputy_x0020_Comments" DisplayName="Deputy Comments">DePriest, Paula (Approve) 2/2/2017 9:42 AM - 2/2/2017 5:57 PM
+(DePriest, Paula) </Field>
+  <Field Type="Text" Name="Director_x0020_Approver" DisplayName="Director Approver">Koestler, Robert</Field>
+  <Field Type="DateTime" Name="Director_x0020_Signature_x0020_Date" DisplayName="Director Signature Date">2/3/2017</Field>
+  <Field Type="Note" Name="Director_x0020_Comments" DisplayName="Director Comments">Koestler, Robert (Approve) 2/2/2017 5:57 PM - 2/3/2017 8:51 AM
+(Koestler, Robert) </Field>
+  <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\johnsonjs</Field>
+  <Field Type="Text" Name="Role1" DisplayName="Role (1)">presenter</Field>
+  <Field Type="Text" Name="Role2" DisplayName="Role (2)">presenter/organzer</Field>
+  <Field Type="Text" Name="Role3" DisplayName="Role (3)">presenter</Field>
+  <Field Type="Text" Name="Role4" DisplayName="Role (4)">presenter</Field>
+  <Field Type="Text" Name="Role5" DisplayName="Role (5)"></Field>
+  <Field Type="Text" Name="Role6" DisplayName="Role (6)"></Field>
+  <Field Type="Text" Name="Role7" DisplayName="Role (7)"></Field>
+  <Field Type="Text" Name="Role8" DisplayName="Role (8)"></Field>
+   <Field Type="Lookup" Name="ProposedStaffing1" DisplayName="ProposedStaffing1">Koestler, Robert</Field> 
+   <Field Type="Lookup" Name="ProposedStaffing2" DisplayName="ProposedStaffing2">DePriest, Paula</Field>
+  <Field Type="Lookup" Name="ProposedStaffing3" DisplayName="ProposedStaffing3">Kaczkowski, Rebecca</Field>
+  <Field Type="Lookup" Name="ProposedStaffing4" DisplayName="ProposedStaffing4">Rogala, Dawn</Field>
+<Field Type="Lookup" Name="ProposedStaffing5" DisplayName="ProposedStaffing5"></Field> 
+   <Field Type="Lookup" Name="ProposedStaffing6" DisplayName="ProposedStaffing6"></Field>
+  <Field Type="Lookup" Name="ProposedStaffing7" DisplayName="ProposedStaffing7"></Field>
+  <Field Type="Lookup" Name="ProposedStaffing8" DisplayName="ProposedStaffing8"></Field>
+</Fields>

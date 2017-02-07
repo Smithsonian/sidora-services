@@ -27,22 +27,14 @@
 
 package edu.si.services.sidora.rest.mci;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
-import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -54,11 +46,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.activation.DataHandler;
 import javax.xml.bind.JAXBContext;
-import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -67,7 +58,7 @@ import java.util.UUID;
  */
 public class MCIServiceTest extends CamelBlueprintTestSupport {
 
-    private static final String SERVICE_ADDRESS = "/sidora/rest";
+    private static final String SERVICE_ADDRESS = "/sidora/mci/";
     private static final String PORT_PATH = 8282 + SERVICE_ADDRESS;
     private static final String BASE_URL = "http://localhost:" + PORT_PATH;
 
@@ -76,9 +67,14 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
     private static final String OWNERID = "test:123456";
     private static String OPTION = "MCITest";
     private static String PAYLOAD;
-    private static File TEST_XML = new File("src/test/resources/sample-data/42_0.1.xml");
+    private static File TEST_XML = new File("src/test/resources/sample-data/MCI_Inbox/42_0.1.xml");
     private static String RESPONCE_PAYLOAD;
-    private static File TEST_RESPONCE_XML = new File("src/test/resources/sample-data/MCIProjectResult.xml");
+    private static File TEST_RESPONCE_XML = new File("src/test/resources/sample-data/42_0.1-Transform-Result.xml");
+
+    private JAXBContext jaxb;
+    private CloseableHttpClient httpClient;
+    private static final Properties prop = new Properties();
+    private static File tmpOutputDir = new File("MCI_Inbox");
 
     static {
         try {
@@ -88,12 +84,6 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
             e.printStackTrace();
         }
     }
-
-
-    private JAXBContext jaxb;
-    private CloseableHttpClient httpClient;
-
-    private static final Properties prop = new Properties();
 
     @Test
     public void testPostWithParameterAndPayload() throws Exception {
@@ -111,7 +101,7 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
             }
         });
 
-        HttpPost post = new HttpPost(BASE_URL + "/mci/" + OWNERID + "/addProject?option=" + OPTION);
+        HttpPost post = new HttpPost(BASE_URL + OWNERID + "/addProject?option=" + OPTION);
         post.addHeader("Content-Type", "application/xml");
         post.addHeader("Accept", "application/xml");
         post.setEntity(new StringEntity(PAYLOAD));
@@ -146,7 +136,7 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
         HttpPost post = new HttpPost(BASE_URL + "/mci/" + OWNERID + "/addProject?option=" + OPTION);
 
         MultipartEntityBuilder builder = MultipartEntityBuilder.create().setMode(HttpMultipartMode.STRICT);
-        builder.addBinaryBody("mciProject", new File(this.getClass().getClassLoader().getResource("sample-data/42_0.1.xml").toURI()), ContentType.create("application/xml"), "42_0.1.xml");
+        builder.addBinaryBody("mciProject", new File(this.getClass().getClassLoader().getResource("sample-data/MCI_Inbox/42_0.1.xml").toURI()), ContentType.create("application/xml"), "42_0.1.xml");
         //builder.addBinaryBody("mciProjectDataHandler", new File(this.getClass().getClassLoader().getResource("sample-data/42_0.1.xml").toURI()), ContentType.create("application/xml"), "42_0.1.xml");
         //builder.addBinaryBody("mciProjectAttachment", new File(this.getClass().getClassLoader().getResource("sample-data/42_0.1.xml").toURI()), ContentType.create("application/xml"), "42_0.1.xml");
 
@@ -214,9 +204,6 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
     protected JndiRegistry createRegistry() throws Exception {
         JndiRegistry reg = super.createRegistry();
 
-        reg.bind("jsonProvider", org.apache.cxf.jaxrs.provider.json.JSONProvider.class);
-        reg.bind("jaxbProvider", org.apache.cxf.jaxrs.provider.JAXBElementProvider.class);
-
         return reg;
     }
 
@@ -228,8 +215,8 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
     @Before
     @Override
     public void setUp() throws Exception {
-        httpClient = HttpClientBuilder.create().build();
         super.setUp();
+        httpClient = HttpClientBuilder.create().build();
         //jaxb = JAXBContext.newInstance(CustomerList.class, Customer.class, Order.class, Product.class);
     }
 
@@ -238,5 +225,8 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
     public void tearDown() throws Exception {
         super.tearDown();
         httpClient.close();
+        if(tmpOutputDir.exists()){
+            FileUtils.deleteDirectory(tmpOutputDir);
+        }
     }
 }

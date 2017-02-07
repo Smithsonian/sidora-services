@@ -27,16 +27,11 @@
 
 package edu.si.services.sidora.rest.mci;
 
-import org.apache.cxf.jaxrs.ext.multipart.Attachment;
 import org.apache.cxf.jaxrs.ext.multipart.Multipart;
 
-import javax.activation.DataHandler;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.File;
-import java.io.InputStream;
-import java.net.URL;
 
 /**
  * @author jbirkhimer

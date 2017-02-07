@@ -34,6 +34,8 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
@@ -43,10 +45,16 @@ import java.io.File;
  */
 public class MCI_TransformTest extends CamelTestSupport {
 
+    private static String mciXSL = "Input/xslt/MCIProjectToSIdoraProject.xsl";
+    private static String sampleDataDir = "src/test/resources/sample-data/MCI_Inbox";
+    private static File tmpOutputDir = new File("target/transform_results");
+
     @Test
-    public void mci_transformTest() throws Exception {
-        String mciXSL = "Input/xslt/MCIProjectToSIdoraProject.xsl";
-        String mciProjectXML = FileUtils.readFileToString(new File("src/test/resources/sample-data/42_0.1.xml"));
+    public void single_mci_transformTest() throws Exception {
+        //File mciTestFile = new File(sampleDataDir + "/BAD-XML-ID-si-fedoratest-si-edu-35125-1485459442803-12-15.xml");
+        File mciTestFile = new File(sampleDataDir + "/42_0.1.xml");
+
+        String mciProjectXML = FileUtils.readFileToString(mciTestFile);
 
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
@@ -54,14 +62,46 @@ public class MCI_TransformTest extends CamelTestSupport {
         Exchange exchange = new DefaultExchange(context);
 
         exchange.getIn().setHeader("mciXSL", mciXSL);
-        exchange.getIn().setHeader("camelStagingDir", "target/camelStagingDir");
+        exchange.getIn().setHeader("CamelXsltFileName", tmpOutputDir + "/" + FilenameUtils.getBaseName(mciTestFile.getName()) + "-transform.xml");
         exchange.getIn().setBody(mciProjectXML);
 
         template.send("direct:start", exchange);
 
-        //template.sendBodyAndHeader("direct:start", mciProjectXML, "mciXSL", mciXSL);
-
         assertMockEndpointsSatisfied();
+
+        MockEndpoint.resetMocks(context);
+
+    }
+
+    @Test
+    public void multiple_mci_transformTest() throws Exception {
+        File path = new File(sampleDataDir);
+
+        File [] files = path.listFiles();
+
+        for (int i = 0; i < files.length; i++){
+            if (files[i].isFile()){ //this line weeds out other directories/folders
+
+                String mciProjectXML = FileUtils.readFileToString(files[i]);
+
+                MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+                mockEndpoint.expectedMessageCount(1);
+
+                Exchange exchange = new DefaultExchange(context);
+
+                exchange.getIn().setHeader("mciXSL", mciXSL);
+                exchange.getIn().setHeader("CamelXsltFileName", tmpOutputDir + "/" + FilenameUtils.getBaseName(files[i].getName()) + "-transform.xml");
+                exchange.getIn().setBody(mciProjectXML);
+
+                template.send("direct:start", exchange);
+
+                assertMockEndpointsSatisfied();
+
+                MockEndpoint.resetMocks(context);
+
+
+            }
+        }
 
     }
 
@@ -72,12 +112,27 @@ public class MCI_TransformTest extends CamelTestSupport {
             public void configure() throws Exception {
 
                 from("direct:start")
-                        .toD("xslt:${header.mciXSL}?saxon=true")
-                        .log(LoggingLevel.INFO, "Result Body = ${body}")
-                        .to("mock:result");
+                        .doTry()
+                        .toD("xslt:${header.mciXSL}?output=file")
+                        .log(LoggingLevel.INFO, "Transform Successful for ${header.CamelXsltFileName}")
+                        .log(LoggingLevel.INFO, "===============[ BODY ] =================\n${body}")
+                        //.to("mock:result")
+                        .doCatch(net.sf.saxon.trans.XPathException.class)
+                        .log(LoggingLevel.ERROR, "Exception Caught for file ${header.CamelXsltFileName}: ${property.CamelExceptionCaught} ")
+                        .end()
+                .to("mock:result");
+
             }
         };
     }
 
+    @Override
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+        if(tmpOutputDir.exists()){
+            //FileUtils.deleteDirectory(tmpOutputDir);
+        }
 
+    }
 }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Fields>
+<Field Type="Text" Name="Title" DisplayName="Project Title">Training Workshop "Preventing Illicit Trafficking/Protecting Cultural Heritage" Workshop April 24-27, 2017</Field>
+<Field Type="Boolean" Name="Confidential" DisplayName="Confidential">False</Field>
+<Field Type="Text" Name="TemporaryRequest" DisplayName="Temporary Request #">MCI#6638.3</Field>
+<Field Type="User" Name="Initiator" DisplayName="Initiator">i:0#.w|us\johnsonjs</Field>
+<Field Type="Text" Name="Status" DisplayName="Approval Status">Waiting for MCI Admin to Complete Approval</Field>
+</Fields>

@@ -29,9 +29,7 @@
 <xsl:stylesheet version="2.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="xml" indent="yes" encoding="utf-8"/>
-    <xsl:output name="content" method="text"/>
-
-    <xsl:param name="camelStagingDir"/>
+    <!--<xsl:output name="content" method="xml"/>-->
 
     <!-- This stylesheet processes an XML file. Each project element will be mapped to a Project object in the repository.
 
@@ -53,7 +51,6 @@
 
         <!-- This section opens a file for the Project concept object and writes metadata.   -->
         <!--<xsl:result-document href="/Users/sternb/Documents/{$filename}">-->
-        <!--<xsl:result-document href="{$camelStagingDir}/{$filename}">-->
 
             <!-- This is the in-line datastream content for the descriptive metadata.  -->
             <SIdoraConcept>
