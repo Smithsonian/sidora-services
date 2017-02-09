@@ -27,29 +27,34 @@
 
 package edu.si.services.sidora.rest.mci;
 
+import edu.si.services.fedorarepo.FedoraComponent;
+import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.JndiRegistry;
+import org.apache.camel.test.AvailablePortFinder;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.FileBasedConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.xml.bind.JAXBContext;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -58,13 +63,14 @@ import java.util.UUID;
  */
 public class MCIServiceTest extends CamelBlueprintTestSupport {
 
-    private static final String SERVICE_ADDRESS = "/sidora/mci/";
-    private static final String PORT_PATH = 8282 + SERVICE_ADDRESS;
+    private static final String SERVICE_ADDRESS = "/sidora/mci";
+    private static final String PORT = String.valueOf(AvailablePortFinder.getNextAvailable());
+    private static final String PORT_PATH = PORT + SERVICE_ADDRESS;
     private static final String BASE_URL = "http://localhost:" + PORT_PATH;
 
     //Default Test Params
     private static final String CORRELATIONID = UUID.randomUUID().toString();
-    private static final String OWNERID = "test:123456";
+    private static String OWNERID = "test:123456";
     private static String OPTION = "MCITest";
     private static String PAYLOAD;
     private static File TEST_XML = new File("src/test/resources/sample-data/MCI_Inbox/42_0.1.xml");
@@ -73,7 +79,9 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
 
     private JAXBContext jaxb;
     private CloseableHttpClient httpClient;
+    private static File tempTestProperties = null;
     private static final Properties prop = new Properties();
+    private static Configuration config = null;
     private static File tmpOutputDir = new File("MCI_Inbox");
 
     static {
@@ -86,13 +94,23 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
     }
 
     @Test
-    public void testPostWithParameterAndPayload() throws Exception {
+    public void testPostWithPayload() throws Exception {
+
+        OWNERID = "/si-user:57";
+
+        log.info("=========================[ si.fedora.host: {} ]===========================", String.valueOf(config.getProperty("si.fedora.host")));
+
+
+        /*FedoraSettings fedoraSettings = new FedoraSettings();
+        fedoraSettings.setHost(new URL(String.valueOf(config.getProperty("si.fedora.host"))));
+        fedoraSettings.setUsername(String.valueOf(config.getProperty("si.fedora.user")));
+        fedoraSettings.setPassword(String.valueOf(config.getProperty("si.fedora.password")));
+        FedoraComponent fedora = new FedoraComponent();
+        fedora.setSettings(fedoraSettings);
+        context.addComponent("fedora", fedora);*/
 
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
-        mockEndpoint.expectedHeaderReceived("ownerId", OWNERID);
-        mockEndpoint.expectedHeaderReceived("option", OPTION);
-        mockEndpoint.expectedBodyReceived().simple(PAYLOAD);
 
         context.getRouteDefinition("AddMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -101,7 +119,16 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
             }
         });
 
-        HttpPost post = new HttpPost(BASE_URL + OWNERID + "/addProject?option=" + OPTION);
+        context.getRouteDefinition("MCICreateConcept").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("xsltMCIProjectToSIdoraProject").replace().toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true");
+                weaveById("velocityMCIResourceTemplate").replace().toD("velocity:Input/templates/MCIResourceTemplate.vsl");
+                weaveById("xsltSIdoraConcept2DC").replace().toD("xslt:Input/xslt/SIdoraConcept2DC.xsl?saxon=true");
+            }
+        });
+
+        HttpPost post = new HttpPost(BASE_URL + OWNERID + "/addProject");
         post.addHeader("Content-Type", "application/xml");
         post.addHeader("Accept", "application/xml");
         post.setEntity(new StringEntity(PAYLOAD));
@@ -110,86 +137,27 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
 
         String responceBody = EntityUtils.toString(response.getEntity());
 
-        assertEquals(RESPONCE_PAYLOAD, responceBody);
+        //assertEquals(RESPONCE_PAYLOAD, responceBody);
 
         assertMockEndpointsSatisfied();
-    }
-
-    @Test
-    public void testMultipartPostWithParametersAndPayload() throws Exception {
-        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
-        mockEndpoint.expectedMessageCount(1);
-        mockEndpoint.expectedHeaderReceived("ownerId", OWNERID);
-        mockEndpoint.expectedHeaderReceived("option", OPTION);
-        /*mockEndpoint.expectedHeaderReceived("mciProjectString", PAYLOAD);
-        mockEndpoint.expectedHeaderReceived("mciProjectDataHandler", PAYLOAD);
-        mockEndpoint.expectedHeaderReceived("mciProjectAttachment", PAYLOAD);*/
-        //mockEndpoint.expectedBodyReceived().simple(PAYLOAD);
-
-        context.getRouteDefinition("AddMCIProjectMultipart").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveAddLast().to("mock:result");
-            }
-        });
-
-        HttpPost post = new HttpPost(BASE_URL + "/mci/" + OWNERID + "/addProject?option=" + OPTION);
-
-        MultipartEntityBuilder builder = MultipartEntityBuilder.create().setMode(HttpMultipartMode.STRICT);
-        builder.addBinaryBody("mciProject", new File(this.getClass().getClassLoader().getResource("sample-data/MCI_Inbox/42_0.1.xml").toURI()), ContentType.create("application/xml"), "42_0.1.xml");
-        //builder.addBinaryBody("mciProjectDataHandler", new File(this.getClass().getClassLoader().getResource("sample-data/42_0.1.xml").toURI()), ContentType.create("application/xml"), "42_0.1.xml");
-        //builder.addBinaryBody("mciProjectAttachment", new File(this.getClass().getClassLoader().getResource("sample-data/42_0.1.xml").toURI()), ContentType.create("application/xml"), "42_0.1.xml");
-
-        //builder.addTextBody("body", FileUtils.readFileToString(new File(this.getClass().getClassLoader().getResource("sample-data/42_0.1.xml").toURI())), ContentType.create("application/xml"));
-
-        post.setEntity(builder.build());
-        HttpResponse response = httpClient.execute(post);
-        assertEquals(200, response.getStatusLine().getStatusCode());
-
-        String responceBody = EntityUtils.toString(response.getEntity());
-
-        //Map<String, org.apache.camel.Attachment> camelAttachments = exchange.getOut().getAttachmentObjects();
-
-        assertEquals(RESPONCE_PAYLOAD, responceBody);
-
-        assertMockEndpointsSatisfied();
-    }
-
-    /**
-     * Sets up the system properties and Temp directories used by the route.
-     * @throws IOException
-     */
-    @BeforeClass
-    public static void setupSysPropsTempResourceDir() throws IOException {
-        FileInputStream propFile = new FileInputStream( "src/test/resources/test.properties");
-        System.setProperty("karaf.home", "target/test-classes");
-        prop.load(propFile);
     }
 
     @Override
     protected String[] loadConfigAdminConfigurationFile() {
 
-        /*File dir = new File("target/etc");
-        dir.mkdirs();
+        Parameters params = new Parameters();
+        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.fileBased().setFile(new File("src/test/resources/test.properties"))
+                                );
 
-        FileWriter writer = null;
-        File cfg = null;
         try {
-            cfg = File.createTempFile("test-properties-", ".cfg", dir);
-            writer = new FileWriter(cfg);
-            prop.store(writer, null);
-        } catch (IOException e) {
+            config = builder.getConfiguration();
+            config.setProperty("sidora.mci.service.address", BASE_URL);
+            builder.save();
+        } catch (ConfigurationException e) {
             e.printStackTrace();
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-        return new String[]{cfg.getAbsolutePath(), "edu.si.sidora.batch"};*/
 
         return new String[]{"src/test/resources/test.properties", "edu.si.sidora.mci"};
     }
@@ -202,6 +170,7 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
 
     @Override
     protected JndiRegistry createRegistry() throws Exception {
+
         JndiRegistry reg = super.createRegistry();
 
         return reg;
@@ -215,6 +184,7 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
     @Before
     @Override
     public void setUp() throws Exception {
+        System.setProperty("karaf.home", "target/test-classes");
         super.setUp();
         httpClient = HttpClientBuilder.create().build();
         //jaxb = JAXBContext.newInstance(CustomerList.class, Customer.class, Order.class, Product.class);

@@ -42,38 +42,18 @@ public class MCIService {
     /**
      *
      * @param mciProject
-     * @param ownerId
+     * @param parentId
      * @param option
      * @return
      */
     @POST
-    @Path(value = "/{ownerId}/addProject")
+    @Path(value = "/{parentId}/addProject")
     @Produces({"application/xml","application/json"})
     //@Consumes("application/xml")
     @Consumes("*/*")
     public Response addProject(String mciProject,
-            @PathParam("ownerId") String ownerId,
+            @PathParam("parentId") String parentId,
             @QueryParam("option") String option) {
-        return null;
-    }
-
-    /**
-     *
-     * @param ownerId
-     * @param option
-     * @param mciProject
-     * @return
-     */
-    @POST
-    @Path(value = "/{ownerId}/addProject")
-    @Produces({"application/xml","application/json"})
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response addProjectMultipart(
-            @PathParam("ownerId") String ownerId,
-            @QueryParam("option") String option,
-            @Multipart(value = "mciProject", type = "application/xml") String mciProject/*,
-            @Multipart(value = "mciProjectDataHandler", type = "application/xml") DataHandler mciProjectDataHandler,
-            @Multipart(value = "mciProjectAttachment", type = "application/xml") Attachment mciProjectAttachment*/) {
         return null;
     }
 }

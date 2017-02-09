@@ -45,6 +45,8 @@ import java.io.File;
  */
 public class MCI_TransformTest extends CamelTestSupport {
 
+    static private String LOG_NAME = "edu.si.mci";
+
     private static String mciXSL = "Input/xslt/MCIProjectToSIdoraProject.xsl";
     private static String sampleDataDir = "src/test/resources/sample-data/MCI_Inbox";
     private static File tmpOutputDir = new File("target/transform_results");
@@ -52,7 +54,7 @@ public class MCI_TransformTest extends CamelTestSupport {
     @Test
     public void single_mci_transformTest() throws Exception {
         //File mciTestFile = new File(sampleDataDir + "/BAD-XML-ID-si-fedoratest-si-edu-35125-1485459442803-12-15.xml");
-        File mciTestFile = new File(sampleDataDir + "/42_0.1.xml");
+        File mciTestFile = new File(sampleDataDir + "/ID-si-fedoratest-si-edu-35125-1485459442803-12-19.xml");
 
         String mciProjectXML = FileUtils.readFileToString(mciTestFile);
 
@@ -90,7 +92,7 @@ public class MCI_TransformTest extends CamelTestSupport {
                 Exchange exchange = new DefaultExchange(context);
 
                 exchange.getIn().setHeader("mciXSL", mciXSL);
-                exchange.getIn().setHeader("CamelXsltFileName", tmpOutputDir + "/" + FilenameUtils.getBaseName(files[i].getName()) + "-transform.xml");
+                //exchange.getIn().setHeader("CamelXsltFileName", tmpOutputDir + "/" + FilenameUtils.getBaseName(files[i].getName()) + "-transform.xml");
                 exchange.getIn().setBody(mciProjectXML);
 
                 template.send("direct:start", exchange);
@@ -105,13 +107,77 @@ public class MCI_TransformTest extends CamelTestSupport {
 
     }
 
+    @Test
+    public void mciCreateConceptTest() throws Exception {
+
+        File mciTestFile = new File(sampleDataDir + "/ID-si-fedoratest-si-edu-35125-1485459442803-12-19.xml");
+
+        String mciProjectXML = FileUtils.readFileToString(mciTestFile);
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+
+        //exchange.getIn().setHeader("CamelHttpMethod", "GET");
+        exchange.getIn().setBody(mciProjectXML);
+
+        template.send("direct:mciCreateConcept", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void getParentIdTest() throws Exception {
+
+        File mciTestFile = new File(sampleDataDir + "/ID-si-fedoratest-si-edu-35125-1485459442803-12-19.xml");
+
+        String mciProjectXML = FileUtils.readFileToString(mciTestFile);
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+
+        //exchange.getIn().setHeader("CamelHttpMethod", "GET");
+        exchange.getIn().setBody(mciProjectXML);
+
+        template.send("direct:getParentId", exchange);
+
+        assertMockEndpointsSatisfied();
+
+        MockEndpoint.resetMocks(context);
+
+    }
+
+    @Test
+    public void fusekiQueryTest() throws Exception {
+
+        String fusekiQuery = "ASK FROM <info:edu.si.fedora#ri>{<info:fedora/si-user:57> ?p ?o .}";
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+
+        //exchange.getIn().setHeader("CamelHttpMethod", "GET");
+        exchange.getIn().setBody(fusekiQuery);
+
+        template.send("direct:fusekiQuery", exchange);
+
+        assertMockEndpointsSatisfied();
+
+        MockEndpoint.resetMocks(context);
+
+    }
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
 
-                from("direct:start")
+                /*from("direct:start")
                         .doTry()
                         .toD("xslt:${header.mciXSL}?output=file")
                         .log(LoggingLevel.INFO, "Transform Successful for ${header.CamelXsltFileName}")
@@ -119,6 +185,57 @@ public class MCI_TransformTest extends CamelTestSupport {
                         //.to("mock:result")
                         .doCatch(net.sf.saxon.trans.XPathException.class)
                         .log(LoggingLevel.ERROR, "Exception Caught for file ${header.CamelXsltFileName}: ${property.CamelExceptionCaught} ")
+                        .end()
+                .to("mock:result");*/
+
+                from("direct:start")
+                        .routeId("AddMCIProject")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
+
+                        //Stash Incoming Payload to File
+                        .setHeader("fileName", simple("${id}"))
+                        .toD("file:target/MCI_Inbox?fileName=${header.fileName}.xml")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Payload Received - Saved to File: ${header.fileName}.xml")
+
+                        //Create the
+                        .doTry()
+                        .setHeader("CamelXsltFileName", simple("target/MCI_Inbox/${header.fileName}-transform.xml"))
+                        .toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true&output=file")
+                        .log(LoggingLevel.INFO, "Transform Successful for ${header.CamelXsltFileName}.xml")
+                        .doCatch(net.sf.saxon.trans.XPathException.class)
+                        .log(LoggingLevel.ERROR, "Transform Failed for file ${header.fileName} :: Exception Caught: ${property.CamelExceptionCaught} ")
+                        .setBody().simple("Transform Failed for file ${header.fileName} :: Exception Caught: ${property.CamelExceptionCaught} ")
+                        .end()
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...")
+                .to("mock:result");
+
+                from("direct:fusekiQuery")
+                        .setBody().groovy("\"query=\" + URLEncoder.encode(request.getBody(String.class));")
+                        .log(LoggingLevel.INFO, LOG_NAME, "===============[ BODY ]================\n${body}")
+                        .setHeader("CamelHttpMethod", constant("GET"))
+                        .toD("http://si-fedoratest.si.edu:9080/fuseki/fedora3?output=xml&${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "===============[ BODY ]================\n${body}")
+                        .to("mock:result");
+
+                from("direct:getParentId")
+                        //.setBody().xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class)
+                        .setHeader("mciProjectXML", simple("${body}", String.class))
+                        .setBody().xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class)
+                        .setHeader("mciOwner").simple("${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "==========[ mciOwner:${header.mciOwner} ]==========\n${body}")
+                        .to("mock:result");
+
+                from("direct:mciCreateConcept")
+                        .routeId("MCICreateConcept")
+                        .doTry()
+                            .toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
+                            .log(LoggingLevel.INFO, "Transform Successful")
+                            .setHeader("mciDESCMETA", simple("${body}", String.class))
+                            .setHeader("mciLable").xpath("/SIdoraConcept/primaryTitle/titleText/text()", String.class, "mciDESCMETA")
+                        .log(LoggingLevel.INFO, "===================[ mciLabel: ${header.mciLabel} ]======================")
+                        .endDoTry()
+                        .doCatch(net.sf.saxon.trans.XPathException.class)
+                            .log(LoggingLevel.ERROR, "MCIProjectToSIdoraProject Transform Failed :: Exception Caught: ${property.CamelExceptionCaught}")
                         .end()
                 .to("mock:result");
 

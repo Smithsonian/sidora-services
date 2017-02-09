@@ -206,6 +206,39 @@
             <artifactId>jettison</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FedoraRepo</artifactId>
+            <version>1.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FcrepoRest</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-groovy</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-velocity</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -243,6 +276,7 @@
                         <Bundle-Description>${project.description}</Bundle-Description>
                         <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
                         <Private-Package>edu.si.services.sidora.rest.mci</Private-Package>
+                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
                         <!--<Embed-Transitive>true</Embed-Transitive>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
                         <Import-Package>

@@ -84,12 +84,23 @@
 	<bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
 		<property name="outFilter">
 			<set>
-				<!--<value>someHeaderName</value>-->
+				<value>mciProjectXML</value>
+                <value>mciDESCMETA</value>
 			</set>
 		</property>
 	</bean>
 
 	<bean id="mciRoutes" class="edu.si.services.sidora.rest.mci.SidoraMCIServiceRouteBuilder"/>
+
+    <!--<bean id="fedora" class="edu.si.services.fedorarepo.FedoraComponent">
+        <property name="settings" ref="fedoraSettings"/>
+    </bean>
+
+	<bean id="fedoraSettings" class="edu.si.services.fedorarepo.FedoraSettings">
+        <argument value="${si.fedora.host}"/>
+		<argument value="${si.fedora.mci.user}"/>
+		<argument value="${si.fedora.password}"/>
+	</bean>-->
 
 	<!-- MCI route context -->
 	<!--The "unused" namespace definitions are needed to deal with the way Camel handles namespaces in XPath.-->

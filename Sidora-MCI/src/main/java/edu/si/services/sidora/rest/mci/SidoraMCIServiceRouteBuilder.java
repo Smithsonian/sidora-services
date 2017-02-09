@@ -27,20 +27,13 @@
 
 package edu.si.services.sidora.rest.mci;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.cxf.helpers.IOUtils;
+import org.apache.camel.builder.xml.Namespaces;
+import org.apache.camel.builder.xml.XPathBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.activation.DataHandler;
-import java.util.Map;
-
-import static org.junit.Assert.*;
 
 /**
  * @author jbirkhimer
@@ -54,98 +47,119 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
+        Namespaces ns = new Namespaces("ri", "http://www.w3.org/2005/sparql-results#");
+        XPathBuilder.xpath("/foo:person/@id",String.class).logNamespaces();
 
         from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer")
                 .routeId("SidoraMCIService")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting Sidora MCI Service Request for: ${header.operationName} ... ")
-                .log(LoggingLevel.INFO, LOG_NAME, "===============================[ START ]==================================")
-                .to("log:{{edu.si.mci}}?maxChars=100000&showAll=true&level=WARN")
-                .log(LoggingLevel.INFO, LOG_NAME, "================================[ END ]===================================")
                 .recipientList(simple("direct:${header.operationName}"))
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished Sidora MCI Service Request for: ${header.operationName} ... ");
 
         /**
-         * Add Project XML from Payload
-         */
-        from("direct:addProject")
-                .routeId("AddMCIProject")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
-                .log(LoggingLevel.INFO, LOG_NAME, "===============================[ START AddMCIProject ]==================================")
-                .to("log:{{edu.si.mci}}?maxChars=100000&showAll=true&level=WARN")
-                .setHeader("fileName", simple("${id}"))
-                .toD("file:MCI_Inbox?fileName=${header.fileName}.xml")
-                .log(LoggingLevel.INFO, LOG_NAME, "Payload Received - File Created: ${header.fileName}.xml")
-                .doTry()
-                .setHeader("CamelXsltFileName", simple("MCI_Inbox/${header.fileName}-transform.xml"))
-                .toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true&output=file")
-                .log(LoggingLevel.INFO, "Transform Successful for ${header.CamelXsltFileName}.xml")
-                .doCatch(net.sf.saxon.trans.XPathException.class)
-                .log(LoggingLevel.ERROR, "Transform Failed for file ${header.fileName} :: Exception Caught: ${property.CamelExceptionCaught} ")
-                .setBody().simple("Transform Failed for file ${header.fileName} :: Exception Caught: ${property.CamelExceptionCaught} ")
-                .end()
-                .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProject ]===================================")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");
-
-
-
-/*                .routeId("AddMCIProject")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
-                .log(LoggingLevel.INFO, LOG_NAME, "===============================[ START AddMCIProject ]==================================")
-                .to("log:{{edu.si.mci}}?maxChars=100000&showAll=true&level=WARN")
-                //.toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
-                .toD("file:MCI_Inbox")
-                .log(LoggingLevel.INFO, LOG_NAME, "===============================[ BODY ]==================================\n${body}")
-                .setBody().simple("Payload Received - File Created for ${id}")
-                .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProject ]===================================")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");*/
-
-        /**
-         * Add Project XML From Multipart With Parameters And Payload
-         */
-        from("direct:addProjectMultipart")
-                .routeId("AddMCIProjectMultipart")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "===============================[ START AddMCIProjectMultipart ]==================================")
-                .to("log:{{edu.si.mci}}?maxChars=100000&showAll=true&level=WARN")
-
-
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        LOG.info("==========[ Attachment Names ]==========\n{}", exchange.getIn().getAttachmentNames());
-
-                        for (Map.Entry<String, DataHandler> entry : exchange.getIn().getAttachments().entrySet()) {
-                            String name = entry.getKey().toString();
-                            String contentType = entry.getValue().getContentType();
-                            String value = IOUtils.toString(entry.getValue().getInputStream());
-                            LOG.info("==========[ Attachment Info START ]==========\nName: {}\ncontentType: {}\nValue:{}\n==========[ Attachment Info END]==========\n", name, contentType, value);
-
-                            //exchange.getOut().setHeader(name, value);
-                            //exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-                            //exchange.getOut().setBody(value);
-                            //exchange.getIn().addAttachment(name + "TEST", new DataHandler(value.getBytes(), contentType));
-                        }
-                    }
-                })
-                .setBody().simple("${header.mciProject}")
-                .log(LoggingLevel.INFO, LOG_NAME, "================================[ Body For XSLT ]===================================")
-                .log(LoggingLevel.INFO, LOG_NAME, "${body}")
-                .log(LoggingLevel.INFO, LOG_NAME, "================================[ Body For XSLT STOP ]===================================")
-                .toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
-                .removeHeader("mciProject")
-                .log(LoggingLevel.INFO, LOG_NAME, "================================[ END AddMCIProjectMultipart ]===================================")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");
-
-
-        /**
+         * Add MCI Project
+         *
          * 1. Create New Fedora object ( fedora:create?pid=null&amp;owner={{si.mci.owner}}&amp;namespace={{si.mci.namespace}} )
          * 2. Transform incoming MCI XML payload to create the DESCMETA for the concept
          * 3. Add the DESCMETA DS to the New Fedora Object ( fedora:addDatastream?name=DESCMETA&amp;group=X&amp;dsLabel=DESCMETA%20Record&amp;versionable=true )
          * 4. Add Relation from MCI parent to the child MCI Project ( fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid} )
-         * 5. Add the incoming XML payload to the new MCI Project Concept OBJ DS ( <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/xml&amp;group=M&amp;dsLabel=${header.objLable}&amp;versionable=true"/> )
+         * 5. Add the incoming XML payload to the new MCI Project Concept OBJ DS ( <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/xml&amp;group=M&amp;dsLabel=${header.objLabel}&amp;versionable=true"/> )
+         *
+         * The gist is:
+         * Get the XML document
+         * Run it though the transform
+         * The document IS the content of DESCMETA
+         * Plus we read the document to create the object/datastreams
+         * The folder holder is the user (but just use Beth for testing).  Each folder holder should have account to match the name thus a user object to be the parent.  (its a error if they don't)
+         * Create a Project Concept for each document as a child under the folder holder's user object with DC, RELS-EXT, and DESCMETA.  Likely SIDORA.
+         * Put the content of the transformed XML document in DESCMETA
          *
          */
+        from("direct:addProject")
+                .routeId("AddMCIProject")
+
+                .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|CamelHttpUri|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod")
+
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
+                .setHeader("mciProjectXML", simple("${body}", String.class))
+                .setBody().xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class)
+                .setHeader("mciOwner").simple("${body}")
+                .setBody().simple("${header.parentId}", String.class) //use si-user:57 Beth's user object pid on si-fedoratest for now
+
+                //Check if Parent User Object (Folder Holder) Exists, else error and quit.
+                .to("direct:FindObjectByPIDPredicate")
+                .choice()
+                    .when().simple("${body} == true")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Root object exists.")
+                        .setHeader("CamelFedoraPid", simple("${header.parentId}"))
+                        // Add the project
+                        .setBody().simple("${header.mciProjectXML}", String.class)
+                        .to("direct:mciCreateConcept")
+                    .endChoice()
+                    .otherwise()
+                        .log(LoggingLevel.WARN, LOG_NAME, "${id}: Root object does not exist.")
+                        .throwException(new IllegalArgumentException("Root object does not exist."))
+                    .end()
+                .removeHeaders("mciProjectXML|mciDESCMETA")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");
+
+
+        from("direct:mciCreateConcept")
+                .routeId("MCICreateConcept")
+                .doTry()
+                    .toD("xslt:file:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true").id("xsltMCIProjectToSIdoraProject")
+                    .log(LoggingLevel.INFO, "Transform Successful")
+                    .setHeader("mciDESCMETA", simple("${body}", String.class))
+                    .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, "mciDESCMETA")
+
+                    //Create the MCI Project Concept
+                    .toD("fedora:create?pid=null&owner=${header.mciOwner}&namespace=si&label=${header.mciLabel}")
+
+                    //Add the RELS=EXT Datastream
+                    .toD("velocity:file:Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
+                    .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
+
+                    //Add the DESCMETA Datastream
+                    .setBody().simple("${header.mciDESCMETA}", String.class)
+                    .toD("fedora:addDatastream?name=DESCMETA&type=text/xml&group=X&dsLabel=DESCMETA%20Record&versionable=true")
+
+                    //Update the DC datastream
+                    .toD("xslt:file:Input/xslt/SIdoraConcept2DC.xsl?saxon=true").id("xsltSIdoraConcept2DC")
+                    .toD("fedora:addDatastream?name=DC&type=text/xml&group=X")
+
+                    //Add the MCI Project XMl to OBJ Datastream
+                    .setBody().simple("${header.mciProjectXML}", String.class)
+                    .toD("fedora:addDatastream?name=OBJ&type=text/xml&group=X&dsLabel=${header.mciLabel}&versionable=true")
+
+                    //Create the Parent Child Relationship
+                    .toD("fedora:hasConcept?parentPid=${header.parentId}&childPid=${header.CamelFedoraPid}")
+
+                    .setHeader("ProjectPID", simple("$header.CamelFedoraPid}"))
+                    .setBody().simple("OK :: Created PID: ${header.CamelFedoraPid} for Parent PID: ${header.parentId}")
+                .endDoTry()
+                .doCatch(net.sf.saxon.trans.XPathException.class)
+                    .log(LoggingLevel.ERROR, "MCIProjectToSIdoraProject Transform Failed :: Exception Caught: ${property.CamelExceptionCaught}")
+                    .setBody().simple("Failed Creating Concept for Parent PID: ${header.parentId}!!!")
+                .end();
+
+        from("direct:FindObjectByPIDPredicate")
+                .routeId("MCIFindObjectByPIDPredicate")
+                .setBody().simple("ASK FROM <info:edu.si.fedora#ri>{<info:fedora/${body}> ?p ?o .}")
+                .setBody().groovy("\"query=\" + URLEncoder.encode(request.getBody(String.class));")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query - ${body}")
+                .setHeader("CamelHttpMethod", constant("GET"))
+                .toD("cxfrs:{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy")
+                .convertBodyTo(String.class)
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query Result - ${body}")
+                .setBody(XPathBuilder.xpath("//ri:boolean/text()", String.class).namespaces(ns).logNamespaces())
+                .choice()
+                    .when().simple("${body} == false")
+                        .throwException(edu.si.services.fedorarepo.FedoraObjectNotFoundException.class, "The fedora object not found")
+                .end()
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Object By PID - ${body}.")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished find object by PID.");
+
+
 
 
     }

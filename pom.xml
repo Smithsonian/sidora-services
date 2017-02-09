@@ -75,6 +75,8 @@
         <commons-io.version>2.4</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-lang3.version>3.4</commons-lang3.version>
+        <commons-configuration.version>2.1</commons-configuration.version>
+        <commons-beanutils.version>1.9.3</commons-beanutils.version>
         <cxf-version>3.1.5</cxf-version>
         <derby-version>10.11.1.1</derby-version>
         <fasterxml.jackson.version>2.6.3</fasterxml.jackson.version>
@@ -332,6 +334,16 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-csv</artifactId>
                 <version>${commons-csv-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-configuration2</artifactId>
+                <version>${commons-configuration.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.derby</groupId>
