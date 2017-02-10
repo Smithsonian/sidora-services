@@ -86,6 +86,10 @@
 
     <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
 
+    <bean id="arrayListAggregationStrategy" class="edu.si.services.edansidora.ArrayListAggregationStrategy"/>
+
+    <bean id="concatenateAggregationStrategy" class="edu.si.services.edansidora.ConcatenateAggregationStrategy"/>
+
     <bean id="basicAWSCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
         <argument value="${si.ct.uscbi.aws.accessKey}" type="java.lang.String"/>
         <argument value="${si.ct.uscbi.aws.secretKey}" type="java.lang.String"/>
@@ -99,6 +103,59 @@
 
     <bean id="unitOfWorkFactory" class="edu.si.services.beans.cameratrap.CameraTrapUnitOfWorkFactory"/>
 
+    <bean id="edanAndIdsHeaderFilterStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilter">
+            <set>
+                <value>ManifestXML</value>
+                <value>CamelSchematronValidationReport</value>
+                <value>Content-Type</value>
+                <value>breadcrumbId</value>
+                <value>Transfer-Encoding</value>
+                <value>CamelExecExitValue</value>
+                <value>CamelFedoraLabel</value>
+                <value>CamelFedoraPid</value>
+                <value>CamelFileAbsolute</value>
+                <value>CamelFileAbsolutePath</value>
+                <value>CamelFileContentType</value>
+                <value>CamelFileLastModified</value>
+                <value>CamelFileLength</value>
+                <value>CamelFileName</value>
+                <value>CamelFileNameConsumed</value>
+                <value>CamelFileNameOnly_OLD</value>
+                <value>CamelFileParent</value>
+                <value>CamelFilePath</value>
+                <value>CamelFileRelativePath</value>
+                <value>CamelHttpMethod</value>
+                <value>CamelHttpResponseCode</value>
+                <value>CamelHttpResponseText</value>
+                <value>CamelSchematronValidationStatus</value>
+                <value>dsMIME</value>
+                <value>esc</value>
+                <value>Fuseki-Request-ID</value>
+                <value>ImageCount</value>
+                <value>ImageResourcePID</value>
+                <value>ImageSequenceCount</value>
+                <value>ImageSequenceID</value>
+                <value>ImageSequenceIndex</value>
+                <value>ImageCount</value>
+                <value>ImageCount</value>
+                <value>ImageCount</value>
+                <value>imageid</value>
+                <value>ParentPID</value>
+                <value>Pragma</value>
+                <value>ProjectPID</value>
+                <value>ResourceCount</value>
+                <value>ResourceFileType</value>
+                <value>Server</value>
+                <value>SitePID</value>
+                <value>SubProjectPID</value>
+                <value>ValidateResourceCountResult</value>
+                <value>Vary</value>
+            </set>
+        </property>
+    </bean>
+
+    <!-- errorHandlerRef="ctingestErrorHandler" -->
     <bean id="fusekiHttpHeaderFilterStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
         <property name="outFilter">
             <set>
@@ -110,6 +167,9 @@
     </bean>
 
     <!-- errorHandlerRef="ctingestErrorHandler" -->
+    <bean id="edanApiBean" class="edu.si.services.edansidora.EdanApiBean">
+    </bean>
+
 
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -129,8 +189,13 @@
         -->
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties"/>
-
+                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
+        <!-- 
+        <dataFormats>
+          <base64 lineSeparator="&#10;" id="base64withNewLine" />
+          <base64 lineLength="64" id="base64withLineLength64" />
+        </dataFormats>
+        -->
         <!--
         <errorHandler id="ctingestErrorHandler" type="DefaultErrorHandler">
             <redeliveryPolicy maximumRedeliveries="20"
@@ -907,6 +972,17 @@
 
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false"/>
 
+             <log message="=================================[ START ]================================="
+                  loggingLevel="WARN"
+                  logName="{{si.ct.id}}"/>
+
+             <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+             <log message="=================================[ END ]================================="
+                  loggingLevel="WARN"
+                  logName="{{si.ct.id}}"/>
+
+
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
             <!-- <to uri="direct:createArchivalImage" /> -->
@@ -914,7 +990,7 @@
             <!--</multicast>-->
             <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-            <to uri="direct:addFITSDataStream"/>
+            <to uri="direct:addFITSDataStream"/>       
             <to uri="direct:addMODSDataStream"/>
 
             <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in
@@ -950,6 +1026,10 @@
                 </otherwise>
             </choice>
 
+            <log message="${id}: About to call EdanAndIds..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+            <to uri="direct:addImageToEdanAndIds2"/>
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1235,6 +1315,329 @@
             <log message="${id}: Finished processing MODS."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="UnifiedCameraTrapAddImageToEdanAndIds2">
+            <from uri="direct:addImageToEdanAndIds2"/>
+            <log message="${id}: Started processing EDAN and IDS..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+             <!--<removeHeaders pattern="*" excludePattern="P.*|p.*|header2"/>-->
+             <!--<removeHeaders pattern="ManifestXML|CamelSchematronValidationReport"/>-->
+
+            <doTry>
+                <!--
+                                      POST to EDAN
+                -->
+                <!-- 
+                     create the JSON to put into EDAN content
+                     URLencode the JSON string
+                     set as edanJson
+                -->
+                <setHeader headerName="ProjectName">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                        //ProjectName/text()
+                    </xpath>
+                </setHeader>
+                <setHeader headerName="SubProjectName">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                       //SubProjectName/text()
+                    </xpath>
+                </setHeader>
+                <setHeader headerName="CameraSiteName">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                        //CameraSiteName/text()
+                    </xpath>
+                </setHeader>
+                <setHeader headerName="ProjectId">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                        //ProjectId/text()
+                    </xpath>
+                </setHeader>
+                <setHeader headerName="SubProjectId">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                       //SubProjectId/text()
+                    </xpath>
+                </setHeader>
+                <setHeader headerName="CameraDeploymentID">
+                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                        //CameraDeploymentID/text()
+                    </xpath>
+                </setHeader>
+                <split strategyRef="concatenateAggregationStrategy">
+                    <xpath headerName="ManifestXML">
+                        //ImageSequence
+                    </xpath>
+                    <setHeader headerName="CurrentImageSequence"><simple>${body}</simple></setHeader>
+                    <setHeader headerName="check_has_file">
+                        <xpath resultType="java.lang.String" >
+                          boolean(//ImageFileName[text()=$CamelFileName]/text()[1])
+                        </xpath>
+                    </setHeader>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.check_has_file} == 'true'
+                            </simple>
+                            <split strategyRef="concatenateAggregationStrategy">
+                                <xpath>
+                                    //ResearcherIdentifications/Identification/SpeciesCommonName/text()
+                                </xpath>
+                                <setBody>
+                                    <simple trim="false">${body}, </simple>
+                                </setBody>
+                            </split>
+                            <convertBodyTo type="java.lang.String"/>
+                            <choice>
+                                <when>
+                                    <simple>
+                                        ${body.length()} > 2
+                                    </simple>
+                                    <transform>
+                                        <groovy>request.body.substring(0, request.body.length()-[2])</groovy>
+                                    </transform>
+                                    <setHeader headerName="VisibleAnimals">
+                                        <simple>${body}</simple>
+                                    </setHeader>
+                                </when>
+                                <otherwise>
+                                    <setHeader headerName="VisibleAnimals">
+                                        <simple> </simple>
+                                   </setHeader>
+                                </otherwise>
+                            </choice>
+                            <split strategyRef="concatenateAggregationStrategy">
+                                <xpath headerName="CurrentImageSequence">
+                                    //ResearcherIdentifications/Identification
+                                </xpath>
+                                <setHeader headerName="CurrentIdentification"><simple>${body}</simple></setHeader>
+                                <setHeader headerName="iucn_id">
+                                    <simple></simple>
+                                </setHeader>
+                                <filter>
+                                    <xpath resultType="java.lang.String" headerName="ManifestXML">
+                                        boolean(//IUCNId/text()[1])
+                                    </xpath>
+                                    <setHeader headerName="iucn_id">
+                                        <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                            //IUCNId/text()
+                                        </xpath>
+                                    </setHeader>
+                                </filter>
+                                <setHeader headerName="species_scientific_name">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //SpeciesScientificName/text()
+                                    </xpath>
+                                </setHeader>
+                                <setHeader headerName="species_common_name">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //SpeciesCommonName/text()
+                                    </xpath>
+                                </setHeader>
+                                <setHeader headerName="count">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //Count/text()
+                                    </xpath>
+                                </setHeader>
+                                <setHeader headerName="age">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //Age/text()
+                                    </xpath>
+                                </setHeader>
+                                <setHeader headerName="sex">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //Sex/text()
+                                    </xpath>
+                                </setHeader>
+                                <setHeader headerName="individual_id">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //IndividualId/text()
+                                    </xpath>
+                                </setHeader>
+                                <setHeader headerName="animal_recognizable">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //AnimalRecognizable/text()
+                                    </xpath>
+                                </setHeader>
+                                <setHeader headerName="individual_animal_notes">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //IndividualAnimalNotes/text()
+                                    </xpath>
+                                </setHeader>
+                                <setBody>
+                                    <simple>  
+  { 
+    "iucn_id": "${headers.iucn_id}",
+    "species_scientific_name": "${headers.species_scientific_name}",
+    "individual_animal_notes": "${headers.individual_animal_notes}",
+    "species_common_name": "${headers.species_common_name}",
+    "count": ${headers.count},
+    "age": "${headers.age}",
+    "sex": "${headers.sex}",
+    "individual_id": "${headers.individual_id}",
+    "animal_recognizable": "${headers.animal_recognizable}",
+    "individual_animal_notes": "${headers.individual_animal_notes}",
+  },
+                                    </simple>
+                                </setBody>
+                            </split>
+                            <transform>
+                                <groovy>request.body.substring(0, request.body.length()-[1])</groovy>
+                            </transform>
+                            <setHeader headerName="edanJsonImageIdentifications">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <split strategyRef="concatenateAggregationStrategy">
+                                <xpath headerName="CurrentImageSequence">
+                                    //Image
+                                </xpath>
+                                <setHeader headerName="CurrentImage"><simple>${body}</simple></setHeader>
+                                <setHeader headerName="check_has_file">
+                                    <xpath resultType="java.lang.String">
+                                         boolean(//ImageFileName[text()=$CamelFileName]/text()[1])
+                                    </xpath>
+                                </setHeader>
+                                <setBody><simple></simple></setBody>
+                                <choice>
+                                    <when>
+                                        <simple>
+                                            ${headers.check_has_file} == 'true'
+                                        </simple>
+                                        <setHeader headerName="DateTime">
+                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                                //ImageDateTime/text()
+                                            </xpath>
+                                        </setHeader>
+                                        <setHeader headerName="PhotoType">
+                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                                //PhotoType/text()
+                                            </xpath>
+                                        </setHeader>
+                                        <setHeader headerName="PhotoTypeIdentifiedBy">
+                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                                //PhotoTypeIdentifiedBy/text()
+                                            </xpath>
+                                        </setHeader>
+                                        <setHeader headerName="InterestRanking">
+                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                                //ImageInterestRanking/text()
+                                            </xpath>
+                                        </setHeader>
+                                        <setBody>
+                                            <simple trim="false">   "date_time": "${header.DateTime}",
+   "photo_type": "${header.PhotoType}",
+   "photo_type_identified_by": "${header.PhotoTypeIdentifiedBy}",
+   "interest_ranking": "${header.InterestRanking}"
+</simple>
+                                        </setBody>
+                                    </when>
+                                </choice>
+                            </split>
+                            <setHeader headerName="edanJsonImageInfo">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <setHeader headerName="edanJson">
+                                <simple>
+{
+{{si.ct.uscbi.extra_property}}
+ "project_id": "${header.ProjectId}",
+ "project_name": "${header.ProjectName}",
+ "sub_project_id": "${header.SubProjectId}",
+ "sub_project_name": "${header.SubProjectName}",
+ "deployment_id": "${header.CameraDeploymentID}",
+ "deployment_name": "${header.CameraSiteName}",
+ "image_sequence_id": "${header.ImageSequenceID}",
+ "image": {
+   "id": "emammal_${header.imageid}",
+   "online_media": {
+     "mediaCount": 1,
+     "media": [
+       {
+         "content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_${header.CamelFedoraPid}",
+         "idsId": "emammal_${header.CamelFedoraPid}",
+         "type": "Images",
+         "caption": "Camera Trap Image ${header.VisibleAnimals}",
+         "thumbnail": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_${header.CamelFedoraPid}",
+       }
+     ]
+   },
+${header.edanJsonImageInfo}
+ },
+ "image_identifications": [
+  ${header.edanJsonImageIdentifications}   
+ ]
+}
+                                </simple>
+                            </setHeader>
+                            <log message="POST THIS TO EDAN ${headers.edanJson}"
+                    loggingLevel="INFO"
+                    logName="{{si.ct.id}}"/>
+                           <to uri="bean:edanApiBean?method=setServer({{si.ct.uscbi.server}})"/>
+                           <to uri="bean:edanApiBean?method=setAppId({{si.ct.uscbi.appId}})"/>
+                           <to uri="bean:edanApiBean?method=setEdanKey({{si.ct.uscbi.edanKey}})"/>
+                           <to uri="bean:edanApiBean?method=setAuthType({{si.ct.uscbi.authType}})"/>
+        
+                           <to uri="bean:edanApiBean?method=startConnection"/>
+                           <setHeader headerName="edanService">
+                               <simple>
+                                   /content/v1.1/admincontent/createContent.htm
+                               </simple>
+                           </setHeader>
+                           <setHeader headerName="edanType">
+                               <simple>
+                                   {{si.ct.uscbi.edan_type}}
+                               </simple>
+                           </setHeader>
+                           <setHeader headerName="imageid">
+                               <simple>
+                                 emammal_${header.imageid}
+                               </simple>
+                           </setHeader>
+                           <setHeader headerName="edanUri">
+                               <groovy>
+                                   "type=" + request.headers.edanType + "&amp;content=" + URLEncoder.encode(request.headers.edanJson) + "&amp;title=" + request.headers.imageid + "&amp;status=0&amp;publicSearch=0"
+                               </groovy>
+                           </setHeader>
+                           <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
+                     loggingLevel="INFO"
+                     logName="bobbylogname"/>
+                           <to uri="bean:edanApiBean?method=testSendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
+                           <log message="testSendRequest return: ${body}" 
+                     loggingLevel="INFO"
+                     logName="bobbylogname"/>
+                           <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
+                           <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
+                     loggingLevel="INFO"
+                     logName="bobbylogname"/>
+                           <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
+                     loggingLevel="INFO"
+                     logName="bobbylogname"/>
+                           <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
+                     loggingLevel="INFO"
+                     logName="bobbylogname"/>
+                           <!--
+                    create the full param string
+                    edanParams = type=emammal_image&content=${edanJson}&title=${header.CamelFedoraPid}&status=0&publicSearch=false
+                    set as edanParams
+                           -->
+                           <!--
+                    Interact with bean
+                    <to uri="bean:edanApiBean?method=startConnection"/>
+                    <to uri="bean:edanApiBean?method=sendRequest(${edanParams}, content/v1.1/admincontent/createContent.htm, TRUE)"/>
+                            -->
+                        </when>
+                    </choice>
+                </split>
+                <doCatch>
+                    <exception>javax.imageio.IIOException</exception>
+                        <log message="${id}: Cannot POST to EDAN."
+                         loggingLevel="WARN"
+                         logName="{{si.ct.id}}"/>
+                </doCatch>
+            </doTry>
+            <log message="${id}: Finished processing EDAN and IDS."
+                  loggingLevel="INFO"
+                  logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapCreateThumbnailImage">
@@ -2149,6 +2552,5 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
         </route>
-
     </camelContext>
 </blueprint>

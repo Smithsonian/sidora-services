@@ -186,7 +186,11 @@
             <artifactId>woodstox-core-asl</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-base64</artifactId>
+            <version>${camel-version}</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -881,6 +881,8 @@
                 </otherwise>
             </choice>
 
+            <to uri="direct:addImageToEdanAndIds"/>
+
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1941,6 +1943,44 @@
 
             <log message="${id}: CameraTrapInFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+        </route>
+        <route id="CameraTrapAddImageToEdanAndIds">
+            <from uri="direct:addImageToEdanAndIds"/>
+            <log message="${id}: Started processing for EDAN and IDS ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+            <to uri="log:{{si.ct.id}}?showBody=true">
+            <doTry>
+                <!--
+                POST to IDS
+                -->
+                <doCatch>
+                    <exception>javax.imageio.IIOException</exception>
+                    <log message="${id}: Cannot POST to IDS."
+                         loggingLevel="WARN"
+                         logName="{{si.ct.id}}"/>
+                </doCatch>
+            </doTry>
+
+            <doTry>
+                <!--
+                POST to EDAN
+                -->
+                <setHeader headerName="CamelHttpMethod">
+                  <constant>POST</constant>
+                </setHeader>
+                <to uri="http://172.16.28.51:8000/fakeEdan.php"/>
+                <doCatch>
+                    <exception>javax.imageio.IIOException</exception>
+                    <log message="${id}: Cannot POST to EDAN."
+                         loggingLevel="WARN"
+                         logName="{{si.ct.id}}"/>
+                </doCatch>
+            </doTry>
+
+            <log message="${id}: Finished EDAN and IDS processing."
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
 
