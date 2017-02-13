@@ -52,10 +52,6 @@ public class EdanApiBean   {
 		this.edanApi = new EdanApi(this.server, this.appId, this.edanKey, this.authType);
 		return true;
 	}
-    public String testSendRequest(String uri, String service, boolean post){
-    	if (this.edanApi == null) return "edanApi was null";
-		return edanApi.testSendRequest(uri, service);
-    }
 	public Map<String, String> sendRequest(String uri, String service, boolean post) {
 		if (this.edanApi == null) return null;
 		return edanApi.sendRequest(uri, service, post);

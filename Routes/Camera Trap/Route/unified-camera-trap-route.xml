@@ -899,7 +899,7 @@
                            <to uri="bean:idsPushBean?method=setTempLocation({{si.ct.uscbi.tempLocationForZip}})"/>
                            <to uri="bean:idsPushBean?method=setInputLocation(${headers.CamelFileAbsolutePath})"/>
                            <to uri="bean:idsPushBean?method=setDeploymentId(${header.CameraDeploymentID})"/>
-        
+
                            <to uri="bean:idsPushBean?method=createZipAndPush"/>
                            <log message="idsPushBean error: ${body[errorString]}"
                      loggingLevel="INFO"
@@ -1562,7 +1562,7 @@
                             </setHeader>
                             <setHeader headerName="edanJson">
                                 <simple>
-{ content : 
+{ content :
 {
 {{si.ct.uscbi.extra_property}}
  "project_id": "${header.ProjectId}",
