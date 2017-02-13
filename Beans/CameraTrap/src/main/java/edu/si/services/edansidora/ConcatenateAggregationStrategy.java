@@ -3,7 +3,6 @@ package edu.si.services.edansidora;
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 
-//simply combines Exchange String body values using '+' as a delimiter
 public class ConcatenateAggregationStrategy implements AggregationStrategy {
 
     public ConcatenateAggregationStrategy() {

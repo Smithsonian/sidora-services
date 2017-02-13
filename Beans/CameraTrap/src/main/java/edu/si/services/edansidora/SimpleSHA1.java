@@ -78,7 +78,6 @@ import java.security.MessageDigest;
 		 *             the unsupported encoding exception
 		 */
 		public static String SHA1plusBase64(String text) throws NoSuchAlgorithmException, UnsupportedEncodingException {
-
 			String sha1text = SHA1(text);
 			byte[] b = sha1text.getBytes(Charset.forName("UTF-8"));
 			String returnEncode = Base64Utility.encode(b);

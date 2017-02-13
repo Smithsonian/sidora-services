@@ -1460,8 +1460,7 @@
     "age": "${headers.age}",
     "sex": "${headers.sex}",
     "individual_id": "${headers.individual_id}",
-    "animal_recognizable": "${headers.animal_recognizable}",
-    "individual_animal_notes": "${headers.individual_animal_notes}",
+    "animal_recognizable": "${headers.animal_recognizable}"
   },
                                     </simple>
                                 </setBody>
@@ -1542,7 +1541,7 @@
          "idsId": "emammal_${header.CamelFedoraPid}",
          "type": "Images",
          "caption": "Camera Trap Image ${header.VisibleAnimals}",
-         "thumbnail": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_${header.CamelFedoraPid}",
+         "thumbnail": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_${header.CamelFedoraPid}"
        }
      ]
    },
@@ -1580,14 +1579,10 @@ ${header.edanJsonImageInfo}
                            </setHeader>
                            <setHeader headerName="edanUri">
                                <groovy>
-                                   "type=" + request.headers.edanType + "&amp;content=" + URLEncoder.encode(request.headers.edanJson) + "&amp;title=" + request.headers.imageid + "&amp;status=0&amp;publicSearch=0"
+                                   "content=" + URLEncoder.encode(request.headers.edanJson) + ""
                                </groovy>
                            </setHeader>
                            <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
-                     loggingLevel="INFO"
-                     logName="bobbylogname"/>
-                           <to uri="bean:edanApiBean?method=testSendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
-                           <log message="testSendRequest return: ${body}" 
                      loggingLevel="INFO"
                      logName="bobbylogname"/>
                            <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
