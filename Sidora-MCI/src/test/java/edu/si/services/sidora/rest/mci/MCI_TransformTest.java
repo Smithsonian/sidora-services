@@ -54,7 +54,7 @@ public class MCI_TransformTest extends CamelTestSupport {
     @Test
     public void single_mci_transformTest() throws Exception {
         //File mciTestFile = new File(sampleDataDir + "/BAD-XML-ID-si-fedoratest-si-edu-35125-1485459442803-12-15.xml");
-        File mciTestFile = new File(sampleDataDir + "/ID-si-fedoratest-si-edu-35125-1485459442803-12-19.xml");
+        File mciTestFile = new File(sampleDataDir + "/42_0.1.xml");
 
         String mciProjectXML = FileUtils.readFileToString(mciTestFile);
 

@@ -70,7 +70,7 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
 
     //Default Test Params
     private static final String CORRELATIONID = UUID.randomUUID().toString();
-    private static String OWNERID = "test:123456";
+    private static String OWNERID = "/si-user:57";
     private static String OPTION = "MCITest";
     private static String PAYLOAD;
     private static File TEST_XML = new File("src/test/resources/sample-data/MCI_Inbox/42_0.1.xml");
@@ -79,8 +79,6 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
 
     private JAXBContext jaxb;
     private CloseableHttpClient httpClient;
-    private static File tempTestProperties = null;
-    private static final Properties prop = new Properties();
     private static Configuration config = null;
     private static File tmpOutputDir = new File("MCI_Inbox");
 
@@ -93,63 +91,16 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
         }
     }
 
-    @Test
-    public void testPostWithPayload() throws Exception {
-
-        OWNERID = "/si-user:57";
-
-        log.info("=========================[ si.fedora.host: {} ]===========================", String.valueOf(config.getProperty("si.fedora.host")));
-
-
-        /*FedoraSettings fedoraSettings = new FedoraSettings();
-        fedoraSettings.setHost(new URL(String.valueOf(config.getProperty("si.fedora.host"))));
-        fedoraSettings.setUsername(String.valueOf(config.getProperty("si.fedora.user")));
-        fedoraSettings.setPassword(String.valueOf(config.getProperty("si.fedora.password")));
-        FedoraComponent fedora = new FedoraComponent();
-        fedora.setSettings(fedoraSettings);
-        context.addComponent("fedora", fedora);*/
-
-        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
-        mockEndpoint.expectedMessageCount(1);
-
-        context.getRouteDefinition("AddMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveAddLast().to("mock:result");
-            }
-        });
-
-        context.getRouteDefinition("MCICreateConcept").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("xsltMCIProjectToSIdoraProject").replace().toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true");
-                weaveById("velocityMCIResourceTemplate").replace().toD("velocity:Input/templates/MCIResourceTemplate.vsl");
-                weaveById("xsltSIdoraConcept2DC").replace().toD("xslt:Input/xslt/SIdoraConcept2DC.xsl?saxon=true");
-            }
-        });
-
-        HttpPost post = new HttpPost(BASE_URL + OWNERID + "/addProject");
-        post.addHeader("Content-Type", "application/xml");
-        post.addHeader("Accept", "application/xml");
-        post.setEntity(new StringEntity(PAYLOAD));
-        HttpResponse response = httpClient.execute(post);
-        assertEquals(200, response.getStatusLine().getStatusCode());
-
-        String responceBody = EntityUtils.toString(response.getEntity());
-
-        //assertEquals(RESPONCE_PAYLOAD, responceBody);
-
-        assertMockEndpointsSatisfied();
-    }
-
+    @Before
     @Override
-    protected String[] loadConfigAdminConfigurationFile() {
+    public void setUp() throws Exception {
+        System.setProperty("karaf.home", "target/test-classes");
 
         Parameters params = new Parameters();
         FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
                 new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
                         .configure(params.fileBased().setFile(new File("src/test/resources/test.properties"))
-                                );
+                        );
 
         try {
             config = builder.getConfiguration();
@@ -159,12 +110,26 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
             e.printStackTrace();
         }
 
-        return new String[]{"src/test/resources/test.properties", "edu.si.sidora.mci"};
+        httpClient = HttpClientBuilder.create().build();
+
+        //jaxb = JAXBContext.newInstance(CustomerList.class, Customer.class, Order.class, Product.class);
+
+        super.setUp();
+    }
+
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        httpClient.close();
+        if(tmpOutputDir.exists()){
+            FileUtils.deleteDirectory(tmpOutputDir);
+        }
     }
 
     @Override
-    protected Properties useOverridePropertiesWithPropertiesComponent() {
-        return prop;
+    protected String[] loadConfigAdminConfigurationFile() {
+        return new String[]{"src/test/resources/test.properties", "edu.si.sidora.mci"};
     }
 
 
@@ -181,22 +146,62 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
         return "/OSGI-INF/blueprint/blueprint.xml";
     }
 
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        System.setProperty("karaf.home", "target/test-classes");
-        super.setUp();
-        httpClient = HttpClientBuilder.create().build();
-        //jaxb = JAXBContext.newInstance(CustomerList.class, Customer.class, Order.class, Product.class);
-    }
+    @Test
+    public void testPostWithPayload() throws Exception {
 
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-        httpClient.close();
-        if(tmpOutputDir.exists()){
-            FileUtils.deleteDirectory(tmpOutputDir);
-        }
+        FedoraSettings fedoraSettings = new FedoraSettings(
+                String.valueOf(config.getProperty("si.fedora.host")),
+                String.valueOf(config.getProperty("si.fedora.user")),
+                String.valueOf(config.getProperty("si.fedora.password"))
+        );
+
+        FedoraComponent fedora = new FedoraComponent();
+        fedora.setSettings(fedoraSettings);
+
+        log.info("\n=========================\n" +
+                "si.fedora.host: {}\n" +
+                "si.fedora.user: {}\n" +
+                "si.fedora.password: {}\n" +
+                "===========================",
+                fedora.getSettings().getHost(),
+                fedora.getSettings().getUsername(),
+                fedora.getSettings().getPassword()
+        );
+
+        //Adding the Fedora Component to the the context using the setting above
+        context.addComponent("fedora", fedora);
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        context.getRouteDefinition("AddMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        context.getRouteDefinition("MCICreateConcept").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("xsltMCIProjectToSIdoraProject").replace().toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true");
+                weaveById("velocityMCIResourceTemplate").replace().toD("velocity:Input/templates/MCIResourceTemplate.vsl");
+                weaveById("velocityMCISidoraTemplate").replace().toD("velocity:Input/templates/MCISidoraTemplate.vsl");
+                weaveById("xsltSIdoraConcept2DC").replace().toD("xslt:Input/xslt/SIdoraConcept2DC.xsl?saxon=true");
+            }
+        });
+
+        HttpPost post = new HttpPost(BASE_URL + OWNERID + "/addProject");
+        post.addHeader("Content-Type", "application/xml");
+        post.addHeader("Accept", "application/xml");
+        post.setEntity(new StringEntity(PAYLOAD));
+        HttpResponse response = httpClient.execute(post);
+        assertEquals(200, response.getStatusLine().getStatusCode());
+
+        String responceBody = EntityUtils.toString(response.getEntity());
+
+        //assertEquals(RESPONCE_PAYLOAD, responceBody);
+
+        assertMockEndpointsSatisfied();
     }
 }

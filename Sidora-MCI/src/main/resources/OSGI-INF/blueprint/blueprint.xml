@@ -81,6 +81,19 @@
 		</camel-cxf:providers>
 	</camel-cxf:rsServer>
 
+	<!-- This is the JDBC data source which uses a MySQL database -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+		<property name="url" value="jdbc:mysql://${mysql.mci.host}:${mysql.mci.port}/${mysql.mci.database}?zeroDateTimeBehavior=convertToNull"/>
+		<property name="username" value="${mysql.mci.username}"/>
+		<property name="password" value="${mysql.mci.password}"/>
+	</bean>
+
+	<!-- configure the Camel SQL component to use the JDBC data source -->
+	<bean id="sql" class="org.apache.camel.component.sql.SqlComponent">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
 	<bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
 		<property name="outFilter">
 			<set>
@@ -91,16 +104,6 @@
 	</bean>
 
 	<bean id="mciRoutes" class="edu.si.services.sidora.rest.mci.SidoraMCIServiceRouteBuilder"/>
-
-    <!--<bean id="fedora" class="edu.si.services.fedorarepo.FedoraComponent">
-        <property name="settings" ref="fedoraSettings"/>
-    </bean>
-
-	<bean id="fedoraSettings" class="edu.si.services.fedorarepo.FedoraSettings">
-        <argument value="${si.fedora.host}"/>
-		<argument value="${si.fedora.mci.user}"/>
-		<argument value="${si.fedora.password}"/>
-	</bean>-->
 
 	<!-- MCI route context -->
 	<!--The "unused" namespace definitions are needed to deal with the way Camel handles namespaces in XPath.-->

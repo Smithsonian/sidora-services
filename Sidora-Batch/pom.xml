@@ -198,6 +198,7 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Database -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-jdbc</artifactId>
@@ -221,6 +222,14 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.11.1.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Databinding -->
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <scope>provided</scope>
@@ -233,7 +242,7 @@
         <dependency>
             <groupId>org.codehaus.jettison</groupId>
             <artifactId>jettison</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
 
         <!-- MIME Type Detection -->
@@ -246,12 +255,6 @@
             <groupId>com.j256.simplemagic</groupId>
             <artifactId>simplemagic</artifactId>
             <version>1.9</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>10.11.1.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

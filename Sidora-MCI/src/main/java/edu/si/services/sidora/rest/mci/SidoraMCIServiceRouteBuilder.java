@@ -119,6 +119,10 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                     .toD("velocity:file:Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
                     .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
 
+                    //Add the SIDORA Datastream
+                    .toD("velocity:file:Input/templates/MCISidoraTemplate.vsl").id("velocityMCISidoraTemplate")
+                    .toD("fedora:addDatastream?name=SIDORA&type=text/xml&group=X&dsLabel=SIDORA%20Record&versionable=true")
+
                     //Add the DESCMETA Datastream
                     .setBody().simple("${header.mciDESCMETA}", String.class)
                     .toD("fedora:addDatastream?name=DESCMETA&type=text/xml&group=X&dsLabel=DESCMETA%20Record&versionable=true")
