@@ -27,48 +27,53 @@
 
 package edu.si.services.sidora.rest.mci;
 
-import org.apache.cxf.jaxrs.ext.multipart.Multipart;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
 /**
+ * Custom exception class for the MCI search queries.  This class will be used to handle exception
+ * that are more business logic related.
  * @author jbirkhimer
  */
-@Path("/")
-public class MCIService {
+public class MCIFolderHolderNotFoundException extends Exception {
 
     /**
-     *
-     * @param mciProject
-     * @param parentId
-     * @param option
-     * @return
+     * Same behavior is as the super class
      */
-    @POST
-    @Path(value = "/{parentId}/addProject")
-    @Produces({"application/xml","application/json"})
-    //@Consumes("application/xml")
-    @Consumes("*/*")
-    public Response addProject(String mciProject,
-            @PathParam("parentId") String parentId,
-            @QueryParam("option") String option) {
-        return null;
+    public MCIFolderHolderNotFoundException() {
+        super();
     }
 
     /**
-     *
-     * @param mciProject
-     * @param option
-     * @return
+     * Same behavior is as the super class
+     * @param message
      */
-    @POST
-    @Path(value = "/addProject")
-    @Produces({"application/xml","application/json"})
-    @Consumes("application/xml")
-    //@Consumes("*/*")
-    public Response addProject(String mciProject, @QueryParam("option") String option) {
-        return null;
+    public MCIFolderHolderNotFoundException(String message) {
+        super(message);
+    }
+
+    /**
+     * Same behavior is as the super class
+     * @param message
+     * @param cause
+     */
+    public MCIFolderHolderNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
+     * Same behavior is as the super class
+     * @param cause
+     */
+    public MCIFolderHolderNotFoundException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * Same behavior is as the super class
+     * @param message
+     * @param cause
+     * @param enableSuppression
+     * @param writableStackTrace
+     */
+    protected MCIFolderHolderNotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

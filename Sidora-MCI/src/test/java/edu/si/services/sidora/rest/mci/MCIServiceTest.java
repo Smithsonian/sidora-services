@@ -31,6 +31,7 @@ import edu.si.services.fedorarepo.FedoraComponent;
 import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.component.sql.SqlComponent;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.AvailablePortFinder;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
@@ -40,6 +41,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -50,18 +52,27 @@ import org.apache.http.util.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 import javax.xml.bind.JAXBContext;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.util.Properties;
+import java.util.Iterator;
 import java.util.UUID;
 
 /**
  * @author jbirkhimer
  */
 public class MCIServiceTest extends CamelBlueprintTestSupport {
+
+    // Flag to use MySql Server for testing otherwise Derby embedded dB will be used for testing.
+    /*private static final Boolean USE_MYSQL_DB = true;
+    private EmbeddedDatabase DERBY_DB;
+    private BasicDataSource MYSQL_DB;
+    private JdbcTemplate jdbcTemplate;*/
 
     private static final String SERVICE_ADDRESS = "/sidora/mci";
     private static final String PORT = String.valueOf(AvailablePortFinder.getNextAvailable());
@@ -102,9 +113,21 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
                         .configure(params.fileBased().setFile(new File("src/test/resources/test.properties"))
                         );
 
+        FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.fileBased().setFile(new File("target/test-classes/sql/mci.sql.properties"))
+                        );
+
         try {
             config = builder.getConfiguration();
             config.setProperty("sidora.mci.service.address", BASE_URL);
+
+            for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext();) {
+                String key = i.next();
+                Object value = builder2.getConfiguration().getProperty(key);
+                config.setProperty(key, value);
+            }
+
             builder.save();
         } catch (ConfigurationException e) {
             e.printStackTrace();
@@ -113,6 +136,29 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
         httpClient = HttpClientBuilder.create().build();
 
         //jaxb = JAXBContext.newInstance(CustomerList.class, Customer.class, Order.class, Product.class);
+
+        /*if (USE_MYSQL_DB) {
+            MYSQL_DB = new BasicDataSource();
+            MYSQL_DB.setDriverClassName("com.mysql.jdbc.Driver");
+            MYSQL_DB.setUrl("jdbc:mysql://" + config.getProperty("mysql.mci.host") + ":" + config.getProperty("mysql.mci.port") + "/" + config.getProperty("mysql.mci.database") + "?zeroDateTimeBehavior=convertToNull");
+            MYSQL_DB.setUsername(config.getProperty("mysql.mci.username").toString());
+            MYSQL_DB.setPassword(config.getProperty("mysql.mci.password").toString());
+
+            jdbcTemplate = new JdbcTemplate(MYSQL_DB);
+
+        } else {
+            DERBY_DB = new EmbeddedDatabaseBuilder()
+                    .setType(EmbeddedDatabaseType.DERBY)
+                    .setName(String.valueOf(config.getProperty("mysql.mci.database")))
+                    .addScripts("sql/createAndPopulateDatabase.sql")
+                    .build();
+
+//        FileInputStream sqlFile = new FileInputStream("src/test/resources/sql/createAndPopulateDatabase.sql");
+//        Properties sql = new Properties(System.getProperties());
+//        sql.load(sqlFile);
+
+            jdbcTemplate = new JdbcTemplate(DERBY_DB);
+        }*/
 
         super.setUp();
     }
@@ -125,6 +171,11 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
         if(tmpOutputDir.exists()){
             FileUtils.deleteDirectory(tmpOutputDir);
         }
+        /*if (USE_MYSQL_DB) {
+            MYSQL_DB.close();
+        } else {
+            DERBY_DB.shutdown();
+        }*/
     }
 
     @Override
@@ -137,6 +188,15 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
     protected JndiRegistry createRegistry() throws Exception {
 
         JndiRegistry reg = super.createRegistry();
+
+        /*if (USE_MYSQL_DB) {
+            reg.bind("dataSource", MYSQL_DB);
+        } else {
+            reg.bind("dataSource", DERBY_DB);
+        }*/
+
+        reg.bind("jsonProvider", org.apache.cxf.jaxrs.provider.json.JSONProvider.class);
+        reg.bind("jaxbProvider", org.apache.cxf.jaxrs.provider.JAXBElementProvider.class);
 
         return reg;
     }
@@ -158,18 +218,9 @@ public class MCIServiceTest extends CamelBlueprintTestSupport {
         FedoraComponent fedora = new FedoraComponent();
         fedora.setSettings(fedoraSettings);
 
-        log.info("\n=========================\n" +
-                "si.fedora.host: {}\n" +
-                "si.fedora.user: {}\n" +
-                "si.fedora.password: {}\n" +
-                "===========================",
-                fedora.getSettings().getHost(),
-                fedora.getSettings().getUsername(),
-                fedora.getSettings().getPassword()
-        );
-
         //Adding the Fedora Component to the the context using the setting above
         context.addComponent("fedora", fedora);
+        //context.getComponent("sql", SqlComponent.class).setDataSource(DERBY_DB);
 
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);

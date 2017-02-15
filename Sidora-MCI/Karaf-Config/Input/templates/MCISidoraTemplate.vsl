@@ -8,5 +8,5 @@
     <ontology_location_id>Project</ontology_location_id>
     <meta_requirements_fulfilled>FALSE</meta_requirements_fulfilled>
     <initial_dsid>DESCMETA</initial_dsid>
-    <parent>${header.parentId}</parent>
+    <parent>$headers.mciOwnerPID</parent>
 </sidora>

@@ -126,7 +126,10 @@
 				  trace="false" useMDCLogging="true" useBreadcrumb="false">
 
 		<!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
-		<propertyPlaceholder id="properties" location="blueprint:sidora.karaf.mci.properties, file:${karaf.home}/etc/edu.si.sidora.mci.cfg"/>
+		<propertyPlaceholder id="properties"
+							 location="blueprint:sidora.karaf.mci.properties,
+							 file:${karaf.home}/etc/edu.si.sidora.mci.cfg,
+							 file:${karaf.home}/sql/mci.sql.properties"/>
 
 		<routeBuilder ref="mciRoutes"/>
 

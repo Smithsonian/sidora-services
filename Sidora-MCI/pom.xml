@@ -87,6 +87,11 @@
             <artifactId>camel-saxon</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-script</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- CXF -->
         <dependency>

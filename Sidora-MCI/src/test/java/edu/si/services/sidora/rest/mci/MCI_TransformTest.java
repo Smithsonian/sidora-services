@@ -31,14 +31,34 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.component.properties.PropertiesComponent;
+import org.apache.camel.component.sql.SqlComponent;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.FileBasedConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 import java.io.File;
+import java.util.Iterator;
+import java.util.Properties;
+
+import static org.apache.camel.builder.script.ScriptBuilder.php;
+
 
 /**
  * @author jbirkhimer
@@ -50,6 +70,13 @@ public class MCI_TransformTest extends CamelTestSupport {
     private static String mciXSL = "Input/xslt/MCIProjectToSIdoraProject.xsl";
     private static String sampleDataDir = "src/test/resources/sample-data/MCI_Inbox";
     private static File tmpOutputDir = new File("target/transform_results");
+
+    // Flag to use MySql Server for testing otherwise Derby embedded dB will be used for testing.
+    private static final Boolean USE_MYSQL_DB = true;
+    private EmbeddedDatabase DERBY_DB;
+    private BasicDataSource MYSQL_DB;
+    private JdbcTemplate jdbcTemplate;
+    private static Configuration config = null;
 
     @Test
     public void single_mci_transformTest() throws Exception {
@@ -171,6 +198,27 @@ public class MCI_TransformTest extends CamelTestSupport {
 
     }
 
+    @Test
+    public void getUserPIDTest() throws Exception {
+
+        context.getComponent("sql", SqlComponent.class).setDataSource(MYSQL_DB);
+
+        File mciTestFile = new File(sampleDataDir + "/42_0.1.xml");
+        String mciProjectXML = FileUtils.readFileToString(mciTestFile);
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+        //exchange.getIn().setBody(mciProjectXML);
+        exchange.getIn().setHeader("mciProjectXML", mciProjectXML);
+
+        template.send("direct:findFileHolderUserPID", exchange);
+
+        assertMockEndpointsSatisfied();
+
+    }
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
@@ -239,8 +287,125 @@ public class MCI_TransformTest extends CamelTestSupport {
                         .end()
                 .to("mock:result");
 
+                from("direct:findFileHolderUserPID")
+                        .routeId("MCIFindFileHolderUserPID")
+
+                        //Get the username from MCI Project XML
+                        .setBody().simple("${header.mciProjectXML}", String.class)
+                        .setHeader("mciFolderHolder").xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class)
+
+                        .setHeader("mciFolderHolder").simple("sternb", String.class)
+
+                        .log(LoggingLevel.INFO, "mciFolderHolder: ${header.mciFolderHolder}")
+
+                        .toD("sql:{{sql.find.mci.user.pid}}")
+
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "===================[ Drupal db SQL Query Result Body: ${body} ]=====================")
+
+                        .choice()
+                            .when().simple("${body.size} == 0")
+                                .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}", String.class)
+                                .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder Not Found!!! Using Default MCI User PID = ${header.mciOwnerPID}")
+                            .endChoice()
+                            .when().simple("${body[0][name]} == ${header.mciFolderHolder}")
+                                .log(LoggingLevel.INFO, LOG_NAME, "Drupal dB SQL Query found name: ${body[0][name]} || user_pid: ${body[0][user_pid]}")
+                                .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' Found!!! MCI User PID = ${body[0][user_pid]}")
+                                .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
+                            .endChoice()
+                            .otherwise()
+                                .throwException(edu.si.services.sidora.rest.mci.MCIFolderHolderNotFoundException.class, "There was an error Finding the Folder Holder User PID")
+                        .end()
+                        .to("mock:result");
             }
         };
+    }
+
+    @Override
+    protected JndiRegistry createRegistry() throws Exception {
+
+        JndiRegistry reg = super.createRegistry();
+
+        if (USE_MYSQL_DB) {
+            reg.bind("dataSource", MYSQL_DB);
+        } else {
+            reg.bind("dataSource", DERBY_DB);
+        }
+
+        reg.bind("jsonProvider", org.apache.cxf.jaxrs.provider.json.JSONProvider.class);
+        reg.bind("jaxbProvider", org.apache.cxf.jaxrs.provider.JAXBElementProvider.class);
+
+        return reg;
+    }
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        System.setProperty("karaf.home", "target/test-classes");
+
+        Parameters params = new Parameters();
+        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.fileBased().setFile(new File("src/test/resources/test.properties"))
+                        );
+
+        FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.fileBased().setFile(new File("target/test-classes/sql/mci.sql.properties"))
+                        );
+
+        try {
+            config = builder.getConfiguration();
+            //config.setProperty("sidora.mci.service.address", BASE_URL);
+
+            for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext();) {
+                String key = i.next();
+                Object value = builder2.getConfiguration().getProperty(key);
+                config.setProperty(key, value);
+            }
+
+            builder.save();
+        } catch (ConfigurationException e) {
+            e.printStackTrace();
+        }
+
+        if (USE_MYSQL_DB) {
+            MYSQL_DB = new BasicDataSource();
+            MYSQL_DB.setDriverClassName("com.mysql.jdbc.Driver");
+            MYSQL_DB.setUrl("jdbc:mysql://" + config.getProperty("mysql.mci.host") + ":" + config.getProperty("mysql.mci.port") + "/" + config.getProperty("mysql.mci.database") + "?zeroDateTimeBehavior=convertToNull");
+            MYSQL_DB.setUsername(config.getProperty("mysql.mci.username").toString());
+            MYSQL_DB.setPassword(config.getProperty("mysql.mci.password").toString());
+
+            jdbcTemplate = new JdbcTemplate(MYSQL_DB);
+
+        } else {
+            DERBY_DB = new EmbeddedDatabaseBuilder()
+                    .setType(EmbeddedDatabaseType.DERBY)
+                    .setName(String.valueOf(config.getProperty("mysql.mci.database")))
+                    .addScripts("sql/createAndPopulateDatabase.sql")
+                    .build();
+
+//        FileInputStream sqlFile = new FileInputStream("src/test/resources/sql/createAndPopulateDatabase.sql");
+//        Properties sql = new Properties(System.getProperties());
+//        sql.load(sqlFile);
+
+            jdbcTemplate = new JdbcTemplate(DERBY_DB);
+        }
+
+        super.setUp();
+    }
+
+    @Override
+    protected Properties useOverridePropertiesWithPropertiesComponent() {
+
+        Properties extra = new Properties();
+
+        for (Iterator<String> i = config.getKeys(); i.hasNext();) {
+            String key = i.next();
+            Object value = config.getProperty(key);
+            extra.setProperty(key, String.valueOf(value));
+        }
+
+        return extra;
     }
 
     @Override
@@ -249,6 +414,11 @@ public class MCI_TransformTest extends CamelTestSupport {
         super.tearDown();
         if(tmpOutputDir.exists()){
             //FileUtils.deleteDirectory(tmpOutputDir);
+        }
+        if (USE_MYSQL_DB) {
+            MYSQL_DB.close();
+        } else {
+            DERBY_DB.shutdown();
         }
 
     }

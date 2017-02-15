@@ -35,6 +35,7 @@ import org.apache.camel.builder.xml.XPathBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * @author jbirkhimer
  */
@@ -82,9 +83,10 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
                 .setHeader("mciProjectXML", simple("${body}", String.class))
-                .setBody().xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class)
-                .setHeader("mciOwner").simple("${body}")
-                .setBody().simple("${header.parentId}", String.class) //use si-user:57 Beth's user object pid on si-fedoratest for now
+
+                .to("direct:findFileHolderUserPID")
+
+                .setBody().simple("${header.mciOwnerPID}", String.class) //use si-user:57 Beth's user object pid on si-fedoratest for now
 
                 //Check if Parent User Object (Folder Holder) Exists, else error and quit.
                 .to("direct:FindObjectByPIDPredicate")
@@ -113,7 +115,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                     .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, "mciDESCMETA")
 
                     //Create the MCI Project Concept
-                    .toD("fedora:create?pid=null&owner=${header.mciOwner}&namespace=si&label=${header.mciLabel}")
+                    .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
 
                     //Add the RELS=EXT Datastream
                     .toD("velocity:file:Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
@@ -136,14 +138,14 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                     .toD("fedora:addDatastream?name=OBJ&type=text/xml&group=X&dsLabel=${header.mciLabel}&versionable=true")
 
                     //Create the Parent Child Relationship
-                    .toD("fedora:hasConcept?parentPid=${header.parentId}&childPid=${header.CamelFedoraPid}")
+                    .toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
 
                     .setHeader("ProjectPID", simple("$header.CamelFedoraPid}"))
-                    .setBody().simple("OK :: Created PID: ${header.CamelFedoraPid} for Parent PID: ${header.parentId}")
+                    .setBody().simple("OK :: Created PID: ${header.CamelFedoraPid} for Parent PID: ${header.mciOwnerPID}")
                 .endDoTry()
                 .doCatch(net.sf.saxon.trans.XPathException.class)
                     .log(LoggingLevel.ERROR, "MCIProjectToSIdoraProject Transform Failed :: Exception Caught: ${property.CamelExceptionCaught}")
-                    .setBody().simple("Failed Creating Concept for Parent PID: ${header.parentId}!!!")
+                    .setBody().simple("Failed Creating Concept for Parent PID: ${header.mciOwnerPID}!!!")
                 .end();
 
         from("direct:FindObjectByPIDPredicate")
@@ -162,6 +164,35 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .end()
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Object By PID - ${body}.")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished find object by PID.");
+
+
+
+        from("direct:findFileHolderUserPID")
+                .routeId("MCIFindFileHolderUserPID")
+
+                //Get the username from MCI Project XML
+                .setBody().simple("${header.mciProjectXML}", String.class)
+                .setHeader("mciFolderHolder").xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class)
+
+                .log(LoggingLevel.INFO, "Found MCI Folder Holder: ${header.mciFolderHolder}")
+
+                .toD("sql:{{sql.find.mci.user.pid}}")
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "===================[ Drupal db SQL Query Result Body: ${body} ]=====================")
+
+                .choice()
+                    .when().simple("${body.size} == 0")
+                        .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}", String.class)
+                        .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder User PID Not Found!!! Using Default MCI User PID = ${header.mciOwnerPID}")
+                    .endChoice()
+                    .when().simple("${body[0][name]} == ${header.mciFolderHolder}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Drupal dB SQL Query found name: ${body[0][name]} || user_pid: ${body[0][user_pid]}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
+                        .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
+                    .endChoice()
+                    .otherwise()
+                        .throwException(edu.si.services.sidora.rest.mci.MCIFolderHolderNotFoundException.class, "Error Finding the Folder Holder User PID")
+                .end();
 
 
 

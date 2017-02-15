@@ -7,3 +7,7 @@ curl -v -H "Content-Type:application/xml" \
 -X POST "http://localhost:8181/cxf/sidora/rest/mci/test:12345/addProject?option=testOption"
 
 ```
+
+The approach to a failed user match is to use a default person.
+It will be 'Ann N’Gadi'
+
