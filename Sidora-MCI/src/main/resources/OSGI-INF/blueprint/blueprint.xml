@@ -130,6 +130,67 @@
 							 location="blueprint:sidora.karaf.mci.properties,
 							 file:${karaf.home}/etc/edu.si.sidora.mci.cfg,
 							 file:${karaf.home}/sql/mci.sql.properties"/>
+		<onException>
+			<exception>java.net.ConnectException</exception>
+			<redeliveryPolicy useExponentialBackOff="{{mci.net.redelivery.useExponentialBackOff}}"
+							  backOffMultiplier="{{mci.net.redelivery.backOffMultiplier}}"
+							  redeliveryDelay="{{mci.net.redelivery.redeliveryDelay}}"
+							  maximumRedeliveries="{{mci.net.redelivery.maximumRedeliveries}}"
+							  retryAttemptedLogLevel="WARN"
+							  retriesExhaustedLogLevel="WARN"
+							  logExhaustedMessageHistory="false"/>
+			<handled>
+				<constant>true</constant>
+			</handled>
+		</onException>
+
+		<onException>
+			<exception>java.sql.SQLException</exception>
+			<exception>com.mysql.jdbc.exceptions.jdbc4.CommunicationsException</exception>
+			<exception>org.springframework.jdbc.CannotGetJdbcConnectionException</exception>
+
+			<redeliveryPolicy useExponentialBackOff="{{mci.net.redelivery.useExponentialBackOff}}"
+							  backOffMultiplier="{{mci.net.redelivery.backOffMultiplier}}"
+							  redeliveryDelay="{{mci.net.redelivery.redeliveryDelay}}"
+							  maximumRedeliveries="{{mci.net.redelivery.maximumRedeliveries}}"
+							  retryAttemptedLogLevel="WARN"
+							  retriesExhaustedLogLevel="WARN"
+							  logExhaustedMessageHistory="false"/>
+			<handled>
+				<constant>true</constant>
+			</handled>
+		</onException>
+
+		<onException>
+			<exception>org.apache.camel.component.cxf.CxfOperationException</exception>
+			<onWhen>
+				<simple>${exception.statusCode} not in &#39;200,201&#39;</simple>
+			</onWhen>
+			<redeliveryPolicy useExponentialBackOff="{{mci.cxf.redelivery.useExponentialBackOff}}"
+							  backOffMultiplier="{{mci.cxf.redelivery.backOffMultiplier}}"
+							  redeliveryDelay="{{mci.cxf.redelivery.redeliveryDelay}}"
+							  maximumRedeliveries="{{mci.cxf.redelivery.maximumRedeliveries}}"
+							  retryAttemptedLogLevel="WARN"
+							  retriesExhaustedLogLevel="WARN"
+							  logExhaustedMessageHistory="false"/>
+			<handled>
+				<constant>true</constant>
+			</handled>
+		</onException>
+
+        <onException useOriginalMessage="true">
+            <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
+            <redeliveryPolicy useExponentialBackOff="true"
+                              backOffMultiplier="2"
+                              redeliveryDelay="1000"
+                              maximumRedeliveries="7"
+                              retryAttemptedLogLevel="WARN"
+                              retriesExhaustedLogLevel="WARN"
+                              logExhaustedMessageHistory="false"/>
+            <continued>
+                <constant>true</constant>
+            </continued>
+        </onException>
 
 		<routeBuilder ref="mciRoutes"/>
 
