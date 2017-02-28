@@ -28,26 +28,34 @@
 package edu.si.services.beans.cameratrap;
 
 import edu.si.services.fedorarepo.FedoraComponent;
-import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
 import edu.si.services.fedorarepo.FedoraSettings;
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
+import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -58,85 +66,161 @@ import java.util.Properties;
  */
 public class CT_AltIdTest extends CamelBlueprintTestSupport {
 
-    private static String LOG_NAME = "edu.si.mci";
+    static private String LOG_NAME = "edu.si.mci";
 
-    private static final Boolean USE_ACTUAL_FEDORA_SERVER = true;
+    private static String BASE_URL = null;
+    private static String FUSEKI_PORT = null;
+    private static String FEDORA_PORT = null;
+    private static final String FUSEKI_BASE_URL = BASE_URL + ":9080/fuseki/fedora3?output=xml&query=";
+    private static final String FEDORA_BASE_URL = BASE_URL + ":8080/fedora/objects/";
+
+    //Default Test Params
+    private static String PAYLOAD;
+    //private static File TEST_XML = new File("src/test/resources/sample-data.xml");
+    private static String RESPONCE_PAYLOAD;
+    private static File TEST_RESPONCE_XML = new File("src/test/resources/sample-data.xml");
+
+    private static File tmpOutputDir = new File("target/CT-Tests");
     private static Configuration config = null;
+    private CloseableHttpClient httpClient;
+
+    static {
+        try {
+            //PAYLOAD = FileUtils.readFileToString(TEST_XML);
+            RESPONCE_PAYLOAD = FileUtils.readFileToString(TEST_RESPONCE_XML);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void ctProcessProjectAltIdTest() throws Exception {
 
         String ctTestManifest = FileUtils.readFileToString(new File("src/test/resources/AltIdSampleData/p117d22157/deployment_manifest.xml"));
-        String parentRELS_EXT = FileUtils.readFileToString(new File("src/test/resources/AltIdSampleData/test-data/projectRELS-EXT.rdf"));
-        String parentEAC_CPF = FileUtils.readFileToString(new File("src/test/resources/AltIdSampleData/test-data/projectEAC-CPF.xml"));
 
-        MockEndpoint mockEndpointResult = getMockEndpoint("mock:result");
-        mockEndpointResult.expectedMessageCount(1);
-        MockEndpoint mockEndpointAddDatastream = getMockEndpoint("mock:addDatastream");
-        mockEndpointAddDatastream.expectedMessageCount(2);
-        mockEndpointAddDatastream.expectedBodiesReceived(parentRELS_EXT, parentEAC_CPF);
+        FedoraSettings fedoraSettings = new FedoraSettings(
+                String.valueOf(config.getString("si.fedora.host")),
+                String.valueOf(config.getString("si.fedora.user")),
+                String.valueOf(config.getString("si.fedora.password"))
+        );
+
+        FedoraComponent fedora = new FedoraComponent();
+        fedora.setSettings(fedoraSettings);
+
+        //Adding the Fedora Component to the the context using the setting above
+        context.addComponent("fedora", fedora);
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
 
         context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //Modify the onException so that test run faster by defining a new onException for FedoraObjectNotFoundExceptions
-                context.getRouteDefinition("UnifiedCameraTrapProcessProject")
-                        .onException(FedoraObjectNotFoundException.class)
-                        .useOriginalMessage()
-                        .onRedeliveryRef("inFlightConceptCheckProcessor")
-                        .useExponentialBackOff()
-                        .backOffMultiplier("2")
-                        .redeliveryDelay("1000")
-                        .maximumRedeliveries("1")
-                        .retryAttemptedLogLevel(LoggingLevel.WARN)
-                        .retriesExhaustedLogLevel(LoggingLevel.WARN)
-                        .logExhausted(false)
-                        .continued(true)
-                        .end();
-
-                //Intercept sending to fedora
-                interceptSendToEndpoint("fedora:create.*").skipSendToOriginalEndpoint().setHeader("CamelFedoraPid", simple("test:12345"));
-                interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().to("mock:addDatastream");
-                interceptSendToEndpoint("fedora:hasConcept.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");
-                interceptSendToEndpoint("fedora:addDatastream.*EAC-CPF.*").skipSendToOriginalEndpoint().to("mock:addDatastream");
-
                 weaveAddLast().to("mock:result");
             }
         });
 
+        context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToString(".*fedora:create.*").before().to("mock:result").stop();
+                //weaveAddLast().to("mock:result");
+            }
+        });
+
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("ManifestXML", ctTestManifest);
-        exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
+
+        //exchange.getIn().setHeader("CamelHttpMethod", "GET");
         exchange.getIn().setHeader("CamelFedoraPid", config.getString("si.ct.root"));
+        exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
+        exchange.getIn().setHeader("ManifestXML", ctTestManifest);
 
         template.send("direct:processProject", exchange);
-
-        assertEquals(parentRELS_EXT, mockEndpointAddDatastream.getExchanges().get(0).getIn().getBody());
-        assertEquals(parentEAC_CPF, mockEndpointAddDatastream.getExchanges().get(1).getIn().getBody());
 
         assertMockEndpointsSatisfied();
 
     }
 
-    @Override
-    protected CamelContext createCamelContext() throws Exception {
-        CamelContext context = super.createCamelContext();
+    @Test
+    public void fusekiQuery_Test() throws Exception {
 
-        if (USE_ACTUAL_FEDORA_SERVER) {
-            FedoraSettings fedoraSettings = new FedoraSettings(
-                    String.valueOf(config.getString("si.fedora.host")),
-                    String.valueOf(config.getString("si.fedora.user")),
-                    String.valueOf(config.getString("si.fedora.password"))
-            );
+        //String fusekiQuery = "ASK FROM <info:edu.si.fedora#ri>{<info:fedora/si-user:57> ?p ?o .}";
 
-            FedoraComponent fedora = new FedoraComponent();
-            fedora.setSettings(fedoraSettings);
+        String fusekiQuery = "PREFIX ct: <info:fedora/ct:>\n" +
+                "PREFIX fedora-model: <info:fedora/fedora-system:def/model#>\n" +
+                "\n" +
+                "SELECT ?subject\n" +
+                "FROM <info:edu.si.fedora#ri>\n" +
+                "WHERE {\n" +
+                "  ?subject fedora-model:hasModel <info:fedora/si:cameraTrapCModel> .\n" +
+                "  FILTER CONTAINS (str(?subject), \"ct\")\n" +
+                "}";
 
-            //Adding the Fedora Component to the the context using the setting above
-            context.addComponent("fedora", fedora);
-        }
 
-        return context;
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+
+        //exchange.getIn().setHeader("CamelHttpMethod", "GET");
+        exchange.getIn().setBody(fusekiQuery);
+
+        template.send("direct:fusekiQuery", exchange);
+
+        assertMockEndpointsSatisfied();
+
+        MockEndpoint.resetMocks(context);
+
+    }
+
+    @Test
+    public void getManifestFromFedora_Test() throws Exception {
+
+        FedoraSettings fedoraSettings = new FedoraSettings(
+                String.valueOf(config.getString("si.fedora.host")),
+                String.valueOf(config.getString("si.fedora.user")),
+                String.valueOf(config.getString("si.fedora.password"))
+        );
+
+        FedoraComponent fedora = new FedoraComponent();
+        fedora.setSettings(fedoraSettings);
+
+        //Adding the Fedora Component to the the context using the setting above
+        context.addComponent("fedora", fedora);
+        //context.getComponent("sql", SqlComponent.class).setDataSource(DERBY_DB);
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        context.getRouteDefinition("AddMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        context.getRouteDefinition("MCICreateConcept").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("xsltMCIProjectToSIdoraProject").replace().toD("xslt:Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true");
+                weaveById("velocityMCIResourceTemplate").replace().toD("velocity:Input/templates/MCIResourceTemplate.vsl");
+                weaveById("velocityMCISidoraTemplate").replace().toD("velocity:Input/templates/MCISidoraTemplate.vsl");
+                weaveById("xsltSIdoraConcept2DC").replace().toD("xslt:Input/xslt/SIdoraConcept2DC.xsl?saxon=true");
+            }
+        });
+
+        HttpPost post = new HttpPost(BASE_URL + "/addProject");
+        post.addHeader("Content-Type", "application/xml");
+        post.addHeader("Accept", "application/xml");
+        post.setEntity(new StringEntity(PAYLOAD));
+        HttpResponse response = httpClient.execute(post);
+        assertEquals(200, response.getStatusLine().getStatusCode());
+
+        String responceBody = EntityUtils.toString(response.getEntity());
+
+        //assertEquals(RESPONCE_PAYLOAD, responceBody);
+
+        assertMockEndpointsSatisfied();
     }
 
     @Override
@@ -147,7 +231,9 @@ public class CT_AltIdTest extends CamelBlueprintTestSupport {
 
     @Override
     protected JndiRegistry createRegistry() throws Exception {
+
         JndiRegistry reg = super.createRegistry();
+
         return reg;
     }
 
@@ -186,7 +272,6 @@ public class CT_AltIdTest extends CamelBlueprintTestSupport {
         }
 
         builder.save();
-
         super.setUp();
     }
 
@@ -202,5 +287,14 @@ public class CT_AltIdTest extends CamelBlueprintTestSupport {
         }
 
         return extra;
+    }
+
+    @Override
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+        if(tmpOutputDir.exists()){
+            //FileUtils.deleteDirectory(tmpOutputDir);
+        }
     }
 }
