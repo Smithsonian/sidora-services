@@ -17,5 +17,6 @@
         #foreach($child in $headers.PIDAggregation.split(","))
         <fedora:hasResource rdf:resource="info:fedora/$child"/>
         #end
+        <altId xmlns="http://sidora.si.edu/ontologies/metadata#" rdf:resource="http://sidora.si.edu/ctId/$headers.altId"/>
     </rdf:Description>
 </rdf:RDF>

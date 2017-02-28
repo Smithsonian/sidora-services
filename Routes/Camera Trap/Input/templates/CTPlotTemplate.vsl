@@ -14,5 +14,6 @@
         <fedora-model:hasModel rdf:resource="info:fedora/si:ctPlotCModel"/>
         <fedora-model:hasModel rdf:resource="info:fedora/si:conceptCModel"/>
         <default:orginal_metadata xmlns="http://islandora.org/ontologies/metadata#">TRUE</default:orginal_metadata>
+        <altId xmlns="http://sidora.si.edu/ontologies/metadata#" rdf:resource="http://sidora.si.edu/ctId/$headers.altId"/>
     </rdf:Description>
 </rdf:RDF>
