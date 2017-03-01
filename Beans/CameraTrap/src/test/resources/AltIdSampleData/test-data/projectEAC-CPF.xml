@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<eac-cpf xmlns="urn:isbn:1-931666-33-4"
+         xmlns:eac="urn:isbn:1-931666-33-4"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+   <control>
+      <recordId>p117</recordId>
+      <maintenanceStatus>revised</maintenanceStatus>
+      <maintenanceAgency>
+         <agencyName/>
+      </maintenanceAgency>
+      <localControl localType="Publication Date">
+         <date>2016-04-01</date>
+      </localControl>
+      <maintenanceHistory>
+         <maintenanceEvent>
+            <eventType>created</eventType>
+            <eventDateTime/>
+            <agentType>human</agentType>
+            <agent/>
+            <eventDescription/>
+         </maintenanceEvent>
+      </maintenanceHistory>
+   </control>
+   <cpfDescription>
+      <identity>
+         <entityType>corporateBody</entityType>
+         <nameEntry localType="primary">
+            <part>Museums Connect Mexico</part>
+         </nameEntry>
+         <nameEntry localType="abbreviation">
+            <part>p117</part>
+         </nameEntry>
+      </identity>
+      <description>
+         <existDates>
+            <dateRange>
+               <fromDate/>
+               <toDate/>
+            </dateRange>
+         </existDates>
+         <place>
+            <placeEntry localType="address"/>
+            <placeEntry localType="region"/>
+            <placeEntry countryCode="MX" latitude="20.658" longitude="-103.346"/>
+         </place>
+         <functions>
+            <function>
+               <term>Project Objectives</term>
+               <descriptiveNote>
+                  <p>Middle school classrooms in Mexico are collecting important scientific data on local mammal
+        populations in the Museums Connect program eMammal International. eMammal International connects middle school
+        classrooms culturally and scientifically by allowing students to share, comment and discuss their camera trap
+        photos and other scientific findings. Funded through the U.S. Department of State's Bureau of Educational and
+        Cultural Affairs and administered by the American Alliance of Museums, eMamma
+    </p>
+               </descriptiveNote>
+            </function>
+            <function>
+               <term>Project Data Access and Use Constraints</term>
+               <descriptiveNote>
+                  <p/>
+               </descriptiveNote>
+            </function>
+         </functions>
+      </description>
+      <relations>
+         <cpfRelation>
+            <relationEntry>Stephanie Schuttler</relationEntry>
+            <placeEntry localType="email address">stephanie.schuttler@gmail.com</placeEntry>
+            <descriptiveNote>
+               <p>Project Owner</p>
+            </descriptiveNote>
+         </cpfRelation>
+         <cpfRelation>
+            <relationEntry>Roland Kays</relationEntry>
+            <placeEntry localType="email address">rokays@gmail.com</placeEntry>
+            <descriptiveNote>
+               <p>Principal Investigator</p>
+            </descriptiveNote>
+         </cpfRelation>
+         <cpfRelation>
+            <relationEntry>Stephanie Schuttler</relationEntry>
+            <placeEntry localType="email address">stephanie.schuttler@gmail.com</placeEntry>
+            <descriptiveNote>
+               <p>Principal Investigator</p>
+            </descriptiveNote>
+         </cpfRelation>
+         <cpfRelation>
+            <relationEntry>Stephanie Schuttler</relationEntry>
+            <placeEntry localType="email address">stephanie.schuttler@gmail.com</placeEntry>
+            <descriptiveNote>
+               <p>Project Contact</p>
+            </descriptiveNote>
+         </cpfRelation>
+      </relations>
+   </cpfDescription>
+</eac-cpf>
