@@ -27,6 +27,7 @@
 
 package edu.si.services.beans.cameratrap;
 
+import com.amazonaws.services.dynamodbv2.xspec.L;
 import edu.si.services.fedorarepo.FedoraComponent;
 import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.Exchange;
@@ -36,7 +37,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
+import org.apache.camel.test.AvailablePortFinder;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
@@ -45,6 +46,7 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -54,17 +56,18 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.xml.bind.JAXBContext;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.security.PrivateKey;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * @author jbirkhimer
  */
-public class CT_AltIdTest extends CamelBlueprintTestSupport {
+public class CT_FusekiAltIdTest extends CamelTestSupport {
 
     static private String LOG_NAME = "edu.si.mci";
 
@@ -91,54 +94,6 @@ public class CT_AltIdTest extends CamelBlueprintTestSupport {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    @Test
-    public void ctProcessProjectAltIdTest() throws Exception {
-
-        String ctTestManifest = FileUtils.readFileToString(new File("src/test/resources/AltIdSampleData/p117d22157/deployment_manifest.xml"));
-
-        FedoraSettings fedoraSettings = new FedoraSettings(
-                String.valueOf(config.getString("si.fedora.host")),
-                String.valueOf(config.getString("si.fedora.user")),
-                String.valueOf(config.getString("si.fedora.password"))
-        );
-
-        FedoraComponent fedora = new FedoraComponent();
-        fedora.setSettings(fedoraSettings);
-
-        //Adding the Fedora Component to the the context using the setting above
-        context.addComponent("fedora", fedora);
-
-        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
-        mockEndpoint.expectedMessageCount(1);
-
-        context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveAddLast().to("mock:result");
-            }
-        });
-
-        context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByToString(".*fedora:create.*").before().to("mock:result").stop();
-                //weaveAddLast().to("mock:result");
-            }
-        });
-
-        Exchange exchange = new DefaultExchange(context);
-
-        //exchange.getIn().setHeader("CamelHttpMethod", "GET");
-        exchange.getIn().setHeader("CamelFedoraPid", config.getString("si.ct.root"));
-        exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
-        exchange.getIn().setHeader("ManifestXML", ctTestManifest);
-
-        template.send("direct:processProject", exchange);
-
-        assertMockEndpointsSatisfied();
-
     }
 
     @Test
@@ -177,9 +132,9 @@ public class CT_AltIdTest extends CamelBlueprintTestSupport {
     public void getManifestFromFedora_Test() throws Exception {
 
         FedoraSettings fedoraSettings = new FedoraSettings(
-                String.valueOf(config.getString("si.fedora.host")),
-                String.valueOf(config.getString("si.fedora.user")),
-                String.valueOf(config.getString("si.fedora.password"))
+                String.valueOf(config.getProperty("si.fedora.host")),
+                String.valueOf(config.getProperty("si.fedora.user")),
+                String.valueOf(config.getProperty("si.fedora.password"))
         );
 
         FedoraComponent fedora = new FedoraComponent();
@@ -224,10 +179,67 @@ public class CT_AltIdTest extends CamelBlueprintTestSupport {
     }
 
     @Override
-    protected String[] loadConfigAdminConfigurationFile() {
-        return new String[]{"src/test/resources/test.properties", "edu.si.sidora.karaf"};
-    }
+    protected RouteBuilder createRouteBuilder() throws Exception {
+        return new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
 
+                from("direct:fusekiQuery")
+                        .setBody().groovy("URLEncoder.encode(request.getBody(String.class));")
+                        .setHeader("CamelHttpMethod", constant("GET"))
+                        .toD("{{fuseki.server.address}}?output=xml&query=${body}")
+                        .convertBodyTo(String.class, "UTF-8")
+                        //.log(LoggingLevel.INFO, LOG_NAME, "===============[ Fuseki BODY ]================\n${body}")
+                        .to("direct:getManifest")
+                        .to("mock:result");
+
+
+                from("direct:getManifest")
+                        .split().tokenizeXML("uri")
+                            .setHeader("pid").xpath("//uri/substring-after(., 'info:fedora/')", String.class)
+                            .setHeader(Exchange.FILE_NAME).simple("${header.pid.replaceAll(\":\", \"-\")}.xml")
+                            .toD("{{fedora.server.address}}/objects/${header.pid}/datastreams/MANIFEST/content")
+                            .convertBodyTo(String.class, "UTF-8")
+                            .to("file:target/Inbox")
+                            .to("direct:getIDs")
+                        .log(LoggingLevel.INFO, LOG_NAME, "=================\n${body}\n===================")
+                        .end();
+
+
+                from("direct:getIDs")
+                        //ProcessParents
+                        .setHeader("ProjectName").xpath("//ProjectName", String.class)
+                        .setHeader("ProjectId").xpath("//ProjectId", String.class)
+
+                        .filter().xpath("boolean(//SubProjectName/text()[1])")
+                            .setHeader("SubProjectName").xpath("//SubProjectName", String.class)
+                            .setHeader("SubProjectId").xpath("//SubProjectId", String.class)
+                        .end()
+
+                        .filter().xpath(" boolean(//PlotName/text()[1])")
+                            .setHeader("PlotName").xpath("concat(//SubProjectName/text(), ':', //PlotName/text())", String.class)
+                        .end()
+
+                        //ProcessSite
+                        .setHeader("CameraSiteName").xpath("//CameraSiteName", String.class)
+                        .setHeader("CameraDeploymentID").xpath("//CameraDeploymentID", String.class)
+
+                        .setBody()
+                        .simple("==============================================\n"
+                                + "ProjectName:${header.ProjectName}\n"
+                                + "ProjectId:${header.ProjectId}\n"
+                                + "SubProjectName:${header.SubProjectName}\n"
+                                + "SubProjectId:${header.SubProjectId}\n"
+                                + "PlotName:${header.PlotName}\n"
+                                + "CameraSiteName:${header.CameraSiteName}\n"
+                                + "CameraDeploymentID:${header.CameraDeploymentID}\n"
+                                + "==============================================\n");
+                        //.log(LoggingLevel.INFO, LOG_NAME, "=================\n${headers}\n===================");
+
+
+            }
+        };
+    }
 
     @Override
     protected JndiRegistry createRegistry() throws Exception {
@@ -237,41 +249,35 @@ public class CT_AltIdTest extends CamelBlueprintTestSupport {
         return reg;
     }
 
-    @Override
-    protected String getBlueprintDescriptor() {
-        return "Routes/unified-camera-trap-route.xml";
-    }
-
-
     @Before
     @Override
     public void setUp() throws Exception {
         System.setProperty("karaf.home", "target/test-classes");
 
-        List<String> propFileList = Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties");
-
         Parameters params = new Parameters();
         FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
                 new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                        .configure(params.fileBased().setFile(new File("src/test/resources/test.properties")));
-        config = builder.getConfiguration();
+                        .configure(params.fileBased().setFile(new File("src/test/resources/test.properties"))
+                        );
 
-        for (String propFile : propFileList) {
+        /*FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.fileBased().setFile(new File("src/test/resources/other.properties"))
+                        );*/
 
-            FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
-                    new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                            .configure(params.fileBased().setFile(new File(propFile)));
+        try {
+            config = builder.getConfiguration();
 
-            for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext();) {
+            /*for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext();) {
                 String key = i.next();
                 Object value = builder2.getConfiguration().getProperty(key);
-                if (!config.containsKey(key)) {
-                    config.setProperty(key, value);
-                }
-            }
-        }
+                config.setProperty(key, value);
+            }*/
 
-        builder.save();
+            builder.save();
+        } catch (ConfigurationException e) {
+            e.printStackTrace();
+        }
         super.setUp();
     }
 
