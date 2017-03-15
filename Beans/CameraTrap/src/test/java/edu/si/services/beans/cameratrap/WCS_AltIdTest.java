@@ -43,22 +43,21 @@ import static org.apache.commons.io.FileUtils.readFileToString;
 /**
  * @author jbirkhimer
  */
-public class CT_AltIdTest extends CT_BlueprintTestSupport {
+public class WCS_AltIdTest extends CT_BlueprintTestSupport {
 
     private static String LOG_NAME = "edu.si.mci";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private String defaultTestProperties = "src/test/resources/test.properties";
 
-    private static final File testManifest = new File("src/test/resources/AltIdSampleData/Legacy/deployment_manifest.xml");
-    private static final File projectRELS_EXT = new File("src/test/resources/AltIdSampleData/Legacy/projectRELS-EXT.rdf");
-    private static final File subProjectRELS_EXT = new File("src/test/resources/AltIdSampleData/Legacy/subProjectRELS-EXT.rdf");
+    private static final File testManifest = new File("src/test/resources/AltIdSampleData/WCS/deployment_manifest.xml");
+    private static final File projectRELS_EXT = new File("src/test/resources/AltIdSampleData/WCS/projectRELS-EXT.rdf");
     private static final File objectNotFoundFusekiResponse = new File("src/test/resources/AltIdSampleData/objectNotFoundFusekiResponse.xml");
 
 
     @Override
     protected String getBlueprintDescriptor() {
-        return "Routes/camera-trap-route.xml";
+        return "Routes/wcs-route.xml";
     }
 
     @Override
@@ -68,20 +67,24 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
 
     @Override
     protected String[] preventRoutesFromStarting() {
-        return new String[]{"CameraTrapInFlightConceptStatusPolling"};
+        return new String[]{"WCSInFlightConceptStatusPolling"};
     }
 
     @Override
     public void setUp() throws Exception {
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setDefaultTestProperties(defaultTestProperties);
-
         super.setUp();
     }
 
+    @Override
+    public boolean isUseAdviceWith() {
+        return true;
+    }
+
     /**
-     * Testing Project and Subproject findObject logic using alternate id's to check if an object exists
-     * and falling back to checking using string name. The test assumes neither Project or SubProject exist
+     * Testing Project findObject logic using alternate id's to check if an object exists
+     * and falling back to checking using string name. The test assumes Project does not exist
      * and will continue to create the object, However actual object creation is intercepted or sent to mock endpoints.
      * @throws Exception
      */
@@ -89,9 +92,9 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
     public void processParentsMockFedoraTest() throws Exception {
         MockEndpoint mockParents = getMockEndpoint("mock:processParentsResult");
         mockParents.expectedMessageCount(2);
-        mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT), readFileToString(subProjectRELS_EXT));
+        mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT));
 
-        context.getRouteDefinition("CameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("WCSProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 //Intercept sending to processPlot
@@ -99,20 +102,11 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
             }
         });
 
-        context.getRouteDefinition("CameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("WCSProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //NOTE: for some reason the intercepts also gets applied to other routes as well so we handle them here
                 //Intercept sending to fedora:create but provide a pid
-                interceptSendToEndpoint("fedora:create.*").skipSendToOriginalEndpoint()
-                        .choice()
-                        .when(simple("${routeId} == 'CameraTrapProcessProject'"))
-                        .setHeader("CamelFedoraPid", simple("test:0001"))
-                        .endChoice()
-                        .when(simple("${routeId} == 'CameraTrapProcessSubproject'"))
-                        .setHeader("CamelFedoraPid", simple("test:0002"))
-                        .endChoice()
-                        .end();
+                interceptSendToEndpoint("fedora:create.*").skipSendToOriginalEndpoint().setHeader("CamelFedoraPid", simple("test:0001"));
 
                 //intercept sending to fedora:addDatastream and send to mock endpoint to assert correct values
                 interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().to("mock:processParentsResult");
@@ -123,22 +117,14 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
             }
         });
 
-        context.getRouteDefinition("CameraTrapProcessSubproject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                //intercept other calls to fedora that are not needed and have not been intercepted yet and skip them
-                interceptSendToEndpoint("fedora:hasConcept.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");
-                interceptSendToEndpoint("fedora:addDatastream.*FGDC-Research.*").skipSendToOriginalEndpoint()
-                        .log(LoggingLevel.INFO, "Skipping fedora:addDatastream for FGDC-Research");
-            }
-        });
-
-        context.getRouteDefinition("CameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("WCSFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("findObjectFusekiHttpCall").replace().setBody().simple(readFileToString(objectNotFoundFusekiResponse));
             }
         });
+
+        context.start();
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
@@ -148,7 +134,6 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
         template.send("direct:processParents", exchange);
 
         assertEquals(readFileToString(projectRELS_EXT), mockParents.getExchanges().get(0).getIn().getBody());
-        assertEquals(readFileToString(subProjectRELS_EXT), mockParents.getExchanges().get(1).getIn().getBody());
 
         for (Exchange mockExchange : mockParents.getExchanges()) {
             log.info("Result from {} route: {}", mockExchange.getIn().getHeader("routeId"), mockExchange.getIn().getBody(String.class));

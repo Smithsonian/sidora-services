@@ -1,76 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CameraTrapDeployment>
-    <ProjectId>p117</ProjectId>
-    <ProjectName>Museums Connect Mexico</ProjectName>
-    <ProjectObjectives>Middle school classrooms in Mexico are collecting important scientific data on local mammal
-        populations in the Museums Connect program eMammal International. eMammal International connects middle school
-        classrooms culturally and scientifically by allowing students to share, comment and discuss their camera trap
-        photos and other scientific findings. Funded through the U.S. Department of State's Bureau of Educational and
-        Cultural Affairs and administered by the American Alliance of Museums, eMamma
-    </ProjectObjectives>
-    <PublishDate>2016-04-01</PublishDate>
+    <ProjectId>testProjectId0001</ProjectId>
+    <ProjectName>Test Project</ProjectName>
+    <ProjectObjectives>Some Project Objective</ProjectObjectives>
+    <PublishDate>2015-12-31</PublishDate>
     <ProjectOwners>
         <ProjectOwner>
-            <ProjectOwnerName>Stephanie Schuttler</ProjectOwnerName>
-            <ProjectOwnerEmail>stephanie.schuttler@gmail.com</ProjectOwnerEmail>
+            <ProjectOwnerName>Test Owner</ProjectOwnerName>
+            <ProjectOwnerEmail>testOwner@si.edu</ProjectOwnerEmail>
         </ProjectOwner>
     </ProjectOwners>
     <PrincipalInvestigators>
         <PrincipalInvestigator>
-            <PrincipalInvestigatorName>Roland Kays</PrincipalInvestigatorName>
-            <PrincipalInvestigatorEmail>rokays@gmail.com</PrincipalInvestigatorEmail>
+            <PrincipalInvestigatorName>TestInvestigator</PrincipalInvestigatorName>
+            <PrincipalInvestigatorEmail>testInvestigator@si.edu</PrincipalInvestigatorEmail>
         </PrincipalInvestigator>
         <PrincipalInvestigator>
-            <PrincipalInvestigatorName>Stephanie Schuttler</PrincipalInvestigatorName>
-            <PrincipalInvestigatorEmail>stephanie.schuttler@gmail.com</PrincipalInvestigatorEmail>
+            <PrincipalInvestigatorName>TestInvestigator2</PrincipalInvestigatorName>
+            <PrincipalInvestigatorEmail>testInvestigator2@si.edu</PrincipalInvestigatorEmail>
+        </PrincipalInvestigator>
+        <PrincipalInvestigator>
+            <PrincipalInvestigatorName>TestInvestigator3</PrincipalInvestigatorName>
+            <PrincipalInvestigatorEmail>testInvestigator3@si.edu</PrincipalInvestigatorEmail>
         </PrincipalInvestigator>
     </PrincipalInvestigators>
     <ProjectContacts>
         <ProjectContact>
-            <ProjectContactName>Stephanie Schuttler</ProjectContactName>
-            <ProjectContactEmail>stephanie.schuttler@gmail.com</ProjectContactEmail>
+            <ProjectContactName>Test Owner</ProjectContactName>
+            <ProjectContactEmail>testOwner@si.edu</ProjectContactEmail>
         </ProjectContact>
     </ProjectContacts>
-    <ProjectLatitude>20.658</ProjectLatitude>
-    <ProjectLongitude>-103.346</ProjectLongitude>
-    <CountryCode>MX</CountryCode>
+    <ProjectLatitude>30.632937</ProjectLatitude>
+    <ProjectLongitude>-86.615033</ProjectLongitude>
+    <CountryCode>US</CountryCode>
     <ProjectDataAccessandUseConstraints></ProjectDataAccessandUseConstraints>
-    <SubProjectId>sp1133</SubProjectId>
-    <SubProjectName>Museums Connect Juanacatlán</SubProjectName>
+    <SubProjectId>testSubProjectId0001</SubProjectId>
+    <SubProjectName>Test Subproject</SubProjectName>
     <SubProjectDesign></SubProjectDesign>
     <PlotName></PlotName>
     <PlotTreatment></PlotTreatment>
-    <CameraDeploymentID>d22157</CameraDeploymentID>
-    <CameraSiteName>Juanacatlán 2</CameraSiteName>
+    <CameraDeploymentID>d00001</CameraDeploymentID>
+    <CameraSiteName>Test Camera Site</CameraSiteName>
     <Originators>
         <Originator>
-            <OriginatorName>731</OriginatorName>
+            <OriginatorName>12345</OriginatorName>
         </Originator>
     </Originators>
     <ProposedCameraDeploymentBeginDate></ProposedCameraDeploymentBeginDate>
     <ProposedCameraDeploymentEndDate></ProposedCameraDeploymentEndDate>
-    <ProposedLatitude></ProposedLatitude>
-    <ProposedLongitude></ProposedLongitude>
-    <CameraDeploymentBeginDate>2016-08-12</CameraDeploymentBeginDate>
-    <CameraDeploymentEndDate>2016-09-09</CameraDeploymentEndDate>
-    <CameraDeploymentNotes><![CDATA[  ]]></CameraDeploymentNotes>
-    <ActualLatitude>20.46412</ActualLatitude>
-    <ActualLongitude>-103.11961</ActualLongitude>
+    <ProposedLatitude>30.40497</ProposedLatitude>
+    <ProposedLongitude>-86.84176</ProposedLongitude>
+    <CameraDeploymentBeginDate>2016-01-03</CameraDeploymentBeginDate>
+    <CameraDeploymentEndDate>2016-01-17</CameraDeploymentEndDate>
+    <CameraDeploymentNotes><![CDATA[ Test Site Notes ]]></CameraDeploymentNotes>
+    <ActualLatitude>30.40497</ActualLatitude>
+    <ActualLongitude>-86.84176</ActualLongitude>
     <CameraFailureDetails>Camera Functioning</CameraFailureDetails>
     <Bait>No Bait</Bait>
     <BaitDescription></BaitDescription>
     <Feature>Not Entered</Feature>
     <FeatureMethodology></FeatureMethodology>
     <AccessConstraints>NE</AccessConstraints>
-    <CameraID>MX06</CameraID>
-    <DetectionDistance>4</DetectionDistance>
-    <QuietPeriodSetting></QuietPeriodSetting>
-    <ImageResolutionSetting></ImageResolutionSetting>
-    <SensitivitySetting>none</SensitivitySetting>
+    <CameraID>OK76</CameraID>
+    <DetectionDistance>5</DetectionDistance>
+    <QuietPeriodSetting>0</QuietPeriodSetting>
+    <ImageResolutionSetting>3.1</ImageResolutionSetting>
+    <SensitivitySetting>high</SensitivitySetting>
     <ImageSequence>
-        <ImageSequenceId>d22157s1</ImageSequenceId>
-        <ImageSequenceBeginTime>2016-08-12T16:46:26</ImageSequenceBeginTime>
-        <ImageSequenceEndTime>2016-08-12T16:48:16</ImageSequenceEndTime>
+        <ImageSequenceId>d00001s1</ImageSequenceId>
+        <ImageSequenceBeginTime>2016-01-03T17:08:50</ImageSequenceBeginTime>
+        <ImageSequenceEndTime>2016-01-03T17:08:55</ImageSequenceEndTime>
         <VolunteerIdentifications>
             <Identification>
                 <IUCNId>4</IUCNId>
@@ -78,10 +77,10 @@
                 <SpeciesScientificName>Camera Trapper</SpeciesScientificName>
                 <SpeciesCommonName>Camera Trapper</SpeciesCommonName>
                 <Count>1</Count>
-                <Age>Unknown</Age>
-                <Sex>Unknown</Sex>
+                <Age></Age>
+                <Sex></Sex>
                 <IndividualId></IndividualId>
-                <AnimalRecognizable>N</AnimalRecognizable>
+                <AnimalRecognizable></AnimalRecognizable>
                 <IndividualAnimalNotes></IndividualAnimalNotes>
             </Identification>
         </VolunteerIdentifications>
@@ -91,7 +90,7 @@
                 <TSNId>4</TSNId>
                 <SpeciesScientificName>Camera Trapper</SpeciesScientificName>
                 <SpeciesCommonName>Camera Trapper</SpeciesCommonName>
-                <Count>3</Count>
+                <Count>1</Count>
                 <Age></Age>
                 <Sex></Sex>
                 <IndividualId></IndividualId>
@@ -100,9 +99,9 @@
             </Identification>
         </ResearcherIdentifications>
         <Image>
-            <ImageId>d22157s1i1</ImageId>
-            <ImageFileName>d22157s1i1.JPG</ImageFileName>
-            <ImageDateTime>2016-08-12 16:46:26</ImageDateTime>
+            <ImageId>d00001s1i1</ImageId>
+            <ImageFileName>d00001s1i1.JPG</ImageFileName>
+            <ImageDateTime>2016-01-03 17:08:50</ImageDateTime>
             <ImageOrder>1</ImageOrder>
             <ImageInterestRanking>None</ImageInterestRanking>
             <digitalOrigin>born digital</digitalOrigin>

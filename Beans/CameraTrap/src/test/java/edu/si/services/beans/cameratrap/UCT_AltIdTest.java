@@ -43,22 +43,22 @@ import static org.apache.commons.io.FileUtils.readFileToString;
 /**
  * @author jbirkhimer
  */
-public class CT_AltIdTest extends CT_BlueprintTestSupport {
+public class UCT_AltIdTest extends CT_BlueprintTestSupport {
 
     private static String LOG_NAME = "edu.si.mci";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private String defaultTestProperties = "src/test/resources/test.properties";
 
-    private static final File testManifest = new File("src/test/resources/AltIdSampleData/Legacy/deployment_manifest.xml");
-    private static final File projectRELS_EXT = new File("src/test/resources/AltIdSampleData/Legacy/projectRELS-EXT.rdf");
-    private static final File subProjectRELS_EXT = new File("src/test/resources/AltIdSampleData/Legacy/subProjectRELS-EXT.rdf");
+    private static final File testManifest = new File("src/test/resources/AltIdSampleData/Unified/deployment_manifest.xml");
+    private static final File projectRELS_EXT = new File("src/test/resources/AltIdSampleData/Unified/projectRELS-EXT.rdf");
+    private static final File subProjectRELS_EXT = new File("src/test/resources/AltIdSampleData/Unified/subProjectRELS-EXT.rdf");
     private static final File objectNotFoundFusekiResponse = new File("src/test/resources/AltIdSampleData/objectNotFoundFusekiResponse.xml");
 
 
     @Override
     protected String getBlueprintDescriptor() {
-        return "Routes/camera-trap-route.xml";
+        return "Routes/unified-camera-trap-route.xml";
     }
 
     @Override
@@ -68,15 +68,19 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
 
     @Override
     protected String[] preventRoutesFromStarting() {
-        return new String[]{"CameraTrapInFlightConceptStatusPolling"};
+        return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
     }
 
     @Override
     public void setUp() throws Exception {
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setDefaultTestProperties(defaultTestProperties);
-
         super.setUp();
+    }
+
+    @Override
+    public boolean isUseAdviceWith() {
+        return true;
     }
 
     /**
@@ -91,7 +95,7 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
         mockParents.expectedMessageCount(2);
         mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT), readFileToString(subProjectRELS_EXT));
 
-        context.getRouteDefinition("CameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 //Intercept sending to processPlot
@@ -99,17 +103,17 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
             }
         });
 
-        context.getRouteDefinition("CameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 //NOTE: for some reason the intercepts also gets applied to other routes as well so we handle them here
                 //Intercept sending to fedora:create but provide a pid
                 interceptSendToEndpoint("fedora:create.*").skipSendToOriginalEndpoint()
                         .choice()
-                        .when(simple("${routeId} == 'CameraTrapProcessProject'"))
+                        .when(simple("${routeId} == 'UnifiedCameraTrapProcessProject'"))
                         .setHeader("CamelFedoraPid", simple("test:0001"))
                         .endChoice()
-                        .when(simple("${routeId} == 'CameraTrapProcessSubproject'"))
+                        .when(simple("${routeId} == 'UnifiedCameraTrapProcessSubproject'"))
                         .setHeader("CamelFedoraPid", simple("test:0002"))
                         .endChoice()
                         .end();
@@ -123,7 +127,7 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
             }
         });
 
-        context.getRouteDefinition("CameraTrapProcessSubproject").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapProcessSubproject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 //intercept other calls to fedora that are not needed and have not been intercepted yet and skip them
@@ -133,12 +137,14 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
             }
         });
 
-        context.getRouteDefinition("CameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("findObjectFusekiHttpCall").replace().setBody().simple(readFileToString(objectNotFoundFusekiResponse));
             }
         });
+
+        context.start();
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
