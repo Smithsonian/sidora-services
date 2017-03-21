@@ -27,10 +27,10 @@
 
 package edu.si.services.sidora.rest.mci;
 
-import org.apache.cxf.jaxrs.ext.multipart.Multipart;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
 /**
@@ -42,33 +42,13 @@ public class MCIService {
     /**
      *
      * @param mciProject
-     * @param parentId
-     * @param option
-     * @return
-     */
-    @POST
-    @Path(value = "/{parentId}/addProject")
-    @Produces({"application/xml","application/json"})
-    //@Consumes("application/xml")
-    @Consumes("*/*")
-    public Response addProject(String mciProject,
-            @PathParam("parentId") String parentId,
-            @QueryParam("option") String option) {
-        return null;
-    }
-
-    /**
-     *
-     * @param mciProject
-     * @param option
      * @return
      */
     @POST
     @Path(value = "/addProject")
     @Produces({"application/xml","application/json"})
     @Consumes("application/xml")
-    //@Consumes("*/*")
-    public Response addProject(String mciProject, @QueryParam("option") String option) {
+    public Response addProject(String mciProject) {
         return null;
     }
 }

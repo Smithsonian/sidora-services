@@ -60,10 +60,6 @@
 	<camel-cxf:rsServer id="rsServer" address="${sidora.mci.service.address}"
 						serviceClass="edu.si.services.sidora.rest.mci.MCIService"
 						loggingFeatureEnabled="true">
-		<camel-cxf:serviceBeans>
-			<!-- Beans for the cxf-rs server -->
-			<bean id="mciService" class="edu.si.services.sidora.rest.mci.MCIService"/>
-		</camel-cxf:serviceBeans>
 		<camel-cxf:providers>
 			<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
 				<property name="marshallerProperties">
@@ -83,10 +79,10 @@
 
 	<!-- This is the JDBC data source which uses a MySQL database -->
 	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-		<property name="driverClassName" value="com.mysql.jdbc.Driver"/>
-		<property name="url" value="jdbc:mysql://${mysql.mci.host}:${mysql.mci.port}/${mysql.mci.database}?zeroDateTimeBehavior=convertToNull"/>
-		<property name="username" value="${mysql.mci.username}"/>
-		<property name="password" value="${mysql.mci.password}"/>
+		<property name="driverClassName" value="${mci.db.driverClassName}"/>
+		<property name="url" value="${mci.db.url}"/>
+		<property name="username" value="${mci.db.username}"/>
+		<property name="password" value="${mci.db.password}"/>
 	</bean>
 
 	<!-- configure the Camel SQL component to use the JDBC data source -->
@@ -130,67 +126,6 @@
 							 location="blueprint:sidora.karaf.mci.properties,
 							 file:${karaf.home}/etc/edu.si.sidora.mci.cfg,
 							 file:${karaf.home}/sql/mci.sql.properties"/>
-		<onException>
-			<exception>java.net.ConnectException</exception>
-			<redeliveryPolicy useExponentialBackOff="{{mci.net.redelivery.useExponentialBackOff}}"
-							  backOffMultiplier="{{mci.net.redelivery.backOffMultiplier}}"
-							  redeliveryDelay="{{mci.net.redelivery.redeliveryDelay}}"
-							  maximumRedeliveries="{{mci.net.redelivery.maximumRedeliveries}}"
-							  retryAttemptedLogLevel="WARN"
-							  retriesExhaustedLogLevel="WARN"
-							  logExhaustedMessageHistory="false"/>
-			<handled>
-				<constant>true</constant>
-			</handled>
-		</onException>
-
-		<onException>
-			<exception>java.sql.SQLException</exception>
-			<exception>com.mysql.jdbc.exceptions.jdbc4.CommunicationsException</exception>
-			<exception>org.springframework.jdbc.CannotGetJdbcConnectionException</exception>
-
-			<redeliveryPolicy useExponentialBackOff="{{mci.net.redelivery.useExponentialBackOff}}"
-							  backOffMultiplier="{{mci.net.redelivery.backOffMultiplier}}"
-							  redeliveryDelay="{{mci.net.redelivery.redeliveryDelay}}"
-							  maximumRedeliveries="{{mci.net.redelivery.maximumRedeliveries}}"
-							  retryAttemptedLogLevel="WARN"
-							  retriesExhaustedLogLevel="WARN"
-							  logExhaustedMessageHistory="false"/>
-			<handled>
-				<constant>true</constant>
-			</handled>
-		</onException>
-
-		<onException>
-			<exception>org.apache.camel.component.cxf.CxfOperationException</exception>
-			<onWhen>
-				<simple>${exception.statusCode} not in &#39;200,201&#39;</simple>
-			</onWhen>
-			<redeliveryPolicy useExponentialBackOff="{{mci.cxf.redelivery.useExponentialBackOff}}"
-							  backOffMultiplier="{{mci.cxf.redelivery.backOffMultiplier}}"
-							  redeliveryDelay="{{mci.cxf.redelivery.redeliveryDelay}}"
-							  maximumRedeliveries="{{mci.cxf.redelivery.maximumRedeliveries}}"
-							  retryAttemptedLogLevel="WARN"
-							  retriesExhaustedLogLevel="WARN"
-							  logExhaustedMessageHistory="false"/>
-			<handled>
-				<constant>true</constant>
-			</handled>
-		</onException>
-
-        <onException useOriginalMessage="true">
-            <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
-            <redeliveryPolicy useExponentialBackOff="true"
-                              backOffMultiplier="2"
-                              redeliveryDelay="1000"
-                              maximumRedeliveries="7"
-                              retryAttemptedLogLevel="WARN"
-                              retriesExhaustedLogLevel="WARN"
-                              logExhaustedMessageHistory="false"/>
-            <continued>
-                <constant>true</constant>
-            </continued>
-        </onException>
 
 		<routeBuilder ref="mciRoutes"/>
 

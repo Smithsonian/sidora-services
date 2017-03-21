@@ -32,12 +32,12 @@ package edu.si.services.sidora.rest.mci;
  * that are more business logic related.
  * @author jbirkhimer
  */
-public class MCIFolderHolderNotFoundException extends Exception {
+public class MCI_Exception extends Exception {
 
     /**
      * Same behavior is as the super class
      */
-    public MCIFolderHolderNotFoundException() {
+    public MCI_Exception() {
         super();
     }
 
@@ -45,7 +45,7 @@ public class MCIFolderHolderNotFoundException extends Exception {
      * Same behavior is as the super class
      * @param message
      */
-    public MCIFolderHolderNotFoundException(String message) {
+    public MCI_Exception(String message) {
         super(message);
     }
 
@@ -54,7 +54,7 @@ public class MCIFolderHolderNotFoundException extends Exception {
      * @param message
      * @param cause
      */
-    public MCIFolderHolderNotFoundException(String message, Throwable cause) {
+    public MCI_Exception(String message, Throwable cause) {
         super(message, cause);
     }
 
@@ -62,7 +62,7 @@ public class MCIFolderHolderNotFoundException extends Exception {
      * Same behavior is as the super class
      * @param cause
      */
-    public MCIFolderHolderNotFoundException(Throwable cause) {
+    public MCI_Exception(Throwable cause) {
         super(cause);
     }
 
@@ -73,7 +73,7 @@ public class MCIFolderHolderNotFoundException extends Exception {
      * @param enableSuppression
      * @param writableStackTrace
      */
-    protected MCIFolderHolderNotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    protected MCI_Exception(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }
