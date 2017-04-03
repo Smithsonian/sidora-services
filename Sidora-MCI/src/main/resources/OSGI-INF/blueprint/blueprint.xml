@@ -46,7 +46,6 @@
 	<cm:property-placeholder id="sidora.karaf.mci.properties" persistent-id="edu.si.sidora.mci" update-strategy="none">
 		<cm:default-properties>
 			<cm:property name="edu.si.mci" value="edu.si.mci"/>
-			<cm:property name="si.fedora.mci.user" value="camelBatchProcess"/>
 		</cm:default-properties>
 	</cm:property-placeholder>
 
@@ -60,35 +59,26 @@
 	<camel-cxf:rsServer id="rsServer" address="${sidora.mci.service.address}"
 						serviceClass="edu.si.services.sidora.rest.mci.MCIService"
 						loggingFeatureEnabled="true">
-		<camel-cxf:providers>
-			<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
-				<property name="marshallerProperties">
-					<map>
-						<entry>
-							<key>
-								<value>jaxb.formatted.output</value>
-							</key>
-							<value type="java.lang.Boolean">true</value>
-						</entry>
-					</map>
-				</property>
-			</bean>
-			<bean id="jsonProvider" class="org.apache.cxf.jaxrs.provider.json.JSONProvider"/>
-		</camel-cxf:providers>
 	</camel-cxf:rsServer>
 
 	<!-- This is the JDBC data source which uses a MySQL database -->
-	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+	<bean id="drupalDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
 		<property name="driverClassName" value="${mci.db.driverClassName}"/>
-		<property name="url" value="${mci.db.url}"/>
-		<property name="username" value="${mci.db.username}"/>
-		<property name="password" value="${mci.db.password}"/>
+		<property name="url" value="${drupal.db.url}"/>
+		<property name="username" value="${drupal.db.username}"/>
+		<property name="password" value="${drupal.db.password}"/>
+	</bean>
+
+	<!-- This is the JDBC data source which uses a MySQL database -->
+	<bean id="requestDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${mci.db.driverClassName}"/>
+		<property name="url" value="${request.db.url}"/>
+		<property name="username" value="${request.db.username}"/>
+		<property name="password" value="${request.db.password}"/>
 	</bean>
 
 	<!-- configure the Camel SQL component to use the JDBC data source -->
-	<bean id="sql" class="org.apache.camel.component.sql.SqlComponent">
-		<property name="dataSource" ref="dataSource"/>
-	</bean>
+	<bean id="sql" class="org.apache.camel.component.sql.SqlComponent"/>
 
 	<bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
 		<property name="outFilter">

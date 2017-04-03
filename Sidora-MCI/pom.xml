@@ -70,25 +70,6 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-cxf</artifactId>
-            <!--<exclusions>
-                <exclusion>
-                    <groupId>org.apache.aries.blueprint</groupId>
-                    <artifactId>org.apache.aries.blueprint.core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.aries.blueprint</groupId>
-                    <artifactId>org.apache.aries.blueprint.api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.aries.quiesce</groupId>
-                    <artifactId>org.apache.aries.quiesce.api</artifactId>
-                </exclusion>
-                &lt;!&ndash;  exclude additional unneeded components &ndash;&gt;
-                <exclusion>
-                    <groupId>org.apache.camel</groupId>
-                    <artifactId>camel-spring</artifactId>
-                </exclusion>
-            </exclusions>-->
             <scope>provided</scope>
         </dependency>
         <!-- Will pull other CXF modules such cxf-core and cxf-rt-transports-http, check the pom for more information -->
@@ -148,7 +129,7 @@
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
             <version>1.0</version>
-            <!--<scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>edu.si.services.camel</groupId>
@@ -197,7 +178,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <!--<scope>test</scope>-->
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -299,49 +280,12 @@
                         <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
                         <Private-Package>edu.si.services.sidora.rest.mci</Private-Package>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
-                        <!--<Embed-Transitive>true</Embed-Transitive>
-                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
-                        <Import-Package>
-                            javax.wsdl,
-                            javax.xml.bind,
-                            javax.xml.bind.annotation,
-                            javax.ws.rs,
-                            javax.ws.rs.core,
-                            org.apache.commons.httpclient,
-                            org.apache.commons.httpclient.methods,
-                            org.osgi.service.blueprint,
-                            *;resolution:=optional
-                        </Import-Package>
-                        <Export-Package>
-                            edu.si.services.sidora.rest.mci
-                        </Export-Package>-->
                     </instructions>
-                </configuration>
-            </plugin>
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <karaf.home>target/classes</karaf.home>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>-->
-
-            <!-- to run the example using mvn camel:run -->
-            <plugin>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-maven-plugin</artifactId>
-                <configuration>
-                    <useBlueprint>true</useBlueprint>
-                    <!-- ConfigAdmin options which have been added since Camel 2.12.0 -->
-                    <configAdminPid>edu.si.sidora.mci</configAdminPid>
-                    <configAdminFileName>Sidora-MCI/etc/edu.si.sidora.mci.cfg</configAdminFileName>
-                    <!--<logClasspath>true</logClasspath>-->
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
     <reporting>
         <plugins>
             <plugin>

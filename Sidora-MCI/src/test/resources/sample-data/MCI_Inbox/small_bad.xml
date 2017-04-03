@@ -3,4 +3,5 @@
         through.
     </Field>
     <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
+    <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
 </Fields>

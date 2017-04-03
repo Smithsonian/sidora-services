@@ -32,7 +32,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
-import org.apache.camel.builder.xml.XPathBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +50,29 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
         Namespaces ns = new Namespaces("ri", "http://www.w3.org/2005/sparql-results#");
 
+        //Continue on database exceptions in AddMCIProject route
+        onException(java.sql.SQLException.class,
+                com.mysql.jdbc.exceptions.jdbc4.CommunicationsException.class,
+                org.springframework.jdbc.CannotGetJdbcConnectionException.class)
+                .onWhen(simple("${routeId} == 'AddMCIProject'"))
+                .continued(true)
+                .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: Error reported: ${exception.message} - [${routeId}] cannot process this message.");
+
+        //Send Response for validation exceptions in AddMCIProject
+        onException(org.apache.camel.ValidationException.class, net.sf.saxon.trans.XPathException.class)
+                .onWhen(simple("${routeId} == 'AddMCIProject'"))
+                .handled(true)
+                .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
+                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
+                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource")
+                .setBody(simple("${header.error}"))
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("400"))
+                .removeHeaders("mciProjectXML|mciDESCMETA");
+
+        //Retries for all exceptions after response has been sent
         onException(java.net.ConnectException.class,
+                org.xml.sax.SAXParseException.class,
+                net.sf.saxon.trans.XPathException.class,
                 java.sql.SQLException.class,
                 com.mysql.jdbc.exceptions.jdbc4.CommunicationsException.class,
                 org.springframework.jdbc.CannotGetJdbcConnectionException.class,
@@ -63,139 +84,108 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.WARN)
                 .logExhausted(false)
-                .handled(true)
-                .setBody(simple("Error reported: ${exception.message} - cannot process this message."))
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("500"))
-                .removeHeaders("mciProjectXML|mciDESCMETA");
+                //.handled(true)
+                .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
+                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
+                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource");
 
-        onException(org.apache.camel.component.cxf.CxfOperationException.class)
-                .onWhen(simple("${exception.statusCode} not in '200,201'"))
-                .useExponentialBackOff()
-                .backOffMultiplier("{{mci.backOffMultiplier}}")
-                .redeliveryDelay("{{mci.redeliveryDelay}}")
-                .maximumRedeliveries("{{mci.maximumRedeliveries}}")
-                .retryAttemptedLogLevel(LoggingLevel.WARN)
-                .retriesExhaustedLogLevel(LoggingLevel.WARN)
-                .logExhausted(false)
-                .handled(true);
-
-        onException(org.xml.sax.SAXParseException.class)
-                .useOriginalMessage()
-                .handled(true)
-                .setBody(simple("Error reported: ${exception.message} - cannot process this message."))
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("400"))
-                .removeHeaders("mciProjectXML|mciDESCMETA");
-
-        onException(net.sf.saxon.trans.XPathException.class)
-                .useOriginalMessage()
-                .handled(true)
-                .setBody(simple("Error reported: ${exception.message} - cannot process this message."))
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("500"))
-                .removeHeaders("mciProjectXML|mciDESCMETA");
-
-        onException(MCI_Exception.class)
-                .onWhen(simple("${exception.message} contains 'Folder Holder'"))
-                .useExponentialBackOff()
-                .backOffMultiplier("{{mci.backOffMultiplier}}")
-                .redeliveryDelay("{{mci.redeliveryDelay}}")
-                .maximumRedeliveries("{{mci.maximumRedeliveries}}")
-                .retryAttemptedLogLevel(LoggingLevel.WARN)
-                .retriesExhaustedLogLevel(LoggingLevel.WARN)
-                .logExhausted(false)
-                .continued(true);
-
+        //Retry and continue when Folder Holder is not found in the Drupal dB
         onException(MCI_Exception.class)
                 .useExponentialBackOff()
                 .backOffMultiplier("{{mci.backOffMultiplier}}")
                 .redeliveryDelay("{{mci.redeliveryDelay}}")
                 .maximumRedeliveries("{{mci.maximumRedeliveries}}")
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
-                .retriesExhaustedLogLevel(LoggingLevel.WARN)
+                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
                 .logExhausted(false)
-                .handled(true)
-                .setBody(simple("Error reported: ${exception.message} - cannot process this message."))
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("500"))
-                .removeHeaders("mciProjectXML|mciDESCMETA");
+                .continued(true)
+                .setBody().simple("[${routeId}] :: Error reported: ${exception.message}")
+                .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
+                .log(LoggingLevel.WARN, LOG_NAME, "${body} :: Using Default User PID ${header.mciOwnerPID} ... {{mci.default.owner.pid}} !!!");
 
         from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer")
                 .routeId("SidoraMCIService")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting Sidora MCI Service Request for: ${header.operationName} ... ")
                 .recipientList(simple("direct:${header.operationName}"))
+                .removeHeaders("mciProjectXML|mciDESCMETA")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished Sidora MCI Service Request for: ${header.operationName} ... ");
-
 
         from("direct:addProject")
                 .routeId("AddMCIProject")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project...")
 
-                .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|CamelHttpUri|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project Concept...")
-                .convertBodyTo(String.class, "UTF-8")
+                .convertBodyTo(String.class)
+                .setHeader("incomingHeaders").simple("${headers}", String.class)
                 .setHeader("mciProjectXML", simple("${body}", String.class))
 
+                //Add the request to the database (on exception log and continue)
+                .toD("sql:{{sql.addRequest}}?dataSource=requestDataSource").id("createRequest")
+
+                .setBody().simple("${header.mciProjectXML}", String.class)
+
+                //Validate the incoming XML and do the transform (on exception log, update dB, and send error in response)
+                .to("validator:file:target/test-classes/Input/schemas/MCIProjectSchema.xsd")
+                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true").id("xsltMCIProjectToSIdoraProject")
+                .log(LoggingLevel.INFO, "Transform Successful")
+                .setHeader("mciDESCMETA", simple("${body}", String.class))
+
+                //Remove unneeded headers that may cause problems later on
+                .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders")
+
+                //Process the MCI Project Asynchronously
+                .to("seda:processProject?waitForTaskToComplete=Never")
+
+                //Send OK response for valid requests
+                .setBody().simple("OK :: Created :: ExchangeId: ${exchangeId}")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project...");
+
+        from("seda:processProject").routeId("ProcessMCIProject")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Process MCI Project...")
+
+                .toD("sql:{{sql.consumeRequest}}?dataSource=requestDataSource").id("consumeRequest")
+
                 //Get the username from MCI Project XML
-                .setHeader("mciFolderHolder").xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class, ns, "mciProjectXML")
-                .log(LoggingLevel.INFO, "Found MCI Folder Holder: ${header.mciFolderHolder}")
+                .setHeader("mciFolderHolder").xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class, ns, "mciProjectXML").id("folderHolderXpath")
+                .log(LoggingLevel.DEBUG, "Found MCI Folder Holder: ${header.mciFolderHolder}")
 
-                .to("direct:findFolderHolderUserPID")
-
-                .choice()
-                    .when().simple("${header.mciOwnerPID} == null")
-                        .setHeader("mciFolderHolder").simple("{{mci.default.owner.name}}", String.class)
-                        .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder User PID Not Found!!! Retry Finding User PID with default MCI User = ${header.mciFolderHolder}")
-                        .to("direct:findDefaultMCIUserPID")
-                .end()
+                .to("direct:findFolderHolderUserPID").id("findFolderHolderUserPID")
 
                 .setBody().simple("${header.mciOwnerPID}", String.class).id("setOwnerPID")
 
                 //Check if Parent User Object (Folder Holder) Exists, else error and quit.
-                .to("direct:FindObjectByPIDPredicate")
+                .to("direct:FindObjectByPIDPredicate").id("FindObjectByPIDPredicate")
+
                 .choice()
                     .when().simple("${body} == true")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Root object exists.")
-                        .setHeader("CamelFedoraPid", simple("${header.parentId}"))
-                        // Add the project
-                        .setBody().simple("${header.mciProjectXML}", String.class)
-                        .to("direct:mciCreateConcept")
+                        .to("direct:mciCreateConcept").id("mciCreateConcept")
                     .endChoice()
                     .otherwise()
                         .log(LoggingLevel.WARN, LOG_NAME, "${id}: Root object does not exist.")
                         .throwException(new IllegalArgumentException("Root object does not exist."))
                     .end()
-                .removeHeaders("mciProjectXML|mciDESCMETA")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project Concept...");
+                .toD("sql:{{sql.completeRequest}}?dataSource=requestDataSource").id("completeRequest")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Process MCI Project...");
 
         from("direct:findFolderHolderUserPID").routeId("MCIFindFolderHolderUserPID").errorHandler(noErrorHandler())
-                .toD("sql:{{sql.find.mci.user.pid}}").id("queryFolderHolder")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Find MCI Folder Holder User PID...")
+                .toD("sql:{{sql.find.mci.user.pid}}?dataSource=drupalDataSource").id("queryFolderHolder")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "Drupal db SQL Query Result Body: ${body}")
                 .choice()
-                .when().simple("${body.size} == 0")
-                    .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder User PID Not Found!!!")
-                    .throwException(MCI_Exception.class, "Folder Holder User PID Not Found!!!")
-                .endChoice()
-                .when().simple("${body[0][name]} == ${header.mciFolderHolder}")
-                    .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
-                    .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
-                .endChoice();
-
-        from("direct:findDefaultMCIUserPID").routeId("MCIFindDefaultUserPID").errorHandler(noErrorHandler())
-                .toD("sql:{{sql.find.mci.user.pid}}").id("queryDefaultUser")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "Drupal db SQL Query Result Body: ${body}")
-                .choice()
-                    .when().simple("${body.size} == 0")
-                    .log(LoggingLevel.WARN, LOG_NAME, "Default MCI User PID Not Found!!!}")
-                    .throwException(MCI_Exception.class, "Default MCI User PID Not Found!!!")
-                .endChoice()
-                .when().simple("${body[0][name]} == ${header.mciFolderHolder}")
-                    .log(LoggingLevel.INFO, LOG_NAME, "Default Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
-                    .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
-                .endChoice();
+                    .when().simple("${body.size} != 0 && ${body[0][user_pid]} != null")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
+                        .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
+                    .endChoice()
+                    .otherwise()
+                        .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder User PID Not Found!!!")
+                        .throwException(MCI_Exception.class, "Folder Holder User PID Not Found!!!")
+                    .end()
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Find MCI Folder Holder User PID...");
 
 
         from("direct:mciCreateConcept").routeId("MCICreateConcept")
-                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true").id("xsltMCIProjectToSIdoraProject")
-                .log(LoggingLevel.INFO, "Transform Successful")
-                .setHeader("mciDESCMETA", simple("${body}", String.class))
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Create MCI Project Concept...")
+
                 .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, "mciDESCMETA")
 
                 //Create the MCI Project Concept
@@ -224,32 +214,30 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 //Create the Parent Child Relationship
                 .toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
 
-                .setHeader("ProjectPID", simple("$header.CamelFedoraPid}"))
-                .setBody().simple("OK :: Created PID: ${header.CamelFedoraPid} for Parent PID: ${header.mciOwnerPID}");
+                .setHeader("ProjectPID", simple("${header.CamelFedoraPid}"))
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID:${header.ProjectPID}...");
 
         from("direct:FindObjectByPIDPredicate")
                 .routeId("MCIFindObjectByPIDPredicate")
+
                 .setBody().simple("ASK FROM <info:edu.si.fedora#ri>{<info:fedora/${body}> ?p ?o .}")
                 .setBody().groovy("\"query=\" + URLEncoder.encode(request.getBody(String.class));")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query - ${body}")
+
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .toD("cxfrs:{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class)
+
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query Result - ${body}")
-                .setBody(XPathBuilder.xpath("//ri:boolean/text()", String.class).namespaces(ns).logNamespaces())
+
+                .setBody().xpath("//ri:boolean/text()", String.class, ns)
+
                 .choice()
                     .when().simple("${body} == false")
                         .throwException(edu.si.services.fedorarepo.FedoraObjectNotFoundException.class, "The fedora object not found")
                 .end()
+
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Object By PID - ${body}.")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished find object by PID.");
-
-
-
-
-
-
-
-
     }
 }
