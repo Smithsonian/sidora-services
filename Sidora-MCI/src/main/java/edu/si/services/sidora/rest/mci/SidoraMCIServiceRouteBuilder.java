@@ -124,7 +124,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .setBody().simple("${header.mciProjectXML}", String.class)
 
                 //Validate the incoming XML and do the transform (on exception log, update dB, and send error in response)
-                .to("validator:file:target/test-classes/Input/schemas/MCIProjectSchema.xsd")
+                .to("validator:file:{{karaf.home}}/Input/schemas/MCIProjectSchema.xsd")
                 .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true").id("xsltMCIProjectToSIdoraProject")
                 .log(LoggingLevel.INFO, "Transform Successful")
                 .setHeader("mciDESCMETA", simple("${body}", String.class))
