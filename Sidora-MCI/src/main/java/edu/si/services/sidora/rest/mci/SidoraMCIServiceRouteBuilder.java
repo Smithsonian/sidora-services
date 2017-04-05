@@ -55,6 +55,9 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 com.mysql.jdbc.exceptions.jdbc4.CommunicationsException.class,
                 org.springframework.jdbc.CannotGetJdbcConnectionException.class)
                 .onWhen(simple("${routeId} == 'AddMCIProject'"))
+                .maximumRedeliveries("3")
+                .retryAttemptedLogLevel(LoggingLevel.WARN)
+                .logExhausted(false)
                 .continued(true)
                 .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: Error reported: ${exception.message} - [${routeId}] cannot process this message.");
 
@@ -67,7 +70,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource")
                 .setBody(simple("${header.error}"))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("400"))
-                .removeHeaders("mciProjectXML|mciDESCMETA");
+                .removeHeaders("mciProjectXML|mciDESCMETA|error");
 
         //Retries for all exceptions after response has been sent
         onException(java.net.ConnectException.class,
@@ -77,27 +80,14 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 com.mysql.jdbc.exceptions.jdbc4.CommunicationsException.class,
                 org.springframework.jdbc.CannotGetJdbcConnectionException.class,
                 edu.si.services.fedorarepo.FedoraObjectNotFoundException.class)
-                .useExponentialBackOff()
-                .backOffMultiplier("{{mci.backOffMultiplier}}")
-                .redeliveryDelay("{{mci.redeliveryDelay}}")
-                .maximumRedeliveries("{{mci.maximumRedeliveries}}")
-                .retryAttemptedLogLevel(LoggingLevel.WARN)
-                .retriesExhaustedLogLevel(LoggingLevel.WARN)
-                .logExhausted(false)
-                //.handled(true)
+                .redeliveryPolicyRef("mciRedeliveryPolicy")
                 .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource");
 
         //Retry and continue when Folder Holder is not found in the Drupal dB
         onException(MCI_Exception.class)
-                .useExponentialBackOff()
-                .backOffMultiplier("{{mci.backOffMultiplier}}")
-                .redeliveryDelay("{{mci.redeliveryDelay}}")
-                .maximumRedeliveries("{{mci.maximumRedeliveries}}")
-                .retryAttemptedLogLevel(LoggingLevel.WARN)
-                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-                .logExhausted(false)
+                .redeliveryPolicyRef("mciRedeliveryPolicy")
                 .continued(true)
                 .setBody().simple("[${routeId}] :: Error reported: ${exception.message}")
                 .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
