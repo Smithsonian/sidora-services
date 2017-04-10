@@ -46,6 +46,11 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "edu.si.mci")
     static private String LOG_NAME;
 
+    @PropertyInject(value = "mci.retryAttemptedLogLevel")
+    static private String retryAttemptedLogLevel;
+    @PropertyInject(value = "mci.retriesExhaustedLogLevel")
+    static private String retriesExhaustedLogLevel;
+
     @Override
     public void configure() throws Exception {
         Namespaces ns = new Namespaces("ri", "http://www.w3.org/2005/sparql-results#");
@@ -59,7 +64,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .logExhausted(false)
                 .continued(true)
-                .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: Error reported: ${exception.message} - [${routeId}] cannot process this message.");
+                .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: Error reported: ${exception.message} - cannot process this message.");
 
         //Send Response for validation exceptions in AddMCIProject
         onException(org.apache.camel.ValidationException.class, net.sf.saxon.trans.XPathException.class)
@@ -67,7 +72,9 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .handled(true)
                 .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
-                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "=========(0)=========[ ExchangeId= ${exchangeId} || CamelCorrelationId= ${property.CamelCorrelationId} ]========(0)==========")
+                .to("log:{{edu.si.mci}}?showAll=true&maxChars=100000&multiline=true&level=DEBUG")
+                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("onExceptionAddValidationErrorsToDB")
                 .setBody(simple("${header.error}"))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("400"))
                 .removeHeaders("mciProjectXML|mciDESCMETA|error");
@@ -80,18 +87,33 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 com.mysql.jdbc.exceptions.jdbc4.CommunicationsException.class,
                 org.springframework.jdbc.CannotGetJdbcConnectionException.class,
                 edu.si.services.fedorarepo.FedoraObjectNotFoundException.class)
-                .redeliveryPolicyRef("mciRedeliveryPolicy")
+                .useExponentialBackOff()
+                .backOffMultiplier("{{mci.backOffMultiplier}}")
+                .redeliveryDelay("{{mci.redeliveryDelay}}")
+                .maximumRedeliveries("{{mci.maximumRedeliveries}}")
+                .retryAttemptedLogLevel(LoggingLevel.valueOf(retryAttemptedLogLevel))
+                .retriesExhaustedLogLevel(LoggingLevel.valueOf(retriesExhaustedLogLevel))
+                .logExhausted("{{mci.logExhausted}}")
                 .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
-                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource");
+                .log(LoggingLevel.DEBUG, LOG_NAME, "=========(1)=========[ ExchangeId= ${exchangeId} || CamelCorrelationId= ${property.CamelCorrelationId} ]========(1)==========")
+                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("processProjectOnExceptionSQL");
 
         //Retry and continue when Folder Holder is not found in the Drupal dB
         onException(MCI_Exception.class)
-                .redeliveryPolicyRef("mciRedeliveryPolicy")
+                .useExponentialBackOff()
+                .backOffMultiplier("{{mci.backOffMultiplier}}")
+                .redeliveryDelay("{{mci.redeliveryDelay}}")
+                .maximumRedeliveries("{{mci.maximumRedeliveries}}")
+                .retryAttemptedLogLevel(LoggingLevel.valueOf(retryAttemptedLogLevel))
+                .retriesExhaustedLogLevel(LoggingLevel.valueOf(retriesExhaustedLogLevel))
+                .logExhausted(false)
                 .continued(true)
                 .setBody().simple("[${routeId}] :: Error reported: ${exception.message}")
                 .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
-                .log(LoggingLevel.WARN, LOG_NAME, "${body} :: Using Default User PID ${header.mciOwnerPID} ... {{mci.default.owner.pid}} !!!");
+                .log(LoggingLevel.WARN, LOG_NAME, "${body} :: Using Default User PID ${header.mciOwnerPID} ... {{mci.default.owner.pid}} !!!").id("MCI_ExceptionOnException");
+
+
 
         from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer")
                 .routeId("SidoraMCIService")
@@ -114,16 +136,16 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .setBody().simple("${header.mciProjectXML}", String.class)
 
                 //Validate the incoming XML and do the transform (on exception log, update dB, and send error in response)
-                .to("validator:file:{{karaf.home}}/Input/schemas/MCIProjectSchema.xsd")
+                .to("validator:file:{{karaf.home}}/Input/schemas/MCIProjectSchema.xsd").id("MCIProjectSchemaValidation")
                 .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true").id("xsltMCIProjectToSIdoraProject")
-                .log(LoggingLevel.INFO, "Transform Successful")
+                .log(LoggingLevel.DEBUG, "Transform Successful")
                 .setHeader("mciDESCMETA", simple("${body}", String.class))
 
                 //Remove unneeded headers that may cause problems later on
                 .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders")
 
                 //Process the MCI Project Asynchronously
-                .to("seda:processProject?waitForTaskToComplete=Never")
+                .to("seda:processProject?waitForTaskToComplete=Never").id("sedaProcessProject")
 
                 //Send OK response for valid requests
                 .setBody().simple("OK :: Created :: ExchangeId: ${exchangeId}")
@@ -167,8 +189,8 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
                     .endChoice()
                     .otherwise()
-                        .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder User PID Not Found!!!")
-                        .throwException(MCI_Exception.class, "Folder Holder User PID Not Found!!!")
+                        .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
+                        .throwException(MCI_Exception.class, "Folder Holder User PID Not Found!!!").id("throwMCIException")
                     .end()
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Find MCI Folder Holder User PID...");
 
@@ -205,7 +227,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
 
                 .setHeader("ProjectPID", simple("${header.CamelFedoraPid}"))
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID:${header.ProjectPID}...");
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.ProjectPID}...");
 
         from("direct:FindObjectByPIDPredicate")
                 .routeId("MCIFindObjectByPIDPredicate")
@@ -224,6 +246,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .choice()
                     .when().simple("${body} == false")
+                        .log(LoggingLevel.ERROR, LOG_NAME, "The fedora object '${header.mciOwnerPID}' not found!!!")
                         .throwException(edu.si.services.fedorarepo.FedoraObjectNotFoundException.class, "The fedora object not found")
                 .end()
 

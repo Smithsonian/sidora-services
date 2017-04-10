@@ -27,15 +27,15 @@
 
 package edu.si.services.sidora.rest.mci;
 
+import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.model.SetHeaderDefinition;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -44,16 +44,12 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.jdbc.CannotGetJdbcConnectionException;
 
 import java.io.File;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
@@ -65,7 +61,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
     static private String LOG_NAME = "edu.si.mci";
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = true;
+    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private String defaultTestProperties = "src/test/resources/test.properties";
 
     private static final String SERVICE_ADDRESS = "/sidora/mci";
@@ -119,75 +115,20 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
         return true;
     }
 
+    /**
+     * Test the correct return response is received
+     *
+     * @throws Exception
+     */
     @Test
-    public void testFolderHolderNotFoundRetry() throws Exception {
-
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("mciFolderHolder", "testUser");
-        mockResult.expectedHeaderReceived("mciOwnerPID", "si-user:57");
-
-        MockEndpoint mockFolderHolderResult = getMockEndpoint("mock:folderHolderResult");
-        mockFolderHolderResult.expectedMessageCount(11);
-
-        context.getRouteDefinition("ProcessMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("consumeRequest").remove();
-                weaveById("folderHolderXpath").remove();
-                weaveById("setOwnerPID").before().to("mock:result").stop();
-            }
-        });
-
-        context.getRouteDefinition("MCIFindFolderHolderUserPID").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                List<Map<String,Object>> sqlResultBody = new ArrayList<Map<String,Object>>();
-                weaveById("queryFolderHolder").replace().setBody().constant(sqlResultBody).to("mock:folderHolderResult");
-            }
-        });
-
-        context.start();
-
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("mciFolderHolder", "testUser");
-
-        template.send("seda:processProject", exchange);
-
-        assertMockEndpointsSatisfied();
-    }
-
-    @Test
-    public void testBadXMLPayload() throws Exception {
-
-        String payload = "<Fields>\n" +
-                "    <Field Type=\"Text\" Name=\"Title\" DisplayName=\"Project Title\">Testing of MCI Project request - all approval go\n" +
-                "        through.\n" +
-                "    </Field>\n" +
-                "    <Field Type=\"User\" Name=\"Folder_x0020_Holder\" DisplayName=\"Folder Holder\">i:0#.w|us\\testFolderHolder</Field>\n" +
-                "    <Field Type=\"User\" Name=\"Folder_x0020_Holder\" DisplayName=\"Folder Holder\">i:0#.w|us\\testFolderHolder</Field>\n" +
-                "</Fields>";
-
-        HttpPost post = new HttpPost(BASE_URL + "/addProject");
-        post.addHeader("Content-Type", "application/xml");
-        post.addHeader("Accept", "application/xml");
-        //post.setEntity(new StringEntity(readFileToString(TEST_BAD_XML)));
-        post.setEntity(new StringEntity(payload));
-        HttpResponse response = httpClient.execute(post);
-        assertEquals(400, response.getStatusLine().getStatusCode());
-
-        String responseBody = EntityUtils.toString(response.getEntity());
-
-        assertStringContains(responseBody, "Error reported: Validation failed for");
-    }
-
-    @Test
-    public void testRequest() throws Exception {
+    public void testRequestOKResponse() throws Exception {
 
         context.getRouteDefinition("AddMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                //Skip adding request to database
                 weaveById("createRequest").remove();
+                //Skip further processing since all we are interested in is the return response
                 weaveByToString(".*seda:processProject.*").remove();
             }
         });
@@ -207,68 +148,192 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
         assertMockEndpointsSatisfied();
     }
 
+    /**
+     * Test the correct return response is received when bad xml payload is received. Validation errors throw exception
+     * and is handled by onException sending errors to log, and body for the response and skipping recording errors to database
+     * @throws Exception
+     */
     @Test
-    public void testRequestNoDrupalDB() throws Exception {
+    public void testValidationFailedErrorResponse() throws Exception {
 
-        MockEndpoint mockFolderHolderResult = getMockEndpoint("mock:folderHolderResult");
-        mockFolderHolderResult.expectedMessageCount(11);
+        String payload = "<Fields>\n" +
+                "    <Field Type=\"Text\" Name=\"Title\" DisplayName=\"Project Title\">Testing of MCI Project request - all approval go\n" +
+                "        through.\n" +
+                "    </Field>\n" +
+                "    <Field Type=\"User\" Name=\"Folder_x0020_Holder\" DisplayName=\"Folder Holder\">i:0#.w|us\\testFolderHolder</Field>\n" +
+                "    <Field Type=\"User\" Name=\"Folder_x0020_Holder\" DisplayName=\"Folder Holder\">i:0#.w|us\\testFolderHolder</Field>\n" +
+                "</Fields>";
 
-        MockEndpoint mockProcessMCIProjectResult = getMockEndpoint("mock:processMCIProjectResult");
-        mockProcessMCIProjectResult.expectedMessageCount(1);
+        context.getRouteDefinition("AddMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //Skip adding request to database
+                weaveById("createRequest").remove();
+                weaveById("onExceptionAddValidationErrorsToDB").remove();
+                //Skip further processing since all we are interested in is the return response
+                weaveByToString(".*seda:processProject.*").remove();
+            }
+        });
 
-        MockEndpoint mockMciFindObjectByPIDPredicate= getMockEndpoint("mock:mciFindObjectByPIDPredicate");
-        mockMciFindObjectByPIDPredicate.expectedMessageCount(1);
-        mockMciFindObjectByPIDPredicate.expectedBodiesReceived("true");
+        //for (int i = 0; i < 25; i++) {
+
+            HttpPost post = new HttpPost(BASE_URL + "/addProject");
+            post.addHeader("Content-Type", "application/xml");
+            post.addHeader("Accept", "application/xml");
+            //post.setEntity(new StringEntity(readFileToString(TEST_BAD_XML)));
+            post.setEntity(new StringEntity(payload));
+            HttpResponse response = httpClient.execute(post);
+            assertEquals(400, response.getStatusLine().getStatusCode());
+
+            String responseBody = EntityUtils.toString(response.getEntity());
+            String responseHeaders = Arrays.toString(response.getAllHeaders());
+
+            assertStringContains(responseBody, "Error reported: Validation failed for");
+        //}
+    }
+
+    /**
+     * Test onException in AddMCIProject route for SQL exceptions retries and continues routing after retries are exhausted
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSQLExceptionAndRetriesForAddMCIProjectRoute() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(SQLException.class);
+        mockResult.expectedHeaderReceived("redeliveryCount", 3);
+
+        context.getRouteDefinition("AddMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //processor used to replace sql query to test onException and retries
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws SQLException {
+                        Message in = exchange.getIn();
+                        in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
+                        throw new SQLException("Testing AddMCIProject SQL exception handling");
+                    }
+                };
+
+                //advice sending to database and replace with processor
+                weaveById("createRequest").replace().process(processor);
+                weaveById("sedaProcessProject").remove();
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        context.start();
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("mciFolderHolder", "testUser");
+        exchange.getIn().setBody(readFileToString(TEST_XML));
+
+        template.send("direct:addProject", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    /**
+     * Test onException retries when folder holder is not found in the Drupal dB and continues routing after
+     * retries are exhausted setting the user pid to the default user.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testFolderHolderNotFoundRetry() throws Exception {
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("mciFolderHolder", "testUser");
+        mockResult.expectedHeaderReceived("mciOwnerPID", "si-user:57");
+        mockResult.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(MCI_Exception.class);
+        mockResult.expectedHeaderReceived("redeliveryCount", 10);
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+        mockError.expectedHeaderReceived("redeliveryCount", 10);
 
         context.getRouteDefinition("ProcessMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //Skip Object Creation
-                interceptSendToEndpoint("direct:mciCreateConcept").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, LOG_NAME, "Skip Creating Fedora Objects");
-                weaveAddLast().to("mock:processMCIProjectResult");
+                weaveById("MCI_ExceptionOnException").after().to("mock:error");
+                weaveById("consumeRequest").remove();
+                weaveById("folderHolderXpath").remove();
+                weaveById("setOwnerPID").before().to("mock:result").stop();
             }
         });
 
         context.getRouteDefinition("MCIFindFolderHolderUserPID").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                List<Map<String,Object>> sqlResultBody = new ArrayList<Map<String,Object>>();
-                weaveById("queryFolderHolder").replace().setBody().constant(sqlResultBody).to("mock:folderHolderResult");
+
+                //processor used to replace sql query to test onException and retries
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws MCI_Exception {
+                        Message in = exchange.getIn();
+                        in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
+                        throw new MCI_Exception("Folder Holder User PID Not Found!!!");
+                    }
+                };
+
+                weaveById("queryFolderHolder").remove();
+                weaveById("throwMCIException").replace().process(processor);
+
             }
         });
 
-        /*context.getRouteDefinition("MCIFindDefaultUserPID").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                List<Map<String,Object>> sqlResultBody = new ArrayList<Map<String,Object>>();
-                Map<String, Object> sqlmap = new HashedMap();
-                sqlmap.put("name", "sternb");
-                sqlmap.put("user_pid", "si-user:57");
-                sqlResultBody.add(sqlmap);
-                weaveById("queryDefaultUser").replace().setBody().constant(sqlResultBody);
-            }
-        });*/
+        context.start();
 
-        context.getRouteDefinition("MCIFindObjectByPIDPredicate").adviceWith(context, new AdviceWithRouteBuilder() {
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("mciFolderHolder", "testUser");
+
+        template.send("seda:processProject", exchange);
+
+        assertMockEndpointsSatisfied(5, TimeUnit.SECONDS); // make sure the redeliveries finish
+    }
+
+    /**
+     * Test the onException handling during processing without sending errors to database
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testAllOtherExceptionsDuringProcessMCIProjectRoute() throws Exception {
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+        mockError.expectedHeaderReceived(Exchange.REDELIVERY_COUNTER, 10);
+        mockError.expectedHeaderReceived(Exchange.REDELIVERY_MAX_COUNTER, 10);
+        mockError.expectedHeaderReceived(Exchange.REDELIVERED, true);
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(0);
+
+        context.getRouteDefinition("ProcessMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveAddLast().to("mock:mciFindObjectByPIDPredicate");
+
+                //processor used to to test onException
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws FedoraObjectNotFoundException {
+                        throw new FedoraObjectNotFoundException("The fedora object not found");
+                    }
+                };
+
+                weaveById("processProjectOnExceptionSQL").replace().to("mock:error");
+                interceptFrom().process(processor).to("mock:result");
+
             }
         });
 
-        HttpPost post = new HttpPost(BASE_URL + OWNERID + "/addProject");
-        post.addHeader("Content-Type", "application/xml");
-        post.addHeader("Accept", "application/xml");
-        //post.setEntity(new StringEntity(readFileToString(new File("src/test/resources/sample-data/MCI_Inbox/small.xml"))));
-        post.setEntity(new StringEntity(readFileToString(TEST_XML)));
-        HttpResponse response = httpClient.execute(post);
-        assertEquals(200, response.getStatusLine().getStatusCode());
+        context.start();
 
-        String responseBody = EntityUtils.toString(response.getEntity());
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setBody("Testing OnException");
 
-        assertStringContains(responseBody, "OK :: Created");
+        template.send("seda:processProject", exchange);
 
+        //Give the redeliveries time to finish
         assertMockEndpointsSatisfied(15, TimeUnit.SECONDS);
-        //assertMockEndpointsSatisfied();
     }
 }

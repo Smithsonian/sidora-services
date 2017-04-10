@@ -95,16 +95,6 @@
 		</property>
 	</bean>
 
-	<bean id="mciRedeliveryPolicy" class="org.apache.camel.processor.RedeliveryPolicy">
-		<property name="useExponentialBackOff" value="${mci.useExponentialBackOff}"/>
-		<property name="backOffMultiplier" value="${mci.backOffMultiplier}"/>
-		<property name="redeliveryDelay" value="${mci.redeliveryDelay}"/>
-		<property name="maximumRedeliveries" value="${mci.maximumRedeliveries}"/>
-		<property name="retryAttemptedLogLevel" value="${mci.retryAttemptedLogLevel}"/>
-		<property name="retriesExhaustedLogLevel" value="${mci.retriesExhaustedLogLevel}"/>
-		<property name="logExhausted" value="${mci.logExhausted}"/>
-	</bean>
-
 	<bean id="mciRoutes" class="edu.si.services.sidora.rest.mci.SidoraMCIServiceRouteBuilder"/>
 
 	<!-- MCI route context -->
