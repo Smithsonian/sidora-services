@@ -111,7 +111,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .continued(true)
                 .setBody().simple("[${routeId}] :: Error reported: ${exception.message}")
                 .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
-                .log(LoggingLevel.WARN, LOG_NAME, "${body} :: Using Default User PID ${header.mciOwnerPID} ... {{mci.default.owner.pid}} !!!").id("MCI_ExceptionOnException");
+                .log(LoggingLevel.WARN, LOG_NAME, "${body} :: Using Default User PID ${header.mciOwnerPID}!!!").id("MCI_ExceptionOnException");
 
 
 
@@ -204,11 +204,11 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
 
                 //Add the RELS=EXT Datastream
-                .toD("velocity:file:{{karaf.home}}/Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
+                .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectTemplate.vsl").id("velocityMCIProjectTemplate")
                 .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
 
                 //Add the SIDORA Datastream
-                .toD("velocity:file:{{karaf.home}}/Input/templates/MCISidoraTemplate.vsl").id("velocityMCISidoraTemplate")
+                .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectSidoraTemplate.vsl").id("velocityMCIProjectSidoraTemplate")
                 .toD("fedora:addDatastream?name=SIDORA&type=text/xml&group=X&dsLabel=SIDORA%20Record&versionable=true")
 
                 //Add the DESCMETA Datastream
@@ -219,15 +219,15 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("xslt:file:{{karaf.home}}/Input/xslt/SIdoraConcept2DC.xsl?saxon=true").id("xsltSIdoraConcept2DC")
                 .toD("fedora:addDatastream?name=DC&type=text/xml&group=X")
 
-                //Add the MCI Project XMl to OBJ Datastream
+                //Add the MCI Project XMl to MANIFEST Datastream
                 .setBody().simple("${header.mciProjectXML}", String.class)
-                .toD("fedora:addDatastream?name=OBJ&type=text/xml&group=X&dsLabel=${header.mciLabel}&versionable=true")
+                .toD("fedora:addDatastream?name=MANIFEST&type=text/xml&group=X&dsLabel=MANIFEST&versionable=true")
 
                 //Create the Parent Child Relationship
                 .toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
 
-                .setHeader("ProjectPID", simple("${header.CamelFedoraPid}"))
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.ProjectPID}...");
+                .setHeader("projectPID", simple("${header.CamelFedoraPid}"))
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.projectPID}...");
 
         from("direct:FindObjectByPIDPredicate")
                 .routeId("MCIFindObjectByPIDPredicate")
