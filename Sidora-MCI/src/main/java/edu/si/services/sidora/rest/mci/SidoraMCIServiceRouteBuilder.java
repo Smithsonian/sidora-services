@@ -216,7 +216,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("fedora:addDatastream?name=DESCMETA&type=text/xml&group=X&dsLabel=DESCMETA%20Record&versionable=true")
 
                 //Update the DC datastream
-                .toD("xslt:file:{{karaf.home}}/Input/xslt/SIdoraConcept2DC.xsl?saxon=true").id("xsltSIdoraConcept2DC")
+                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectSIdoraConcept2DC.xsl?saxon=true").id("xsltSIdoraConcept2DC")
                 .toD("fedora:addDatastream?name=DC&type=text/xml&group=X")
 
                 //Add the MCI Project XMl to MANIFEST Datastream
