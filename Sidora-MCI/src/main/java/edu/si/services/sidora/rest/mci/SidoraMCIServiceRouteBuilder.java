@@ -171,7 +171,6 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                     .when().simple("${body} == true")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Root object exists.")
                         .to("direct:mciCreateConcept").id("mciCreateConcept")
-                        .to("direct:mciCreateResource").id("mciCreateResource")
                     .endChoice()
                     .otherwise()
                         .log(LoggingLevel.WARN, LOG_NAME, "${id}: Root object does not exist.")
@@ -202,10 +201,10 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 //Create the MCI Project Concept
                 .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
+                .setHeader("projectPID", simple("${header.CamelFedoraPid}"))
 
-                //Add the RELS=EXT Datastream
-                .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectTemplate.vsl").id("velocityMCIProjectTemplate")
-                .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
+                //Create the Parent Child Relationship
+                .toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
 
                 //Add the SIDORA Datastream
                 .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectSidoraTemplate.vsl").id("velocityMCIProjectSidoraTemplate")
@@ -216,51 +215,78 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("fedora:addDatastream?name=DESCMETA&type=text/xml&group=X&dsLabel=DESCMETA%20Record&versionable=true")
 
                 //Update the DC datastream
-                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectSIdoraConcept2DC.xsl?saxon=true").id("xsltSIdoraConcept2DC")
+                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectSIdoraConcept2DC.xsl?saxon=true").id("xsltProjectSIdoraConcept2DC")
                 .toD("fedora:addDatastream?name=DC&type=text/xml&group=X")
 
-                //TODO: Create a Resource Object instead of adding the incoming MCI Project XML to the Project Concept Object
-                //Add the MCI Project XMl to MANIFEST Datastream
-                //.setBody().simple("${header.mciProjectXML}", String.class)
-                //.toD("fedora:addDatastream?name=MANIFEST&type=text/xml&group=X&dsLabel=MANIFEST&versionable=true")
+                //Add the MCI Project XMl as a resource
+                .to("direct:mciCreateResource").id("mciCreateResource")
 
-                //Create the Parent Child Relationship
-                .toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
+                .setHeader("CamelFedoraPid", simple("${header.projectPID}"))
 
-                .setHeader("projectPID", simple("${header.CamelFedoraPid}"))
+                //Add the RELS=EXT Datastream
+                .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectTemplate.vsl").id("velocityMCIProjectTemplate")
+                .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
+
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.projectPID}...");
 
         from("direct:mciCreateResource").routeId("MCIreateResource")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Create MCI Project Resource...")
+
+                .setBody().simple("${header.mciProjectXML}")
 
                 .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraGeneralResource.xsl?saxon=true").id("xsltMCIProjectToSIdoraGeneralResource")
                 .log(LoggingLevel.DEBUG, "MCIProjectToSIdoraGeneralResource Transform Successful")
                 .setHeader("mciResourceDESCMETA", simple("${body}", String.class))
 
                 //Create the MCI Project Concept
-                .toD("fedora:create?pid=null&owner=${header.projectPID}&namespace=si&label=${header.mciLabel}")
+                .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
+                .setHeader("projectResourcePID", simple("${header.CamelFedoraPid}"))
 
                 //Add the RELS=EXT Datastream
                 .toD("velocity:file:{{karaf.home}}/Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
                 .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
 
                 //Add the DESCMETA Datastream
-                .setBody().simple("${header.mciProjectDESCMETA}", String.class)
+                .setBody().simple("${header.mciResourceDESCMETA}", String.class)
                 .toD("fedora:addDatastream?name=DESCMETA&type=text/xml&group=X&dsLabel=DESCMETA%20Record&versionable=true")
 
                 //Update the DC datastream
-                //.toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectSIdoraConcept2DC.xsl?saxon=true").id("xsltSIdoraConcept2DC")
-                //.toD("fedora:addDatastream?name=DC&type=text/xml&group=X")
+                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectSIdoraConcept2DC.xsl?saxon=true").id("xsltResourceSIdoraConcept2DC")
+                .toD("fedora:addDatastream?name=DC&type=text/xml&group=X")
 
                 //Add the MCI Project XMl to OBJ Datastream
                 .setBody().simple("${header.mciProjectXML}", String.class)
                 .toD("fedora:addDatastream?name=OBJ&type=text/xml&group=X&dsLabel=OBJ&versionable=true")
 
-                //Create the Parent Child Relationship
-                .toD("fedora:hasConcept?parentPid=${header.projectPID}&childPid=${header.CamelFedoraPid}")
+                //Create the FITS datastream
+                .to("direct:addFITSDataStream")
 
-                .setHeader("projectResourcePID", simple("${header.CamelFedoraPid}"))
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Resource - PID = ${header.projectResourcePID}...");
+
+        from("direct:addFITSDataStream").routeId("MCIProjectAddFITSDataStream")
+                .log(LoggingLevel.INFO, LOG_NAME, "Started processing FITS...")
+
+                .to("file://{{karaf.home}}/staging/")
+
+                .log(LoggingLevel.INFO, LOG_NAME, "============================================[ ${header.CamelFileNameProduced} ]==========================================")
+
+                .recipientList().simple("exec:fits?args=-i ${header.CamelFileNameProduced}")
+                .choice()
+                    .when().simple("${headers.CamelExecExitValue} == 0")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Exec FITS. BODY: ${body}")
+                        .convertBodyTo(String.class)
+                        .to("fedora:addDatastream?name=FITS&type=text/xml&dsLabel=FITS%20Generated%20Image%20Metadata&group=X&versionable=false")
+                    .endChoice()
+                    .otherwise()
+                        .log(LoggingLevel.INFO, LOG_NAME, "FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}")
+                .end()
+                .recipientList().simple("exec:rm?args=-f ${header.CamelFileNameProduced}")
+                .choice()
+                    .when().simple("${headers.CamelExecExitValue} != 0")
+                        .log(LoggingLevel.WARN, LOG_NAME, "Unable to delete working file. Filename: ${headers.CamelFileNameProduced}")
+                .end()
+                .log(LoggingLevel.INFO, LOG_NAME, "Finished processing FITS...");
+
 
         from("direct:FindObjectByPIDPredicate")
                 .routeId("MCIFindObjectByPIDPredicate")
@@ -270,7 +296,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query - ${body}")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
-                .toD("cxfrs:{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy")
+                .toD("{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query Result - ${body}")

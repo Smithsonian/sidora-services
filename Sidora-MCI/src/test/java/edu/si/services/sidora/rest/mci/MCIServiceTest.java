@@ -61,7 +61,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
     static private String LOG_NAME = "edu.si.mci";
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
+    private static final boolean USE_ACTUAL_FEDORA_SERVER = true;
     private String defaultTestProperties = "src/test/resources/test.properties";
 
     private static final String SERVICE_ADDRESS = "/sidora/mci";
@@ -335,5 +335,26 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
         //Give the redeliveries time to finish
         assertMockEndpointsSatisfied(15, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void test() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+
+        context.getRouteDefinition("ProcessMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        //exchange.getIn().setHeader("mciFolderHolder", "testUser");
+        exchange.getIn().setBody(readFileToString(TEST_XML));
+
+        template.send("direct:addProject", exchange);
+
+        assertMockEndpointsSatisfied(120, TimeUnit.SECONDS);
     }
 }

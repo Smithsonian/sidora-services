@@ -117,7 +117,7 @@ public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
     @Before
     @Override
     public void setUp() throws Exception {
-        System.setProperty("karaf.home", "target/test-classes");
+        System.setProperty("karaf.home", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-MCI/target/test-classes");
 
         Parameters params = new Parameters();
         FileBasedConfigurationBuilder<FileBasedConfiguration> builder =

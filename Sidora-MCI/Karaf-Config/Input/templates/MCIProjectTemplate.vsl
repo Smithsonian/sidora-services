@@ -13,5 +13,6 @@
     <rdf:Description rdf:about="info:fedora/$headers.CamelFedoraPid">
         <fedora-model:hasModel rdf:resource="info:fedora/si:collectionCModel"/>
         <fedora-model:hasModel rdf:resource="info:fedora/si:HierarchyObject"/>
+        <fedora:hasResource rdf:resource="info:fedora/$headers.projectResourcePID"/>
     </rdf:Description>
 </rdf:RDF>
