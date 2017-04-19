@@ -32,8 +32,11 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
+import org.apache.camel.builder.xml.XsltBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
 
 
 /**
@@ -50,6 +53,9 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
     static private String retryAttemptedLogLevel;
     @PropertyInject(value = "mci.retriesExhaustedLogLevel")
     static private String retriesExhaustedLogLevel;
+
+    //Generating Random UUID for CorrelationId
+    String correlationId = UUID.randomUUID().toString();
 
     @Override
     public void configure() throws Exception {
@@ -72,7 +78,6 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .handled(true)
                 .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "=========(0)=========[ ExchangeId= ${exchangeId} || CamelCorrelationId= ${property.CamelCorrelationId} ]========(0)==========")
                 .to("log:{{edu.si.mci}}?showAll=true&maxChars=100000&multiline=true&level=DEBUG")
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("onExceptionAddValidationErrorsToDB")
                 .setBody(simple("${header.error}"))
@@ -96,7 +101,6 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .logExhausted("{{mci.logExhausted}}")
                 .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "=========(1)=========[ ExchangeId= ${exchangeId} || CamelCorrelationId= ${property.CamelCorrelationId} ]========(1)==========")
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("processProjectOnExceptionSQL");
 
         //Retry and continue when Folder Holder is not found in the Drupal dB
@@ -129,6 +133,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .convertBodyTo(String.class)
                 .setHeader("incomingHeaders").simple("${headers}", String.class)
                 .setHeader("mciProjectXML", simple("${body}", String.class))
+                .setHeader("correlationId").simple(correlationId)
 
                 //Add the request to the database (on exception log and continue)
                 .toD("sql:{{sql.addRequest}}?dataSource=requestDataSource").id("createRequest")
@@ -148,7 +153,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .to("seda:processProject?waitForTaskToComplete=Never").id("sedaProcessProject")
 
                 //Send OK response for valid requests
-                .setBody().simple("OK :: Created :: ExchangeId: ${exchangeId}")
+                .setBody().simple("OK :: Created :: CorrelationId: ${header.correlationId}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Add MCI Project...");
 
         from("seda:processProject").routeId("ProcessMCIProject")
@@ -229,36 +234,32 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.projectPID}...");
 
-        from("direct:mciCreateResource").routeId("MCIreateResource")
+        from("direct:mciCreateResource").routeId("MCICreateResource")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Create MCI Project Resource...")
-
-                .setBody().simple("${header.mciProjectXML}")
-
-                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraGeneralResource.xsl?saxon=true").id("xsltMCIProjectToSIdoraGeneralResource")
-                .log(LoggingLevel.DEBUG, "MCIProjectToSIdoraGeneralResource Transform Successful")
-                .setHeader("mciResourceDESCMETA", simple("${body}", String.class))
 
                 //Create the MCI Project Concept
                 .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
                 .setHeader("projectResourcePID", simple("${header.CamelFedoraPid}"))
 
-                //Add the RELS=EXT Datastream
-                .toD("velocity:file:{{karaf.home}}/Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
-                .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
+                //Add the MCI Project XMl to OBJ Datastream
+                .setBody().simple("${header.mciProjectXML}", String.class)
+                .toD("fedora:addDatastream?name=OBJ&type=text/xml&group=X&dsLabel=OBJ&versionable=true")
 
                 //Add the DESCMETA Datastream
-                .setBody().simple("${header.mciResourceDESCMETA}", String.class)
+                .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraGeneralResource.xsl?saxon=true").id("xsltMCIProjectToSIdoraGeneralResource")
                 .toD("fedora:addDatastream?name=DESCMETA&type=text/xml&group=X&dsLabel=DESCMETA%20Record&versionable=true")
 
                 //Update the DC datastream
                 .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectSIdoraConcept2DC.xsl?saxon=true").id("xsltResourceSIdoraConcept2DC")
                 .toD("fedora:addDatastream?name=DC&type=text/xml&group=X")
 
-                //Add the MCI Project XMl to OBJ Datastream
-                .setBody().simple("${header.mciProjectXML}", String.class)
-                .toD("fedora:addDatastream?name=OBJ&type=text/xml&group=X&dsLabel=OBJ&versionable=true")
+                //Add the RELS=EXT Datastream
+                .toD("velocity:file:{{karaf.home}}/Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
+                .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
 
+                //TODO: update the derivatives route to create FITS datastream for si:genericCModel
                 //Create the FITS datastream
+                .setBody().simple("${header.mciProjectXML}", String.class)
                 .to("direct:addFITSDataStream")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Resource - PID = ${header.projectResourcePID}...");
@@ -268,17 +269,15 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .to("file://{{karaf.home}}/staging/")
 
-                .log(LoggingLevel.INFO, LOG_NAME, "============================================[ ${header.CamelFileNameProduced} ]==========================================")
-
                 .recipientList().simple("exec:fits?args=-i ${header.CamelFileNameProduced}")
                 .choice()
                     .when().simple("${headers.CamelExecExitValue} == 0")
-                        .log(LoggingLevel.INFO, LOG_NAME, "Exec FITS. BODY: ${body}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "Exec FITS. BODY: ${body}")
                         .convertBodyTo(String.class)
                         .to("fedora:addDatastream?name=FITS&type=text/xml&dsLabel=FITS%20Generated%20Image%20Metadata&group=X&versionable=false")
                     .endChoice()
                     .otherwise()
-                        .log(LoggingLevel.INFO, LOG_NAME, "FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}")
+                        .log(LoggingLevel.WARN, LOG_NAME, "FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}")
                 .end()
                 .recipientList().simple("exec:rm?args=-f ${header.CamelFileNameProduced}")
                 .choice()
@@ -296,7 +295,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query - ${body}")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
-                .toD("{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy")
+                .toD("cxfrs:{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query Result - ${body}")

@@ -27,14 +27,18 @@
 
 package edu.si.services.sidora.rest.mci;
 
+import edu.si.services.fedorarepo.FedoraComponent;
 import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
+import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
+import org.apache.camel.model.LogDefinition;
 import org.apache.camel.test.AvailablePortFinder;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -61,7 +65,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
     static private String LOG_NAME = "edu.si.mci";
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = true;
+    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private String defaultTestProperties = "src/test/resources/test.properties";
 
     private static final String SERVICE_ADDRESS = "/sidora/mci";
@@ -337,24 +341,56 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
         assertMockEndpointsSatisfied(15, TimeUnit.SECONDS);
     }
 
+    /**
+     * Testing the generic resource and FITS object creation
+     *
+     * NOTE: FITS must be installed
+     *
+     * @throws Exception
+     */
     @Test
-    public void test() throws Exception {
+    public void testMCICreateResource() throws Exception {
+
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
 
-        context.getRouteDefinition("ProcessMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
+        MockEndpoint mockFedora = getMockEndpoint("mock:fedora");
+        mockFedora.expectedMessageCount(6);
+
+        context.getRouteDefinition("MCICreateResource").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveAddLast().to("mock:result");
+                interceptSendToEndpoint(".*fedora:.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, LOG_NAME, "Skip Sending to Fedora").to("mock:fedora");
+                weaveAddLast().to("mock:result").stop();
             }
         });
 
+        context.getRouteDefinition("MCIProjectAddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint(".*fedora:.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, LOG_NAME, "Skip Sending to Fedora").to("mock:fedora");
+            }
+        });
+
+        context.start();
+
         Exchange exchange = new DefaultExchange(context);
-        //exchange.getIn().setHeader("mciFolderHolder", "testUser");
-        exchange.getIn().setBody(readFileToString(TEST_XML));
+        exchange.getIn().setHeader("mciFolderHolder", "testUser");
+        exchange.getIn().setHeader("mciOwnerPID", "test-user:123");
+        exchange.getIn().setHeader("projectPID", "test:0001");
+        exchange.getIn().setHeader("CamelFedoraPid", "test:0002");
+        exchange.getIn().setHeader("mciProjectXML", readFileToString(TEST_XML));
 
-        template.send("direct:addProject", exchange);
+        template.send("direct:mciCreateResource", exchange);
 
-        assertMockEndpointsSatisfied(120, TimeUnit.SECONDS);
+        for ( Exchange fedoraExchange : mockFedora.getExchanges()) {
+            log.info(fedoraExchange.getIn().getBody(String.class));
+        }
+
+        assertMockEndpointsSatisfied();
+
+        assertStringContains(mockFedora.getExchanges().get(5).getIn().getBody(String.class), "<fits xmlns=\"http://hul.harvard.edu/ois/xml/ns/fits/fits_output\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://hul.harvard.edu/ois/xml/ns/fits/fits_output http://hul.harvard.edu/ois/xml/xsd/fits/fits_output.xsd\"");
+
+        deleteDirectory(getConfig().getString("karaf.home") + "/staging");
     }
 }

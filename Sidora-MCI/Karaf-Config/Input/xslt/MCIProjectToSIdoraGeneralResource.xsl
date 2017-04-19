@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="2.0"
-    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:map="xalan://java.util.Map"
+                extension-element-prefixes="map">
     <xsl:output method="xml" indent="yes" encoding="utf-8"/>
     <xsl:output name="content" method="text"/>
 
-    <xsl:param name="exchangeId"/>
+    <xsl:param name="correlationId"/>
 
     <!-- This stylesheet processes an XML file. Each project element will be mapped to a Resource object in the repository.
      
@@ -37,8 +38,8 @@
                     <titleText></titleText>
                 </altTitle>
                 <summaryDescription></summaryDescription>
-                <keyword type="exchangeId">
-                    <value><xsl:value-of select="$exchangeId"/></value>
+                <keyword type="MCI Request CorrelationId">
+                    <value><xsl:value-of select="$correlationId"/></value>
                 </keyword>
                 <identifier type="">
                     <value></value>
