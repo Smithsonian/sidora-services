@@ -29,6 +29,7 @@ package edu.si.services.sidora.rest.mci;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
@@ -53,9 +54,6 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
     static private String retryAttemptedLogLevel;
     @PropertyInject(value = "mci.retriesExhaustedLogLevel")
     static private String retriesExhaustedLogLevel;
-
-    //Generating Random UUID for CorrelationId
-    String correlationId = UUID.randomUUID().toString();
 
     @Override
     public void configure() throws Exception {
@@ -133,7 +131,14 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .convertBodyTo(String.class)
                 .setHeader("incomingHeaders").simple("${headers}", String.class)
                 .setHeader("mciProjectXML", simple("${body}", String.class))
-                .setHeader("correlationId").simple(correlationId)
+                //.setHeader("correlationId").simple(correlationId)
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        //Generating Random UUID for CorrelationId
+                        exchange.getIn().setHeader("correlationId", UUID.randomUUID().toString());
+                    }
+                })
 
                 //Add the request to the database (on exception log and continue)
                 .toD("sql:{{sql.addRequest}}?dataSource=requestDataSource").id("createRequest")
