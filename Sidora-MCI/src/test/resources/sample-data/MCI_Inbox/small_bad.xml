@@ -1,0 +1,7 @@
+<Fields>
+    <Field Type="Text" Name="Title" DisplayName="Project Title">Testing of MCI Project request - all approval go
+        through.
+    </Field>
+    <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
+    <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
+</Fields>
