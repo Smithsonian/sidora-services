@@ -496,7 +496,7 @@
                     </setHeader>
                     <setHeader headerName="DatastreamTypesCheck">
                         <simple resultType="java.lang.String">
-                            DC, FGDC-Research, RELS-EXT
+                            DC, EAC-CPF, RELS-EXT
                         </simple>
                     </setHeader>
                     <to uri="direct:validateObjectDatastreams"/>
@@ -1615,18 +1615,18 @@
                     <!-- Create UCT sub-project and add it as a sub-concept of the project. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the sub-project -->
-                    <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
+                    <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent UCT project to the child UCT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <!-- Add an FGDC-Research datastream for concept metadata. -->
+                    <!-- Add an EAC-CPF datastream for concept metadata. -->
                     <setBody>
                         <simple>
                             ${header.ManifestXML}
                         </simple>
                     </setBody>
                     <to uri="xslt:file:Input/xslt/ManifestSubproject.xsl?saxon=true"/>
-                    <to uri="fedora:addDatastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-Research%20Record&amp;versionable=true"/>
+                    <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
                     <!-- Return the existing sub-project as the current object. -->
