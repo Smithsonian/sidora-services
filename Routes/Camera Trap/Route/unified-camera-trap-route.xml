@@ -2074,7 +2074,7 @@
 
                 <choice>
                     <when>
-                        <simple>${body.size} == null</simple>
+                        <simple>${body.size} == 0</simple>
 
                         <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}"
                              loggingLevel="INFO"

@@ -27,6 +27,7 @@
 
 package edu.si.services.sidora.rest.mci;
 
+import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
@@ -68,13 +69,13 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .logExhausted(false)
                 .continued(true)
-                .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: Error reported: ${exception.message} - cannot process this message.");
+                .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: correlationsId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.");
 
         //Send Response for validation exceptions in AddMCIProject
         onException(org.apache.camel.ValidationException.class, net.sf.saxon.trans.XPathException.class)
                 .onWhen(simple("${routeId} == 'AddMCIProject'"))
                 .handled(true)
-                .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
+                .setHeader("error").simple("[${routeId}] :: correlationsId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
                 .to("log:{{edu.si.mci}}?showAll=true&maxChars=100000&multiline=true&level=DEBUG")
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("onExceptionAddValidationErrorsToDB")
@@ -97,7 +98,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.valueOf(retryAttemptedLogLevel))
                 .retriesExhaustedLogLevel(LoggingLevel.valueOf(retriesExhaustedLogLevel))
                 .logExhausted("{{mci.logExhausted}}")
-                .setHeader("error").simple("[${routeId}] :: Error reported: ${exception.message} - cannot process this message.")
+                .setHeader("error").simple("[${routeId}] :: correlationsId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("processProjectOnExceptionSQL");
 
@@ -111,9 +112,8 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .retriesExhaustedLogLevel(LoggingLevel.valueOf(retriesExhaustedLogLevel))
                 .logExhausted(false)
                 .continued(true)
-                .setBody().simple("[${routeId}] :: Error reported: ${exception.message}")
                 .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
-                .log(LoggingLevel.WARN, LOG_NAME, "${body} :: Using Default User PID ${header.mciOwnerPID}!!!").id("MCI_ExceptionOnException");
+                .log(LoggingLevel.WARN, LOG_NAME, "${exception.message} :: Using Default User PID ${header.mciOwnerPID}!!!").id("MCI_ExceptionOnException");
 
 
 
@@ -139,6 +139,8 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         exchange.getIn().setHeader("correlationId", UUID.randomUUID().toString());
                     }
                 })
+
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} Using correlationId = ${headers.correlationId}")
 
                 //Add the request to the database (on exception log and continue)
                 .toD("sql:{{sql.addRequest}}?dataSource=requestDataSource").id("createRequest")
@@ -187,7 +189,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .throwException(new IllegalArgumentException("Root object does not exist."))
                     .end()
                 .toD("sql:{{sql.completeRequest}}?dataSource=requestDataSource").id("completeRequest")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Process MCI Project...");
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Successfully Processed MCI Project Request :: correlationId = ${header.correlationId}");
 
         from("direct:findFolderHolderUserPID").routeId("MCIFindFolderHolderUserPID").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Find MCI Folder Holder User PID...")
@@ -199,8 +201,15 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
                     .endChoice()
                     .otherwise()
-                        .log(LoggingLevel.WARN, LOG_NAME, "Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
-                        .throwException(MCI_Exception.class, "Folder Holder User PID Not Found!!!").id("throwMCIException")
+                        .setBody().simple("[${routeId}] :: correlationsId = ${header.correlationId} :: Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
+                        .log(LoggingLevel.WARN, LOG_NAME, "${body}")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                throw new MCI_Exception(exchange.getIn().getBody(String.class));
+                            }
+                        }).id("throwMCIException")
+                        //.throwException(MCI_Exception.class, "Folder Holder User PID Not Found!!!").id("throwMCIException")
                     .end()
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Find MCI Folder Holder User PID...");
 
@@ -309,8 +318,15 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .choice()
                     .when().simple("${body} == false")
-                        .log(LoggingLevel.ERROR, LOG_NAME, "The fedora object '${header.mciOwnerPID}' not found!!!")
-                        .throwException(edu.si.services.fedorarepo.FedoraObjectNotFoundException.class, "The fedora object not found")
+                        .setBody().simple("The fedora object '${header.mciOwnerPID}' not found!!!")
+                        .log(LoggingLevel.ERROR, LOG_NAME, "${body}")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                throw new FedoraObjectNotFoundException(exchange.getIn().getBody(String.class));
+                            }
+                        })
+                        //.throwException(edu.si.services.fedorarepo.FedoraObjectNotFoundException.class, "The fedora object not found")
                 .end()
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Object By PID - ${body}.")
