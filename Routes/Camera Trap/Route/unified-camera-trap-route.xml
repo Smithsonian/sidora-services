@@ -1573,28 +1573,27 @@
  "deployment_name": "${header.CameraSiteName}",
  "image_sequence_id": "${header.ImageSequenceID}",
  "image": {
-   "id": "emammal_image_${header.imageid}",
-   "online_media": {
-     "mediaCount": 1,
-     "media": [
+   "id": "${header.imageid}",
+   "online_media": [
        {
          "content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}",
          "idsId": "emammal_image_${header.imageid}",
-         "pid": "${header.CamelFedoraPid}",
+         "sidoraPid": "${header.CamelFedoraPid}",
          "type": "Images",
          "caption": "Camera Trap Image ${header.VisibleAnimals}",
          "thumbnail": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}"
        }
-     ]
-   },
+   ],
 ${header.edanJsonImageInfo}
  },
  "image_identifications": [
   ${header.edanJsonImageIdentifications}   
  ]
 },
+"publicSearch": false,
 "title": "Camera Trap Image ${header.VisibleAnimals}",
-"id" : "emammal_image_${header.imageid}"
+"type": "emammal_image",
+"url": "${header.imageid}"
 }
                                 </simple>
                             </setHeader>
