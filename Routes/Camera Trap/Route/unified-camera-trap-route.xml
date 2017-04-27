@@ -169,6 +169,8 @@
     <!-- errorHandlerRef="ctingestErrorHandler" -->
     <bean id="edanApiBean" class="edu.si.services.edansidora.EdanApiBean">
     </bean>
+    <bean id="idsPushBean" class="edu.si.services.edansidora.IdsPushBean">
+    </bean>
 
 
     <camelContext id="UnifiedCTIngestCamelContext"
@@ -875,6 +877,29 @@
             </split>
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
 
+            <log message="PERFORMING IDS PUSH idsPushBean"
+                    loggingLevel="INFO"
+                    logName="{{si.ct.id}}"/>
+                           <to uri="bean:idsPushBean?method=setPushLocation({{si.ct.uscbi.idsPushLocation}})"/>
+                           <to uri="bean:idsPushBean?method=setTempLocation({{si.ct.uscbi.tempLocationForZip}})"/>
+                           <to uri="bean:idsPushBean?method=setInputLocation(${headers.CamelFileAbsolutePath})"/>
+                           <to uri="bean:idsPushBean?method=setDeploymentId(${header.CameraDeploymentID})"/>
+        
+                           <to uri="bean:idsPushBean?method=createZipAndPush"/>
+                           <log message="idsPushBean error: ${body[errorString]}"
+                     loggingLevel="INFO"
+                     logName="edanidslog"/>
+                           <log message="idsPushBean completed: ${body[completed]}"
+                     loggingLevel="INFO"
+                     logName="edanidslog"/>
+                           <log message="idsPushBean completed: ${body[completionInformation]}"
+                     loggingLevel="INFO"
+                     logName="edanidslog"/>
+                           <log message="idsPushBean stacktrace: ${body[stackTrace]}"
+                     loggingLevel="INFO"
+                     logName="edanidslog"/>
+
+
             <!-- Researcher is required for Unified CT Ingest. -->
             <to uri="direct:addResearcherObservationResource"/>
 
@@ -1522,6 +1547,7 @@
                             </setHeader>
                             <setHeader headerName="edanJson">
                                 <simple>
+{ content : 
 {
 {{si.ct.uscbi.extra_property}}
  "project_id": "${header.ProjectId}",
@@ -1532,16 +1558,17 @@
  "deployment_name": "${header.CameraSiteName}",
  "image_sequence_id": "${header.ImageSequenceID}",
  "image": {
-   "id": "emammal_${header.imageid}",
+   "id": "emammal_image_${header.imageid}",
    "online_media": {
      "mediaCount": 1,
      "media": [
        {
-         "content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_${header.CamelFedoraPid}",
-         "idsId": "emammal_${header.CamelFedoraPid}",
+         "content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}",
+         "idsId": "emammal_image_${header.imageid}",
+         "pid": "${header.CamelFedoraPid}",
          "type": "Images",
          "caption": "Camera Trap Image ${header.VisibleAnimals}",
-         "thumbnail": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_${header.CamelFedoraPid}"
+         "thumbnail": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}"
        }
      ]
    },
@@ -1550,6 +1577,9 @@ ${header.edanJsonImageInfo}
  "image_identifications": [
   ${header.edanJsonImageIdentifications}   
  ]
+},
+"title": "Camera Trap Image ${header.VisibleAnimals}",
+"id" : "emammal_image_${header.imageid}"
 }
                                 </simple>
                             </setHeader>
@@ -1584,17 +1614,17 @@ ${header.edanJsonImageInfo}
                            </setHeader>
                            <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
                      loggingLevel="INFO"
-                     logName="bobbylogname"/>
+                     logName="edanidslog"/>
                            <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
                            <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
                      loggingLevel="INFO"
-                     logName="bobbylogname"/>
+                     logName="edanidslog"/>
                            <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
                      loggingLevel="INFO"
-                     logName="bobbylogname"/>
+                     logName="edanidslog"/>
                            <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
                      loggingLevel="INFO"
-                     logName="bobbylogname"/>
+                     logName="edanidslog"/>
                            <!--
                     create the full param string
                     edanParams = type=emammal_image&content=${edanJson}&title=${header.CamelFedoraPid}&status=0&publicSearch=false
