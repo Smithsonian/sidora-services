@@ -79,7 +79,7 @@ public class IdsPushBean {
 				}
 			}
 			assetXmlText += "\r\n</Assets>";
-			ZipEntry entry = new ZipEntry("ExportAssets_emammal_image_"+this.deploymentId+".xml");
+			ZipEntry entry = new ZipEntry("ExportEmammal_emammal_image_"+this.deploymentId+".xml");
 			out.putNextEntry(entry);
 			out.write(assetXmlText.getBytes());
 			out.close();
