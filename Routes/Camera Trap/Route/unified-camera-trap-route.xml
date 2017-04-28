@@ -1039,6 +1039,10 @@
             <log message="${id}: About to call EdanAndIds..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+            
+   	    <setHeader headerName="ExcludeCurrentImage">
+    	        <simple>false</simple>
+	    </setHeader>
             <to uri="direct:addImageToEdanAndIds2"/>
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
@@ -1421,6 +1425,58 @@
                                     //ResearcherIdentifications/Identification
                                 </xpath>
                                 <setHeader headerName="CurrentIdentification"><simple>${body}</simple></setHeader>
+                                <setHeader headerName="species_scientific_name">
+                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
+                                        //SpeciesScientificName/text()
+                                    </xpath>
+                                </setHeader>
+                                <choice>
+                                    <when>
+                                        <simple>
+                                            ${headers.species_scientific_name} == 'Homo sapiens' 
+                                        </simple>
+                                        <!--    
+                                            Sample of species names from actual deployments:
+                                            ${headers.species_scientific_name} == 'Vulpes vulpes' 
+                                            ${headers.species_scientific_name} == 'Odocoileus virginianus' 
+                                        -->
+                                        <setBody><simple>true</simple></setBody>
+					    <log message=" ${headers.species_scientific_name} species check confirm match, exclude image set to true."
+					    loggingLevel="INFO"
+					    logName="{{si.ct.id}}"/>
+                                    </when>
+                                    <otherwise>
+                                        <setBody><simple></simple></setBody>
+					    <log message=" ${headers.species_scientific_name} species no match."
+					    loggingLevel="INFO"
+					    logName="{{si.ct.id}}"/>
+                                    </otherwise>
+                               </choice>
+                            </split>
+                            <choice>
+                                <when>
+                                    <simple>${body} == 'true'</simple>
+				    <setHeader headerName="ExcludeCurrentImage">
+					<simple>true</simple>
+				    </setHeader>
+				    <log message=" After all species processed, exclude set to true: ${body}"
+					    loggingLevel="INFO"
+					    logName="{{si.ct.id}}"/>
+                                </when>
+                                <otherwise>
+				    <setHeader headerName="ExcludeCurrentImage">
+					<simple>false</simple>
+				    </setHeader>
+				    <log message=" After all species processed, exclude set to false: ${body}"
+					    loggingLevel="INFO"
+					    logName="{{si.ct.id}}"/>
+                                </otherwise>
+                            </choice>
+                            <split strategyRef="concatenateAggregationStrategy">
+                                <xpath headerName="CurrentImageSequence">
+                                    //ResearcherIdentifications/Identification
+                                </xpath>
+                                <setHeader headerName="CurrentIdentification"><simple>${body}</simple></setHeader>
                                 <setHeader headerName="iucn_id">
                                     <simple></simple>
                                 </setHeader>
@@ -1582,58 +1638,72 @@ ${header.edanJsonImageInfo}
 }
                                 </simple>
                             </setHeader>
-                            <log message="POST THIS TO EDAN ${headers.edanJson}"
-                    loggingLevel="INFO"
-                    logName="{{si.ct.id}}"/>
-                           <to uri="bean:edanApiBean?method=setServer({{si.ct.uscbi.server}})"/>
-                           <to uri="bean:edanApiBean?method=setAppId({{si.ct.uscbi.appId}})"/>
-                           <to uri="bean:edanApiBean?method=setEdanKey({{si.ct.uscbi.edanKey}})"/>
-                           <to uri="bean:edanApiBean?method=setAuthType({{si.ct.uscbi.authType}})"/>
-        
-                           <to uri="bean:edanApiBean?method=startConnection"/>
-                           <setHeader headerName="edanService">
-                               <simple>
-                                   /content/v1.1/admincontent/createContent.htm
-                               </simple>
-                           </setHeader>
-                           <setHeader headerName="edanType">
-                               <simple>
-                                   {{si.ct.uscbi.edan_type}}
-                               </simple>
-                           </setHeader>
-                           <setHeader headerName="imageid">
-                               <simple>
-                                 emammal_${header.imageid}
-                               </simple>
-                           </setHeader>
-                           <setHeader headerName="edanUri">
-                               <groovy>
-                                   "content=" + URLEncoder.encode(request.headers.edanJson) + ""
-                               </groovy>
-                           </setHeader>
-                           <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
-                           <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
-                           <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
-                           <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
-                           <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
-                           <!--
-                    create the full param string
-                    edanParams = type=emammal_image&content=${edanJson}&title=${header.CamelFedoraPid}&status=0&publicSearch=false
-                    set as edanParams
-                           -->
-                           <!--
-                    Interact with bean
-                    <to uri="bean:edanApiBean?method=startConnection"/>
-                    <to uri="bean:edanApiBean?method=sendRequest(${edanParams}, content/v1.1/admincontent/createContent.htm, TRUE)"/>
-                            -->
+                                <choice>
+                                    <when>
+                                        <simple>
+                                            ${headers.ExcludeCurrentImage} == 'false'
+                                        </simple>
+					    <log message="POST THIS TO EDAN: ${headers.edanJson}"
+				    loggingLevel="INFO"
+				    logName="{{si.ct.id}}"/>
+					   <to uri="bean:edanApiBean?method=setServer({{si.ct.uscbi.server}})"/>
+					   <to uri="bean:edanApiBean?method=setAppId({{si.ct.uscbi.appId}})"/>
+					   <to uri="bean:edanApiBean?method=setEdanKey({{si.ct.uscbi.edanKey}})"/>
+					   <to uri="bean:edanApiBean?method=setAuthType({{si.ct.uscbi.authType}})"/>
+			
+					   <to uri="bean:edanApiBean?method=startConnection"/>
+					   <setHeader headerName="edanService">
+					       <simple>
+						   /content/v1.1/admincontent/createContent.htm
+					       </simple>
+					   </setHeader>
+					   <setHeader headerName="edanType">
+					       <simple>
+						   {{si.ct.uscbi.edan_type}}
+					       </simple>
+					   </setHeader>
+					   <setHeader headerName="imageid">
+					       <simple>
+						 emammal_${header.imageid}
+					       </simple>
+					   </setHeader>
+					   <setHeader headerName="edanUri">
+					       <groovy>
+						   "content=" + URLEncoder.encode(request.headers.edanJson) + ""
+					       </groovy>
+					   </setHeader>
+					   <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
+					     loggingLevel="INFO"
+					     logName="edanidslog"/>
+					   <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
+					   <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
+					     loggingLevel="INFO"
+					     logName="edanidslog"/>
+					   <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
+					     loggingLevel="INFO"
+					     logName="edanidslog"/>
+					   <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
+					     loggingLevel="INFO"
+					     logName="edanidslog"/>
+					   <!--
+				    create the full param string
+				    edanParams = type=emammal_image&content=${edanJson}&title=${header.CamelFedoraPid}&status=0&publicSearch=false
+				    set as edanParams
+					   -->
+					   <!--
+				    Interact with bean
+				    <to uri="bean:edanApiBean?method=startConnection"/>
+				    <to uri="bean:edanApiBean?method=sendRequest(${edanParams}, content/v1.1/admincontent/createContent.htm, TRUE)"/>
+				    -->
+                                 </when>
+                                 <!-- ends ${headers.ExcludeCurrentImage} == 'false' -->
+                                 <otherwise>
+				     <log message="NO POST TO EDAN, exclude this image? ${headers.ExcludeCurrentImage} ${header.imageid}"
+					    loggingLevel="INFO"
+					    logName="{{si.ct.id}}"/>
+                                     <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
+                                 </otherwise>
+                             </choice>
                         </when>
                     </choice>
                 </split>
