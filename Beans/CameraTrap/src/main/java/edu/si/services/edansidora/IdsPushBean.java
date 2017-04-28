@@ -21,7 +21,8 @@ public class IdsPushBean {
 	private String pushLocation = null;
 	private String inputLocation = null;
 	private String deploymentId = null;
-	private String tempLocation = null; 
+	private String tempLocation = null;
+	private Map<String, String> ignored = new HashMap<String, String>(); 
 
 
 	public Map<String, String> createZipAndPush() {
@@ -31,7 +32,7 @@ public class IdsPushBean {
 		String completedInformation = "Not started";
 		try {
 			BufferedInputStream origin = null;
-			String destFilename = "ExportAssets_emammal_image_"+this.deploymentId+".zip";
+			String destFilename = "ExportEmammal_emammal_image_"+this.deploymentId+".zip";
 			String destLocation = this.tempLocation + destFilename;
 			FileOutputStream dest = new FileOutputStream(destLocation);
 			ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
@@ -54,7 +55,11 @@ public class IdsPushBean {
 			for (int i=0; i<files.length; i++) {
 				completedInformation = "Started file:"+files[i];
 				// Do not include the manifest file
-				if (!files[i].endsWith(".xml")){
+				if (
+						!files[i].endsWith(".xml") 
+						&& (files[i].indexOf(".") > -1)
+						&& (ignored.get(files[i].substring(0,files[i].length()-4)) == null)
+					){
 					System.out.println("Adding: "+files[i]);
 					FileInputStream fi = new FileInputStream(currDir + files[i]);
 					origin = new BufferedInputStream(fi, BUFFER);
@@ -99,6 +104,10 @@ public class IdsPushBean {
 		toReturn.put("completionInformation", completedInformation);
 		return toReturn;
 	}
+	
+	public void addToIgnoreList(String imageId){
+      ignored.put(imageId, imageId);		
+	}
 
 	public String getPushLocation() {
 		return pushLocation;
@@ -130,6 +139,7 @@ public class IdsPushBean {
 		ipb.setTempLocation("C:\\temp\\");
 		ipb.setDeploymentId("testDeploymentId");
 		ipb.setPushLocation("C:\\temp\\finalLoc\\");
+		ipb.addToIgnoreList("ignoreme");
 		Map<String, String> returned = ipb.createZipAndPush();
 		for(Map.Entry<String, String> entry : returned.entrySet()) {
 		    String key = entry.getKey();
