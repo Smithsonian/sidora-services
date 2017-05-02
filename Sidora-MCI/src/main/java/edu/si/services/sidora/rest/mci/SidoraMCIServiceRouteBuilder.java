@@ -69,13 +69,13 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .logExhausted(false)
                 .continued(true)
-                .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: correlationsId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.");
+                .log(LoggingLevel.ERROR, LOG_NAME, "[${routeId}] :: correlationId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.");
 
         //Send Response for validation exceptions in AddMCIProject
         onException(org.apache.camel.ValidationException.class, net.sf.saxon.trans.XPathException.class)
                 .onWhen(simple("${routeId} == 'AddMCIProject'"))
                 .handled(true)
-                .setHeader("error").simple("[${routeId}] :: correlationsId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
+                .setHeader("error").simple("[${routeId}] :: correlationId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
                 .to("log:{{edu.si.mci}}?showAll=true&maxChars=100000&multiline=true&level=DEBUG")
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("onExceptionAddValidationErrorsToDB")
@@ -98,7 +98,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.valueOf(retryAttemptedLogLevel))
                 .retriesExhaustedLogLevel(LoggingLevel.valueOf(retriesExhaustedLogLevel))
                 .logExhausted("{{mci.logExhausted}}")
-                .setHeader("error").simple("[${routeId}] :: correlationsId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
+                .setHeader("error").simple("[${routeId}] :: correlationId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
                 .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("processProjectOnExceptionSQL");
 
@@ -189,7 +189,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .throwException(new IllegalArgumentException("Root object does not exist."))
                     .end()
                 .toD("sql:{{sql.completeRequest}}?dataSource=requestDataSource").id("completeRequest")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Successfully Processed MCI Project Request :: correlationId = ${header.correlationId}");
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Successfully Processed MCI Project Request :: conceptPID = ${header.projectPID}, resourcePID = ${header.projectResourcePID}  :: correlationId = ${header.correlationId}");
 
         from("direct:findFolderHolderUserPID").routeId("MCIFindFolderHolderUserPID").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Find MCI Folder Holder User PID...")
@@ -201,7 +201,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
                     .endChoice()
                     .otherwise()
-                        .setBody().simple("[${routeId}] :: correlationsId = ${header.correlationId} :: Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
+                        .setBody().simple("[${routeId}] :: correlationId = ${header.correlationId} :: Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
                         .log(LoggingLevel.WARN, LOG_NAME, "${body}")
                         .process(new Processor() {
                             @Override
@@ -246,7 +246,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectTemplate.vsl").id("velocityMCIProjectTemplate")
                 .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
 
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.projectPID}...");
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.projectPID} :: correlationId = ${header.correlationId}");
 
         from("direct:mciCreateResource").routeId("MCICreateResource")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Create MCI Project Resource...")
@@ -276,7 +276,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .setBody().simple("${header.mciProjectXML}", String.class)
                 .to("direct:addFITSDataStream")
 
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Resource - PID = ${header.projectResourcePID}...");
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Resource - PID = ${header.projectResourcePID} :: correlationId = ${header.correlationId}");
 
         from("direct:addFITSDataStream").routeId("MCIProjectAddFITSDataStream")
                 .log(LoggingLevel.INFO, LOG_NAME, "Started processing FITS...")
