@@ -119,7 +119,7 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
                         .end();
 
                 //intercept sending to fedora:addDatastream and send to mock endpoint to assert correct values
-                interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().to("mock:processParentsResult");
+                interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().setHeader("routeId", simple("${routeId}")).to("mock:processParentsResult");
 
                 //intercept other calls to fedora that are not needed and skip them
                 interceptSendToEndpoint("fedora:hasConcept.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");

@@ -45,7 +45,7 @@ import static org.apache.commons.io.FileUtils.readFileToString;
  */
 public class CT_AltIdTest extends CT_BlueprintTestSupport {
 
-    private static String LOG_NAME = "edu.si.mci";
+    private static String LOG_NAME = "edu.si.ct";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private String defaultTestProperties = "src/test/resources/test.properties";
@@ -115,7 +115,7 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
                         .end();
 
                 //intercept sending to fedora:addDatastream and send to mock endpoint to assert correct values
-                interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().to("mock:processParentsResult");
+                interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().setHeader("routeId", simple("${routeId}")).to("mock:processParentsResult");
 
                 //intercept other calls to fedora that are not needed and skip them
                 interceptSendToEndpoint("fedora:hasConcept.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");
