@@ -73,6 +73,10 @@
         <commons-codec.bundle.version>1.10</commons-codec.bundle.version>
         <commons-collections4.version>4.1</commons-collections4.version> <!-- used by apache poi 3.15 -->
         <commons-httpclient.bundle.version>3.1_7</commons-httpclient.bundle.version>
+        <httpcore-components.version>4.4.4</httpcore-components.version>
+        <httpclient-components.version>4.5.3</httpclient-components.version>
+        <httpcore4.version>4.4.4</httpcore4.version>
+        <httpclient4.version>4.5.3</httpclient4.version>
         <commons-io.version>2.4</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-lang3.version>3.4</commons-lang3.version>
@@ -408,6 +412,28 @@
                 <version>${cxf-version}</version>
                 <scope>test</scope>
             </dependency>-->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore-components.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient-components.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore-osgi</artifactId>
+                <version>${httpcore4.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient-osgi</artifactId>
+                <version>${httpclient4.version}</version>
+                <scope>provided</scope>
+            </dependency>
             <dependency>
                 <groupId>org.apache.poi</groupId>
                 <artifactId>poi-ooxml</artifactId>

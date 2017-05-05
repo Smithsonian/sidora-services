@@ -86,9 +86,9 @@
 
     <bean id="cameraTrapValidationMessageAggregationStrategy" class="edu.si.services.beans.cameratrap.CameraTrapValidationMessageAggregationStrategy"/>
 
-    <bean id="arrayListAggregationStrategy" class="edu.si.services.edansidora.ArrayListAggregationStrategy"/>
+    <bean id="arrayListAggregationStrategy" class="edu.si.services.beans.edansidora.ArrayListAggregationStrategy"/>
 
-    <bean id="concatenateAggregationStrategy" class="edu.si.services.edansidora.ConcatenateAggregationStrategy"/>
+    <bean id="concatenateAggregationStrategy" class="edu.si.services.beans.edansidora.ConcatenateAggregationStrategy"/>
 
     <bean id="basicAWSCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
         <argument value="${si.ct.uscbi.aws.accessKey}" type="java.lang.String"/>
@@ -113,7 +113,7 @@
                 <value>Transfer-Encoding</value>
                 <value>CamelExecExitValue</value>
                 <value>CamelFedoraLabel</value>
-                <value>CamelFedoraPid</value>
+                <!--<value>CamelFedoraPid</value>-->
                 <value>CamelFileAbsolute</value>
                 <value>CamelFileAbsolutePath</value>
                 <value>CamelFileContentType</value>
@@ -167,9 +167,9 @@
     </bean>
 
     <!-- errorHandlerRef="ctingestErrorHandler" -->
-    <bean id="edanApiBean" class="edu.si.services.edansidora.EdanApiBean">
+    <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean">
     </bean>
-    <bean id="idsPushBean" class="edu.si.services.edansidora.IdsPushBean">
+    <bean id="idsPushBean" class="edu.si.services.beans.edansidora.IdsPushBean">
     </bean>
 
 
@@ -233,7 +233,7 @@
             <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.inflight.redeliveryDelay}}"
                               maximumRedeliveries="7"
                               retryAttemptedLogLevel="WARN"
                               retriesExhaustedLogLevel="WARN"
@@ -256,7 +256,7 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:ProcessUnified?delay=9000&amp;moveFailed=Error_UnifiedCameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{karaf.home}}/ProcessUnified?delay=9000&amp;moveFailed=Error_UnifiedCameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -300,10 +300,10 @@
                      logName="{{si.ct.id}}"/>
 
                 <!-- Validate against the XSD. -->
-                <to uri="validator:file:Input/schemas/Unified_eMammalDeploymentManifest.xsd"/>
+                <to uri="validator:file:{{karaf.home}}/Input/schemas/Unified_eMammalDeploymentManifest.xsd"/>
 
                 <!-- Schematron validation. -->
-                <to uri="schematron:file:Input/schemas/Unified_eMammalDeploymentManifest.sch"/>
+                <to uri="schematron:file:{{karaf.home}}/Input/schemas/Unified_eMammalDeploymentManifest.sch"/>
                 <log message="${id}: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
@@ -831,7 +831,7 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="xslt:file:Input/xslt/ManifestDeployment.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestDeployment.xsl?saxon=true"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id}: Finished FGDC processing."
@@ -893,27 +893,50 @@
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
 
             <log message="PERFORMING IDS PUSH idsPushBean"
-                    loggingLevel="INFO"
-                    logName="{{si.ct.id}}"/>
-                           <to uri="bean:idsPushBean?method=setPushLocation({{si.ct.uscbi.idsPushLocation}})"/>
-                           <to uri="bean:idsPushBean?method=setTempLocation({{si.ct.uscbi.tempLocationForZip}})"/>
-                           <to uri="bean:idsPushBean?method=setInputLocation(${headers.CamelFileAbsolutePath})"/>
-                           <to uri="bean:idsPushBean?method=setDeploymentId(${header.CameraDeploymentID})"/>
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
-                           <to uri="bean:idsPushBean?method=createZipAndPush"/>
-                           <log message="idsPushBean error: ${body[errorString]}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
-                           <log message="idsPushBean completed: ${body[completed]}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
-                           <log message="idsPushBean completed: ${body[completionInformation]}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
-                           <log message="idsPushBean stacktrace: ${body[stackTrace]}"
-                     loggingLevel="INFO"
-                     logName="edanidslog"/>
+            <!-- using PropertyInject to inject the properties directly in the class see IdsPushBean.java -->
+            <to uri="bean:idsPushBean?method=setPushLocation({{si.ct.uscbi.idsPushLocation}})"/>
+            <to uri="bean:idsPushBean?method=setTempLocation({{si.ct.uscbi.tempLocationForZip}})"/>
+            <to uri="bean:idsPushBean?method=setInputLocation(${headers.CamelFileAbsolutePath})"/>
+            <to uri="bean:idsPushBean?method=setDeploymentId(${header.CameraDeploymentID})"/>
+            <log message="=================================[ START 0 ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
 
+            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+            <log message="=================================[ END 0 ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
+
+            <to uri="bean:idsPushBean?method=createZipAndPush"/>
+
+            <log message="=================================[ START 1 ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+            <log message="=================================[ END 1 ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
+
+            <log message="idsPushBean error: ${body[errorString]}"
+                 loggingLevel="INFO"
+                 logName="edanidslog"/>
+            <log message="idsPushBean completed: ${body[completed]}"
+                 loggingLevel="INFO"
+                 logName="edanidslog"/>
+            <log message="idsPushBean completed: ${body[completionInformation]}"
+                 loggingLevel="INFO"
+                 logName="edanidslog"/>
+            <log message="idsPushBean stacktrace: ${body[stackTrace]}"
+                 loggingLevel="INFO"
+                 logName="edanidslog"/>
 
             <!-- Researcher is required for Unified CT Ingest. -->
             <to uri="direct:addResearcherObservationResource"/>
@@ -935,7 +958,7 @@
             </filter>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
-            <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTSiteTemplate.vsl"/>
             <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <log message="${id}: Finished resource processing."
@@ -1013,7 +1036,7 @@
             <!-- <to uri="direct:createArchivalImage" /> -->
             <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
-            <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
             <to uri="direct:addFITSDataStream"/>       
             <to uri="direct:addMODSDataStream"/>
@@ -1055,9 +1078,15 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
             
+            <log message="ExcludeCurrentImage before set to false: ${headers.ExcludeCurrentImage}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
    	    <setHeader headerName="ExcludeCurrentImage">
     	        <simple>false</simple>
 	    </setHeader>
+            <log message="ExcludeCurrentImage after set to false: ${headers.ExcludeCurrentImage}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             <to uri="direct:addImageToEdanAndIds2"/>
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
@@ -1086,7 +1115,7 @@
             <log message="${id}: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="xslt:file:Input/xslt/ResearcherObservation.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ResearcherObservation.xsl"/>
             <log message="${id}: Researcher Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1100,7 +1129,7 @@
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"/>
 
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
@@ -1110,7 +1139,7 @@
                 </simple>
             </setBody>
 
-            <to uri="xslt:file:Input/xslt/ManifestResearcherObservation.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestResearcherObservation.xsl?saxon=true"/>
 
             <log message="${id}: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
@@ -1160,7 +1189,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/VolunteerObservation.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/VolunteerObservation.xsl"/>
             <log message="${id}: Volunteer Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1174,7 +1203,7 @@
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"/>
 
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl" />
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
@@ -1183,7 +1212,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestVolunteerObservation.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestVolunteerObservation.xsl?saxon=true"/>
             <log message="${id}: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1226,7 +1255,7 @@
             <log message="${id}: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="xslt:file:Input/xslt/ImageObservation.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ImageObservation.xsl"/>
             <log message="${id}: Image Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1240,7 +1269,7 @@
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"/>
 
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
@@ -1249,7 +1278,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestImageObservation.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestImageObservation.xsl?saxon=true"/>
             <log message="${id}: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1335,7 +1364,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestImage.xsl?saxon=true"/>
             <log message="${id}: MODS XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1354,7 +1383,7 @@
              <!--<removeHeaders pattern="*" excludePattern="P.*|p.*|header2"/>-->
              <!--<removeHeaders pattern="ManifestXML|CamelSchematronValidationReport"/>-->
 
-            <doTry>
+            <!--<doTry>-->
                 <!--
                                       POST to EDAN
                 -->
@@ -1661,13 +1690,38 @@ ${header.edanJsonImageInfo}
 					    <log message="POST THIS TO EDAN: ${headers.edanJson}"
 				    loggingLevel="INFO"
 				    logName="{{si.ct.id}}"/>
+
+                    <!-- Using property Inject to inject the properties directly in the bean see EdanAPiBean.java -->
 					   <to uri="bean:edanApiBean?method=setServer({{si.ct.uscbi.server}})"/>
 					   <to uri="bean:edanApiBean?method=setAppId({{si.ct.uscbi.appId}})"/>
 					   <to uri="bean:edanApiBean?method=setEdanKey({{si.ct.uscbi.edanKey}})"/>
 					   <to uri="bean:edanApiBean?method=setAuthType({{si.ct.uscbi.authType}})"/>
-			
-					   <to uri="bean:edanApiBean?method=startConnection"/>
-					   <setHeader headerName="edanService">
+
+                                        <log message="=================================[ START 00 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+                                        <log message="=================================[ END 00 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+
+                                        <to uri="bean:edanApiBean?method=startConnection"/>
+
+                                        <log message="=================================[ START 11 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+                                        <log message="=================================[ END 11 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+
+                                        <setHeader headerName="edanService">
 					       <simple>
 						   /content/v1.1/admincontent/createContent.htm
 					       </simple>
@@ -1690,8 +1744,32 @@ ${header.edanJsonImageInfo}
 					   <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
 					     loggingLevel="INFO"
 					     logName="edanidslog"/>
-					   <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
-					   <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
+
+                                        <log message="=================================[ START 22 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+                                        <log message="=================================[ END 22 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+
+                                        <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
+
+                                        <log message="=================================[ START 33 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
+                                        <log message="=================================[ END 33 ]================================="
+                                             loggingLevel="WARN"
+                                             logName="{{si.ct.id}}"/>
+
+
+                                        <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
 					     loggingLevel="INFO"
 					     logName="edanidslog"/>
 					   <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
@@ -1722,13 +1800,13 @@ ${header.edanJsonImageInfo}
                         </when>
                     </choice>
                 </split>
-                <doCatch>
+                <!--<doCatch>
                     <exception>javax.imageio.IIOException</exception>
                         <log message="${id}: Cannot POST to EDAN."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
-                </doCatch>
-            </doTry>
+                </doCatch>-->
+            <!--</doTry>-->
             <log message="${id}: Finished processing EDAN and IDS."
                   loggingLevel="INFO"
                   logName="{{si.ct.id}}"/>
@@ -1903,7 +1981,7 @@ ${header.edanJsonImageInfo}
                 <constant>GET</constant>
             </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectFusekiHttpCall"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Query Result - ${body}"
@@ -1972,7 +2050,7 @@ ${header.edanJsonImageInfo}
                 <constant>GET</constant>
             </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectByPIDFusekiHttpCall"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Find Query Result - ${body}"
@@ -2046,7 +2124,7 @@ ${header.edanJsonImageInfo}
                     <!-- Create UCT plot and add it as a sub-concept of the sub-project -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
-                    <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent UCT sub-project to the child UCT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -2056,7 +2134,7 @@ ${header.edanJsonImageInfo}
                             ${header.ManifestXML}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:Input/xslt/ManifestPlot.xsl?saxon=true"/>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestPlot.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-CTPlot%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -2127,7 +2205,7 @@ ${header.edanJsonImageInfo}
                     <!-- Create UCT sub-project and add it as a sub-concept of the project. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the sub-project -->
-                    <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent UCT project to the child UCT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -2137,7 +2215,7 @@ ${header.edanJsonImageInfo}
                             ${header.ManifestXML}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:Input/xslt/ManifestSubproject.xsl?saxon=true"/>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestSubproject.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -2212,7 +2290,7 @@ ${header.edanJsonImageInfo}
                     <!-- Create UCT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project. -->
-                    <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent UCT root object to the child UCT project. -->
                     <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -2222,7 +2300,7 @@ ${header.edanJsonImageInfo}
                             ${header.ManifestXML}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:Input/xslt/ManifestProject.xsl?saxon=true"/>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestProject.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -2589,7 +2667,7 @@ ${header.edanJsonImageInfo}
         </route>
 
         <route id="UnifiedCameraTrapInFlightConceptStatusPolling">
-            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
+            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period={{si.ct.checkConceptFromRI.period}}"/>
             <log message="${id}: InFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
