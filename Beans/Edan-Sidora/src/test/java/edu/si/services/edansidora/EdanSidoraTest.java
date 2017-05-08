@@ -156,7 +156,7 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("CamelFedoraPid", "test:32");
         exchange.getIn().setHeader("ExcludeCurrentImage", false);
 
-        template.send("direct:addImageToEdanAndIds2", exchange);
+        template.send("direct:addImageToEdanAndIds3", exchange);
 
         /*String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
         for (String fileName : fileNames) {
