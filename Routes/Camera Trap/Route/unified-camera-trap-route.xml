@@ -1387,10 +1387,15 @@
             <choice>
                 <when>
                     <xpath headerName="ManifestXML">
-                        //ImageSequence[Image[ImageId = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName/text() != "Homo sapiens"
+                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName/text() != "Homo sapiens"
                     </xpath>
 
-                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestImage.xsl?saxon=true"/>
+                    <setBody>
+                        <simple>
+                            ${header.ManifestXML}
+                        </simple>
+                    </setBody>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true"/>
 
                     <setHeader headerName="edanJson">
                         <simple>
