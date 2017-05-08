@@ -105,19 +105,19 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
         exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
-        //exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
+        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
         exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
         exchange.getIn().setHeader("CamelFedoraPid", "test:32");
         exchange.getIn().setHeader("ExcludeCurrentImage", false);
 
-        //template.send("direct:addImageToEdanAndIds2", exchange);
+        template.send("direct:addImageToEdanAndIds2", exchange);
 
-        String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
+        /*String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
         for (String fileName : fileNames) {
             exchange.getIn().setHeader("imageid", fileName);
 
             template.send("direct:addImageToEdanAndIds2", exchange);
-        }
+        }*/
 
         //log.info("Headers:\n{}", mockEndpoint.getExchanges().get(0).getIn().getHeaders());
 
