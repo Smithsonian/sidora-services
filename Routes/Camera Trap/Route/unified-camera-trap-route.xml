@@ -901,26 +901,18 @@
             <to uri="bean:idsPushBean?method=setTempLocation({{si.ct.uscbi.tempLocationForZip}})"/>
             <to uri="bean:idsPushBean?method=setInputLocation(${headers.CamelFileAbsolutePath})"/>
             <to uri="bean:idsPushBean?method=setDeploymentId(${header.CameraDeploymentID})"/>
-            <log message="=================================[ START 0 ]================================="
+
+            <log message="=================================[ START IDSPUSHBEAN ]================================="
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 
             <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
-
-            <log message="=================================[ END 0 ]================================="
-                 loggingLevel="WARN"
-                 logName="{{si.ct.id}}"/>
-
 
             <to uri="bean:idsPushBean?method=createZipAndPush"/>
 
-            <log message="=================================[ START 1 ]================================="
-                 loggingLevel="WARN"
-                 logName="{{si.ct.id}}"/>
-
             <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
 
-            <log message="=================================[ END 1 ]================================="
+            <log message="=================================[ END IDSPUSHBEAN ]================================="
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 

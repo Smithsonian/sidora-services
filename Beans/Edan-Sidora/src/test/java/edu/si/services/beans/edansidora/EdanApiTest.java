@@ -25,10 +25,8 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.edansidora;
+package edu.si.services.beans.edansidora;
 
-import edu.si.services.beans.edansidora.EdanApi;
-import edu.si.services.beans.edansidora.EdanApiBean;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -36,15 +34,12 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URLEncoder;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**

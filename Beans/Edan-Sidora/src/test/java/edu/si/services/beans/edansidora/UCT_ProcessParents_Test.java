@@ -25,7 +25,7 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.edansidora;
+package edu.si.services.beans.edansidora;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
