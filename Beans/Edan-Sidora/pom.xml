@@ -263,6 +263,10 @@
             </testResource>
 
             <testResource>
+                <directory>Karaf-config</directory>
+                <!--<targetPath>${basedir}/target/test-classes/etc</targetPath>-->
+            </testResource>
+            <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
                 <targetPath>${basedir}/target/test-classes/etc</targetPath>
             </testResource>

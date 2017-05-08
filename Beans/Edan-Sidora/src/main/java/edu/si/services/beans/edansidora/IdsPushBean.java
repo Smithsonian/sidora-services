@@ -54,13 +54,8 @@ public class IdsPushBean {
 	private Map<String, String> ignored = new HashMap<String, String>();
 
 	private static final Logger LOG = LoggerFactory.getLogger(IdsPushBean.class);
-//	@PropertyInject(value = "si.ct.uscbi.edanidslog", defaultValue = "edanidslog")
-//	private static String LOG_NAME;
 
 	public Map<String, String> createZipAndPush() {
-
-		LOG.info("======================================[ IdsPushBean :: createZipAndPush ]==============================================");
-
 		String errorName = "";
 		String errorInfo = "";
 		String completed = "0";

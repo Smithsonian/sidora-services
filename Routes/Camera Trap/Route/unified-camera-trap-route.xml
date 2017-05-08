@@ -1020,17 +1020,6 @@
 
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false"/>
 
-             <log message="=================================[ START ]================================="
-                  loggingLevel="WARN"
-                  logName="{{si.ct.id}}"/>
-
-             <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
-
-             <log message="=================================[ END ]================================="
-                  loggingLevel="WARN"
-                  logName="{{si.ct.id}}"/>
-
-
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
             <!-- <to uri="direct:createArchivalImage" /> -->
@@ -1077,17 +1066,31 @@
             <log message="${id}: About to call EdanAndIds..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            
+
             <log message="ExcludeCurrentImage before set to false: ${headers.ExcludeCurrentImage}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-   	    <setHeader headerName="ExcludeCurrentImage">
-    	        <simple>false</simple>
-	    </setHeader>
+
+            <setHeader headerName="ExcludeCurrentImage">
+                <simple>false</simple>
+            </setHeader>
+
             <log message="ExcludeCurrentImage after set to false: ${headers.ExcludeCurrentImage}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+
+            <log message="=================================[ START EDAN ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
             <to uri="direct:addImageToEdanAndIds2"/>
+
+            <log message="=================================[ END EDAN ]================================="
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1375,441 +1378,489 @@
                  logName="{{si.ct.id}}"/>
         </route>
 
+        <route id="UnifiedCameraTrapAddImageToEdanAndIds3">
+            <from uri="direct:addImageToEdanAndIds3"/>
+            <log message="${id}: Started processing EDAN and IDS..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <choice>
+                <when>
+                    <xpath headerName="ManifestXML">
+                        //ImageSequence[Image[ImageId = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName/text() != "Homo sapiens"
+                    </xpath>
+
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestImage.xsl?saxon=true"/>
+
+                    <setHeader headerName="edanJson">
+                        <simple>
+                            ${body}
+                        </simple>
+                    </setHeader>
+
+                    <log message="POST THIS TO EDAN: ${headers.edanJson}"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+
+                    <!-- Using property Inject to inject the properties directly in the bean see EdanAPiBean.java -->
+                    <to uri="bean:edanApiBean?method=setServer({{si.ct.uscbi.server}})"/>
+                    <to uri="bean:edanApiBean?method=setAppId({{si.ct.uscbi.appId}})"/>
+                    <to uri="bean:edanApiBean?method=setEdanKey({{si.ct.uscbi.edanKey}})"/>
+                    <to uri="bean:edanApiBean?method=setAuthType({{si.ct.uscbi.authType}})"/>
+
+                    <to uri="bean:edanApiBean?method=startConnection"/>
+
+                    <setHeader headerName="edanService">
+                        <simple>
+                            /content/v1.1/admincontent/createContent.htm
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="edanType">
+                        <simple>
+                            {{si.ct.uscbi.edan_type}}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="imageid">
+                        <simple>
+                            emammal_${header.imageid}
+                        </simple>
+                    </setHeader>
+                    <setHeader headerName="edanUri">
+                        <groovy>
+                            "content=" + URLEncoder.encode(request.headers.edanJson) + ""
+                        </groovy>
+                    </setHeader>
+                    <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
+                         loggingLevel="INFO"
+                         logName="edanidslog"/>
+
+                    <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
+
+                    <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
+                         loggingLevel="INFO"
+                         logName="edanidslog"/>
+                    <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
+                         loggingLevel="INFO"
+                         logName="edanidslog"/>
+                    <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
+                         loggingLevel="INFO"
+                         logName="edanidslog"/>
+                </when>
+                <otherwise>
+                    <log message="NO POST TO EDAN, exclude this image? ${headers.ExcludeCurrentImage} ${header.imageid}"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id}: Finished processing EDAN and IDS."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
         <route id="UnifiedCameraTrapAddImageToEdanAndIds2">
             <from uri="direct:addImageToEdanAndIds2"/>
             <log message="${id}: Started processing EDAN and IDS..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-             <!--<removeHeaders pattern="*" excludePattern="P.*|p.*|header2"/>-->
-             <!--<removeHeaders pattern="ManifestXML|CamelSchematronValidationReport"/>-->
+            <!--<removeHeaders pattern="*" excludePattern="P.*|p.*|header2"/>-->
+            <!--<removeHeaders pattern="ManifestXML|CamelSchematronValidationReport"/>-->
 
-            <!--<doTry>-->
-                <!--
-                                      POST to EDAN
-                -->
-                <!-- 
-                     create the JSON to put into EDAN content
-                     URLencode the JSON string
-                     set as edanJson
-                -->
-                <setHeader headerName="ProjectName">
-                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                        //ProjectName/text()
+            <doTry>
+            <!-- POST to EDAN -->
+            <!-- create the JSON to put into EDAN content URLencode the JSON string set as edanJson -->
+
+            <setHeader headerName="ProjectName">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //ProjectName/text()
+                </xpath>
+            </setHeader>
+            <setHeader headerName="SubProjectName">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //SubProjectName/text()
+                </xpath>
+            </setHeader>
+            <setHeader headerName="CameraSiteName">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //CameraSiteName/text()
+                </xpath>
+            </setHeader>
+            <setHeader headerName="ProjectId">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //ProjectId/text()
+                </xpath>
+            </setHeader>
+            <setHeader headerName="SubProjectId">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //SubProjectId/text()
+                </xpath>
+            </setHeader>
+            <setHeader headerName="CameraDeploymentID">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //CameraDeploymentID/text()
+                </xpath>
+            </setHeader>
+            <split strategyRef="concatenateAggregationStrategy">
+                <xpath headerName="ManifestXML">
+                    //ImageSequence
+                </xpath>
+                <setHeader headerName="CurrentImageSequence">
+                    <simple>${body}</simple>
+                </setHeader>
+                <setHeader headerName="check_has_file">
+                    <xpath resultType="java.lang.String">
+                        boolean(//ImageFileName[text()=$CamelFileName]/text()[1])
                     </xpath>
                 </setHeader>
-                <setHeader headerName="SubProjectName">
-                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                       //SubProjectName/text()
-                    </xpath>
-                </setHeader>
-                <setHeader headerName="CameraSiteName">
-                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                        //CameraSiteName/text()
-                    </xpath>
-                </setHeader>
-                <setHeader headerName="ProjectId">
-                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                        //ProjectId/text()
-                    </xpath>
-                </setHeader>
-                <setHeader headerName="SubProjectId">
-                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                       //SubProjectId/text()
-                    </xpath>
-                </setHeader>
-                <setHeader headerName="CameraDeploymentID">
-                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                        //CameraDeploymentID/text()
-                    </xpath>
-                </setHeader>
-                <split strategyRef="concatenateAggregationStrategy">
-                    <xpath headerName="ManifestXML">
-                        //ImageSequence
-                    </xpath>
-                    <setHeader headerName="CurrentImageSequence"><simple>${body}</simple></setHeader>
-                    <setHeader headerName="check_has_file">
-                        <xpath resultType="java.lang.String" >
-                          boolean(//ImageFileName[text()=$CamelFileName]/text()[1])
-                        </xpath>
-                    </setHeader>
-                    <choice>
-                        <when>
-                            <simple>
-                                ${headers.check_has_file} == 'true'
-                            </simple>
-                            <split strategyRef="concatenateAggregationStrategy">
-                                <xpath>
-                                    //ResearcherIdentifications/Identification/SpeciesCommonName/text()
+                <choice>
+                    <when>
+                        <simple>
+                            ${headers.check_has_file} == 'true'
+                        </simple>
+                        <split strategyRef="concatenateAggregationStrategy">
+                            <xpath>
+                                //ResearcherIdentifications/Identification/SpeciesCommonName/text()
+                            </xpath>
+                            <setBody>
+                                <simple trim="false">${body},</simple>
+                            </setBody>
+                        </split>
+                        <convertBodyTo type="java.lang.String"/>
+                        <choice>
+                            <when>
+                                <simple>
+                                    ${body.length()} > 2
+                                </simple>
+                                <transform>
+                                    <groovy>request.body.substring(0, request.body.length()-[2])</groovy>
+                                </transform>
+                                <setHeader headerName="VisibleAnimals">
+                                    <simple>${body}</simple>
+                                </setHeader>
+                            </when>
+                            <otherwise>
+                                <setHeader headerName="VisibleAnimals">
+                                    <simple></simple>
+                                </setHeader>
+                            </otherwise>
+                        </choice>
+                        <split strategyRef="concatenateAggregationStrategy">
+                            <xpath headerName="CurrentImageSequence">
+                                //ResearcherIdentifications/Identification
+                            </xpath>
+                            <setHeader headerName="CurrentIdentification">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <setHeader headerName="species_scientific_name">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //SpeciesScientificName/text()
                                 </xpath>
-                                <setBody>
-                                    <simple trim="false">${body}, </simple>
-                                </setBody>
-                            </split>
-                            <convertBodyTo type="java.lang.String"/>
+                            </setHeader>
                             <choice>
                                 <when>
                                     <simple>
-                                        ${body.length()} > 2
+                                        ${headers.species_scientific_name} == 'Homo sapiens'
                                     </simple>
-                                    <transform>
-                                        <groovy>request.body.substring(0, request.body.length()-[2])</groovy>
-                                    </transform>
-                                    <setHeader headerName="VisibleAnimals">
-                                        <simple>${body}</simple>
-                                    </setHeader>
+                                    <!--
+                                        Sample of species names from actual deployments:
+                                        ${headers.species_scientific_name} == 'Vulpes vulpes'
+                                        ${headers.species_scientific_name} == 'Odocoileus virginianus'
+                                    -->
+                                    <setBody>
+                                        <simple>true</simple>
+                                    </setBody>
+                                    <log message=" ${headers.species_scientific_name} species check confirm match, exclude image set to true."
+                                         loggingLevel="INFO"
+                                         logName="{{si.ct.id}}"/>
                                 </when>
                                 <otherwise>
-                                    <setHeader headerName="VisibleAnimals">
-                                        <simple> </simple>
-                                   </setHeader>
+                                    <setBody>
+                                        <simple></simple>
+                                    </setBody>
+                                    <log message=" ${headers.species_scientific_name} species no match."
+                                         loggingLevel="INFO"
+                                         logName="{{si.ct.id}}"/>
                                 </otherwise>
                             </choice>
-                            <split strategyRef="concatenateAggregationStrategy">
-                                <xpath headerName="CurrentImageSequence">
-                                    //ResearcherIdentifications/Identification
+                        </split>
+                        <choice>
+                            <when>
+                                <simple>${body} == 'true'</simple>
+                                <setHeader headerName="ExcludeCurrentImage">
+                                    <simple>true</simple>
+                                </setHeader>
+                                <log message=" After all species processed, exclude set to true: ${body}"
+                                     loggingLevel="INFO"
+                                     logName="{{si.ct.id}}"/>
+                            </when>
+                            <otherwise>
+                                <setHeader headerName="ExcludeCurrentImage">
+                                    <simple>false</simple>
+                                </setHeader>
+                                <log message=" After all species processed, exclude set to false: ${body}"
+                                     loggingLevel="INFO"
+                                     logName="{{si.ct.id}}"/>
+                            </otherwise>
+                        </choice>
+                        <split strategyRef="concatenateAggregationStrategy">
+                            <xpath headerName="CurrentImageSequence">
+                                //ResearcherIdentifications/Identification
+                            </xpath>
+                            <setHeader headerName="CurrentIdentification">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <setHeader headerName="iucn_id">
+                                <simple></simple>
+                            </setHeader>
+                            <filter>
+                                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                                    boolean(//IUCNId/text()[1])
                                 </xpath>
-                                <setHeader headerName="CurrentIdentification"><simple>${body}</simple></setHeader>
-                                <setHeader headerName="species_scientific_name">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //SpeciesScientificName/text()
+                                <setHeader headerName="iucn_id">
+                                    <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                        //IUCNId/text()
                                     </xpath>
                                 </setHeader>
-                                <choice>
-                                    <when>
-                                        <simple>
-                                            ${headers.species_scientific_name} == 'Homo sapiens' 
-                                        </simple>
-                                        <!--    
-                                            Sample of species names from actual deployments:
-                                            ${headers.species_scientific_name} == 'Vulpes vulpes' 
-                                            ${headers.species_scientific_name} == 'Odocoileus virginianus' 
-                                        -->
-                                        <setBody><simple>true</simple></setBody>
-					    <log message=" ${headers.species_scientific_name} species check confirm match, exclude image set to true."
-					    loggingLevel="INFO"
-					    logName="{{si.ct.id}}"/>
-                                    </when>
-                                    <otherwise>
-                                        <setBody><simple></simple></setBody>
-					    <log message=" ${headers.species_scientific_name} species no match."
-					    loggingLevel="INFO"
-					    logName="{{si.ct.id}}"/>
-                                    </otherwise>
-                               </choice>
-                            </split>
+                            </filter>
+                            <setHeader headerName="species_scientific_name">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //SpeciesScientificName/text()
+                                </xpath>
+                            </setHeader>
+                            <setHeader headerName="species_common_name">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //SpeciesCommonName/text()
+                                </xpath>
+                            </setHeader>
+                            <setHeader headerName="count">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //Count/text()
+                                </xpath>
+                            </setHeader>
+                            <setHeader headerName="age">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //Age/text()
+                                </xpath>
+                            </setHeader>
+                            <setHeader headerName="sex">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //Sex/text()
+                                </xpath>
+                            </setHeader>
+                            <setHeader headerName="individual_id">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //IndividualId/text()
+                                </xpath>
+                            </setHeader>
+                            <setHeader headerName="animal_recognizable">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //AnimalRecognizable/text()
+                                </xpath>
+                            </setHeader>
+                            <setHeader headerName="individual_animal_notes">
+                                <xpath resultType="java.lang.String" headerName="CurrentIdentification">
+                                    //IndividualAnimalNotes/text()
+                                </xpath>
+                            </setHeader>
+                            <setBody>
+                                <simple>
+                                    {
+                                    "iucn_id": "${headers.iucn_id}",
+                                    "species_scientific_name": "${headers.species_scientific_name}",
+                                    "individual_animal_notes": "${headers.individual_animal_notes}",
+                                    "species_common_name": "${headers.species_common_name}",
+                                    "count": ${headers.count},
+                                    "age": "${headers.age}",
+                                    "sex": "${headers.sex}",
+                                    "individual_id": "${headers.individual_id}",
+                                    "animal_recognizable": "${headers.animal_recognizable}"
+                                    },
+                                </simple>
+                            </setBody>
+                        </split>
+                        <transform>
+                            <groovy>request.body.substring(0, request.body.length()-[1])</groovy>
+                        </transform>
+                        <setHeader headerName="edanJsonImageIdentifications">
+                            <simple>${body}</simple>
+                        </setHeader>
+                        <split strategyRef="concatenateAggregationStrategy">
+                            <xpath headerName="CurrentImageSequence">
+                                //Image
+                            </xpath>
+                            <setHeader headerName="CurrentImage">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <setHeader headerName="check_has_file">
+                                <xpath resultType="java.lang.String">
+                                    boolean(//ImageFileName[text()=$CamelFileName]/text()[1])
+                                </xpath>
+                            </setHeader>
+                            <setBody>
+                                <simple></simple>
+                            </setBody>
                             <choice>
                                 <when>
-                                    <simple>${body} == 'true'</simple>
-				    <setHeader headerName="ExcludeCurrentImage">
-					<simple>true</simple>
-				    </setHeader>
-				    <log message=" After all species processed, exclude set to true: ${body}"
-					    loggingLevel="INFO"
-					    logName="{{si.ct.id}}"/>
-                                </when>
-                                <otherwise>
-				    <setHeader headerName="ExcludeCurrentImage">
-					<simple>false</simple>
-				    </setHeader>
-				    <log message=" After all species processed, exclude set to false: ${body}"
-					    loggingLevel="INFO"
-					    logName="{{si.ct.id}}"/>
-                                </otherwise>
-                            </choice>
-                            <split strategyRef="concatenateAggregationStrategy">
-                                <xpath headerName="CurrentImageSequence">
-                                    //ResearcherIdentifications/Identification
-                                </xpath>
-                                <setHeader headerName="CurrentIdentification"><simple>${body}</simple></setHeader>
-                                <setHeader headerName="iucn_id">
-                                    <simple></simple>
-                                </setHeader>
-                                <filter>
-                                    <xpath resultType="java.lang.String" headerName="ManifestXML">
-                                        boolean(//IUCNId/text()[1])
-                                    </xpath>
-                                    <setHeader headerName="iucn_id">
-                                        <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                            //IUCNId/text()
+                                    <simple>
+                                        ${headers.check_has_file} == 'true'
+                                    </simple>
+                                    <setHeader headerName="DateTime">
+                                        <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                            //ImageDateTime/text()
                                         </xpath>
                                     </setHeader>
-                                </filter>
-                                <setHeader headerName="species_scientific_name">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //SpeciesScientificName/text()
-                                    </xpath>
-                                </setHeader>
-                                <setHeader headerName="species_common_name">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //SpeciesCommonName/text()
-                                    </xpath>
-                                </setHeader>
-                                <setHeader headerName="count">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //Count/text()
-                                    </xpath>
-                                </setHeader>
-                                <setHeader headerName="age">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //Age/text()
-                                    </xpath>
-                                </setHeader>
-                                <setHeader headerName="sex">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //Sex/text()
-                                    </xpath>
-                                </setHeader>
-                                <setHeader headerName="individual_id">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //IndividualId/text()
-                                    </xpath>
-                                </setHeader>
-                                <setHeader headerName="animal_recognizable">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //AnimalRecognizable/text()
-                                    </xpath>
-                                </setHeader>
-                                <setHeader headerName="individual_animal_notes">
-                                    <xpath resultType="java.lang.String"  headerName="CurrentIdentification">
-                                        //IndividualAnimalNotes/text()
-                                    </xpath>
-                                </setHeader>
-                                <setBody>
-                                    <simple>  
-  { 
-    "iucn_id": "${headers.iucn_id}",
-    "species_scientific_name": "${headers.species_scientific_name}",
-    "individual_animal_notes": "${headers.individual_animal_notes}",
-    "species_common_name": "${headers.species_common_name}",
-    "count": ${headers.count},
-    "age": "${headers.age}",
-    "sex": "${headers.sex}",
-    "individual_id": "${headers.individual_id}",
-    "animal_recognizable": "${headers.animal_recognizable}"
-  },
-                                    </simple>
-                                </setBody>
-                            </split>
-                            <transform>
-                                <groovy>request.body.substring(0, request.body.length()-[1])</groovy>
-                            </transform>
-                            <setHeader headerName="edanJsonImageIdentifications">
-                                <simple>${body}</simple>
-                            </setHeader>
-                            <split strategyRef="concatenateAggregationStrategy">
-                                <xpath headerName="CurrentImageSequence">
-                                    //Image
-                                </xpath>
-                                <setHeader headerName="CurrentImage"><simple>${body}</simple></setHeader>
-                                <setHeader headerName="check_has_file">
-                                    <xpath resultType="java.lang.String">
-                                         boolean(//ImageFileName[text()=$CamelFileName]/text()[1])
-                                    </xpath>
-                                </setHeader>
-                                <setBody><simple></simple></setBody>
-                                <choice>
-                                    <when>
-                                        <simple>
-                                            ${headers.check_has_file} == 'true'
+                                    <setHeader headerName="PhotoType">
+                                        <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                            //PhotoType/text()
+                                        </xpath>
+                                    </setHeader>
+                                    <setHeader headerName="PhotoTypeIdentifiedBy">
+                                        <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                            //PhotoTypeIdentifiedBy/text()
+                                        </xpath>
+                                    </setHeader>
+                                    <setHeader headerName="InterestRanking">
+                                        <xpath resultType="java.lang.String" headerName="CurrentImage">
+                                            //ImageInterestRanking/text()
+                                        </xpath>
+                                    </setHeader>
+                                    <setBody>
+                                        <simple trim="false">"date_time": "${header.DateTime}",
+                                            "photo_type": "${header.PhotoType}",
+                                            "photo_type_identified_by": "${header.PhotoTypeIdentifiedBy}",
+                                            "interest_ranking": "${header.InterestRanking}"
                                         </simple>
-                                        <setHeader headerName="DateTime">
-                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
-                                                //ImageDateTime/text()
-                                            </xpath>
-                                        </setHeader>
-                                        <setHeader headerName="PhotoType">
-                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
-                                                //PhotoType/text()
-                                            </xpath>
-                                        </setHeader>
-                                        <setHeader headerName="PhotoTypeIdentifiedBy">
-                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
-                                                //PhotoTypeIdentifiedBy/text()
-                                            </xpath>
-                                        </setHeader>
-                                        <setHeader headerName="InterestRanking">
-                                            <xpath resultType="java.lang.String" headerName="CurrentImage">
-                                                //ImageInterestRanking/text()
-                                            </xpath>
-                                        </setHeader>
-                                        <setBody>
-                                            <simple trim="false">   "date_time": "${header.DateTime}",
-   "photo_type": "${header.PhotoType}",
-   "photo_type_identified_by": "${header.PhotoTypeIdentifiedBy}",
-   "interest_ranking": "${header.InterestRanking}"
-</simple>
-                                        </setBody>
-                                    </when>
-                                </choice>
-                            </split>
-                            <setHeader headerName="edanJsonImageInfo">
-                                <simple>${body}</simple>
-                            </setHeader>
-                            <setHeader headerName="edanJson">
+                                    </setBody>
+                                </when>
+                            </choice>
+                        </split>
+                        <setHeader headerName="edanJsonImageInfo">
+                            <simple>${body}</simple>
+                        </setHeader>
+                        <setHeader headerName="edanJson">
+                            <simple>
+                                { content :
+                                {
+                                {{si.ct.uscbi.extra_property}}
+                                "project_id": "${header.ProjectId}",
+                                "project_name": "${header.ProjectName}",
+                                "sub_project_id": "${header.SubProjectId}",
+                                "sub_project_name": "${header.SubProjectName}",
+                                "deployment_id": "${header.CameraDeploymentID}",
+                                "deployment_name": "${header.CameraSiteName}",
+                                "image_sequence_id": "${header.ImageSequenceID}",
+                                "image": {
+                                "id": "${header.imageid}",
+                                "online_media": [
+                                {
+                                "content":
+                                "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}",
+                                "idsId": "emammal_image_${header.imageid}",
+                                "sidoraPid": "${header.CamelFedoraPid}",
+                                "type": "Images",
+                                "caption": "Camera Trap Image ${header.VisibleAnimals}",
+                                "thumbnail":
+                                "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}"
+                                }
+                                ],
+                                ${header.edanJsonImageInfo}
+                                },
+                                "image_identifications": [
+                                ${header.edanJsonImageIdentifications}
+                                ]
+                                },
+                                "publicSearch": false,
+                                "title": "Camera Trap Image ${header.VisibleAnimals}",
+                                "type": "emammal_image",
+                                "url": "${header.imageid}"
+                                }
+                            </simple>
+                        </setHeader>
+                        <choice>
+                            <when>
                                 <simple>
-{ content :
-{
-{{si.ct.uscbi.extra_property}}
- "project_id": "${header.ProjectId}",
- "project_name": "${header.ProjectName}",
- "sub_project_id": "${header.SubProjectId}",
- "sub_project_name": "${header.SubProjectName}",
- "deployment_id": "${header.CameraDeploymentID}",
- "deployment_name": "${header.CameraSiteName}",
- "image_sequence_id": "${header.ImageSequenceID}",
- "image": {
-   "id": "${header.imageid}",
-   "online_media": [
-       {
-         "content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}",
-         "idsId": "emammal_image_${header.imageid}",
-         "sidoraPid": "${header.CamelFedoraPid}",
-         "type": "Images",
-         "caption": "Camera Trap Image ${header.VisibleAnimals}",
-         "thumbnail": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_${header.imageid}"
-       }
-   ],
-${header.edanJsonImageInfo}
- },
- "image_identifications": [
-  ${header.edanJsonImageIdentifications}   
- ]
-},
-"publicSearch": false,
-"title": "Camera Trap Image ${header.VisibleAnimals}",
-"type": "emammal_image",
-"url": "${header.imageid}"
-}
+                                    ${headers.ExcludeCurrentImage} == 'false'
                                 </simple>
-                            </setHeader>
-                                <choice>
-                                    <when>
-                                        <simple>
-                                            ${headers.ExcludeCurrentImage} == 'false'
-                                        </simple>
-					    <log message="POST THIS TO EDAN: ${headers.edanJson}"
-				    loggingLevel="INFO"
-				    logName="{{si.ct.id}}"/>
+                                <log message="POST THIS TO EDAN: ${headers.edanJson}"
+                                     loggingLevel="INFO"
+                                     logName="{{si.ct.id}}"/>
 
-                    <!-- Using property Inject to inject the properties directly in the bean see EdanAPiBean.java -->
-					   <to uri="bean:edanApiBean?method=setServer({{si.ct.uscbi.server}})"/>
-					   <to uri="bean:edanApiBean?method=setAppId({{si.ct.uscbi.appId}})"/>
-					   <to uri="bean:edanApiBean?method=setEdanKey({{si.ct.uscbi.edanKey}})"/>
-					   <to uri="bean:edanApiBean?method=setAuthType({{si.ct.uscbi.authType}})"/>
+                                <!-- Using property Inject to inject the properties directly in the bean see EdanAPiBean.java -->
+                                <to uri="bean:edanApiBean?method=setServer({{si.ct.uscbi.server}})"/>
+                                <to uri="bean:edanApiBean?method=setAppId({{si.ct.uscbi.appId}})"/>
+                                <to uri="bean:edanApiBean?method=setEdanKey({{si.ct.uscbi.edanKey}})"/>
+                                <to uri="bean:edanApiBean?method=setAuthType({{si.ct.uscbi.authType}})"/>
 
-                                        <log message="=================================[ START 00 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
+                                <to uri="bean:edanApiBean?method=startConnection"/>
 
-                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+                                <setHeader headerName="edanService">
+                                    <simple>
+                                        /content/v1.1/admincontent/createContent.htm
+                                    </simple>
+                                </setHeader>
+                                <setHeader headerName="edanType">
+                                    <simple>
+                                        {{si.ct.uscbi.edan_type}}
+                                    </simple>
+                                </setHeader>
+                                <setHeader headerName="imageid">
+                                    <simple>
+                                        emammal_${header.imageid}
+                                    </simple>
+                                </setHeader>
+                                <setHeader headerName="edanUri">
+                                    <groovy>
+                                        "content=" + URLEncoder.encode(request.headers.edanJson) + ""
+                                    </groovy>
+                                </setHeader>
+                                <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
+                                     loggingLevel="INFO"
+                                     logName="edanidslog"/>
 
-                                        <log message="=================================[ END 00 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
+                                <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
 
+                                <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
+                                     loggingLevel="INFO"
+                                     logName="edanidslog"/>
+                                <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
+                                     loggingLevel="INFO"
+                                     logName="edanidslog"/>
+                                <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
+                                     loggingLevel="INFO"
+                                     logName="edanidslog"/>
+                                <!--
+                             create the full param string
+                             edanParams = type=emammal_image&content=${edanJson}&title=${header.CamelFedoraPid}&status=0&publicSearch=false
+                             set as edanParams
+                                -->
+                                <!--
+                             Interact with bean
+                             <to uri="bean:edanApiBean?method=startConnection"/>
+                             <to uri="bean:edanApiBean?method=sendRequest(${edanParams}, content/v1.1/admincontent/createContent.htm, TRUE)"/>
+                             -->
+                            </when>
+                            <!-- ends ${headers.ExcludeCurrentImage} == 'false' -->
+                            <otherwise>
+                                <log message="NO POST TO EDAN, exclude this image? ${headers.ExcludeCurrentImage} ${header.imageid}"
+                                     loggingLevel="INFO"
+                                     logName="{{si.ct.id}}"/>
+                                <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
+                            </otherwise>
+                        </choice>
+                    </when>
+                </choice>
+            </split>
+            <doCatch>
+                <exception>javax.imageio.IIOException</exception>
+                    <log message="${id}: Cannot POST to EDAN."
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"/>
+            </doCatch>
+            </doTry>
 
-                                        <to uri="bean:edanApiBean?method=startConnection"/>
-
-                                        <log message="=================================[ START 11 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
-
-                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
-
-                                        <log message="=================================[ END 11 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
-
-
-                                        <setHeader headerName="edanService">
-					       <simple>
-						   /content/v1.1/admincontent/createContent.htm
-					       </simple>
-					   </setHeader>
-					   <setHeader headerName="edanType">
-					       <simple>
-						   {{si.ct.uscbi.edan_type}}
-					       </simple>
-					   </setHeader>
-					   <setHeader headerName="imageid">
-					       <simple>
-						 emammal_${header.imageid}
-					       </simple>
-					   </setHeader>
-					   <setHeader headerName="edanUri">
-					       <groovy>
-						   "content=" + URLEncoder.encode(request.headers.edanJson) + ""
-					       </groovy>
-					   </setHeader>
-					   <log message="uri: ${headers.edanUri} service: ${headers.edanService}"
-					     loggingLevel="INFO"
-					     logName="edanidslog"/>
-
-                                        <log message="=================================[ START 22 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
-
-                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
-
-                                        <log message="=================================[ END 22 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
-
-
-                                        <to uri="bean:edanApiBean?method=sendRequest(${headers.edanUri}, ${headers.edanService}, FALSE)"/>
-
-                                        <log message="=================================[ START 33 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
-
-                                        <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
-
-                                        <log message="=================================[ END 33 ]================================="
-                                             loggingLevel="WARN"
-                                             logName="{{si.ct.id}}"/>
-
-
-                                        <log message="encodeHeaderSample body error: ${body[errorString]} body response: ${body[response]}"
-					     loggingLevel="INFO"
-					     logName="edanidslog"/>
-					   <log message="encodeHeaderSample body targetURL: ${body[targetURL]}"
-					     loggingLevel="INFO"
-					     logName="edanidslog"/>
-					   <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
-					     loggingLevel="INFO"
-					     logName="edanidslog"/>
-					   <!--
-				    create the full param string
-				    edanParams = type=emammal_image&content=${edanJson}&title=${header.CamelFedoraPid}&status=0&publicSearch=false
-				    set as edanParams
-					   -->
-					   <!--
-				    Interact with bean
-				    <to uri="bean:edanApiBean?method=startConnection"/>
-				    <to uri="bean:edanApiBean?method=sendRequest(${edanParams}, content/v1.1/admincontent/createContent.htm, TRUE)"/>
-				    -->
-                                 </when>
-                                 <!-- ends ${headers.ExcludeCurrentImage} == 'false' -->
-                                 <otherwise>
-				     <log message="NO POST TO EDAN, exclude this image? ${headers.ExcludeCurrentImage} ${header.imageid}"
-					    loggingLevel="INFO"
-					    logName="{{si.ct.id}}"/>
-                                     <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
-                                 </otherwise>
-                             </choice>
-                        </when>
-                    </choice>
-                </split>
-                <!--<doCatch>
-                    <exception>javax.imageio.IIOException</exception>
-                        <log message="${id}: Cannot POST to EDAN."
-                         loggingLevel="WARN"
-                         logName="{{si.ct.id}}"/>
-                </doCatch>-->
-            <!--</doTry>-->
             <log message="${id}: Finished processing EDAN and IDS."
-                  loggingLevel="INFO"
-                  logName="{{si.ct.id}}"/>
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapCreateThumbnailImage">

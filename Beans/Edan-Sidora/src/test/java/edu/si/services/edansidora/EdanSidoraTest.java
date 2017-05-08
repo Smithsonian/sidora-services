@@ -88,14 +88,14 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     @Ignore
-    public void edanJsonTest() throws Exception {
+    public void addImageToEdanAndIds2Test() throws Exception {
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
-        mockEndpoint.expectedMessageCount(3);
+        mockEndpoint.expectedMessageCount(1);
 
         context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds2").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveByToString(".*edanApiBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to edanApiBean Bean");
+                //weaveByToString(".*edanApiBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to edanApiBean Bean");
                 weaveByToString(".*idsPushBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to idsPushBean Bean");
                 weaveAddLast().to("mock:result");
             }
@@ -104,13 +104,66 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
+        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
+        //exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
+        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
+        exchange.getIn().setHeader("CamelFedoraPid", "test:32");
+        exchange.getIn().setHeader("ExcludeCurrentImage", false);
 
-        String[] fileNames = {"d18981s1i1.JPG", "d18981s1i10.JPG", "d18981s2i1.JPG"};
+        //template.send("direct:addImageToEdanAndIds2", exchange);
+
+        String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
         for (String fileName : fileNames) {
-            exchange.getIn().setHeader("CamelFileName", fileName);
+            exchange.getIn().setHeader("imageid", fileName);
 
             template.send("direct:addImageToEdanAndIds2", exchange);
         }
+
+        //log.info("Headers:\n{}", mockEndpoint.getExchanges().get(0).getIn().getHeaders());
+
+        for (Map.Entry<String, Object> entry : mockEndpoint.getExchanges().get(0).getIn().getHeaders().entrySet()) {
+            if (!entry.getKey().toString().equals("ManifestXML") && !entry.getKey().toString().equals("edanJson")) {
+                log.info(entry.toString());
+            }
+        }
+
+
+        assertMockEndpointsSatisfied();
+
+    }
+
+    @Test
+    @Ignore
+    public void addImageToEdanAndIds3Test() throws Exception {
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+
+        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds3").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //weaveByToString(".*edanApiBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to edanApiBean Bean");
+                //weaveByToString(".*idsPushBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to idsPushBean Bean");
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
+        exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
+        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
+        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
+        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
+        exchange.getIn().setHeader("CamelFedoraPid", "test:32");
+        exchange.getIn().setHeader("ExcludeCurrentImage", false);
+
+        template.send("direct:addImageToEdanAndIds2", exchange);
+
+        /*String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
+        for (String fileName : fileNames) {
+            exchange.getIn().setHeader("imageid", fileName);
+
+            template.send("direct:addImageToEdanAndIds3", exchange);
+        }*/
 
         //log.info("Headers:\n{}", mockEndpoint.getExchanges().get(0).getIn().getHeaders());
 

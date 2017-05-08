@@ -39,8 +39,6 @@ import java.util.Map;
 public class EdanApiBean {
 
 	private static final Logger LOG = LoggerFactory.getLogger(EdanApiBean.class);
-//	@PropertyInject(value = "si.ct.uscbi.edanidslog", defaultValue = "edanidslog")
-//	private static String LOG_NAME;
 
 //	@PropertyInject(value = "si.ct.uscbi.server")
 	private String server;
@@ -89,7 +87,6 @@ public class EdanApiBean {
 	}
 
 	public boolean startConnection() {
-		LOG.info("======================================[ EdanApiBean :: startConnection ]==============================================");
 		if (this.appId == null || this.server == null || this.edanKey == null){
 			return false;
 		}

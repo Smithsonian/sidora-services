@@ -58,8 +58,6 @@ import java.util.Map;
 public class EdanApi {
 
     private static final Logger LOG = LoggerFactory.getLogger(EdanApi.class);
-    //@PropertyInject(value = "si.ct.uscbi.edanidslog", defaultValue = "edanidslog")
-    private static String LOG_NAME;
 
     private String server = null;
     private String app_id = null;
@@ -286,8 +284,11 @@ public class EdanApi {
      *
      * @param args
      */
+
+    //MOVED TO UNIT TEST SEE src/test/java/edu.si.services.edansidora.EdanApiTest.java
+
     //@SuppressWarnings("deprecation")
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         System.out.println("Hello World");
         EdanApi ea = null;
         ea = new EdanApi("http://edan.si.edu/", "EMAMMAL", "6a1cdadc22351377ab87f39e7b990261db9b94f1");
@@ -297,6 +298,7 @@ public class EdanApi {
         }
         String sampleJsonContent = ""
                 + "\n{"
+
                 + "\n \"project_id\": \"p125\","
                 + "\n \"project_name\": \"Sample Triangle Camera Trap Survey Project\","
                 + "\n \"sub_project_id\": \"sp818\","
@@ -346,5 +348,5 @@ public class EdanApi {
             String value = entry.getValue();
             System.out.println("K:" + key + "\tval:" + value.replaceAll("\\\\n", "\n"));
         }
-    }
+    }*/
 }
