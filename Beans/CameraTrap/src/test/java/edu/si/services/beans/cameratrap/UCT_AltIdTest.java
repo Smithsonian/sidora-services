@@ -41,6 +41,10 @@ import java.util.List;
 import static org.apache.commons.io.FileUtils.readFileToString;
 
 /**
+ * Testing Project and Subproject findObject logic using alternate id's to check if an object exists
+ * and falling back to checking using string name. The test assumes neither Project or SubProject exist
+ * and will continue to create the object, However actual object creation is intercepted or sent to mock endpoints.
+ *
  * @author jbirkhimer
  */
 public class UCT_AltIdTest extends CT_BlueprintTestSupport {
@@ -87,18 +91,23 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
      * Testing Project and Subproject findObject logic using alternate id's to check if an object exists
      * and falling back to checking using string name. The test assumes neither Project or SubProject exist
      * and will continue to create the object, However actual object creation is intercepted or sent to mock endpoints.
+     *
      * @throws Exception
      */
     @Test
     public void processParentsMockFedoraTest() throws Exception {
+
+        //The mock endpoint we are sending to for assertions
         MockEndpoint mockParents = getMockEndpoint("mock:processParentsResult");
         mockParents.expectedMessageCount(2);
+        //We want to make sure that the expected bodies have the correct Project and SubProject RELS-EXT
         mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT), readFileToString(subProjectRELS_EXT));
 
+        /* Advicewith the routes as needed for this test */
         context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //Intercept sending to processPlot
+                        //Intercept sending to processPlot we are only testing Project and Subproject RELS-EXT Creation
                 interceptSendToEndpoint("direct:processPlot").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping processPlot");
             }
         });
@@ -118,7 +127,7 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
                         .endChoice()
                         .end();
 
-                //intercept sending to fedora:addDatastream and send to mock endpoint to assert correct values
+                        //intercept sending to fedora:addDatastream and send to mock endpoint to assert correct RELS-EXT
                 interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().setHeader("routeId", simple("${routeId}")).to("mock:processParentsResult");
 
                 //intercept other calls to fedora that are not needed and skip them
@@ -140,22 +149,27 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
         context.getRouteDefinition("UnifiedCameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                        //replace the actual fuseki http call and provide our own response
                 weaveById("findObjectFusekiHttpCall").replace().setBody().simple(readFileToString(objectNotFoundFusekiResponse));
             }
         });
 
         context.start();
 
+        //Initialize the exchange with body and headers as needed
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
         exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
         exchange.getIn().setHeader("CamelFedoraPid", getConfig().getString("si.ct.root"));
 
+        // The endpoint we want to start from with the exchange body and headers we want
         template.send("direct:processParents", exchange);
 
+        //assert again that the expected bodies have the correct Project and SubProject RELS-EXT
         assertEquals(readFileToString(projectRELS_EXT), mockParents.getExchanges().get(0).getIn().getBody());
         assertEquals(readFileToString(subProjectRELS_EXT), mockParents.getExchanges().get(1).getIn().getBody());
 
+        //Show the bodies sent to the mock endpoint in the log
         for (Exchange mockExchange : mockParents.getExchanges()) {
             log.info("Result from {} route: {}", mockExchange.getIn().getHeader("routeId"), mockExchange.getIn().getBody(String.class));
         }

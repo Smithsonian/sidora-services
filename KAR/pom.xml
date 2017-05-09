@@ -107,11 +107,11 @@
         </dependency>
 
         <!-- Sidora Batch Service -->
-        <dependency>
+        <!--<dependency>
             <groupId>edu.si.services</groupId>
             <artifactId>sidora-batch</artifactId>
             <version>1.0</version>
-        </dependency>
+        </dependency>-->
 
         <!-- Sidora MCI Service -->
         <dependency>
