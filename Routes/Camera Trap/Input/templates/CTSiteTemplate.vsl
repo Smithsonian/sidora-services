@@ -14,7 +14,6 @@
         <fedora-model:hasModel rdf:resource="info:fedora/si:cameraTrapCModel"/>
         <fedora-model:hasModel rdf:resource="info:fedora/si:conceptCModel"/>
         <default:orginal_metadata xmlns="http://islandora.org/ontologies/metadata#">TRUE</default:orginal_metadata>
-        <dc:identifier xmlns="http://sidora.si.edu/ontologies/metadata#" rdf:resource="http://sidora.si.edu/ctId/$headers.DeploymentCorrelationId"/>
         #foreach($child in $headers.PIDAggregation.split(","))
         <fedora:hasResource rdf:resource="info:fedora/$child"/>
         #end
