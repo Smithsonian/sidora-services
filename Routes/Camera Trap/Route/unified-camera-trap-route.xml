@@ -1447,6 +1447,7 @@
                     <log message="NO POST TO EDAN, exclude this image? ${headers.ExcludeCurrentImage} ${header.imageid}"
                          loggingLevel="INFO"
                          logName="{{si.ct.id}}"/>
+                    <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
                 </otherwise>
             </choice>
 
