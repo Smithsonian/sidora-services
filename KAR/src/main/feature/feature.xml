@@ -53,6 +53,12 @@
         <bundle dependency='true'>mvn:org.apache.httpcomponents/httpclient-osgi/${httpclient4.version}</bundle>
     </feature>
 
+    <feature name="edan-ids-dependencies" version="${version}" >
+        <bundle dependency="true" start-level='80'>mvn:commons-logging/commons-logging/1.2</bundle>
+        <bundle dependency="true" start-level='80'>wrap:mvn:org.apache.httpcomponents/httpcore/4.4.4</bundle>
+        <bundle dependency="true" start-level='80'>wrap:mvn:org.apache.httpcomponents/httpclient/4.5.3</bundle>
+    </feature>
+
     <!-- Sidora Camel Dependencies -->
     <feature name="sidora-camel-dependencies" version="${camel.version}" >
         <feature version="${camel.version}" start-level='50'>camel-exec</feature>
