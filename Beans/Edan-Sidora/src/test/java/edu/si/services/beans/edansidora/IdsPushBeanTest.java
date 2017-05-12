@@ -34,12 +34,15 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -53,42 +56,41 @@ public class IdsPushBeanTest {
     private static String defaultTestProperties = "src/test/resources/test.properties";
     private static final String testManifest = "src/test/resources/unified-test-deployment/deployment_manifest.xml";
     //Temp directories created for testing the camel validation route
-    private static String tempTargetLoc = "target/createZipAndPushTest";
+    private static String tempTargetLoc = "target/createAndPushTest";
     private static File tempLocationForZipDir, idsPushLocationDir;
     private static String tempLocationForZip, idsPushLocation;
     private static boolean cleanupTempFiles;
 
     @Test
-    public void createZipAndPush() throws Exception {
+    public void createAndPush() throws Exception {
 
         //Delete temp directories???
         cleanupTempFiles = false;
 
         String deploymentId = "testDeploymentId";
 
-        LOG.info("Using Temp Zip Loc: {}", tempLocationForZipDir.getAbsolutePath());
         LOG.info("Using Push Loc: {}", idsPushLocationDir.getAbsolutePath());
 
         IdsPushBean ipb = new IdsPushBean();
         ipb.setInputLocation(testManifest);
-        ipb.setTempLocation(tempLocationForZipDir.getAbsolutePath() + "/");
         ipb.setDeploymentId(deploymentId);
         ipb.setPushLocation(idsPushLocationDir.getAbsolutePath() + "/");
         ipb.addToIgnoreList("ignoreme");
-        Map<String, String> returned = ipb.createZipAndPush();
+        Map<String, String> returned = ipb.createAndPush();
         for(Map.Entry<String, String> entry : returned.entrySet()) {
             LOG.info(entry.getKey() + "\t" + entry.getValue());
         }
 
         LOG.info("Test Done");
 
-        assertTrue(tempLocationForZipDir.isDirectory());
-        if (!returned.get("completionInformation").contains("Removed Temp Zip File? true")) {
-            assertTrue(FileUtils.directoryContains(tempLocationForZipDir, new File(tempLocationForZip + "ExportEmammal_emammal_image_" + deploymentId + ".zip")));
-        }
-
         assertTrue(idsPushLocationDir.isDirectory());
-        assertTrue(FileUtils.directoryContains(idsPushLocationDir, new File(idsPushLocation + "ExportEmammal_emammal_image_" + deploymentId + ".zip")));
+        assertTrue(FileUtils.directoryContains(idsPushLocationDir, new File(idsPushLocation + "ExportEmammal_emammal_image_" + deploymentId + ".xml")));
+
+        //Find out how many should have been ignored
+        Collection ignoredFiles = FileUtils.listFiles(FileUtils.getFile(testManifest).getParentFile(), new WildcardFileFilter(new String[]{"ignoreme","ignoreme.*"}), TrueFileFilter.TRUE);
+        Collection originalSet = FileUtils.listFiles(FileUtils.getFile(testManifest).getParentFile(), null, false);
+        Collection destinationSet = FileUtils.listFiles(new File(idsPushLocation), null, false);
+        assertTrue(originalSet.size() - ignoredFiles.size() == destinationSet.size());
     }
 
     @BeforeClass
@@ -100,18 +102,11 @@ public class IdsPushBeanTest {
         config = builder.getConfiguration();
         builder.save();
 
-        tempLocationForZip = tempTargetLoc + config.getString("si.ct.uscbi.tempLocationForZip");
         idsPushLocation = tempTargetLoc + config.getString("si.ct.uscbi.idsPushLocation");
 
-        LOG.info("Using Temp Loc: {}", tempLocationForZip);
         LOG.info("Using Push Loc: {}", idsPushLocation);
 
         //Create temp dir's
-        tempLocationForZipDir = new File(tempLocationForZip);
-        if(!tempLocationForZipDir.exists()){
-            tempLocationForZipDir.mkdirs();
-        }
-
         idsPushLocationDir = new File(idsPushLocation);
         if(!idsPushLocationDir.exists()){
             idsPushLocationDir.mkdirs();

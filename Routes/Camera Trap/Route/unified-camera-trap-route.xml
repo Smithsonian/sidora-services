@@ -908,7 +908,7 @@
 
             <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
 
-            <to uri="bean:idsPushBean?method=createZipAndPush"/>
+            <to uri="bean:idsPushBean?method=createAndPush"/>
 
             <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
 

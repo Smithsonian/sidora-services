@@ -55,7 +55,7 @@ public class IdsPushBean {
 
 	private static final Logger LOG = LoggerFactory.getLogger(IdsPushBean.class);
 
-	public Map<String, String> createZipAndPush() {
+	public Map<String, String> createAndPush() {
 		String errorName = "";
 		String errorInfo = "";
 		String completed = "0";
@@ -63,14 +63,6 @@ public class IdsPushBean {
 
 		try {
 			BufferedInputStream origin = null;
-			String destFilename = "ExportEmammal_emammal_image_"+this.deploymentId+".zip";
-			String destLocation = this.tempLocation + destFilename;
-			FileOutputStream dest = new FileOutputStream(destLocation);
-			ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
-			completedInformation = "Started Zip file.";
-
-			//out.setMethod(ZipOutputStream.DEFLATED);
-			byte data[] = new byte[BUFFER];
 			// get a list of files from current directory
 			String currDir = this.inputLocation;
 			File f = new File(currDir);
@@ -91,17 +83,9 @@ public class IdsPushBean {
 						&& (files[i].indexOf(".") > -1)
 						&& (ignored.get(files[i].substring(0,files[i].length()-4)) == null)
 					){
-					System.out.println("Adding: "+files[i]);
-					FileInputStream fi = new FileInputStream(currDir + files[i]);
-					origin = new BufferedInputStream(fi, BUFFER);
+					File imageFile = new File(currDir + files[i]);
+					copyFileUsingFileStreams(imageFile, new File(this.pushLocation+files[i]));
 					String zipEntryName = "emammal_image_" + files[i];
-					ZipEntry entry = new ZipEntry(zipEntryName);
-					out.putNextEntry(entry);
-					int count;
-					while((count = origin.read(data, 0, BUFFER)) != -1) {
-						out.write(data, 0, count);
-					}
-					origin.close();
 					assetXmlText += "\r\n  <Asset Name=\"";
 					assetXmlText += zipEntryName.substring(0,zipEntryName.length()-4);
 					assetXmlText += "\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">";
@@ -110,16 +94,11 @@ public class IdsPushBean {
 				}
 			}
 			assetXmlText += "\r\n</Assets>";
-			ZipEntry entry = new ZipEntry("ExportEmammal_emammal_image_"+this.deploymentId+".xml");
-			out.putNextEntry(entry);
-			out.write(assetXmlText.getBytes());
-			out.close();
-			completedInformation = "Closed Zip File";
-			File zipFile = new File(destLocation);
-			copyFileUsingFileStreams(zipFile, new File(this.pushLocation+destFilename));
-			completedInformation = "Copied Zip File to:"+this.pushLocation+destFilename;
-			boolean zipDeleted = zipFile.delete();
-			completedInformation = "Removed Temp Zip File? "+zipDeleted;
+            String assetXmlFilename = "ExportEmammal_emammal_image_"+this.deploymentId+".xml";
+            PrintStream out = new PrintStream(new FileOutputStream(this.pushLocation+assetXmlFilename));
+            out.print(assetXmlText);
+            out.close();
+            completedInformation = "Wrote Asset XML File to:"+this.pushLocation+assetXmlFilename;
 			completed = "1";
 		} catch(Exception e) {
 			StringWriter sw = new StringWriter();
@@ -171,7 +150,7 @@ public class IdsPushBean {
 		ipb.setDeploymentId("testDeploymentId");
 		ipb.setPushLocation("C:\\temp\\finalLoc\\");
 		ipb.addToIgnoreList("ignoreme");
-		Map<String, String> returned = ipb.createZipAndPush();
+		Map<String, String> returned = ipb.createAndPush();
 		for(Map.Entry<String, String> entry : returned.entrySet()) {
 		    String key = entry.getKey();
 		    String value = entry.getValue();
