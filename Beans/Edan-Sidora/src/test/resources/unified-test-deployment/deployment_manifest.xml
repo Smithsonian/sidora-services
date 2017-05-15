@@ -120,8 +120,8 @@
             </ImageIdentifications>
         </Image>
         <Image>
-            <ImageId>testDeploymentIds1i10</ImageId>
-            <ImageFileName>testDeploymentIds1i10.JPG</ImageFileName>
+            <ImageId>testDeploymentIds1i2</ImageId>
+            <ImageFileName>testDeploymentIds1i2.JPG</ImageFileName>
             <ImageDateTime>2016-02-13 12:11:41</ImageDateTime>
             <ImageOrder>10</ImageOrder>
             <ImageInterestRanking>None</ImageInterestRanking>
@@ -150,12 +150,12 @@
         </Image>
     </ImageSequence>
     <ImageSequence>
-        <ImageSequenceId>testDeploymentIds2</ImageSequenceId>
+        <ImageSequenceId>testImageSequence3</ImageSequenceId>
         <ImageSequenceBeginTime>2016-02-24T18:45:30</ImageSequenceBeginTime>
         <ImageSequenceEndTime>2016-02-24T18:45:37</ImageSequenceEndTime>
         <VolunteerIdentifications>
             <Identification>
-                <IUCNId>42394</IUCNId>
+                <IUCNId>12345</IUCNId>
                 <TSNId>3</TSNId>
                 <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
                 <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
@@ -169,8 +169,68 @@
         </VolunteerIdentifications>
         <ResearcherIdentifications>
             <Identification>
-                <IUCNId>42394</IUCNId>
-                <TSNId>4</TSNId>
+                <IUCNId>180575</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Procyon lotor</SpeciesScientificName>
+                <SpeciesCommonName>Northern Raccoon</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+            <Identification>
+                <IUCNId>180604</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Vulpes vulpes</SpeciesScientificName>
+                <SpeciesCommonName>Red Fox</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </ResearcherIdentifications>
+        <Image>
+            <ImageId>RaccoonAndFox</ImageId>
+            <ImageFileName>RaccoonAndFox.JPG</ImageFileName>
+            <ImageDateTime>2016-02-24 18:45:30</ImageDateTime>
+            <ImageOrder>1</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+    </ImageSequence>
+    <ImageSequence>
+        <ImageSequenceId>testRaccoonAndMan</ImageSequenceId>
+        <ImageSequenceBeginTime>2016-02-24T18:45:30</ImageSequenceBeginTime>
+        <ImageSequenceEndTime>2016-02-24T18:45:37</ImageSequenceEndTime>
+        <VolunteerIdentifications>
+            <Identification>
+                <IUCNId>12345</IUCNId>
+                <TSNId>3</TSNId>
                 <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
                 <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
                 <Count>1</Count>
@@ -180,10 +240,98 @@
                 <AnimalRecognizable></AnimalRecognizable>
                 <IndividualAnimalNotes></IndividualAnimalNotes>
             </Identification>
+        </VolunteerIdentifications>
+        <ResearcherIdentifications>
+            <Identification>
+                <IUCNId>180575</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Procyon lotor</SpeciesScientificName>
+                <SpeciesCommonName>Northern Raccoon</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+            <Identification>
+                <IUCNId>180604</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Homo sapiens</SpeciesScientificName>
+                <SpeciesCommonName>Human male</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
         </ResearcherIdentifications>
         <Image>
-            <ImageId>testDeploymentIds2i1</ImageId>
-            <ImageFileName>testDeploymentIds2i1.JPG</ImageFileName>
+            <ImageId>testImageRaccoonAndMan</ImageId>
+            <ImageFileName>testImageRaccoonAndMan.JPG</ImageFileName>
+            <ImageDateTime>2016-02-24 18:45:30</ImageDateTime>
+            <ImageOrder>1</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+    </ImageSequence>
+    <ImageSequence>
+        <ImageSequenceId>testManAlone</ImageSequenceId>
+        <ImageSequenceBeginTime>2016-02-24T18:45:30</ImageSequenceBeginTime>
+        <ImageSequenceEndTime>2016-02-24T18:45:37</ImageSequenceEndTime>
+        <VolunteerIdentifications>
+            <Identification>
+                <IUCNId>12345</IUCNId>
+                <TSNId>3</TSNId>
+                <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
+                <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
+                <Count>1</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </VolunteerIdentifications>
+        <ResearcherIdentifications>
+            <Identification>
+                <IUCNId>180604</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Homo sapiens</SpeciesScientificName>
+                <SpeciesCommonName>Human male</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </ResearcherIdentifications>
+        <Image>
+            <ImageId>testImageMan</ImageId>
+            <ImageFileName>testImageMan.JPG</ImageFileName>
             <ImageDateTime>2016-02-24 18:45:30</ImageDateTime>
             <ImageOrder>1</ImageOrder>
             <ImageInterestRanking>None</ImageInterestRanking>

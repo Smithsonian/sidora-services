@@ -1077,7 +1077,7 @@
 
             <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
 
-            <to uri="direct:addImageToEdanAndIds2"/>
+            <to uri="direct:addImageToEdanAndIds3"/>
 
             <log message="=================================[ END EDAN ]================================="
                  loggingLevel="WARN"
@@ -1379,8 +1379,14 @@
             <choice>
                 <when>
                     <xpath headerName="ManifestXML">
-                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName/text() != "Homo sapiens"
+                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = "Homo sapiens"
                     </xpath>
+                    <log message="NO POST TO EDAN, exclude this image? ${headers.ExcludeCurrentImage} ${header.imageid}"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                    <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
+                </when>
+                <otherwise>
 
                     <setBody>
                         <simple>
@@ -1442,12 +1448,6 @@
                     <log message="encodeHeaderSample body stacktrace: ${body[stackTrace]}"
                          loggingLevel="INFO"
                          logName="edanidslog"/>
-                </when>
-                <otherwise>
-                    <log message="NO POST TO EDAN, exclude this image? ${headers.ExcludeCurrentImage} ${header.imageid}"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                    <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
                 </otherwise>
             </choice>
 
@@ -1520,7 +1520,7 @@
                                 //ResearcherIdentifications/Identification/SpeciesCommonName/text()
                             </xpath>
                             <setBody>
-                                <simple trim="false">${body},</simple>
+                                <simple trim="false">${body}, </simple>
                             </setBody>
                         </split>
                         <convertBodyTo type="java.lang.String"/>

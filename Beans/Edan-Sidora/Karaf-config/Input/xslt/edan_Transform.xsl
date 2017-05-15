@@ -48,54 +48,61 @@
         <xsl:param name="imageid"/>
         <xsl:param name="CamelFedoraPid"/>
         <xsl:text>{</xsl:text>
-        <xsl:text>content: {</xsl:text>
-        <xsl:text>"source": "dev",</xsl:text>
-        <xsl:text>"project_id": "</xsl:text><xsl:value-of select="ProjectId"/><xsl:text>",</xsl:text>
-        <xsl:text>"project_name": "</xsl:text><xsl:value-of select="ProjectName"/><xsl:text>",</xsl:text>
-        <xsl:text>"sub_project_id": "</xsl:text><xsl:value-of select="SubProjectId"/><xsl:text>",</xsl:text>
-        <xsl:text>"sub_project_name":"</xsl:text><xsl:value-of select="SubProjectName"/><xsl:text>",</xsl:text>
-        <xsl:text>"deployment_id": "</xsl:text><xsl:value-of select="CameraDeploymentID"/><xsl:text>",</xsl:text>
-        <xsl:text>"deployment_name": "</xsl:text><xsl:value-of select="CameraSiteName"/><xsl:text>",</xsl:text>
-        <xsl:text>"image_sequence_id": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId=$imageid]]/ImageSequenceId"/><xsl:text>",</xsl:text>
-        <xsl:text>"image": {</xsl:text>
-        <xsl:text>"id": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
-        <xsl:text>"online_media": [</xsl:text>
-        <xsl:text>{</xsl:text>
-        <xsl:text>"content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
-        <xsl:text>"idsId": "</xsl:text>emammal_image_<xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
-        <xsl:text>"sidoraPid": "</xsl:text><xsl:value-of select="$CamelFedoraPid"/><xsl:text>",</xsl:text>
-        <xsl:text>"type": "</xsl:text>Images<xsl:text>",</xsl:text>
-        <xsl:text>"caption": "</xsl:text>Camera Trap Image <xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName"/><xsl:text>",</xsl:text>
-        <xsl:text>"thumbnail": "</xsl:text>http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_<xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
-        <xsl:text>}</xsl:text>
-        <xsl:text>],</xsl:text>
-        <xsl:text>"date_time": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/ImageDateTime"/><xsl:text>",</xsl:text>
-        <xsl:text>"photo_type": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/PhotoType"/><xsl:text>",</xsl:text>
-        <xsl:text>"photo_type_identified_by": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/PhotoTypeIdentifications/PhotoTypeIdentifiedBy"/><xsl:text>",</xsl:text>
-        <xsl:text>"interest_ranking": "</xsl:text>None<xsl:text>",</xsl:text>
-        <xsl:text>},</xsl:text>
-        <xsl:text>"image_identifications": [</xsl:text>
-        <xsl:text>{</xsl:text>
-        <xsl:text>"iucn_id": "</xsl:text><xsl:value-of
-                select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/IUCNId"/><xsl:text>",</xsl:text>
-        <xsl:text>"species_scientific_name": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName"/><xsl:text>",</xsl:text>
-        <xsl:text>"individual_animal_notes": "</xsl:text><xsl:value-of
-                select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/IndividualAnimalNotes"/><xsl:text>",</xsl:text>
-        <xsl:text>"species_common_name": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName"/><xsl:text>",</xsl:text>
-        <xsl:text>"count": </xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/Count"/><xsl:text>,</xsl:text>
-        <xsl:text>"age": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/Age"/><xsl:text>",</xsl:text>
-        <xsl:text>"sex": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/Sex"/><xsl:text>",</xsl:text>
-        <xsl:text>"individual_id": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/IndividualId"/><xsl:text>",</xsl:text>
-        <xsl:text>"animal_recognizable": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/AnimalRecognizable"/><xsl:text>",</xsl:text>
-        <xsl:text>}</xsl:text>
-        <xsl:text>]</xsl:text>
-        <xsl:text>},</xsl:text>
+        <xsl:text>content: &#xa;{</xsl:text>
+        <xsl:text>&#xa;"source": "dev",</xsl:text>
+        <xsl:text>&#xa;"project_id": "</xsl:text><xsl:value-of select="ProjectId"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"project_name": "</xsl:text><xsl:value-of select="ProjectName"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"sub_project_id": "</xsl:text><xsl:value-of select="SubProjectId"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"sub_project_name":"</xsl:text><xsl:value-of select="SubProjectName"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"deployment_id": "</xsl:text><xsl:value-of select="CameraDeploymentID"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"deployment_name": "</xsl:text><xsl:value-of select="CameraSiteName"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"image_sequence_id": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId=$imageid]]/ImageSequenceId"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"image": {</xsl:text>
+        <xsl:text>&#xa;"id": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"online_media": [</xsl:text>
+        <xsl:text>&#xa;{</xsl:text>
+        <xsl:text>&#xa;"content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"idsId": "</xsl:text>emammal_image_<xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"sidoraPid": "</xsl:text><xsl:value-of select="$CamelFedoraPid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"type": "</xsl:text>Images<xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"caption": "</xsl:text>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
+          <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
+        </xsl:for-each><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"thumbnail": "</xsl:text>http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_<xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;}</xsl:text>
+        <xsl:text>&#xa;],</xsl:text>
+        <xsl:text>&#xa;"date_time": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/ImageDateTime"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"photo_type": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/PhotoType"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"photo_type_identified_by": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/PhotoTypeIdentifications/PhotoTypeIdentifiedBy"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"interest_ranking": "</xsl:text>None<xsl:text>",</xsl:text>
+        <xsl:text>&#xa;},</xsl:text>
+        <xsl:text>&#xa;"image_identifications": [</xsl:text>
+        <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification">
+        <xsl:text>&#xa;{</xsl:text>
+        <xsl:text>&#xa;"iucn_id": "</xsl:text><xsl:value-of
+                select="IUCNId"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"species_scientific_name": "</xsl:text><xsl:value-of select="SpeciesScientificName"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"individual_animal_notes": "</xsl:text><xsl:value-of
+                select="IndividualAnimalNotes"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"species_common_name": "</xsl:text><xsl:value-of select="SpeciesCommonName"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"count": </xsl:text><xsl:value-of select="Count"/><xsl:text>,</xsl:text>
+        <xsl:text>&#xa;"age": "</xsl:text><xsl:value-of select="Age"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"sex": "</xsl:text><xsl:value-of select="Sex"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"individual_id": "</xsl:text><xsl:value-of select="IndividualId"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"animal_recognizable": "</xsl:text><xsl:value-of select="AnimalRecognizable"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;}</xsl:text>
+        <xsl:if test="not(position() = last())">, </xsl:if>
+        </xsl:for-each>
+        <xsl:text>&#xa;]</xsl:text>
+        <xsl:text>&#xa;},</xsl:text>
 
-        <xsl:text>"publicSearch": false,</xsl:text>
-        <xsl:text>"title": "</xsl:text>Camera Trap Image <xsl:value-of select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName"/><xsl:text>",</xsl:text>
-        <xsl:text>"type": "</xsl:text>emammal_image<xsl:text>",</xsl:text>
-        <xsl:text>"url": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
-        <xsl:text>}</xsl:text>
+        <xsl:text>&#xa;"publicSearch": false,</xsl:text>
+        <xsl:text>&#xa;"title": "</xsl:text>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
+          <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
+        </xsl:for-each><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"type": "</xsl:text>emammal_image<xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"url": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;}</xsl:text>
     </xsl:template>
 
 </xsl:stylesheet>
