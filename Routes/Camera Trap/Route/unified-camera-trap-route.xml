@@ -900,7 +900,7 @@
             <to uri="bean:idsPushBean?method=setPushLocation({{si.ct.uscbi.idsPushLocation}})"/>
             <to uri="bean:idsPushBean?method=setTempLocation({{si.ct.uscbi.tempLocationForZip}})"/>
             <to uri="bean:idsPushBean?method=setInputLocation(${headers.CamelFileAbsolutePath})"/>
-            <to uri="bean:idsPushBean?method=setDeploymentId(${header.CameraDeploymentID})"/>
+            <to uri="bean:idsPushBean?method=setDeploymentId(${header.SiteId})"/>
 
             <log message="=================================[ START IDSPUSHBEAN ]================================="
                  loggingLevel="WARN"
