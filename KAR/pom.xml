@@ -114,11 +114,11 @@
         </dependency>-->
 
         <!-- Sidora MCI Service -->
-        <dependency>
+        <!--<dependency>
             <groupId>edu.si.services</groupId>
             <artifactId>sidora-mci</artifactId>
             <version>1.0</version>
-        </dependency>
+        </dependency>-->
 
         <!-- Edan-Sidora -->
         <!--<dependency>

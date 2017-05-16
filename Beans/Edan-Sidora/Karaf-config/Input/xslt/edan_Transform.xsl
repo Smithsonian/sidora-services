@@ -35,21 +35,24 @@
 
     <xsl:param name="imageid"/>
     <xsl:param name="CamelFedoraPid"/>
+    <xsl:param name="extraJson"/>
 
     <xsl:template match="/">
 
         <xsl:apply-templates select="/CameraTrapDeployment">
             <xsl:with-param name="imageid"><xsl:value-of select="$imageid"/></xsl:with-param>
             <xsl:with-param name="CamelFedoraPid"><xsl:value-of select="$CamelFedoraPid"/></xsl:with-param>
+            <xsl:with-param name="extraJson"><xsl:value-of select="$extraJson"/></xsl:with-param>
         </xsl:apply-templates>
     </xsl:template>
 
     <xsl:template match="CameraTrapDeployment">
         <xsl:param name="imageid"/>
         <xsl:param name="CamelFedoraPid"/>
+        <xsl:param name="extraJson"/>
         <xsl:text>{</xsl:text>
         <xsl:text>content: &#xa;{</xsl:text>
-        <xsl:text>&#xa;"source": "dev",</xsl:text>
+        <xsl:value-of select="$extraJson"/>
         <xsl:text>&#xa;"project_id": "</xsl:text><xsl:value-of select="ProjectId"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"project_name": "</xsl:text><xsl:value-of select="ProjectName"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"sub_project_id": "</xsl:text><xsl:value-of select="SubProjectId"/><xsl:text>",</xsl:text>

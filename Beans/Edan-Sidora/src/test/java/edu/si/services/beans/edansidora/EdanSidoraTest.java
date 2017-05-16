@@ -149,36 +149,33 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
 
-        // test deployment set:
-        //exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
-        //exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
-        //exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
-
-        //Single-identification image in a two image sequence set:
-        //exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
-        //exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
-        //exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
-
-        // Double-identification set:
-        //exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
-        //exchange.getIn().setHeader("CamelFileName", "RaccoonAndFox.JPG");
-        //exchange.getIn().setHeader("imageid", "RaccoonAndFox");
-
-        // Double-identification set with raccoon and human:
-        //exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
-        //exchange.getIn().setHeader("CamelFileName", "testImageRaccoonAndMan.JPG");
-        //exchange.getIn().setHeader("imageid", "testImageRaccoonAndMan");
-
-        // Set with human:
-        exchange.getIn().setHeader("CamelFileName", "testImageMan.JPG");
-        exchange.getIn().setHeader("ImageSequenceID", "testManAlone");
-        exchange.getIn().setHeader("imageid", "testImageMan");
-
         exchange.getIn().setHeader("CamelFedoraPid", "test:32");
         exchange.getIn().setHeader("ExcludeCurrentImage", false);
 
+        //Single-identification image in a two image sequence set:
+        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
+        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
+        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
+        template.send("direct:addImageToEdanAndIds3", exchange);
+/*
+        // Double-identification set:
+        exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
+        exchange.getIn().setHeader("CamelFileName", "RaccoonAndFox.JPG");
+        exchange.getIn().setHeader("imageid", "RaccoonAndFox");
         template.send("direct:addImageToEdanAndIds3", exchange);
 
+        // Double-identification set with raccoon and human:
+        exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
+        exchange.getIn().setHeader("CamelFileName", "testImageRaccoonAndMan.JPG");
+        exchange.getIn().setHeader("imageid", "testImageRaccoonAndMan");
+        template.send("direct:addImageToEdanAndIds3", exchange);
+
+        // Set with human:
+        exchange.getIn().setHeader("ImageSequenceID", "testManAlone");
+        exchange.getIn().setHeader("CamelFileName", "testImageMan.JPG");
+        exchange.getIn().setHeader("imageid", "testImageMan");
+        template.send("direct:addImageToEdanAndIds3", exchange);
+*/
         /*String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
         for (String fileName : fileNames) {
             exchange.getIn().setHeader("imageid", fileName);

@@ -1387,6 +1387,9 @@
                     <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
                 </when>
                 <otherwise>
+                    <setHeader headerName="extraJson">
+                        <simple>{{si.ct.uscbi.extra_property}}</simple>
+                    </setHeader>
 
                     <setBody>
                         <simple>
