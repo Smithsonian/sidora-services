@@ -93,6 +93,8 @@
         </property>
     </bean>
 
+    <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
 
     <camelContext id="LegacyCTIngestCamelContext"
@@ -123,6 +125,8 @@
                               useExponentialBackOff="true"/>
         </errorHandler>
         -->
+
+        <!-- This is not a globally scoped errorHandler -->
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
@@ -131,7 +135,7 @@
             <exception>java.net.ConnectException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
                               maximumRedeliveries="200"
                               retryAttemptedLogLevel="WARN"/>
         </onException>
@@ -140,7 +144,7 @@
             <exception>java.io.FileNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.FNF.redeliveryDelay}}"
                               maximumRedeliveries="5"
                               retryAttemptedLogLevel="WARN"/>
         </onException>
@@ -149,7 +153,7 @@
             <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.inflight.redeliveryDelay}}"
                               maximumRedeliveries="7"
                               retryAttemptedLogLevel="WARN"
                               retriesExhaustedLogLevel="WARN"
@@ -172,7 +176,7 @@
         -->
 
         <route id="CameraTrapStartProcessing">
-            <from uri="file:Process?delay=9000&amp;moveFailed=Error_CameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{karaf.home}}/Process?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, ${file:onlyname.noext}, Error_CameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -212,10 +216,10 @@
                 </setHeader>
 
                 <!-- Validate against the XSD. -->
-                <to uri="validator:file:Input/schemas/DeploymentManifest.xsd"/>
+                <to uri="validator:file:{{karaf.home}}/Input/schemas/DeploymentManifest.xsd"/>
 
                 <!-- Add Schematron validation. -->
-                <to uri="schematron:file:Input/schemas/DeploymentManifest2014.sch"/>
+                <to uri="schematron:file:{{karaf.home}}/Input/schemas/DeploymentManifest2014.sch"/>
                 <log message="${id}: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="DEBUG"
                      logName="{{si.ct.id}}"/>
@@ -684,9 +688,9 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="xslt:file:Input/xslt/amazon_map1.xsl"/>
-            <to uri="xslt:file:Input/xslt/amazon_map2.xsl"/>
-            <to uri="xslt:file:Input/xslt/amazon_map3.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/amazon_map1.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/amazon_map2.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/amazon_map3.xsl"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id}: Finished FGDC processing."
@@ -751,12 +755,8 @@
             <to uri="direct:addVolunteerResource"/>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
-            <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false
-                </simple>
-            </recipientList>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTSiteTemplate.vsl"/>
+            <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <log message="${id}: Finished resource processing."
                  loggingLevel="INFO"
@@ -828,22 +828,17 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="reader:file"/>
-            <recipientList>
-                <simple>
-                    fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.ImageID}
-                </simple>
-            </recipientList>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.ImageID}&amp;versionable=false
-                </simple>
-            </recipientList>
+
+            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.ImageID}"/>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.ImageID}&amp;versionable=false"/>
+
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
             <!-- <to uri="direct:createArchivalImage" /> -->
             <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
-            <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
@@ -908,19 +903,17 @@
             <log message="${id}: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="xslt:file:Input/xslt/researcher.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/researcher.xsl"/>
             <transform>
                 <xpath>
                     //researcher/text()
                 </xpath>
             </transform>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+            <convertBodyTo type="java.lang.String"/>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"/>
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <setHeader headerName="ResourceCount">
@@ -965,19 +958,17 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/volunteer.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/volunteer.xsl"/>
             <transform>
                 <xpath>
                     //researcher/text()
                 </xpath>
             </transform>
-            <recipientList>
-                <simple>
-                    fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"
-                </simple>
-            </recipientList>
+            <convertBodyTo type="java.lang.String"/>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"/>
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl" />
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <setHeader headerName="ResourceCount">
@@ -1061,7 +1052,7 @@
             -->
 
             <!-- TODO - The Image ID has .JPG appended and we may want to make this consistent. -->
-            <to uri="velocity:file:Input/templates/CTImageResourceMODSTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceMODSTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id}: Finished processing MODS."
@@ -1231,7 +1222,7 @@
                 <constant>GET</constant>
             </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectFusekiHttpCall"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Query Result - ${body}"
@@ -1381,11 +1372,11 @@
                     <!-- Create CT plot and add it as a sub-concept of the sub-project -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
-                    <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT sub-project to the child CT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <to uri="velocity:file:Input/templates/CTPlotFGDC-CTPlotTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotFGDC-CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-CTPlot%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -1462,11 +1453,11 @@
                     <!-- Create CT sub-project and add it as a sub-concept of the project. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the sub-project -->
-                    <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT project to the child CT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <to uri="velocity:file:Input/templates/CTPlotFGDC-ResearchTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotFGDC-ResearchTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-Research%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -1547,11 +1538,11 @@
                     <!-- Create CT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project. -->
-                    <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent CT root object to the child CT project. -->
                     <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <to uri="velocity:file:Input/templates/CTProjectEAC-CPFTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectEAC-CPFTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -1886,7 +1877,7 @@
         </route>
 
         <route id="CameraTrapInFlightConceptStatusPolling">
-            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
+            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period={{si.ct.checkConceptFromRI.period}}"/>
             <log message="${id}: CameraTrapInFlightConceptStatusPolling: Starting In-Flight Concept Process status check..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>

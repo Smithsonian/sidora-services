@@ -79,7 +79,7 @@
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
             <version>1.0</version>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>edu.si.services.camel</groupId>
@@ -172,7 +172,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -184,6 +184,17 @@
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core-asl</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -200,11 +211,28 @@
             </testResource>
 
             <!-- add the Camera Trap and WCS Routes directory -->
-            <testResource>
+            <!--<testResource>
                 <directory>../../Routes/Camera Trap</directory>
+                <targetPath>${basedir}/target/TestPath</targetPath>
             </testResource>
             <testResource>
                 <directory>../../Routes/WCS</directory>
+            </testResource>-->
+            <testResource>
+                <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${basedir}/target/test-classes/etc</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Camera Trap/Input</directory>
+                <targetPath>${basedir}/target/test-classes/Input</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Camera Trap/Route</directory>
+                <targetPath>${basedir}/target/test-classes/Routes</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/WCS/Route</directory>
+                <targetPath>${basedir}/target/test-classes/Routes</targetPath>
             </testResource>
 
         </testResources>

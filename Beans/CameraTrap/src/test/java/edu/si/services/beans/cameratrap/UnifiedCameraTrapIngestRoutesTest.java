@@ -30,26 +30,22 @@ package edu.si.services.beans.cameratrap;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * Tests for the Unified Camera Trap Ingest Pipeline
  * TODO: Add more tests
  * @author jbirkhimer
  */
-public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport {
+public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
+
+    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
+    private String defaultTestProperties = "src/test/resources/test.properties";
 
     //Test Data Directory contains the datastreams and other resources for the tests
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";
@@ -68,83 +64,6 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
     private File manifestFile = new File("src/test/resources/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/deployment_manifest.xml");
     private String manifest;
 
-    //Datastream and Field values
-    private String datastream;
-
-    //Validation message bean configuration
-    private CameraTrapValidationMessage cameraTrapValidationMessage = new CameraTrapValidationMessage();
-    private CameraTrapValidationMessage.MessageBean expectedValidationMessage;
-
-    //The mock:result expected body
-    private ArrayList expectedBody = new ArrayList<>();
-
-    //Temp directories created for testing the camel validation route
-    private static File tempInputDirectory, processDirectory, tempConfigDirectory;
-
-    /**
-     * Sets up the system properties and Temp directories used by the
-     * camera trap route.
-     * @throws IOException
-     */
-    @BeforeClass
-    public static void setupSysPropsTempResourceDir() throws IOException {
-        //Define the Process directory that the camera trap route creates
-        // to be able to clean the project up after tests
-        processDirectory = new File("ProcessUnified");
-
-        //Create and Copy the Input dir xslt, etc. files used in the camera trap route
-        tempInputDirectory = new File("Input");
-        if(!tempInputDirectory.exists()){
-            tempInputDirectory.mkdir();
-        }
-
-        //The Location of the original Input dir in the project
-        File inputSrcDirLoc = new File("../../Routes/Camera Trap/Input");
-
-        //Copy the Input src files to the CameraTrap root so the camel route can find them
-        FileUtils.copyDirectory(inputSrcDirLoc, tempInputDirectory);
-
-        tempConfigDirectory = new File("Karaf-config");
-        if(!tempConfigDirectory.exists()){
-            tempConfigDirectory.mkdir();
-        }
-
-        FileUtils.copyDirectory(new File("../../Routes/Camera Trap/Karaf-config"), tempConfigDirectory);
-
-        //Set the karaf.home property use by the camera trap route
-        System.setProperty("karaf.home", "Karaf-config");
-    }
-
-    @Override
-    protected Properties useOverridePropertiesWithPropertiesComponent() {
-        Properties props = new Properties();
-        try {
-            InputStream in = getClass().getClassLoader().getResourceAsStream("Karaf-config/etc/edu.si.sidora.karaf.cfg");
-
-            props.load(in);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return props;
-    }
-
-    /**
-     * Clean up the temp directories after tests are finished
-     * @throws IOException
-     */
-    @AfterClass
-    public static void teardown() throws IOException {
-        if(tempInputDirectory.exists()){
-            FileUtils.deleteDirectory(tempInputDirectory);
-        }
-        if(tempConfigDirectory.exists()){
-            FileUtils.deleteDirectory(tempConfigDirectory);
-        }
-        if(processDirectory.exists()){
-            FileUtils.deleteDirectory(processDirectory);
-        }
-    }
-
     /**
      * Override this method, and return the location of our Blueprint XML file to be used for testing.
      * The actual camera trap route that the maven lifecycle phase process-test-resources executes
@@ -153,7 +72,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
     @Override
     protected String getBlueprintDescriptor() {
         //use the production route for testing that the pom copied into the test resources
-        return "Route/unified-camera-trap-route.xml";
+        return "Routes/unified-camera-trap-route.xml";
     }
 
     /**
@@ -162,7 +81,8 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
      */
     @Override
     public void setUp() throws Exception {
-        super.setUp();
+        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
+        setDefaultTestProperties(defaultTestProperties);
 
         disableJMX();
 
@@ -177,6 +97,8 @@ public class UnifiedCameraTrapIngestRoutesTest extends CamelBlueprintTestSupport
         headers.put("ValidationErrors", "ValidationErrors");
         headers.put("ProjectPID", "test:0000");
         headers.put("SitePID", "test:0000");
+
+        super.setUp();
     }
 
     /**
