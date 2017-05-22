@@ -51,7 +51,7 @@
         <xsl:param name="CamelFedoraPid"/>
         <xsl:param name="extraJson"/>
         <xsl:text>{</xsl:text>
-        <xsl:text>content: &#xa;{</xsl:text>
+        <xsl:text>"content": &#xa;{</xsl:text>
         <xsl:value-of select="$extraJson"/>
         <xsl:text>&#xa;"project_id": "</xsl:text><xsl:value-of select="ProjectId"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"project_name": "</xsl:text><xsl:value-of select="ProjectName"/><xsl:text>",</xsl:text>
@@ -71,13 +71,13 @@
         <xsl:text>&#xa;"caption": "</xsl:text>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
           <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each><xsl:text>",</xsl:text>
-        <xsl:text>&#xa;"thumbnail": "</xsl:text>http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_<xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"thumbnail": "</xsl:text>http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_<xsl:value-of select="$imageid"/><xsl:text>&amp;max=100"</xsl:text>
         <xsl:text>&#xa;}</xsl:text>
         <xsl:text>&#xa;],</xsl:text>
         <xsl:text>&#xa;"date_time": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/ImageDateTime"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"photo_type": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/PhotoType"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"photo_type_identified_by": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/PhotoTypeIdentifications/PhotoTypeIdentifiedBy"/><xsl:text>",</xsl:text>
-        <xsl:text>&#xa;"interest_ranking": "</xsl:text>None<xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"interest_ranking": "</xsl:text>None<xsl:text>"</xsl:text>
         <xsl:text>&#xa;},</xsl:text>
         <xsl:text>&#xa;"image_identifications": [</xsl:text>
         <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification">
@@ -92,7 +92,7 @@
         <xsl:text>&#xa;"age": "</xsl:text><xsl:value-of select="Age"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"sex": "</xsl:text><xsl:value-of select="Sex"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"individual_id": "</xsl:text><xsl:value-of select="IndividualId"/><xsl:text>",</xsl:text>
-        <xsl:text>&#xa;"animal_recognizable": "</xsl:text><xsl:value-of select="AnimalRecognizable"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"animal_recognizable": "</xsl:text><xsl:value-of select="AnimalRecognizable"/><xsl:text>"</xsl:text>
         <xsl:text>&#xa;}</xsl:text>
         <xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each>
@@ -104,7 +104,7 @@
           <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"type": "</xsl:text>emammal_image<xsl:text>",</xsl:text>
-        <xsl:text>&#xa;"url": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"url": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>"</xsl:text>
         <xsl:text>&#xa;}</xsl:text>
     </xsl:template>
 
