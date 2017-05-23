@@ -56,7 +56,7 @@
         <xsl:text>&#xa;"project_id": "</xsl:text><xsl:value-of select="ProjectId"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"project_name": "</xsl:text><xsl:value-of select="ProjectName"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"sub_project_id": "</xsl:text><xsl:value-of select="SubProjectId"/><xsl:text>",</xsl:text>
-        <xsl:text>&#xa;"sub_project_name":"</xsl:text><xsl:value-of select="SubProjectName"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"sub_project_name": "</xsl:text><xsl:value-of select="SubProjectName"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"deployment_id": "</xsl:text><xsl:value-of select="CameraDeploymentID"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"deployment_name": "</xsl:text><xsl:value-of select="CameraSiteName"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"image_sequence_id": "</xsl:text><xsl:value-of select="//ImageSequence[Image[ImageId=$imageid]]/ImageSequenceId"/><xsl:text>",</xsl:text>
@@ -69,7 +69,7 @@
         <xsl:text>&#xa;"sidoraPid": "</xsl:text><xsl:value-of select="$CamelFedoraPid"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"type": "</xsl:text>Images<xsl:text>",</xsl:text>
         <xsl:text>&#xa;"caption": "</xsl:text>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
-          <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
+          <xsl:value-of select="."/><xsl:if test="not(position() = last())">,</xsl:if>
         </xsl:for-each><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"thumbnail": "</xsl:text>http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_<xsl:value-of select="$imageid"/><xsl:text>&amp;max=100"</xsl:text>
         <xsl:text>&#xa;}</xsl:text>
@@ -94,7 +94,7 @@
         <xsl:text>&#xa;"individual_id": "</xsl:text><xsl:value-of select="IndividualId"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"animal_recognizable": "</xsl:text><xsl:value-of select="AnimalRecognizable"/><xsl:text>"</xsl:text>
         <xsl:text>&#xa;}</xsl:text>
-        <xsl:if test="not(position() = last())">, </xsl:if>
+        <xsl:if test="not(position() = last())">,</xsl:if>
         </xsl:for-each>
         <xsl:text>&#xa;]</xsl:text>
         <xsl:text>&#xa;},</xsl:text>
