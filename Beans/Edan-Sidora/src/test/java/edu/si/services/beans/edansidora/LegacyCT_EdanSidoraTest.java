@@ -33,7 +33,6 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -46,21 +45,21 @@ import static org.apache.commons.io.FileUtils.readFileToString;
 /**
  * @author jbirkhimer
  */
-public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
+public class LegacyCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
-    private static String LOG_NAME = "edu.si.uctingest";
+    private static String LOG_NAME = "edu.si.ctingest";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private String defaultTestProperties = "src/test/resources/test.properties";
 
-    private static final File testManifest = new File("src/test/resources/unified-test-deployment/deployment_manifest.xml");
+    private static final File testManifest = new File("src/test/resources/legacy-test-deployment/deployment_manifest.xml");
     private static final File projectRELS_EXT = new File("src/test/resources/test-data/projectRELS-EXT.rdf");
     private static final File subProjectRELS_EXT = new File("src/test/resources/test-data/subprojectRELS-EXT.rdf");
     private static final File objectNotFoundFusekiResponse = new File("src/test/resources/test-data/objectNotFoundFusekiResponse.xml");
 
     @Override
     protected String getBlueprintDescriptor() {
-        return "Routes/unified-camera-trap-route.xml";
+        return "Routes/camera-trap-route.xml";
     }
 
     @Override
@@ -70,7 +69,7 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Override
     protected String[] preventRoutesFromStarting() {
-        return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
+        return new String[]{"CameraTrapInFlightConceptStatusPolling"};
     }
 
     @Before
@@ -91,7 +90,7 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
 
-        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds2").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("CameraTrapAddImageToEdanAndIds2").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 //weaveByToString(".*edanApiBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to edanApiBean Bean");
@@ -103,9 +102,9 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
-        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
-        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
-        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
+        exchange.getIn().setHeader("CamelFileName", "2970s1i1.JPG");
+        exchange.getIn().setHeader("imageid", "2970s1i1");
+        exchange.getIn().setHeader("ImageSequenceID", "2970s1");
         exchange.getIn().setHeader("CamelFedoraPid", "test:32");
         exchange.getIn().setHeader("ExcludeCurrentImage", false);
 
@@ -136,7 +135,7 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
 
-        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds3").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("CameraTrapAddImageToEdanAndIds3").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 //weaveByToString(".*edanApiBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to edanApiBean Bean");
@@ -153,9 +152,10 @@ public class EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("ExcludeCurrentImage", false);
 
         //Single-identification image in a two image sequence set:
-        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
-        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
-        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
+        exchange.getIn().setHeader("ImageSequenceID", "2970s1");
+        exchange.getIn().setHeader("imageid", "2970s1i1");
+        exchange.getIn().setHeader("CamelFileName", "2970s1i1.JPG");
+
         template.send("direct:addImageToEdanAndIds3", exchange);
 /*
         // Double-identification set:

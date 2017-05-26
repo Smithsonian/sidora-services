@@ -172,7 +172,6 @@
     <bean id="idsPushBean" class="edu.si.services.beans.edansidora.IdsPushBean">
     </bean>
 
-
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
@@ -215,7 +214,7 @@
             <exception>java.net.ConnectException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
                               maximumRedeliveries="200"
                               retryAttemptedLogLevel="WARN"/>
         </onException>
@@ -224,7 +223,7 @@
             <exception>java.io.FileNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.FNF.redeliveryDelay}}"
                               maximumRedeliveries="5"
                               retryAttemptedLogLevel="WARN"/>
         </onException>
@@ -274,7 +273,7 @@
             <log message="${id}: Starting Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <to uri="extractor:extract?location=UnifiedCameraTrapData"/>
+            <to uri="extractor:extract?location={{karaf.home}}/UnifiedCameraTrapData"/>
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
