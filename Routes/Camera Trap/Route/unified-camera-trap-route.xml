@@ -902,17 +902,17 @@
             <to uri="bean:idsPushBean?method=setDeploymentId(${header.SiteId})"/>
 
             <log message="=================================[ START IDSPUSHBEAN ]================================="
-                 loggingLevel="WARN"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+            <to uri="log:{{si.ct.id}}?level=DEBUG&amp;multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
 
             <to uri="bean:idsPushBean?method=createAndPush"/>
 
-            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+            <to uri="log:{{si.ct.id}}?level=DEBUG&amp;multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
 
             <log message="=================================[ END IDSPUSHBEAN ]================================="
-                 loggingLevel="WARN"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
 
@@ -1071,15 +1071,17 @@
                  logName="{{si.ct.id}}"/>
 
             <log message="=================================[ START EDAN ]================================="
-                 loggingLevel="WARN"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="log:{{si.ct.id}}?multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+            <to uri="log:{{si.ct.id}}?level=DEBUG&amp;multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
 
             <to uri="direct:addImageToEdanAndIds3"/>
 
+            <to uri="log:{{si.ct.id}}?level=DEBUG&amp;multiline=true&amp;showHeaders=true&amp;showBody=true&amp;maxChars=100000"/>
+
             <log message="=================================[ END EDAN ]================================="
-                 loggingLevel="WARN"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <log message="${id}: Finished Image processing."
