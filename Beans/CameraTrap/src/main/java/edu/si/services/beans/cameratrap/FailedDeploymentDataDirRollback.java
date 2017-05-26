@@ -27,10 +27,8 @@
 
 package edu.si.services.beans.cameratrap;
 
-import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.PropertyInject;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,26 +42,22 @@ import java.nio.file.Files;
 public class FailedDeploymentDataDirRollback {
 
     private static final Logger log = LoggerFactory.getLogger(FailedDeploymentDataDirRollback.class);
+    private static String deploymentDataDir;
 
-    @PropertyInject(value = "karaf.home")
-    String karafHome;
-
-    public String dataDirRollback(Exchange exchange, String cacheDirName, String moveFailedDir) throws Exception {
+    public String dataDirRollback(Exchange exchange, String moveFailedDir) throws Exception {
 
         Message out = exchange.getIn();
+        deploymentDataDir = out.getHeader("deploymentDataDir", String.class);
+
         log.debug("=================[ Headers ]=================\n" + String.valueOf(out.getHeaders()));
         log.debug("=================[ Properties ]=================\n" + String.valueOf(exchange.getProperties()));
 
-        // the cache dir to delete
-        String deleteCacheDirName = karafHome + "/UnifiedCameraTrapData/" + cacheDirName;
-        if (!(exchange.getProperty("CamelExceptionCaught") instanceof FedoraObjectNotFoundException)) {
-            if (Files.exists(new File(deleteCacheDirName).toPath())) {
-                log.debug("DELETING FAILED DEPLOYMENT DATA DIR = {}", deleteCacheDirName);
-                FileUtils.deleteDirectory(new File(deleteCacheDirName));
+            if (Files.exists(new File(deploymentDataDir).toPath())) {
+                log.info("DELETING FAILED DEPLOYMENT DATA DIR = {}", deploymentDataDir);
+                FileUtils.deleteDirectory(new File(deploymentDataDir));
             } else {
-                log.error("Camera Trap Deployment Data Dir '{}' does not exist", deleteCacheDirName);
+                log.error("Camera Trap Deployment Data Dir '{}' does not exist", deploymentDataDir);
             }
-        }
 
         log.debug("Return value for moveFailed = {}", moveFailedDir);
         return moveFailedDir;

@@ -50,7 +50,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * @author jbirkhimer
  */
-public class UTC_DeleteCacheDirOnFailTest  extends CT_BlueprintTestSupport {
+public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     private static String LOG_NAME = "edu.si.mci";
 

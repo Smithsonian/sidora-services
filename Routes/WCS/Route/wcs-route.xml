@@ -179,7 +179,7 @@
         -->
 
         <route id="WCSStartProcessing">
-            <from uri="file:{{karaf.home}}/ProcessWCS?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, ${file:onlyname.noext}, Error-WCS/${file:onlyname})}Error-WCS&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{karaf.home}}/ProcessWCS?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error-WCS/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting WCS processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -197,10 +197,16 @@
             <log message="${id}: Starting Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <to uri="extractor:extract?location=WCSData"/>
+            <to uri="extractor:extract?location={{karaf.home}}/WCSData"/>
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="deploymentDataDir">
+                <simple>
+                    ${header.CamelFileAbsolutePath}
+                </simple>
+            </setHeader>
             <log message="${id}: AbsolutePath - ${header.CamelFileAbsolutePath}"
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
