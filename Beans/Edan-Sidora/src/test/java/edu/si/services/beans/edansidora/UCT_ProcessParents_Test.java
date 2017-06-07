@@ -32,6 +32,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -95,6 +96,7 @@ public class UCT_ProcessParents_Test extends EDAN_CT_BlueprintTestSupport {
      * @throws Exception
      */
     @Test
+    @Ignore
     public void processParentsMockFedoraTest() throws Exception {
 
         //The mock endpoint we are sending to for assertions

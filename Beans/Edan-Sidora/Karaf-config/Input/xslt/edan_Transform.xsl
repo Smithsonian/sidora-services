@@ -64,14 +64,14 @@
         <xsl:text>&#xa;"id": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"online_media": [</xsl:text>
         <xsl:text>&#xa;{</xsl:text>
-        <xsl:text>&#xa;"content": "http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
+        <xsl:text>&#xa;"content": "http://ids.si.edu/ids/deliveryService?id=emammal_image_</xsl:text><xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"idsId": "</xsl:text>emammal_image_<xsl:value-of select="$imageid"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"sidoraPid": "</xsl:text><xsl:value-of select="$CamelFedoraPid"/><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"type": "</xsl:text>Images<xsl:text>",</xsl:text>
         <xsl:text>&#xa;"caption": "</xsl:text>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
           <xsl:value-of select="."/><xsl:if test="not(position() = last())">,</xsl:if>
         </xsl:for-each><xsl:text>",</xsl:text>
-        <xsl:text>&#xa;"thumbnail": "</xsl:text>http://ids.si.edu/ids/deliveryService?id%5Cu003demammal_image_<xsl:value-of select="$imageid"/><xsl:text>&amp;max=100"</xsl:text>
+        <xsl:text>&#xa;"thumbnail": "</xsl:text>http://ids.si.edu/ids/deliveryService?id=emammal_image_<xsl:value-of select="$imageid"/><xsl:text>&amp;max=100"</xsl:text>
         <xsl:text>&#xa;}</xsl:text>
         <xsl:text>&#xa;],</xsl:text>
         <xsl:text>&#xa;"date_time": "</xsl:text><xsl:value-of select="//Image[ImageId=$imageid]/ImageDateTime"/><xsl:text>",</xsl:text>
@@ -99,7 +99,7 @@
         <xsl:text>&#xa;]</xsl:text>
         <xsl:text>&#xa;},</xsl:text>
 
-        <xsl:text>&#xa;"publicSearch": false,</xsl:text>
+        <xsl:text>&#xa;"publicSearch": true,</xsl:text>
         <xsl:text>&#xa;"title": "</xsl:text>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
           <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each><xsl:text>",</xsl:text>

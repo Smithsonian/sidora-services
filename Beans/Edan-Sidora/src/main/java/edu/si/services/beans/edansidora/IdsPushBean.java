@@ -27,167 +27,119 @@
 
 package edu.si.services.beans.edansidora;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.Header;
+import org.apache.camel.Message;
 import org.apache.camel.PropertyInject;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class IdsPushBean {
-	static final int BUFFER = 2048;
 
-	//@PropertyInject(value = "si.ct.uscbi.idsPushLocation")
-	private String pushLocation = null;
+    private static final Logger LOG = LoggerFactory.getLogger(IdsPushBean.class);
 
-	private static String inputLocation = null;
+    @PropertyInject(value = "si.ct.uscbi.idsPushLocation")
+    private String pushLocation;
+    @PropertyInject(value = "si.ct.uscbi.tempLocationForZip")
+    private String tempLocation;
+    private static File inputLocation;
+    private static String deploymentId;
+    private Map<String, String> ignored = new HashMap<String, String>();
+    private Message out;
 
-	private static String deploymentId = null;
+    public void createAndPush(Exchange exchange) throws EdanIdsException {
 
-	//@PropertyInject(value = "si.ct.uscbi.tempLocationForZip")
-	private String tempLocation = null;
+        out = exchange.getIn();
 
-	private Map<String, String> ignored = new HashMap<String, String>();
+        inputLocation = new File(out.getHeader("CamelFileAbsolutePath", String.class));
+        // get a list of files from current directory
+        if (inputLocation.isFile()) {
+            inputLocation = inputLocation.getParentFile();
+            LOG.debug("Input File Location: " + inputLocation);
+        }
 
-	private static final Logger LOG = LoggerFactory.getLogger(IdsPushBean.class);
+        deploymentId = out.getHeader("SiteId", String.class);
 
-	public Map<String, String> createAndPush() {
-		String errorName = "";
-		String errorInfo = "";
-		String completed = "0";
-		String completedInformation = "Not started";
+        String assetName = "ExportEmammal_emammal_image_" + deploymentId;
+        String pushDirPath = pushLocation + "/" + assetName + "/";
+        File assetXmlFile = new File(pushDirPath + assetName + ".xml");
+        if (!assetXmlFile.getParentFile().exists()) {
+            assetXmlFile.getParentFile().mkdirs();
+        } else {
+            LOG.warn("IDS files for deployment: {} already exists!!", deploymentId);
+        }
 
-		try {
-			BufferedInputStream origin = null;
-			// get a list of files from current directory
-			String currDir = this.inputLocation;
-			File f = new File(currDir);
-			completedInformation = "File for list:"+f;
-			String files[] = f.list();
-			if (files == null){
-				// Was probably given a file in the directory instead of the directory itself.
-				files = f.getParentFile().list();
-				currDir = f.getParentFile().getAbsolutePath() + File.separator;
-			}
-			completedInformation = "Read file list:"+files;
-			String assetXmlText = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<Assets>";
-			for (int i=0; i<files.length; i++) {
-				completedInformation = "Started file:"+files[i];
-				// Do not include the manifest file
-				if (
-						!files[i].endsWith(".xml") 
-						&& (files[i].indexOf(".") > -1)
-						&& (ignored.get(files[i].substring(0,files[i].length()-4)) == null)
-					){
-					File imageFile = new File(currDir + files[i]);
-					copyFileUsingFileStreams(imageFile, new File(this.pushLocation+files[i]));
-					String zipEntryName = "emammal_image_" + files[i];
-					assetXmlText += "\r\n  <Asset Name=\"";
-					assetXmlText += zipEntryName.substring(0,zipEntryName.length()-4);
-					assetXmlText += "\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">";
-					assetXmlText += zipEntryName;
-					assetXmlText += "</Asset>";
-				}
-			}
-			assetXmlText += "\r\n</Assets>";
-            String assetXmlFilename = "ExportEmammal_emammal_image_"+this.deploymentId+".xml";
-            PrintStream out = new PrintStream(new FileOutputStream(this.pushLocation+assetXmlFilename));
-            out.print(assetXmlText);
-            out.close();
-            completedInformation = "Wrote Asset XML File to:"+this.pushLocation+assetXmlFilename;
-			completed = "1";
-		} catch(Exception e) {
-			StringWriter sw = new StringWriter();
-			PrintWriter pw = new PrintWriter(sw);
-			e.printStackTrace(pw);
-			errorName = e.toString();
-			errorInfo = sw.toString();
-		}
-		Map<String, String> toReturn = new HashMap<String, String>();
-		toReturn.put("errorString", errorName);
-		toReturn.put("stackTrace", errorInfo);
-		toReturn.put("completed", completed);
-		toReturn.put("completionInformation", completedInformation);
-		return toReturn;
-	}
-	
-	public void addToIgnoreList(String imageId){
-      ignored.put(imageId, imageId);		
-	}
+        LOG.debug("IDS Write Asset Files to: {}", assetXmlFile);
+        LOG.debug("IDS inputLocation = {}", inputLocation);
+        LOG.debug("IDS deploymentId = {}", deploymentId);
 
-	public String getPushLocation() {
-		return pushLocation;
-	}
+        File files[] = inputLocation.listFiles();
 
-	public void setPushLocation(String pushLocation) {
-		this.pushLocation = pushLocation;
-	}
+        LOG.debug("Input file list: " + Arrays.toString(files));
 
-	public String getInputLocation() {
-		return inputLocation;
-	}
+        int completed = 0;
 
-	public void setInputLocation(String inputLocation) {
-		this.inputLocation = inputLocation;
-	}
+        StringBuilder assetXml = new StringBuilder();
+        assetXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<Assets>");
 
-	public String getDeploymentId() {
-		return deploymentId;
-	}
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(assetXmlFile))) {
 
-	public void setDeploymentId(String deploymentId) {
-		this.deploymentId = deploymentId;
-	}
+            for (int i = 0; i < files.length; i++) {
 
-	public static void main (String argv[]) {
-		IdsPushBean ipb = new IdsPushBean();
-		ipb.setInputLocation("C:\\temp\\inputLoc\\deployment.xml");
-		ipb.setTempLocation("C:\\temp\\");
-		ipb.setDeploymentId("testDeploymentId");
-		ipb.setPushLocation("C:\\temp\\finalLoc\\");
-		ipb.addToIgnoreList("ignoreme");
-		Map<String, String> returned = ipb.createAndPush();
-		for(Map.Entry<String, String> entry : returned.entrySet()) {
-		    String key = entry.getKey();
-		    String value = entry.getValue();
-		    System.out.println(key+"\t"+value);
-		}
-		System.out.println("done");
-	}
+                String fileName = files[i].getName();
 
-	public String getTempLocation() {
-		return tempLocation;
-	}
+                LOG.debug("Started file: {} has ext = {}", files[i], FilenameUtils.getExtension(fileName));
 
-	public void setTempLocation(String tempLocation) {
-		this.tempLocation = tempLocation;
-	}
-	/*
-	 *  had issues using Files.copy resulting in
-	 * java.lang.UnsatisfiedLinkError: no nio in java.library.path
-	 * So, we'll do it manually...
-	 */
+                // Do not include the manifest file
+                if (!FilenameUtils.getExtension(fileName).contains("xml")) {
 
-	private static void copyFileUsingFileStreams(File source, File dest)
-			throws IOException {
-		InputStream input = null;
-		OutputStream output = null;
-		try {
-			input = new FileInputStream(source);
-			output = new FileOutputStream(dest);
-			byte[] buf = new byte[1024];
-			int bytesRead;
-			while ((bytesRead = input.read(buf)) > 0) {
-				output.write(buf, 0, bytesRead);
-			}
-		} finally {
-			input.close();
-			output.close();
-		}
-	}	
+                    LOG.debug("Adding File {}", fileName);
 
+                    File sourceImageFile = new File(files[i].getPath());
+                    File destImageFile = new File(pushDirPath + "emammal_image_" + fileName);
+
+                    LOG.debug("Copying image asset from {} to {}", sourceImageFile, destImageFile);
+                    FileUtils.copyFile(sourceImageFile, destImageFile);
+
+                    assetXml.append("\r\n  <Asset Name=\"");
+                    assetXml.append(FilenameUtils.getName(destImageFile.getPath()));
+                    assetXml.append("\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">");
+                    assetXml.append(FilenameUtils.getBaseName(destImageFile.getPath()));
+                    assetXml.append("</Asset>");
+                } else {
+                    LOG.debug("Deployment Manifest XML Found! Skipping {}", files[i]);
+                }
+            }
+            assetXml.append("\r\n</Assets>");
+
+            writer.write(assetXml.toString());
+
+            LOG.info("Completed: {} of {}, Wrote Asset XML File to: {}", completed++, files.length, assetXmlFile);
+            out.setHeader("idsPushDir", assetXmlFile.getParent());
+        } catch (Exception e) {
+            throw new EdanIdsException("IdsPushBean error during createAndPush", e);
+        }
+    }
+
+    public void addToIgnoreList(String imageId) {
+        ignored.put(imageId, imageId);
+    }
 }

@@ -27,88 +27,220 @@
 
 package edu.si.services.beans.edansidora;
 
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
 import org.apache.camel.PropertyInject;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A bean which we use in the route
+ * @file EDANInterface This is a pretty raw class that just generates a call to
+ * the EDAN API.
  */
+
 public class EdanApiBean {
 
-	private static final Logger LOG = LoggerFactory.getLogger(EdanApiBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EdanApiBean.class);
 
-//	@PropertyInject(value = "si.ct.uscbi.server")
-	private String server;
+    @PropertyInject(value = "si.ct.uscbi.server")
+    private String server;
 
-//	@PropertyInject(value = "si.ct.uscbi.appId")
-	private String appId;
+    @PropertyInject(value = "si.ct.uscbi.appId")
+    private String app_id;
 
-//	@PropertyInject(value = "si.ct.uscbi.edanKey")
-	private String edanKey;
+    @PropertyInject(value = "si.ct.uscbi.edanKey")
+    private String edan_key;
 
-//	@PropertyInject(value = "si.ct.uscbi.authType", defaultValue = "1")
-	private int authType;
+    @PropertyInject(value = "si.ct.uscbi.edanService")
+    private String edanService;
 
-	private EdanApi edanApi = null;
+    /**
+     * int indicates the authentication type/level 0 for unsigned/trusted/T1
+     * requests; (currently unused) 1 for signed/T2 requests; 2 for password based
+     * (unused)
+     * auth_type is only for future, this code is only for type 1
+     */
+    @PropertyInject(value = "si.ct.uscbi.authType", defaultValue = "1")
+    private int auth_type;
 
-	public int getAuthType() {
-		return authType;
-	}
+    public String result_format = "json";
+    private CloseableHttpClient client;
 
-	public void setAuthType(int authType) {
-		this.authType = authType;
-	}
+    /**
+     * Constructor
+     */
+    public EdanApiBean() {
 
-	public String getServer() {
-		return server;
-	}
+    }
 
-	public void setServer(String server) {
-		this.server = server;
-	}
+    public void initIt() throws Exception {
+        LOG.info("Creating EdanApiBean Http Client");
+        client = HttpClientBuilder.create().build();
+    }
 
-	public String getAppId() {
-		return appId;
-	}
+    public void cleanUp() throws Exception {
+        LOG.info("Closing EdanApiBean Http Client");
+        client.close();
+    }
 
-	public void setAppId(String appId) {
-		this.appId = appId;
-	}
+    /**
+     * Perform a http request
+     *
+     * @param exchange Camel exchange containing the querystring that gets appended to the
+     *                    service url
+     */
+    public void sendRequest(Exchange exchange) throws Exception {
 
-	public String getEdanKey() {
-		return edanKey;
-	}
+        Message out = exchange.getIn();
 
-	public void setEdanKey(String edanKey) {
-		this.edanKey = edanKey;
-	}
+        String originalUri = out.getHeader("edanUri", String.class);
 
-	public boolean startConnection() {
-		if (this.appId == null || this.server == null || this.edanKey == null){
-			return false;
-		}
-		this.edanApi = new EdanApi(this.server, this.appId, this.edanKey, this.authType);
-		return true;
-	}
+        if (client == null) {
+            LOG.error("EdanApiBean Client IS NULL");
+        } else {
+            System.setProperty("http.agent", "");
+            String uri = server + edanService + "?" + originalUri;
+            LOG.debug("EdanApiBean uri: {}", uri);
 
-	public Map<String,String> sendRequest(String edanUri, String service) {
-		if (this.edanApi == null) return null;
-		return  edanApi.sendRequest(edanUri, service);
-	}
+            HttpGet httpget = new HttpGet(uri);
+            Map<String, String> encodedHeaders = null;
+            try {
+                encodedHeaders = encodeHeader(originalUri);
+            } catch (Exception e) {
+                throw new EdanIdsException("EdanApiBean error encoding http get headers", e);
+            }
 
-	public Map<String, String> sendRequest(String uri, String service, boolean post) {
-		if (this.edanApi == null) return null;
-		return edanApi.sendRequest(uri, service, post);
-	}
-	public Map<String, String> encodeHeaderSample(String uri) {
-         if (this.edanApi == null) edanApi = new EdanApi("1","2","3");
-		return edanApi.encodeHeaderSample(uri);
-	}
-	public String simpleReturnNonce() {
-        if (this.edanApi == null) edanApi = new EdanApi("1","2","3");
-		return edanApi.simpleReturnNonce();
-	}
+            for (Map.Entry<String, String> entry : encodedHeaders.entrySet()) {
+                httpget.addHeader(entry.getKey(), entry.getValue());
+            }
+
+            httpget.setHeader("Accept", "*/*");
+            httpget.setHeader("Accept-Encoding", "identity");
+            httpget.setHeader("User-Agent", "unknown");
+            httpget.removeHeaders("Connection");
+
+            LOG.debug("EdanApiBean httpGet headers: " + Arrays.toString(httpget.getAllHeaders()));
+
+            try (CloseableHttpResponse response = client.execute(httpget)) {
+                HttpEntity entity = response.getEntity();
+                LOG.debug("Edan response entity: {}", EntityUtils.toString(entity, "UTF-8"));
+
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    LOG.error("Edan response status: {}", response.getStatusLine());
+                    LOG.error("Edan response entity: {}", EntityUtils.toString(entity, "UTF-8"));
+                } else {
+                    LOG.debug("Edan response status: {}", response.getStatusLine());
+                }
+            } catch (Exception e) {
+                throw new EdanIdsException("EdanApiBean error sending Edan request", e);
+            }
+        }
+    }
+
+    /**
+     * Creates the header for the request to EDAN. Takes $uri, prepends a nonce,
+     * and appends the date and appID key. Hashes as sha1() and base64_encode()
+     * the result.
+     *
+     * @param uri The URI (string) to be hashed and encoded.
+     * @throws UnsupportedEncodingException
+     * @throws NoSuchAlgorithmException
+     * @returns Array containing all the elements and signed header value
+     */
+    private Map<String, String> encodeHeader(String uri) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+        String ipnonce = this.get_nonce();
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String sdfDate = df.format(new Date());
+
+        Map<String, String> toReturn = new HashMap<String, String>();
+        toReturn.put("X-AppId", this.app_id);
+        toReturn.put("X-RequestDate", sdfDate);
+        toReturn.put("X-AppVersion", "EDANInterface-0.10.1");
+
+        // For signed/T2 requests
+        if (this.auth_type == 1) {
+            String auth = ipnonce + "\n" + uri + "\n" + sdfDate + "\n" + this.edan_key;
+            String content = SimpleSHA1.SHA1plusBase64(auth);
+            toReturn.put("X-Nonce", ipnonce);
+            toReturn.put("X-AuthContent", content);
+        }
+
+        LOG.debug("encodeHeader toReturn: " + String.valueOf(toReturn));
+
+        return toReturn;
+    }
+
+    public String simpleReturnNonce() {
+        return this.get_nonce(); // Alternatively you could do:
+    }
+
+    public Map<String, String> encodeHeaderSample(String uri) {
+        try {
+            return encodeHeader(uri);
+        } catch (Exception e) {
+            Map<String, String> toReturn = new HashMap<String, String>();
+            toReturn.put("errorString", e.toString());
+            return toReturn;
+        }
+    }
+
+    /**
+     * Generates a nonce.
+     *
+     * @return string Returns a string containing a randomized set of letters and
+     * numbers $length long with $prefix prepended.
+     */
+    private String get_nonce() {
+        return get_nonce(15);
+    }
+
+    /**
+     * Generates a nonce.
+     *
+     * @param length $length (optional) Int representing the length of the random
+     *               string.
+     * @return string Returns a string containing a randomized set of letters and
+     * numbers $length long with $prefix prepended.
+     */
+    private String get_nonce(int length) {
+        return get_nonce(length, "");
+    }
+
+    /**
+     * Generates a nonce.
+     *
+     * @param length $length (optional) Int representing the length of the random
+     *               string.
+     * @param prefix $prefix (optional) String containing a prefix to be prepended to
+     *               the random string.
+     * @return string Returns a string containing a randomized set of letters and
+     * numbers $length long with $prefix prepended.
+     */
+    private String get_nonce(int length, String prefix) {
+        String password = "";
+        String possible = "0123456789abcdefghijklmnopqrstuvwxyz";
+        int i = 0;
+        while (i < length) {
+            char singleChar = possible.charAt((int) Math.floor(Math.random() * possible.length()));
+            if (password.indexOf(singleChar) == -1) {
+                password += singleChar;
+                i++;
+            }
+        }
+        return prefix + password;
+    }
 }

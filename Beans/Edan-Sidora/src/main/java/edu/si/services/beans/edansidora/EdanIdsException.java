@@ -27,24 +27,46 @@
 
 package edu.si.services.beans.edansidora;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
+/**
+ * Custom exception class for EDAN and IDS.  This class will be used to handle exception
+ * that are more business logic related to EDAN and IDS in the Camel routes.
+ *
+ * @author jbirkhimer
+ */
+public class EdanIdsException extends Exception {
 
-public class ConcatenateAggregationStrategy implements AggregationStrategy {
-
-    public ConcatenateAggregationStrategy() {
+    /**
+     * Same behavior is as the super class
+     */
+    public EdanIdsException() {
         super();
     }
 
-	@Override
-    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-      if (oldExchange == null) {
-          return newExchange;
-      }
+    /**
+     * Same behavior is as the super class
+     *
+     * @param message the detailed message; same as the super class
+     */
+    public EdanIdsException(String message) {
+        super(message);
+    }
 
-      String oldBody = oldExchange.getIn().getBody(String.class);
-      String newBody = newExchange.getIn().getBody(String.class);
-      oldExchange.getIn().setBody(oldBody + newBody);
-      return oldExchange;
-  }
+    /**
+     * Same behavior is as the super class
+     *
+     * @param cause the cause of exception; same as the super class
+     */
+    public EdanIdsException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * Same behavior is as the super class
+     *
+     * @param message the detailed message; same as the super class
+     * @param cause the cause of exception; same as the super class
+     */
+    public EdanIdsException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

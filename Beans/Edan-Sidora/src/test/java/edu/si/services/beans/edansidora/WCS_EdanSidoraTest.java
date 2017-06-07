@@ -33,6 +33,7 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -86,6 +87,7 @@ public class WCS_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     }
 
     @Test
+    @Ignore
     public void addImageToEdanAndIds2Test() throws Exception {
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
@@ -131,6 +133,7 @@ public class WCS_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     }
 
     @Test
+    @Ignore
     public void addImageToEdanAndIds3Test() throws Exception {
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
@@ -159,7 +162,7 @@ public class WCS_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 /*
         // Double-identification set:
         exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
-        exchange.getIn().setHeader("CamelFileName", "RaccoonAndFox.JPG");
+        exchange.getIn().setHeader("CamelFileName", "testRaccoonAndFox.JPG");
         exchange.getIn().setHeader("imageid", "RaccoonAndFox");
         template.send("direct:addImageToEdanAndIds3", exchange);
 

@@ -194,8 +194,8 @@
             </Identification>
         </ResearcherIdentifications>
         <Image>
-            <ImageId>RaccoonAndFox</ImageId>
-            <ImageFileName>RaccoonAndFox.JPG</ImageFileName>
+            <ImageId>testRaccoonAndFox</ImageId>
+            <ImageFileName>testRaccoonAndFox.JPG</ImageFileName>
             <ImageDateTime>2016-02-24 18:45:30</ImageDateTime>
             <ImageOrder>1</ImageOrder>
             <ImageInterestRanking>None</ImageInterestRanking>
@@ -332,6 +332,92 @@
         <Image>
             <ImageId>testImageMan</ImageId>
             <ImageFileName>testImageMan.JPG</ImageFileName>
+            <ImageDateTime>2016-02-24 18:45:30</ImageDateTime>
+            <ImageOrder>1</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+    </ImageSequence>
+    <ImageSequence>
+        <ImageSequenceId>testRaccoonAndVehicleAndMan</ImageSequenceId>
+        <ImageSequenceBeginTime>2016-02-24T18:45:30</ImageSequenceBeginTime>
+        <ImageSequenceEndTime>2016-02-24T18:45:37</ImageSequenceEndTime>
+        <VolunteerIdentifications>
+            <Identification>
+                <IUCNId>12345</IUCNId>
+                <TSNId>3</TSNId>
+                <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
+                <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
+                <Count>1</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </VolunteerIdentifications>
+        <ResearcherIdentifications>
+            <Identification>
+                <IUCNId>180575</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Procyon lotor</SpeciesScientificName>
+                <SpeciesCommonName>Northern Raccoon</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+            <Identification>
+                <IUCNId>180604</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Homo sapiens</SpeciesScientificName>
+                <SpeciesCommonName>Human male</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+            <Identification>
+                <IUCNId>180599</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Vehicle</SpeciesScientificName>
+                <SpeciesCommonName>Vehicle</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </ResearcherIdentifications>
+        <Image>
+            <ImageId>testImageRaccoonAndVehicleAndMan</ImageId>
+            <ImageFileName>testImageRaccoonAndVehicleAndMan.JPG</ImageFileName>
             <ImageDateTime>2016-02-24 18:45:30</ImageDateTime>
             <ImageOrder>1</ImageOrder>
             <ImageInterestRanking>None</ImageInterestRanking>

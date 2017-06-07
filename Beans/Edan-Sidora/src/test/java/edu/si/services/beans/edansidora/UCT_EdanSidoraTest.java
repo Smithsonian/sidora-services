@@ -28,15 +28,17 @@
 package edu.si.services.beans.edansidora;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.camel.model.ChoiceDefinition;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -48,15 +50,12 @@ import static org.apache.commons.io.FileUtils.readFileToString;
  */
 public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
-    private static String LOG_NAME = "edu.si.uctingest";
-
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
-
-    private static final File testManifest = new File("src/test/resources/unified-test-deployment/deployment_manifest.xml");
-    private static final File projectRELS_EXT = new File("src/test/resources/test-data/projectRELS-EXT.rdf");
-    private static final File subProjectRELS_EXT = new File("src/test/resources/test-data/subprojectRELS-EXT.rdf");
-    private static final File objectNotFoundFusekiResponse = new File("src/test/resources/test-data/objectNotFoundFusekiResponse.xml");
+    private static final String defaultTestProperties = "src/test/resources/test.properties";
+    private static File testManifest = new File("src/test/resources/unified-test-deployment/deployment_manifest.xml");
+    private static String deploymentZipLoc = "src/test/resources/scbi_unified_test_deployment.zip";
+    private static File deploymentZip;
+    private static String expectedFileExists;
 
     @Override
     protected String getBlueprintDescriptor() {
@@ -78,7 +77,13 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     public void setUp() throws Exception {
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setDefaultTestProperties(defaultTestProperties);
+        deleteDirectory("target/test-classes/ProcessUnified");
+        deleteDirectory("target/test-classes/UnifiedCameraTrapData");
+        deleteDirectory("target/test-classes/siris-dropbox");
         super.setUp();
+
+        deploymentZip = new File(deploymentZipLoc);
+        log.debug("Exchange_FILE_NAME = {}", deploymentZip.getName());
     }
 
     @Override
@@ -87,56 +92,11 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     }
 
     @Test
-    public void addImageToEdanAndIds2Test() throws Exception {
+    public void addImageToEdanAndIdsTest() throws Exception {
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
 
-        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds2").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                //weaveByToString(".*edanApiBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to edanApiBean Bean");
-                weaveByToString(".*idsPushBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to idsPushBean Bean");
-                weaveAddLast().to("mock:result");
-            }
-        });
-
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
-        exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
-        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
-        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
-        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
-        exchange.getIn().setHeader("CamelFedoraPid", "test:32");
-        exchange.getIn().setHeader("ExcludeCurrentImage", false);
-
-        template.send("direct:addImageToEdanAndIds2", exchange);
-
-        /*String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
-        for (String fileName : fileNames) {
-            exchange.getIn().setHeader("imageid", fileName);
-
-            template.send("direct:addImageToEdanAndIds2", exchange);
-        }*/
-
-        //log.info("Headers:\n{}", mockEndpoint.getExchanges().get(0).getIn().getHeaders());
-
-        for (Map.Entry<String, Object> entry : mockEndpoint.getExchanges().get(0).getIn().getHeaders().entrySet()) {
-            if (!entry.getKey().toString().equals("ManifestXML") && !entry.getKey().toString().equals("edanJson")) {
-                log.info(entry.toString());
-            }
-        }
-
-
-        assertMockEndpointsSatisfied();
-
-    }
-
-    @Test
-    public void addImageToEdanAndIds3Test() throws Exception {
-        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
-        mockEndpoint.expectedMessageCount(1);
-
-        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds3").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 //weaveByToString(".*edanApiBean.*").replace().log(LoggingLevel.INFO, "Skipping Sending to edanApiBean Bean");
@@ -153,29 +113,29 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("ExcludeCurrentImage", false);
 
         //Single-identification image in a two image sequence set:
-        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
-        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
-        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
-        template.send("direct:addImageToEdanAndIds3", exchange);
-/*
+//        exchange.getIn().setHeader("ImageSequenceID", "testDeploymentIds1");
+//        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
+//        exchange.getIn().setHeader("CamelFileName", "testDeploymentIds1i1.JPG");
+//        template.send("direct:addImageToEdanAndIds3", exchange);
+
         // Double-identification set:
         exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
-        exchange.getIn().setHeader("CamelFileName", "RaccoonAndFox.JPG");
+        exchange.getIn().setHeader("CamelFileName", "testRaccoonAndFox.JPG");
         exchange.getIn().setHeader("imageid", "RaccoonAndFox");
-        template.send("direct:addImageToEdanAndIds3", exchange);
+        template.send("direct:addImageToEdanAndIds", exchange);
 
-        // Double-identification set with raccoon and human:
-        exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
-        exchange.getIn().setHeader("CamelFileName", "testImageRaccoonAndMan.JPG");
-        exchange.getIn().setHeader("imageid", "testImageRaccoonAndMan");
-        template.send("direct:addImageToEdanAndIds3", exchange);
+//        // Double-identification set with raccoon and human:
+//        exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
+//        exchange.getIn().setHeader("CamelFileName", "testImageRaccoonAndMan.JPG");
+//        exchange.getIn().setHeader("imageid", "testImageRaccoonAndMan");
+//        template.send("direct:addImageToEdanAndIds3", exchange);
+//
+//        // Set with human:
+//        exchange.getIn().setHeader("ImageSequenceID", "testManAlone");
+//        exchange.getIn().setHeader("CamelFileName", "testImageMan.JPG");
+//        exchange.getIn().setHeader("imageid", "testImageMan");
+//        template.send("direct:addImageToEdanAndIds3", exchange);
 
-        // Set with human:
-        exchange.getIn().setHeader("ImageSequenceID", "testManAlone");
-        exchange.getIn().setHeader("CamelFileName", "testImageMan.JPG");
-        exchange.getIn().setHeader("imageid", "testImageMan");
-        template.send("direct:addImageToEdanAndIds3", exchange);
-*/
         /*String[] fileNames = {"testDeploymentIds1i1", "testDeploymentIds1i10", "testDeploymentIds2i1"};
         for (String fileName : fileNames) {
             exchange.getIn().setHeader("imageid", fileName);
@@ -196,5 +156,96 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     }
 
+    @Test
+    public void addFilterSpeciesNameTest() throws Exception {
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(3);
+        mockEndpoint.expectedBodiesReceived("false", "true", "true", "true");
 
+        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                Namespaces ns = new Namespaces("ri", "http://www.w3.org/2005/sparql-results#");
+                weaveByType(ChoiceDefinition.class).replace()
+                        .log("=====================[ {{si.ct.edanids.speciesScientificName.filter}} ]========================")
+                        .setBody()
+                        .xpath("//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.edanids.speciesScientificName.filter'), text())] != ''", String.class, ns, "ManifestXMl")
+                        .to("log:test?showAll=true&multiline=true&maxChars=10000");
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
+        exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
+        exchange.getIn().setHeader("CamelFedoraPid", "test:32");
+        exchange.getIn().setHeader("ExcludeCurrentImage", false);
+
+
+        // Double-identification set:
+        exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
+        exchange.getIn().setHeader("CamelFileName", "testRaccoonAndFox.JPG");
+        exchange.getIn().setHeader("imageid", "RaccoonAndFox");
+        template.send("direct:addImageToEdanAndIds", exchange);
+
+
+        // Double-identification set with raccoon and human:
+        exchange.getIn().setHeader("ImageSequenceID", "testRaccoonAndMan");
+        exchange.getIn().setHeader("imageid", "testImageRaccoonAndMan");
+        exchange.getIn().setHeader("CamelFileName", "testImageRaccoonAndMan.JPG");
+        template.send("direct:addImageToEdanAndIds", exchange);
+
+        // Set with human:
+        exchange.getIn().setHeader("ImageSequenceID", "testManAlone");
+        exchange.getIn().setHeader("imageid", "testImageMan");
+        exchange.getIn().setHeader("CamelFileName", "testImageMan.JPG");
+        template.send("direct:addImageToEdanAndIds", exchange);
+
+        // Set with human and vehicle:
+        exchange.getIn().setHeader("ImageSequenceID", "testRaccoonAndVehicleAndMan");
+        exchange.getIn().setHeader("imageid", "testImageRaccoonAndVehicleAndMan");
+        exchange.getIn().setHeader("CamelFileName", "testImageRaccoonAndVehicleAndMan.JPG");
+        template.send("direct:addImageToEdanAndIds", exchange);
+
+        assertMockEndpointsSatisfied();
+
+        List<Exchange> result = mockEndpoint.getExchanges();
+
+        assertEquals("RaccoonAndFox should not be filtered out", result.get(0).getIn().getBody(String.class), "false");
+        assertEquals("testImageRaccoonAndMan should be filtered out", result.get(1).getIn().getBody(String.class), "true");
+        assertEquals("testImageMan should be filtered out", result.get(2).getIn().getBody(String.class), "true");
+        assertEquals("testImageMan should be filtered out", result.get(2).getIn().getBody(String.class), "true");
+    }
+
+    @Test
+    public void idsPushTest() throws Exception {
+
+        expectedFileExists = "target/test-classes/siris-dropbox/ExportEmammal_emammal_image_testDeploymentId/ExportEmammal_emammal_image_testDeploymentId.xml";
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedFileExists(expectedFileExists);
+
+        context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByType(ChoiceDefinition.class).selectLast().replace()
+                        .setHeader("SiteId").xpath("//CameraDeploymentID/text()", String.class, "ManifestXML")
+                        .to("bean:idsPushBean?method=createAndPush")
+                        .to("mock:result");
+            }
+        });
+
+        template.sendBodyAndHeader("file:{{karaf.home}}/ProcessUnified", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+
+        assertMockEndpointsSatisfied();
+
+        String testIsilonDir = mockResult.getExchanges().get(0).getIn().getHeader("idsPushDir", String.class);
+
+        log.warn("The test isilon directory we are testing for: {}", testIsilonDir);
+        assertTrue("test Isilon directory should exist", Files.exists(new File(testIsilonDir).toPath()));
+
+        log.info("test isilon dir = {}, file = {}", testIsilonDir, expectedFileExists);
+        assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));
+    }
 }
