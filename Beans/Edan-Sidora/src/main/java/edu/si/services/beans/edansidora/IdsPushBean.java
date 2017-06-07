@@ -28,7 +28,6 @@
 package edu.si.services.beans.edansidora;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Header;
 import org.apache.camel.Message;
 import org.apache.camel.PropertyInject;
 import org.apache.commons.io.FileUtils;
@@ -36,21 +35,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
-import java.io.*;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileOwnerAttributeView;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.attribute.UserPrincipalLookupService;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 public class IdsPushBean {
 
@@ -67,75 +57,79 @@ public class IdsPushBean {
 
     public void createAndPush(Exchange exchange) throws EdanIdsException {
 
-        out = exchange.getIn();
+        try {
+            out = exchange.getIn();
 
-        inputLocation = new File(out.getHeader("CamelFileAbsolutePath", String.class));
-        // get a list of files from current directory
-        if (inputLocation.isFile()) {
-            inputLocation = inputLocation.getParentFile();
-            LOG.debug("Input File Location: " + inputLocation);
-        }
-
-        deploymentId = out.getHeader("SiteId", String.class);
-
-        String assetName = "ExportEmammal_emammal_image_" + deploymentId;
-        String pushDirPath = pushLocation + "/" + assetName + "/";
-        File assetXmlFile = new File(pushDirPath + assetName + ".xml");
-        if (!assetXmlFile.getParentFile().exists()) {
-            assetXmlFile.getParentFile().mkdirs();
-        } else {
-            LOG.warn("IDS files for deployment: {} already exists!!", deploymentId);
-        }
-
-        LOG.debug("IDS Write Asset Files to: {}", assetXmlFile);
-        LOG.debug("IDS inputLocation = {}", inputLocation);
-        LOG.debug("IDS deploymentId = {}", deploymentId);
-
-        File files[] = inputLocation.listFiles();
-
-        LOG.debug("Input file list: " + Arrays.toString(files));
-
-        int completed = 0;
-
-        StringBuilder assetXml = new StringBuilder();
-        assetXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<Assets>");
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(assetXmlFile))) {
-
-            for (int i = 0; i < files.length; i++) {
-
-                String fileName = files[i].getName();
-
-                LOG.debug("Started file: {} has ext = {}", files[i], FilenameUtils.getExtension(fileName));
-
-                // Do not include the manifest file
-                if (!FilenameUtils.getExtension(fileName).contains("xml")) {
-
-                    LOG.debug("Adding File {}", fileName);
-
-                    File sourceImageFile = new File(files[i].getPath());
-                    File destImageFile = new File(pushDirPath + "emammal_image_" + fileName);
-
-                    LOG.debug("Copying image asset from {} to {}", sourceImageFile, destImageFile);
-                    FileUtils.copyFile(sourceImageFile, destImageFile);
-
-                    assetXml.append("\r\n  <Asset Name=\"");
-                    assetXml.append(FilenameUtils.getName(destImageFile.getPath()));
-                    assetXml.append("\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">");
-                    assetXml.append(FilenameUtils.getBaseName(destImageFile.getPath()));
-                    assetXml.append("</Asset>");
-                } else {
-                    LOG.debug("Deployment Manifest XML Found! Skipping {}", files[i]);
-                }
+            inputLocation = new File(out.getHeader("CamelFileAbsolutePath", String.class));
+            // get a list of files from current directory
+            if (inputLocation.isFile()) {
+                inputLocation = inputLocation.getParentFile();
+                LOG.debug("Input File Location: " + inputLocation);
             }
-            assetXml.append("\r\n</Assets>");
 
-            writer.write(assetXml.toString());
+            deploymentId = out.getHeader("SiteId", String.class);
 
-            LOG.info("Completed: {} of {}, Wrote Asset XML File to: {}", completed++, files.length, assetXmlFile);
-            out.setHeader("idsPushDir", assetXmlFile.getParent());
+            String assetName = "ExportEmammal_emammal_image_" + deploymentId;
+            String pushDirPath = pushLocation + "/" + assetName + "/";
+            File assetXmlFile = new File(pushDirPath + assetName + ".xml");
+            if (!assetXmlFile.getParentFile().exists()) {
+                assetXmlFile.getParentFile().mkdirs();
+            } else {
+                LOG.warn("IDS files for deployment: {} already exists!!", deploymentId);
+            }
+
+            LOG.debug("IDS Write Asset Files to: {}", assetXmlFile);
+            LOG.debug("IDS inputLocation = {}", inputLocation);
+            LOG.debug("IDS deploymentId = {}", deploymentId);
+
+            File files[] = inputLocation.listFiles();
+
+            LOG.debug("Input file list: " + Arrays.toString(files));
+
+            int completed = 0;
+
+            StringBuilder assetXml = new StringBuilder();
+            assetXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<Assets>");
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(assetXmlFile))) {
+
+                for (int i = 0; i < files.length; i++) {
+
+                    String fileName = files[i].getName();
+
+                    LOG.debug("Started file: {} has ext = {}", files[i], FilenameUtils.getExtension(fileName));
+
+                    // Do not include the manifest file
+                    if (!FilenameUtils.getExtension(fileName).contains("xml")) {
+
+                        LOG.debug("Adding File {}", fileName);
+
+                        File sourceImageFile = new File(files[i].getPath());
+                        File destImageFile = new File(pushDirPath + "emammal_image_" + fileName);
+
+                        LOG.debug("Copying image asset from {} to {}", sourceImageFile, destImageFile);
+                        FileUtils.copyFile(sourceImageFile, destImageFile);
+
+                        assetXml.append("\r\n  <Asset Name=\"");
+                        assetXml.append(FilenameUtils.getName(destImageFile.getPath()));
+                        assetXml.append("\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">");
+                        assetXml.append(FilenameUtils.getBaseName(destImageFile.getPath()));
+                        assetXml.append("</Asset>");
+                    } else {
+                        LOG.debug("Deployment Manifest XML Found! Skipping {}", files[i]);
+                    }
+                }
+                assetXml.append("\r\n</Assets>");
+
+                writer.write(assetXml.toString());
+
+                LOG.info("Completed: {} of {}, Wrote Asset XML File to: {}", completed++, files.length, assetXmlFile);
+                out.setHeader("idsPushDir", assetXmlFile.getParent());
+            } catch (Exception e) {
+                throw new EdanIdsException("IdsPushBean error during createAndPush", e);
+            }
         } catch (Exception e) {
-            throw new EdanIdsException("IdsPushBean error during createAndPush", e);
+            throw new EdanIdsException(e);
         }
     }
 

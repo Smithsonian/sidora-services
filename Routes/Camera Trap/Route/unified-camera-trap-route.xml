@@ -192,6 +192,13 @@
                               redeliveryDelay="{{si.ct.edanIds.redeliveryDelay}}"
                               maximumRedeliveries="5"
                               retryAttemptedLogLevel="WARN"/>
+            <continued>
+                <constant>true</constant>
+            </continued>
+            <log message="[${routeId}] :: EdanIds Error reported: ${exception.message}"
+                 loggingLevel="ERROR"
+                 logName="{{si.ct.id}}"
+                 id="logEdanIdsException"/>
         </onException>
 
         <!--
@@ -1299,7 +1306,7 @@
                     </setHeader>
 
                     <log message="POST THIS TO EDAN: ${headers.edanJson}"
-                         loggingLevel="INFO"
+                         loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
 
                     <setHeader headerName="edanUri">
@@ -1312,7 +1319,7 @@
                          loggingLevel="DEBUG"
                          logName="edanidslog"/>
 
-                    <to uri="bean:edanApiBean?method=sendRequest"/>
+                    <to uri="bean:edanApiBean?method=sendRequest" id="edanApiSendRequest"/>
 
                 </otherwise>
             </choice>

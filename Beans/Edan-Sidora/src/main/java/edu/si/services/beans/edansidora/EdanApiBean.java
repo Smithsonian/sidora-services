@@ -103,51 +103,55 @@ public class EdanApiBean {
      * @param exchange Camel exchange containing the querystring that gets appended to the
      *                    service url
      */
-    public void sendRequest(Exchange exchange) throws Exception {
+    public void sendRequest(Exchange exchange) throws EdanIdsException {
 
-        Message out = exchange.getIn();
+        try {
+            Message out = exchange.getIn();
 
-        String originalUri = out.getHeader("edanUri", String.class);
+            String originalUri = out.getHeader("edanUri", String.class);
 
-        if (client == null) {
-            LOG.error("EdanApiBean Client IS NULL");
-        } else {
-            System.setProperty("http.agent", "");
-            String uri = server + edanService + "?" + originalUri;
-            LOG.debug("EdanApiBean uri: {}", uri);
+            if (client == null) {
+                LOG.error("EdanApiBean Client IS NULL");
+            } else {
+                System.setProperty("http.agent", "");
+                String uri = server + edanService + "?" + originalUri;
+                LOG.debug("EdanApiBean uri: {}", uri);
 
-            HttpGet httpget = new HttpGet(uri);
-            Map<String, String> encodedHeaders = null;
-            try {
-                encodedHeaders = encodeHeader(originalUri);
-            } catch (Exception e) {
-                throw new EdanIdsException("EdanApiBean error encoding http get headers", e);
-            }
-
-            for (Map.Entry<String, String> entry : encodedHeaders.entrySet()) {
-                httpget.addHeader(entry.getKey(), entry.getValue());
-            }
-
-            httpget.setHeader("Accept", "*/*");
-            httpget.setHeader("Accept-Encoding", "identity");
-            httpget.setHeader("User-Agent", "unknown");
-            httpget.removeHeaders("Connection");
-
-            LOG.debug("EdanApiBean httpGet headers: " + Arrays.toString(httpget.getAllHeaders()));
-
-            try (CloseableHttpResponse response = client.execute(httpget)) {
-                HttpEntity entity = response.getEntity();
-                LOG.debug("Edan response entity: {}", EntityUtils.toString(entity, "UTF-8"));
-
-                if (response.getStatusLine().getStatusCode() != 200) {
-                    LOG.error("Edan response status: {}", response.getStatusLine());
-                    LOG.error("Edan response entity: {}", EntityUtils.toString(entity, "UTF-8"));
-                } else {
-                    LOG.debug("Edan response status: {}", response.getStatusLine());
+                HttpGet httpget = new HttpGet(uri);
+                Map<String, String> encodedHeaders = null;
+                try {
+                    encodedHeaders = encodeHeader(originalUri);
+                } catch (Exception e) {
+                    throw new EdanIdsException("EdanApiBean error encoding http get headers", e);
                 }
-            } catch (Exception e) {
-                throw new EdanIdsException("EdanApiBean error sending Edan request", e);
+
+                for (Map.Entry<String, String> entry : encodedHeaders.entrySet()) {
+                    httpget.addHeader(entry.getKey(), entry.getValue());
+                }
+
+                httpget.setHeader("Accept", "*/*");
+                httpget.setHeader("Accept-Encoding", "identity");
+                httpget.setHeader("User-Agent", "unknown");
+                httpget.removeHeaders("Connection");
+
+                LOG.debug("EdanApiBean httpGet headers: " + Arrays.toString(httpget.getAllHeaders()));
+
+                try (CloseableHttpResponse response = client.execute(httpget)) {
+                    HttpEntity entity = response.getEntity();
+                    LOG.debug("Edan response entity: {}", EntityUtils.toString(entity, "UTF-8"));
+
+                    if (response.getStatusLine().getStatusCode() != 200) {
+                        LOG.error("Edan response status: {}", response.getStatusLine());
+                        LOG.error("Edan response entity: {}", EntityUtils.toString(entity, "UTF-8"));
+                    } else {
+                        LOG.debug("Edan response status: {}", response.getStatusLine());
+                    }
+                } catch (Exception e) {
+                    throw new EdanIdsException("EdanApiBean error sending Edan request", e);
+                }
             }
+        } catch (Exception e) {
+            throw new EdanIdsException(e);
         }
     }
 

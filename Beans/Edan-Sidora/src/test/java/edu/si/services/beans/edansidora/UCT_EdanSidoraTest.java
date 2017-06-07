@@ -29,6 +29,7 @@ package edu.si.services.beans.edansidora;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -38,6 +39,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
@@ -247,5 +250,64 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
         log.info("test isilon dir = {}, file = {}", testIsilonDir, expectedFileExists);
         assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));
+    }
+
+    @Test
+    public void edanIdsExceptionTest () throws Exception {
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("redeliveryCount", 5);
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+        mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(EdanIdsException.class);
+        mockError.expectedHeaderReceived("redeliveryCount", 5);
+
+        context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //processor used to replace sql query to test onException and retries
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws Exception {
+                        Message in = exchange.getIn();
+                        in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
+                            try {
+                                if (in.getHeader("redeliveryCount", Integer.class) == 5) {
+                                    throw new IOException("Outer try exception");
+                                }
+                                try {
+                                    throw new ConnectException("Inner Try Exception");
+                                } catch (Exception e) {
+                                    throw new EdanIdsException("EdanApiBean error sending Edan request", e);
+                                }
+                            } catch (Exception e) {
+                                throw new EdanIdsException(e);
+                            }
+                    }
+                };
+
+                //advice sending to database and replace with processor
+                weaveById("edanApiSendRequest").replace().process(processor);
+                weaveById("logEdanIdsException").after().to("mock:error");
+                weaveAddLast().to("mock:result").stop();
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("CamelFedoraPid", "test:12345");
+        exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
+        exchange.getIn().setHeader("CamelFedoraPid", "test:32");
+        exchange.getIn().setHeader("ExcludeCurrentImage", false);
+
+
+        // Double-identification set:
+        exchange.getIn().setHeader("ImageSequenceID", "testImageSequence3");
+        exchange.getIn().setHeader("CamelFileName", "testRaccoonAndFox.JPG");
+        exchange.getIn().setHeader("imageid", "RaccoonAndFox");
+        template.send("direct:addImageToEdanAndIds", exchange);
+
+        assertMockEndpointsSatisfied();
+
     }
 }
