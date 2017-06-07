@@ -138,7 +138,6 @@ public class EdanApiBean {
 
                 try (CloseableHttpResponse response = client.execute(httpget)) {
                     HttpEntity entity = response.getEntity();
-                    LOG.debug("Edan response entity: {}", EntityUtils.toString(entity, "UTF-8"));
 
                     if (response.getStatusLine().getStatusCode() != 200) {
                         LOG.error("Edan response status: {}", response.getStatusLine());

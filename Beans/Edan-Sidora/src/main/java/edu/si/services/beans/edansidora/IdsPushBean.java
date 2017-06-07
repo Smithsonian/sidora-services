@@ -100,7 +100,7 @@ public class IdsPushBean {
                     LOG.debug("Started file: {} has ext = {}", files[i], FilenameUtils.getExtension(fileName));
 
                     // Do not include the manifest file
-                    if (!FilenameUtils.getExtension(fileName).contains("xml")) {
+                    if (!FilenameUtils.getExtension(fileName).contains("xml") && !ignored.containsKey(FilenameUtils.getBaseName(fileName)) ) {
 
                         LOG.debug("Adding File {}", fileName);
 

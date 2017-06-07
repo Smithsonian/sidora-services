@@ -28,6 +28,7 @@
 package edu.si.services.beans.edansidora;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
@@ -56,7 +57,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private static final String defaultTestProperties = "src/test/resources/test.properties";
     private static File testManifest = new File("src/test/resources/unified-test-deployment/deployment_manifest.xml");
-    private static String deploymentZipLoc = "src/test/resources/scbi_unified_test_deployment.zip";
+    private static String deploymentZipLoc = "src/test/resources/idsTest.zip"; //scbi_unified_test_deployment.zip";
     private static File deploymentZip;
     private static String expectedFileExists;
 
@@ -223,7 +224,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void idsPushTest() throws Exception {
 
-        expectedFileExists = "target/test-classes/siris-dropbox/ExportEmammal_emammal_image_testDeploymentId/ExportEmammal_emammal_image_testDeploymentId.xml";
+        expectedFileExists = "target/test-classes/siris-dropbox/ExportEmammal_emammal_image_testDeploymentId123/ExportEmammal_emammal_image_testDeploymentId123.xml";
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -234,6 +235,8 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
             public void configure() throws Exception {
                 weaveByType(ChoiceDefinition.class).selectLast().replace()
                         .setHeader("SiteId").xpath("//CameraDeploymentID/text()", String.class, "ManifestXML")
+                        .to("bean:idsPushBean?method=addToIgnoreList(testDeploymentIds4i1)")
+
                         .to("bean:idsPushBean?method=createAndPush")
                         .to("mock:result");
             }
