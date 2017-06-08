@@ -117,7 +117,7 @@
         -->
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties"/>
+                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
 
         <!--
         <errorHandler id="ctingestErrorHandler" type="DefaultErrorHandler">
