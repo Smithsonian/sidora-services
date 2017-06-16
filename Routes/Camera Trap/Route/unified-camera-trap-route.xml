@@ -1360,7 +1360,7 @@
                  logName="{{si.ct.id}}"/>
         </route>
 
-        <route id="UnifiedCameraTrapFindObject" errorHandlerRef="noErrorHandler">
+        <route id="UnifiedCameraTrapFindObject"><!-- errorHandlerRef="noErrorHandler">-->
             <from uri="direct:findObject"/>
             <log message="${id}: Started find object ..."
                  loggingLevel="INFO"
@@ -1390,6 +1390,16 @@
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 
+            <!--<setBody>
+                <groovy>
+                    URLEncoder.encode(request.getBody(String.class));
+                </groovy>
+            </setBody>-->
+
+            <log message="${id}: Body Encoded - ${body}"
+                 loggingLevel="WARN"
+                 logName="{{si.ct.id}}"/>
+
             <setBody>
                 <!-- The query needs to also check directly along the parent axis since names are not unique. -->
                 <simple>
@@ -1409,7 +1419,7 @@
             </setBody>
 
             <log message="${id}: Project Parent - ${body}"
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
             <setHeader headerName="CamelHttpMethod">
@@ -1420,7 +1430,7 @@
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Query Result - ${body}"
-                 loggingLevel="DEBUG"
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
             <!-- Count the results. If greater than one warn about duplicate parents. -->
             <choice>
