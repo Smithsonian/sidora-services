@@ -1420,8 +1420,13 @@
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
+            <setHeader headerName="CamelHttpQuery">
+                <simple>
+                    output=xml&amp;${body}
+                </simple>
+            </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Query Result - ${body}"
@@ -1488,8 +1493,13 @@
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
+            <setHeader headerName="CamelHttpQuery">
+                <simple>
+                    output=xml&amp;${body}
+                </simple>
+            </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Find Query Result - ${body}"

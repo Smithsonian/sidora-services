@@ -25,7 +25,7 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.camel.testing.SID_912;
+package edu.si.services.beans.cameratrap;
 
 import edu.si.services.beans.cameratrap.CT_BlueprintTestSupport;
 import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
@@ -34,10 +34,13 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.ChoiceDefinition;
+import org.apache.camel.model.LogDefinition;
 import org.apache.commons.io.FilenameUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -88,43 +91,37 @@ public class UCT_fusekiEncodingTest extends CT_BlueprintTestSupport {
     }
 
     @Test
+    @Ignore //Ignore this test b/c it needs fuseki running
     public void findObjectTest() throws Exception {
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
 
         MockEndpoint mockError = getMockEndpoint("mock:error");
-        mockError.expectedMessageCount(1);
+        mockError.expectedMessageCount(8);
+
+        context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint("direct:processParents").skipSendToOriginalEndpoint().to("direct:findObject")
+                        .to("mock:result");
+
+            }
+        });
 
         context.getRouteDefinition("UnifiedCameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                onException(FedoraObjectNotFoundException.class)
-                        .useOriginalMessage()
-                        .useExponentialBackOff()
-                        .backOffMultiplier(2)
-                        .redeliveryDelay("{{si.ct.inflight.redeliveryDelay}}")
-                        .maximumRedeliveries(7)
-                        .retryAttemptedLogLevel(LoggingLevel.WARN)
-                        .retriesExhaustedLogLevel(LoggingLevel.WARN)
-                        .logExhaustedMessageHistory(false)
-                        .continued(true)
-                        .to("mock:error");
-
-                //weaveById("findObjectFusekiHttpCall").after().to("mock:result");
-                //weaveByType(ChoiceDefinition.class).selectLast().replace().to("mock:result");
-                weaveAddLast().to("mock:result");
+                weaveByType(LogDefinition.class).selectFirst().before().to("mock:error");
             }
         });
-        //context.start();
+
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("CamelFedoraPid", "si:121909");
         exchange.getIn().setBody("Panama: Ticks &amp; Climate Change");
 
-        template.send("direct:findObject", exchange);
+        template.send("direct:processParents", exchange);
 
-        Thread.sleep(1500L);
-
-        //assertMockEndpointsSatisfied();
+        assertMockEndpointsSatisfied();
     }
 }

@@ -1360,7 +1360,7 @@
                  logName="{{si.ct.id}}"/>
         </route>
 
-        <route id="UnifiedCameraTrapFindObject"><!-- errorHandlerRef="noErrorHandler">-->
+        <route id="UnifiedCameraTrapFindObject" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObject"/>
             <log message="${id}: Started find object ..."
                  loggingLevel="INFO"
@@ -1390,16 +1390,6 @@
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 
-            <!--<setBody>
-                <groovy>
-                    URLEncoder.encode(request.getBody(String.class));
-                </groovy>
-            </setBody>-->
-
-            <log message="${id}: Body Encoded - ${body}"
-                 loggingLevel="WARN"
-                 logName="{{si.ct.id}}"/>
-
             <setBody>
                 <!-- The query needs to also check directly along the parent axis since names are not unique. -->
                 <simple>
@@ -1419,18 +1409,23 @@
             </setBody>
 
             <log message="${id}: Project Parent - ${body}"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
+            <setHeader headerName="CamelHttpQuery">
+                <simple>
+                    output=xml&amp;${body}
+                </simple>
+            </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectFusekiHttpCall"/>
+            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectFusekiHttpCall"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Query Result - ${body}"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <!-- Count the results. If greater than one warn about duplicate parents. -->
             <choice>
@@ -1494,8 +1489,13 @@
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
+            <setHeader headerName="CamelHttpQuery">
+                <simple>
+                    output=xml&amp;${body}
+                </simple>
+            </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectByPIDFusekiHttpCall"/>
+            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectByPIDFusekiHttpCall"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Find Query Result - ${body}"
