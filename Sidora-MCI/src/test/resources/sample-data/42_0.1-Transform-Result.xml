@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SIdoraConcept>
+    <conceptType>Project</conceptType>
+    <primaryTitle>
+        <titleText>0.1 Testing of MCI Project request - all approval go through.</titleText>
+    </primaryTitle>
+    <altTitle type="">
+        <titleText/>
+    </altTitle>
+    <summaryDescription/>
+    <keyword type="type 1">
+        <value>keyword 1</value>
+    </keyword>
+    <keyword type="type 2">
+        <value>keyword 2</value>
+    </keyword>
+    <keyword type="type 3">
+        <value>keyword 3</value>
+    </keyword>
+    <identifier type="MCI #">
+        <value>0.1</value>
+    </identifier>
+    <identifier type="Accession #">
+        <value>12345</value>
+    </identifier>
+    <identifier type="Case File #">
+        <value>23456</value>
+    </identifier>
+    <identifier type="IRMS #">
+        <value>34567</value>
+    </identifier>
+    <identifier type="Object Title">
+        <value>MCI Project Request Form and Approval Workflow</value>
+    </identifier>
+    <identifier type="Other ID #">
+        <value>56789</value>
+    </identifier>
+    <identifier type="Temporary Request #">
+        <value>23409</value>
+    </identifier>
+    <rights type="Project Data Access and Use Constraints">
+        <value>False</value>
+        <note/>
+    </rights>
+    <relationship type="Related MCI Project #">
+        <value>45678</value>
+        <note/>
+    </relationship>
+    <note class="Project Notes" type="Project Description">1.      All Emails are updated with short schema to display current approval step.
+        2.       Email Notification content clearly explains the next steps to be taken by the approver.
+        3.      New user-friendly approval forms are created.
+        4.       The approver will receive 2 reminders with copy to MCI Admin.
+        5.      MCI Admin will be able to delegate approval to herself or to the MCI Staff member.
+        6.      Delegate option is only available to MCI Admin.
+        7.      The previous approvers’ comments are included in the bottom of the Approval Task form.
+        8.      When Approver completes the task, she will be redirected to the home page of the MCI Conservation Request System
+        9.      Status of the Form and MCI Request Approval status are included in the Project Request view on the Home Page</note>
+    <note class="Project Notes" type="Project Objectives">All Emails are updated with short schema to display current approval step.
+    </note>
+    <note class="Project Notes" type="Project Design">Technical Studies</note>
+    <note class="General Notes" type="General Notes"/>
+    <note class="General Notes" type="Notes to Staff"/>
+    <note class="General Notes" type="Object Description"/>
+    <note class="General Notes" type="HC Comments"/>
+    <note class="General Notes" type="HTS Comments">Douglas, Janet (Approve) 8/30/2016 9:27 AM - 8/30/2016 9:45 AM (Douglas, Janet) </note>
+    <note class="General Notes" type="Deputy Comments"/>
+    <note class="General Notes" type="Director Comments"/>
+    <timePeriod type="Date of Request">
+        <intervalname>8/30/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="Date of Approval">
+        <intervalname>11/8/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="Project Date of Deadline">
+        <intervalname>11/24/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="Date Completed">
+        <intervalname>11/30/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="Project Fiscal Year">
+        <intervalname/>
+        <date type="Fiscal Year">
+            <year>2017</year>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="Object Date">
+        <intervalname>Lorem ipsum dolor sit amet, consectetur adipiscing elit</intervalname>
+        <date type="Object Year">
+            <year>2016</year>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="HC Signature Date">
+        <intervalname>8/30/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="HTS Signature Date">
+        <intervalname>8/30/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="Deputy Signature Date">
+        <intervalname>8/31/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <timePeriod type="Director Signature Date">
+        <intervalname>8/31/2016</intervalname>
+        <date type="">
+            <year/>
+            <month/>
+            <day/>
+        </date>
+        <note/>
+    </timePeriod>
+    <place type="Requestor Address">
+        <geogname type="Street Address">380 Herndon Pkwy</geogname>
+        <geogname type="City">Herndon</geogname>
+        <geogname type="State">VA</geogname>
+        <geogname type="Zip">20170</geogname>
+        <point>
+            <lat/>
+            <long/>
+        </point>
+        <timePeriod type="">
+            <intervalname/>
+            <date type="">
+                <year/>
+                <month/>
+                <day/>
+            </date>
+        </timePeriod>
+        <note>Requestor Phone:  202-633-0034</note>
+    </place>
+    <place type="On Behalf Of Address">
+        <geogname type="Street Address">​2017 Rockingham str Herndon MD 10122</geogname>
+        <point>
+            <lat/>
+            <long/>
+        </point>
+        <timePeriod type="">
+            <intervalname/>
+            <date type="">
+                <year/>
+                <month/>
+                <day/>
+            </date>
+        </timePeriod>
+        <note>On Behalf Of Phone:  555-33-4949</note>
+    </place>
+    <actor role="Folder Holder">
+        <persnameText/>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="Requestor">
+        <persnameText>Orlova, Natalya N.</persnameText>
+        <contactInfo>
+            <email>OrlovaN@si.edu</email>
+        </contactInfo>
+    </actor>
+    <actor role="Initiator">
+        <persnameText/>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="aaa">
+        <persnameText>Ballard, Mary</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="bbb">
+        <persnameText>Brogdon-Grantham, Shannon</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="ccc">
+        <persnameText>Charola, A. Elena</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="ddd">
+        <persnameText>France, Christine</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="eee">
+        <persnameText>Grissom, Carol</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="ffff">
+        <persnameText>Johnson, Jessica S.</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="ggg">
+        <persnameText>Kaczkowski, Rebecca</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="hhh">
+        <persnameText>N'Gadi, Ann </persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="MCI Contact">
+        <persnameText>Kaczkowski, Rebecca</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="On Behalf Of">
+        <persnameText>Natasha</persnameText>
+        <contactInfo>
+            <email>natasha7459@gmail.com</email>
+        </contactInfo>
+    </actor>
+    <actor role="On Behalf Of">
+        <corpname>natasha7459@gmail.com</corpname>
+    </actor>
+    <actor role="Requesting Unit">
+        <corpname/>
+    </actor>
+    <actor role="Approving Official">
+        <persnameText>i:0#.w|us\depriestp</persnameText>
+        <contactInfo>
+            <email>DEPRIESTP@si.edu</email>
+        </contactInfo>
+    </actor>
+    <actor role="Approving Unit">
+        <corpname>MCI - Museum Conservation Institute</corpname>
+    </actor>
+    <actor role="Principal Investigator">
+        <persnameText>arcu leo vulputate odio</persnameText>
+        <contactInfo>
+            <email>arcu</email>
+        </contactInfo>
+    </actor>
+    <actor role="Collaborator">
+        <persnameText>sem orci feugiat elit</persnameText>
+        <contactInfo>
+            <email>sem </email>
+        </contactInfo>
+    </actor>
+    <actor role="Object Curator">
+        <persnameText>sit amet mollis dolor luctus in</persnameText>
+        <contactInfo>
+            <email>sit</email>
+        </contactInfo>
+    </actor>
+    <actor role="HC Approver">
+        <persnameText>Johnson, Jessica S.</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="HTS Approver">
+        <persnameText>Douglas, Janet</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="Deputy Approver">
+        <persnameText>N'Gadi, Ann</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <actor role="Director Approver">
+        <persnameText>Feather, Melanie</persnameText>
+        <contactInfo>
+            <email/>
+        </contactInfo>
+    </actor>
+    <context type="Object Artist or Manufacturer">
+        <value> The approver will receive 2 reminders with copy to MCI Admin.</value>
+        <note/>
+    </context>
+    <context type="Object Owner">
+        <value>OCIO</value>
+        <note/>
+    </context>
+    <context type="Geographic or Cultural Provenience">
+        <value>Your feedback is very important to us.
+            During the test please create one or two projects at a time</value>
+        <note>1asdf</note>
+    </context>
+    <method type="Sample or Material">
+        <p>Ut cursus maximus velit, id porttitor elit hendrerit ut.</p>
+        <note/>
+    </method>
+    <method type="Special Equipment">
+        <p>Ut porta enim non turpis viverra tempus.</p>
+        <note/>
+    </method>
+    <technique type="Materials or Techniques of Manufacturer">
+        <value/>
+        <note/>
+    </technique>
+    <measurements>
+        <measurementText>11X8X23</measurementText>
+        <measurement type="" value="" units=""/>
+        <timePeriod type="">
+            <intervalname/>
+            <date type="">
+                <year/>
+                <month/>
+                <day/>
+            </date>
+        </timePeriod>
+        <accuracy/>
+        <note/>
+    </measurements>
+    <measurements>
+        <measurementText/>
+        <measurement type="Number of Objects" value="2" units="Objects"/>
+        <timePeriod type="">
+            <intervalname/>
+            <date type="">
+                <year/>
+                <month/>
+                <day/>
+            </date>
+        </timePeriod>
+        <accuracy/>
+        <note/>
+    </measurements>
+</SIdoraConcept>

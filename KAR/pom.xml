@@ -113,6 +113,13 @@
             <version>1.0</version>
         </dependency>
 
+        <!-- Sidora MCI Service -->
+        <dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-mci</artifactId>
+            <version>1.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

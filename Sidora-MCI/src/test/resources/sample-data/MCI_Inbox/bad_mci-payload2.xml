@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Fields>
+  <Field Type="Text" Name="Title" DisplayName="Project Title">Testing of MCI Project request #2</Field>
+  <Field Type="Boolean" Name="Confidential" DisplayName="Confidential">False</Field>
+  <Field Type="Text" Name="TemporaryRequest" DisplayName="Temporary Request #">23409</Field>
+  <Field Type="User" Name="Initiator" DisplayName="Initiator">i:0#.w|us\testInitiator</Field>
+  <Field Type="Text" Name="Status" DisplayName="Approval Status">Submitted for Approval</Field>
+  <Field Type="Text" Name="ConservationGroup" DisplayName="Conservation Group">Technical Studies</Field>
+  <Field Type="Note" Name="Project_x0020_Summary" DisplayName="Project Summary">The SharePoint team (admin1 and admin2)
+    would like to inform you than all planned update, custom improved approval forms and more informative e-mail
+    notification was completed and ready to be tested and used by the MCI team.
+  </Field>
+  <Field Type="Note" Name="Request" DisplayName="Request (Action)">1. All Emails are updated with short schema to
+    display current approval step.
+    2. Email Notification content clearly explains the next steps to be taken by the approver.
+    3. New user-friendly approval forms are created.
+    4. The approver will receive 2 reminders with copy to MCI Admin.
+    5. MCI Admin will be able to delegate approval to herself or to the MCI Staff member.
+    6. Delegate option is only available to MCI Admin.
+    7. The previous approvers' comments are included in the bottom of the Approval Task form.
+    8. When Approver completes the task, she will be redirected to the home page of the MCI Conservation Request
+    System
+    9. Status of the Form and MCI Request Approval status are included in the Project Request view on the Home Page
+  </Field>
+  <Field Type="Note" Name="Purpose" DisplayName="Purpose of Analysis/Conservation">All Emails are updated with short
+    schema to display current approval step.
+  </Field>
+  <Field Type="Number" Name="MCI_ID" DisplayName="MCI #">0.2</Field>
+  <Field Type="Text" Name="ObjectTitle" DisplayName="Object Title">MCI Project Request Form and Approval Workflow
+  </Field>
+  <Field Type="Note" Name="Object_x0020_Description" DisplayName="Object Description">2. Email Notification content
+    clearly explains the next steps to be taken by the approver.
+  </Field>
+  <Field Type="Text" Name="Accession_x0020__x0023_" DisplayName="Accession #">12345</Field>
+  <Field Type="Text" Name="Case_x0020_File_x0020__x0023_" DisplayName="Case File #">23456</Field>
+  <Field Type="Text" Name="IRMS_x0020__x0023_" DisplayName="IRMS #">34567</Field>
+  <Field Type="Text" Name="Related_x0020__x0023_" DisplayName="Related MCI #">45678</Field>
+  <Field Type="Text" Name="IDNum" DisplayName="Other ID #">56789</Field>
+  <Field Type="Number" Name="ObjectNum" DisplayName="# of Objects">2</Field>
+  <Field Type="Note" Name="Notes" DisplayName="Notes">New user-friendly approval forms are created.
+  </Field>
+  <Field Type="Note" Name="StaffNotes" DisplayName="Notes of Staff">
+    Please provide your feedback at Feedback. You can also see it on the home page.
+    Your feedback is very important to us.
+    During the test please create one or two projects at a time
+  </Field>
+  <Field Type="Lookup" Name="MCI_x0020_Contact" DisplayName="MCI Contact">contact1, contact2</Field>
+  <Field Type="Text" Name="Object_x0020_Artist" DisplayName="Object Artist/Manufacturer">The approver will receive 2
+    reminders with copy to MCI Admin.
+  </Field>
+  <Field Type="Text" Name="Object_x0020_Owner" DisplayName="Object Owner">OCIO</Field>
+  <Field Type="Note" Name="Cultural_x0020_Provenience" DisplayName="Geographic/Cultural Provenience">Your feedback is
+    very important to us.
+    During the test please create one or two projects at a time
+  </Field>
+  <Field Type="Text" Name="Textual_x0020_Date" DisplayName="Textual Date">Lorem ipsum dolor sit amet, consectetur
+    adipiscing elit
+  </Field>
+  <Field Type="Text" Name="Year" DisplayName="Year">2016</Field>
+  <Field Type="Text" Name="SampleMaterial" DisplayName="Sample/Material">Ut cursus maximus velit, id porttitor elit
+    hendrerit ut.
+  </Field>
+  <Field Type="Text" Name="Special_x0020_Equipment" DisplayName="Special Equipment">Ut porta enim non turpis viverra
+    tempus.
+  </Field>
+  <Field Type="Note" Name="Techniques" DisplayName="Materials/Techniques of Manufacture">Aliquam in libero placerat,
+    elementum purus sed, pretium eros. Duis in mauris ligula. Nam ultricies turpis purus, eget ornare ipsum sagittis
+    eu. Maecenas velit arcu, euismod eu justo id, malesuada dapibus augue. Quisque nibh eros, convallis a urna in,
+    aliquet euismod nisi.
+
+    Phasellus mattis interdum odio quis iaculis. In vestibulum fermentum dui, et imperdiet ligula elementum ac. Nam
+    ex lorem, feugiat in hendrerit eget, pellentesque sed mi. In massa massa, posuere at ipsum eu, mattis consequat
+    felis. Suspendisse venenatis vitae justo non lacinia. Ut ac nisl consectetur, mollis nunc lacinia, pharetra
+    lectus. Mauris euismod, felis et dictum gravida, sem orci feugiat elit, non sollicitudin arcu leo vulputate
+    odio. Quisque ornare maximus est, sit amet mollis dolor luctus in.
+  </Field>
+  <Field Type="Text" Name="Dimensions" DisplayName="Dimensions">11X8X23</Field>
+  <Field Type="DateTime" Name="RequestDate" DisplayName="Date of Request">8/30/2016</Field>
+  <Field Type="DateTime" Name="ApprovalDate" DisplayName="Date of Approval">11/8/2016</Field>
+  <Field Type="DateTime" Name="Deadline" DisplayName="Date of Deadline">11/24/2016</Field>
+  <Field Type="DateTime" Name="Date_x0020_Completed" DisplayName="Date Completed">11/30/2016</Field>
+  <Field Type="Text" Name="FiscalYear" DisplayName="Fiscal Year">2017</Field>
+  <Field Type="Text" Name="Object_x0020_Curator" DisplayName="Object Curator">sit amet mollis dolor luctus in</Field>
+  <Field Type="Text" Name="Object_x0020_Curator_x0020_Email" DisplayName="Object Curator Email">sit</Field>
+  <Field Type="Text" Name="Principal_x0020_Investigator" DisplayName="Principal Investigator">arcu leo vulputate
+    odio
+  </Field>
+  <Field Type="Text" Name="Principal_x0020_Investigator_x0020_E" DisplayName="Principal Investigator Email">arcu
+  </Field>
+  <Field Type="Text" Name="Collaborator" DisplayName="Collaborator">sem orci feugiat elit</Field>
+  <Field Type="Text" Name="Collaborator_x0020_E" DisplayName="Collaborator Email">sem</Field>
+  <Field Type="User" Name="Requestor" DisplayName="Requestor">lastname, firstname mi.</Field>
+  <Field Type="Text" Name="Requestor_x0020_Email" DisplayName="Requestor Email">requestorEmail@si.edu</Field>
+  <Field Type="Text" Name="Requesting_x0020_Unit" DisplayName="Requesting Unit">OCIO - Office of Chief Information
+    Officer
+  </Field>
+  <Field Type="Text" Name="Requestor_x0020_Phone" DisplayName="Requestor Phone">111-222-3333</Field>
+  <Field Type="Text" Name="Requestor_x0020_Address" DisplayName="Requestor Address">123 Someplace St.</Field>
+  <Field Type="Text" Name="RequestorCity" DisplayName="Requestor City">someCity</Field>
+  <Field Type="Text" Name="RequestorState" DisplayName="Requestor State">VA</Field>
+  <Field Type="Text" Name="RequestorZIP" DisplayName="Requestor ZIP">12345</Field>
+  <Field Type="Text" Name="AltEmail" DisplayName="Requestor Alternate Email">altEmail@email.com</Field>
+  <Field Type="Boolean" Name="OnBehalfOf" DisplayName="On Behalf Of">True</Field>
+  <Field Type="Text" Name="NonSIName" DisplayName="Non SI Name">testName</Field>
+  <Field Type="Text" Name="NonSIEmail" DisplayName="Non SI Email">nonSiEmail@email.com</Field>
+  <Field Type="Text" Name="NonSIPhone" DisplayName="Non SI Phone Number">111-222-3333</Field>
+  <Field Type="Text" Name="NonSIOrganization" DisplayName="Non SI Organization">nonSiEmail@email.co</Field>
+  <Field Type="Note" Name="NonSIAddress" DisplayName="Non SI Address">
+    <div class="ExternalClass88C6B0B19D464E32951EB92CB3862F10">
+      <p>1234 Someplace St. AA 12345</p>
+    </div>
+  </Field>
+  <Field Type="User" Name="Approving_x0020_Official_x0020_N" DisplayName="Approving Official Name">
+    i:0#.w|us\testOfficial
+  </Field>
+  <Field Type="Text" Name="Approving_x0020_Unit" DisplayName="Approving Unit">MCI - Museum Conservation Institute
+  </Field>
+  <Field Type="Text" Name="Approving_x0020_Official_x0020_E" DisplayName="Approving Official Email">testOfficial@email.com
+  </Field>
+  <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
+  <Field Type="Text" Name="folderholderemail" DisplayName="Folder Holder Email">testFolderHolder@email.com</Field>
+  <Field Type="Text" Name="FolderHolderPhone" DisplayName="Pholder Holder Phone">111-222-3333</Field>
+  <Field Type="Text" Name="KeywordType1" DisplayName="Keyword Type 1">type 1</Field>
+  <Field Type="Text" Name="KeywordType2" DisplayName="Keyword Type 2">type 2</Field>
+  <Field Type="Text" Name="KeywordType3" DisplayName="Keyword Type 3">type 3</Field>
+  <Field Type="Text" Name="Keyword1" DisplayName="Keyword 1">keyword 1</Field>
+  <Field Type="Text" Name="Keyword2" DisplayName="Keyword 2">keyword 2</Field>
+  <Field Type="Text" Name="Keyword3" DisplayName="Keyword 3">keyword 3</Field>
+  <Field Type="Text" Name="HC_x0020_Approver" DisplayName="HC Approver">last, first mi.</Field>
+  <Field Type="DateTime" Name="HC_x0020_Signature_x0020_Date" DisplayName="HC Signature Date">8/30/2016</Field>
+  <Field Type="Note" Name="HC_x0020_Comments" DisplayName="HC Comments">last, first (Approve) 8/31/2016 9:56 AM -
+    8/31/2016 10:02 AM (last, first) first, last is approving in testing for first, last
+  </Field>
+  <Field Type="Text" Name="HTS_x0020_Approver" DisplayName="HTS Approver">last, first</Field>
+  <Field Type="DateTime" Name="HTS_x0020_Signature_x0020_Date" DisplayName="HTS Signature Date">8/30/2016</Field>
+  <Field Type="Note" Name="HTS_x0020_Comments" DisplayName="HTS Comments">
+    <div class="ExternalClass8BD8DEC717564C3BB3305CE3142344D3">last, first (Approve) 8/30/2016 9:27 AM -
+      8/30/2016 9:45 AM (last, first)
+    </div>
+  </Field>
+  <Field Type="Text" Name="Deputy_x0020_Approver" DisplayName="Deputy Approver">last, first</Field>
+  <Field Type="DateTime" Name="Deputy_x0020_Signature_x0020_Date" DisplayName="Deputy Signature Date">8/31/2016
+  </Field>
+  <Field Type="Note" Name="Deputy_x0020_Comments" DisplayName="Deputy Comments">last, first (Approve) 8/30/2016 9:45
+    AM - 8/31/2016 9:56 AM (last, first) first is approving for first - first out of the office until September 6,
+    2016.
+  </Field>
+  <Field Type="Text" Name="Director_x0020_Approver" DisplayName="Director Approver">last, first</Field>
+  <Field Type="DateTime" Name="Director_x0020_Signature_x0020_Date" DisplayName="Director Signature Date">8/31/2016
+  </Field>
+  <Field Type="Note" Name="Director_x0020_Comments" DisplayName="Director Comments">last, first (Approve)
+    8/31/2016 9:56 AM - 8/31/2016 10:02 AM (last, first) last, first is approving in testing for Director
+    role of last, first.
+  </Field>
+  <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
+  <Field Type="Text" Name="Role1" DisplayName="Role (1)">aaa</Field>
+  <Field Type="Text" Name="Role2" DisplayName="Role (2)">bbb</Field>
+  <Field Type="Text" Name="Role3" DisplayName="Role (3)">ccc</Field>
+  <Field Type="Text" Name="Role4" DisplayName="Role (4)">ddd</Field>
+  <Field Type="Text" Name="Role5" DisplayName="Role (5)">eee</Field>
+  <Field Type="Text" Name="Role6" DisplayName="Role (6)">ffff</Field>
+  <Field Type="Text" Name="Role7" DisplayName="Role (7)">ggg</Field>
+  <Field Type="Text" Name="Role8" DisplayName="Role (8)">hhh</Field>
+  <Field Type="Lookup" Name="ProposedStaffing1" DisplayName="ProposedStaffing1">last, first</Field>
+  <Field Type="Lookup" Name="ProposedStaffing2" DisplayName="ProposedStaffing2">last, first</Field>
+  <Field Type="Lookup" Name="ProposedStaffing3" DisplayName="ProposedStaffing3">last, first</Field>
+  <Field Type="Lookup" Name="ProposedStaffing4" DisplayName="ProposedStaffing4">last, first</Field>
+  <Field Type="Lookup" Name="ProposedStaffing5" DisplayName="ProposedStaffing5">last, first</Field>
+  <Field Type="Lookup" Name="ProposedStaffing6" DisplayName="ProposedStaffing6">last, first</Field>
+  <Field Type="Lookup" Name="ProposedStaffing7" DisplayName="ProposedStaffing7">last, first</Field>
+  <Field Type="Lookup" Name="ProposedStaffing8" DisplayName="ProposedStaffing8">last, first</Field>
+</Fields>

@@ -706,6 +706,11 @@
                     ${header.CamelFedoraPid}
                 </simple>
             </setHeader>
+            <setHeader headerName="DeploymentCorrelationId">
+                <xpath resultType="java.lang.String" headerName="ManifestXML">
+                    //CameraDeploymentID
+                </xpath>
+            </setHeader>
             <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //CameraSiteName
@@ -771,6 +776,16 @@
             <setHeader headerName="SitePID">
                 <simple>
                     ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+            <setHeader headerName="SiteId">
+                <simple>
+                    ${header.DeploymentCorrelationId}
+                </simple>
+            </setHeader>
+            <setHeader headerName="SiteName">
+                <simple>
+                    ${header.CamelFedoraLabel}
                 </simple>
             </setHeader>
             <setHeader headerName="ImageCount">
@@ -1650,6 +1665,16 @@
                     ${header.CamelFedoraPid}
                 </simple>
             </setHeader>
+            <setHeader headerName="SubProjectId">
+                <simple>
+                    ${header.DeploymentCorrelationId}
+                </simple>
+            </setHeader>
+            <setHeader headerName="SubProjectName">
+                <simple>
+                    ${header.CamelFedoraLabel}
+                </simple>
+            </setHeader>
 
             <log message="${id}: Finished processing subproject."
                  loggingLevel="INFO"
@@ -1723,6 +1748,16 @@
             <setHeader headerName="ProjectPID">
                 <simple>
                     ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+            <setHeader headerName="ProjectId">
+                <simple>
+                    ${header.DeploymentCorrelationId}
+                </simple>
+            </setHeader>
+            <setHeader headerName="ProjectName">
+                <simple>
+                    ${header.CamelFedoraLabel}
                 </simple>
             </setHeader>
 
@@ -2025,9 +2060,23 @@
                 <completionPredicate>
                     <simple>${header.ValidationComplete} == 'true'</simple>
                 </completionPredicate>
-                <log message="${id}: ValidationERRORAggregationMessage:\nBody:\n${body}"
+
+                <choice>
+                    <when>
+                        <simple>${body.size} == 0</simple>
+
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}"
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
+
+                    </when>
+                    <otherwise>
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}\nValidation Errors:\n${body}"
                      loggingLevel="ERROR"
                      logName="{{si.ct.id}}"/>
+                    </otherwise>
+                </choice>
+
             </aggregate>
         </route>
 
