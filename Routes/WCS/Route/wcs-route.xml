@@ -86,6 +86,7 @@
 
     <bean id="unitOfWorkFactory" class="edu.si.services.beans.cameratrap.CameraTrapUnitOfWorkFactory"/>
 
+    <!-- errorHandlerRef="ctingestErrorHandler" -->
     <bean id="fusekiHttpHeaderFilterStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
         <property name="outFilter">
             <set>
@@ -96,6 +97,9 @@
         </property>
     </bean>
     <!-- errorHandlerRef="ctingestErrorHandler" -->
+    <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean" init-method="initIt" destroy-method="cleanUp"/>
+
+    <bean id="idsPushBean" class="edu.si.services.beans.edansidora.IdsPushBean"/>
 
     <camelContext id="WCSIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -115,7 +119,7 @@
         -->
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties"/>
+                             location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
 
         <!--
         <errorHandler id="wcsingestErrorHandler" type="DefaultErrorHandler">
@@ -134,7 +138,7 @@
             <exception>java.net.ConnectException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
                               maximumRedeliveries="200"
                               retryAttemptedLogLevel="WARN"/>
         </onException>
@@ -143,7 +147,7 @@
             <exception>java.io.FileNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.FNF.redeliveryDelay}}"
                               maximumRedeliveries="5"
                               retryAttemptedLogLevel="WARN"/>
         </onException>
@@ -152,7 +156,7 @@
             <exception>edu.si.services.fedorarepo.FedoraObjectNotFoundException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
-                              redeliveryDelay="1000"
+                              redeliveryDelay="{{si.ct.inflight.redeliveryDelay}}"
                               maximumRedeliveries="7"
                               retryAttemptedLogLevel="WARN"
                               retriesExhaustedLogLevel="WARN"
@@ -160,6 +164,21 @@
             <continued>
                 <constant>true</constant>
             </continued>
+        </onException>
+
+        <onException>
+            <exception>edu.si.services.beans.edansidora.EdanIdsException</exception>
+            <redeliveryPolicy useExponentialBackOff="true"
+                              backOffMultiplier="2"
+                              redeliveryDelay="{{si.ct.edanIds.redeliveryDelay}}"
+                              maximumRedeliveries="5"
+                              retryAttemptedLogLevel="WARN"/>
+            <continued>
+                <constant>true</constant>
+            </continued>
+            <log message="[${routeId}] :: EdanIds Error reported: ${exception.message}"
+                 loggingLevel="ERROR"
+                 logName="{{si.ct.id}}"/>
         </onException>
 
         <!--
@@ -175,7 +194,7 @@
         -->
 
         <route id="WCSStartProcessing">
-            <from uri="file:ProcessWCS?delay=9000&amp;moveFailed=Error-WCS&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{karaf.home}}/ProcessWCS?delay=9000&amp;moveFailed=Error-WCS&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting WCS processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -193,7 +212,7 @@
             <log message="${id}: Starting Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <to uri="extractor:extract?location=WCSData"/>
+            <to uri="extractor:extract?location={{karaf.home}}/WCSData"/>
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -219,10 +238,10 @@
                      logName="{{si.ct.id}}"/>
 
                 <!-- Validate against the XSD. -->
-                <to uri="validator:file:Input/schemas/Unified_WCSDeploymentManifest.xsd"/>
+                <to uri="validator:file:{{karaf.home}}/Input/schemas/Unified_WCSDeploymentManifest.xsd"/>
 
                 <!-- Schematron validation. -->
-                <to uri="schematron:file:Input/schemas/Unified_WCSDeploymentManifest.sch"/>
+                <to uri="schematron:file:{{karaf.home}}/Input/schemas/Unified_WCSDeploymentManifest.sch"/>
                 <log message="${id}: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
@@ -759,7 +778,7 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="xslt:file:Input/xslt/ManifestDeployment.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestDeployment.xsl?saxon=true"/>
             <to uri="fedora:addDatastream?name=FGDC&amp;type=text/xml&amp;group=M&amp;dsLabel=FGDC%20Record"/>
 
             <log message="${id}: Finished FGDC processing."
@@ -821,6 +840,12 @@
 
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
 
+            <log message="PERFORMING IDS PUSH idsPushBean"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <to uri="bean:idsPushBean?method=createAndPush"/>
+
             <!-- Researcher is required for WCS. -->
             <to uri="direct:addResearcherObservationResource"/>
 
@@ -836,7 +861,7 @@
             <to uri="direct:addImageObservationResource"/>
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
-            <to uri="velocity:file:Input/templates/CTSiteTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTSiteTemplate.vsl"/>
             <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <log message="${id}: Finished resource processing."
@@ -914,7 +939,7 @@
             <!-- <to uri="direct:createArchivalImage" /> -->
             <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
-            <to uri="velocity:file:Input/templates/CTImageResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
@@ -952,6 +977,8 @@
                 </otherwise>
             </choice>
 
+            <to uri="direct:addImageToEdanAndIds"/>
+
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -979,7 +1006,7 @@
             <log message="${id}: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="xslt:file:Input/xslt/ResearcherObservation.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ResearcherObservation.xsl"/>
             <log message="${id}: Researcher Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -993,7 +1020,7 @@
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"/>
 
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
@@ -1003,7 +1030,7 @@
                 </simple>
             </setBody>
 
-            <to uri="xslt:file:Input/xslt/ManifestResearcherObservation.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestResearcherObservation.xsl?saxon=true"/>
 
             <log message="${id}: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
@@ -1053,7 +1080,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/VolunteerObservation.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/VolunteerObservation.xsl"/>
             <log message="${id}: Volunteer Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1067,7 +1094,7 @@
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"/>
 
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl" />
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl" />
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
@@ -1076,7 +1103,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestVolunteerObservation.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestVolunteerObservation.xsl?saxon=true"/>
             <log message="${id}: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1119,7 +1146,7 @@
             <log message="${id}: Aggregation: ${header.PIDAggregation}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="xslt:file:Input/xslt/ImageObservation.xsl"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ImageObservation.xsl"/>
             <log message="${id}: Image Observations - \n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1133,7 +1160,7 @@
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"/>
 
             <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
-            <to uri="velocity:file:Input/templates/CTDatasetResourceTemplate.vsl"/>
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
@@ -1142,7 +1169,7 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestImageObservation.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestImageObservation.xsl?saxon=true"/>
             <log message="${id}: FGDC XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1228,13 +1255,72 @@
                     ${header.ManifestXML}
                 </simple>
             </setBody>
-            <to uri="xslt:file:Input/xslt/ManifestImage.xsl?saxon=true"/>
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestImage.xsl?saxon=true"/>
             <log message="${id}: MODS XML -\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id}: Finished processing MODS."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="WCSAddImageToEdanAndIds">
+            <from uri="direct:addImageToEdanAndIds"/>
+            <log message="${id}: Started processing EDAN and IDS..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <choice>
+                <when>
+                    <xpath headerName="ManifestXML">
+                        <!--//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = "Homo sapiens"-->
+                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.edanids.speciesScientificName.filter'), text())] != ''
+                    </xpath>
+                    <log message="NO POST TO EDAN, exclude this image ${header.imageid}"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                    <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
+                </when>
+                <otherwise>
+                    <setHeader headerName="extraJson">
+                        <simple>{{si.ct.uscbi.extra_property}}</simple>
+                    </setHeader>
+
+                    <setBody>
+                        <simple>
+                            ${header.ManifestXML}
+                        </simple>
+                    </setBody>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true"/>
+
+                    <setHeader headerName="edanJson">
+                        <simple>
+                            ${body}
+                        </simple>
+                    </setHeader>
+
+                    <log message="POST THIS TO EDAN: ${headers.edanJson}"
+                         loggingLevel="DEBUG"
+                         logName="{{si.ct.id}}"/>
+
+                    <setHeader headerName="edanUri">
+                        <groovy>
+                            "content=" + URLEncoder.encode(request.headers.edanJson) + ""
+                        </groovy>
+                    </setHeader>
+
+                    <log message="service: {{si.ct.uscbi.edanService}} uri: ${headers.edanUri} "
+                         loggingLevel="DEBUG"
+                         logName="edanidslog"/>
+
+                    <to uri="bean:edanApiBean?method=sendRequest"/>
+
+                </otherwise>
+            </choice>
+
+            <log message="${id}: Finished processing EDAN and IDS."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1553,7 +1639,7 @@
                     <!-- Create WCS CT plot and add it as a sub-concept of the sub-project -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
-                    <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent WCS CT sub-project to the child WCS CT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -1563,7 +1649,7 @@
                             ${header.ManifestXML}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:Input/xslt/ManifestPlot.xsl?saxon=true"/>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestPlot.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-CTPlot%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -1634,7 +1720,7 @@
                     <!-- Create WCS CT sub-project and add it as a sub-concept of the project. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the sub-project -->
-                    <to uri="velocity:file:Input/templates/CTPlotTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent WCS CT project to the child WCS CT sub-project -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -1644,7 +1730,7 @@
                             ${header.ManifestXML}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:Input/xslt/ManifestSubproject.xsl?saxon=true"/>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestSubproject.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=FGDC-Research&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-Research%20Record&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -1719,7 +1805,7 @@
                     <!-- Create WCS CT project and add it as a sub-concept of the Camera Trap root object. -->
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project. -->
-                    <to uri="velocity:file:Input/templates/CTProjectTemplate.vsl"/>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
                     <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
                     <!-- Add Relation from parent WCS CT root object to the child WCS CT project. -->
                     <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -1729,7 +1815,7 @@
                             ${header.ManifestXML}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:Input/xslt/ManifestProject.xsl?saxon=true"/>
+                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestProject.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF&amp;versionable=true"/>
                 </when>
                 <otherwise>
@@ -2081,7 +2167,7 @@
         </route>
 
         <route id="WCSInFlightConceptStatusPolling">
-            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period=120000"/>
+            <from uri="timer://checkConceptFromRI?fixedRate=true&amp;period={{si.ct.checkConceptFromRI.period}}"/>
             <log message="${id}: InFlightConceptStatusPolling: Starting the In-Flight Concept process status check..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>

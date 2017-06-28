@@ -27,10 +27,8 @@
   ~ those of third-party libraries, please see the product release notes.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
     <parent>
         <groupId>edu.si.services</groupId>
         <artifactId>beans</artifactId>
@@ -41,19 +39,45 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.si.services.beans</groupId>
-    <artifactId>CameraTrap</artifactId>
+    <artifactId>edansidora</artifactId>
     <packaging>bundle</packaging>
     <version>1.0</version>
 
-    <name>SI :: Services :: Beans :: CameraTrap</name>
+    <name>SI :: Services :: Beans :: EDAN and IDS Camera Trap</name>
+
+    <properties>
+        <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
+    </properties>
 
     <dependencies>
+        <!-- must be first to avoid library conflict, Only needed during testing so scope is test -->
+        <!--<dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+        </dependency>-->
+
+        <!--  osgi -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.compendium</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!--<dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-blueprint</artifactId>
+            <scope>provided</scope>
+        </dependency>-->
 
         <!-- Logging -->
         <dependency>
@@ -62,19 +86,18 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-
         <!-- Testing -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test-blueprint</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>CameraTrap</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
@@ -156,36 +179,77 @@
             <artifactId>camel-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-test-blueprint</artifactId>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-aws</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>xmlunit</groupId>
             <artifactId>xmlunit</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core-asl</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Test Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- edansidora -->
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-core</artifactId>
+            <version>3.1.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-frontend-jaxrs</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore-osgi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient-osgi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -198,7 +262,10 @@
                 <directory>src/test/resources</directory>
             </testResource>
 
-            <!-- add the Camera Trap and WCS Routes directory as resources -->
+            <testResource>
+                <directory>Karaf-config</directory>
+                <!--<targetPath>${basedir}/target/test-classes/etc</targetPath>-->
+            </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
                 <targetPath>${basedir}/target/test-classes/etc</targetPath>
@@ -219,29 +286,46 @@
         </testResources>
 
         <plugins>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
 
-            <!-- To generate the MANIFEST-FILE of the bundle. -->
+            <!-- to generate the MANIFEST-FILE of the bundle -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>edu.si.services.beans.cameratrap</Bundle-SymbolicName>
-                        <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
-                        <Embed-Transitive>true</Embed-Transitive>
-                        <Export-Package>edu.si.services.beans.cameratrap</Export-Package>
+                        <Bundle-SymbolicName>edu.si.services.beans.edansidora</Bundle-SymbolicName>
+                        <!--<Private-Package>edu.si.services.*</Private-Package>
+                        <Import-Package>*</Import-Package>-->
+
+                        <!--<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>-->
+                        <!--<Embed-Transitive>true</Embed-Transitive>-->
+                        <!--<Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>-->
+                        <Export-Package>edu.si.services.beans.edansidora</Export-Package>
+                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
+
+                        <!--<Bundle-Description>${project.description}</Bundle-Description>
+                        <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
+                        <Private-Package>edu.si.services.beans.edansidora</Private-Package>
+                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>-->
                     </instructions>
+                </configuration>
+            </plugin>
+
+            <!-- to run the example using mvn camel:run -->
+            <plugin>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-maven-plugin</artifactId>
+                <configuration>
+                    <useBlueprint>true</useBlueprint>
                 </configuration>
             </plugin>
 

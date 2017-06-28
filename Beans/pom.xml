@@ -50,6 +50,7 @@
         <module>CameraTrap</module>
         <module>Excel</module>
         <module>VelocityToolsHandler</module>
+        <module>Edan-Sidora</module>
     </modules>
 
 </project>

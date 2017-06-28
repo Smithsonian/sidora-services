@@ -120,6 +120,13 @@
             <version>1.0</version>
         </dependency>
 
+        <!-- Edan-Sidora -->
+        <!--<dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>edansidora</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+
     </dependencies>
 
     <build>
