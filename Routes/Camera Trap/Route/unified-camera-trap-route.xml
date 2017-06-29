@@ -110,6 +110,8 @@
         </property>
     </bean>
 
+    <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
     <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean" init-method="initIt" destroy-method="cleanUp"/>
 
@@ -134,7 +136,7 @@
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
                              location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
-        <!-- 
+        <!--
         <dataFormats>
           <base64 lineSeparator="&#10;" id="base64withNewLine" />
           <base64 lineLength="64" id="base64withLineLength64" />
@@ -148,6 +150,8 @@
                               useExponentialBackOff="true"/>
         </errorHandler>
         -->
+
+        <!-- This is not a globally scoped errorHandler -->
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
@@ -214,7 +218,7 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:{{karaf.home}}/ProcessUnified?delay=9000&amp;moveFailed=Error_UnifiedCameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{karaf.home}}/ProcessUnified?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_UnifiedCameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -236,6 +240,12 @@
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="deploymentDataDir">
+                <simple>
+                    ${header.CamelFileAbsolutePath}
+                </simple>
+            </setHeader>
             <log message="${id}: AbsolutePath - ${header.CamelFileAbsolutePath}"
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
@@ -258,10 +268,10 @@
                      logName="{{si.ct.id}}"/>
 
                 <!-- Validate against the XSD. -->
-                <to uri="validator:file:{{karaf.home}}/Input/schemas/Unified_eMammalDeploymentManifest.xsd"/>
+                <to uri="validator:file:{{karaf.home}}/Input/schemas/Unified_eMammalDeploymentManifest.xsd" id="xsdValidation"/>
 
                 <!-- Schematron validation. -->
-                <to uri="schematron:file:{{karaf.home}}/Input/schemas/Unified_eMammalDeploymentManifest.sch"/>
+                <to uri="schematron:file:{{karaf.home}}/Input/schemas/Unified_eMammalDeploymentManifest.sch" id="schematronValidation"/>
                 <log message="${id}: Schematron Validation Status - ${header.CamelSchematronValidationStatus}"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
@@ -945,7 +955,7 @@
             <!--</multicast>-->
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-            <to uri="direct:addFITSDataStream"/>       
+            <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
 
             <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in

@@ -96,6 +96,9 @@
             </set>
         </property>
     </bean>
+
+    <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
+
     <!-- errorHandlerRef="ctingestErrorHandler" -->
     <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean" init-method="initIt" destroy-method="cleanUp"/>
 
@@ -130,6 +133,7 @@
         </errorHandler>
         -->
 
+        <!-- This is not a globally scoped errorHandler -->
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
@@ -194,7 +198,7 @@
         -->
 
         <route id="WCSStartProcessing">
-            <from uri="file:{{karaf.home}}/ProcessWCS?delay=9000&amp;moveFailed=Error-WCS&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{karaf.home}}/ProcessWCS?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error-WCS/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting WCS processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -216,6 +220,12 @@
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="deploymentDataDir">
+                <simple>
+                    ${header.CamelFileAbsolutePath}
+                </simple>
+            </setHeader>
             <log message="${id}: AbsolutePath - ${header.CamelFileAbsolutePath}"
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
