@@ -31,6 +31,7 @@ import edu.si.services.fedorarepo.FedoraComponent;
 import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.CamelContext;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
+import org.apache.camel.util.KeyValueHolder;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -39,9 +40,7 @@ import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.junit.Before;
 
 import java.io.File;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author jbirkhimer
@@ -52,6 +51,7 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     private static Configuration config = null;
     private String defaultTestProperties = "src/test/resources/test.properties";
     private String propertiesPersistentId = "edu.si.sidora.karaf";
+    private static AmazonS3ClientMock amazonS3Client;
 
     protected Boolean isUseActualFedoraServer() {
         return useRealFedoraServer;
@@ -63,6 +63,10 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
 
     protected static Configuration getConfig() {
         return config;
+    }
+
+    protected static AmazonS3ClientMock getAmazonS3Client() {
+        return amazonS3Client;
     }
 
     protected void setDefaultTestProperties(String defaultTestProperties) {
@@ -109,6 +113,20 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     }
 
     @Override
+    protected void addServicesOnStartup(Map<String, KeyValueHolder<Object, Dictionary>> services) {
+        services.put("amazonS3Client", asService(amazonS3Client, null));
+    }
+
+//    @Override
+//    protected JndiRegistry createRegistry() throws Exception {
+//        JndiRegistry registry = super.createRegistry();
+//
+//        registry.bind("amazonS3Client", amazonS3Client);
+//
+//        return registry;
+//    }
+
+    @Override
     protected String[] loadConfigAdminConfigurationFile() {
         return new String[]{defaultTestProperties, "edu.si.sidora.karaf"};
     }
@@ -144,6 +162,9 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
         }
 
         builder.save();
+
+        //Initialize the Mock AmazonS3Client
+        amazonS3Client = new AmazonS3ClientMock(config.getString("si.ct.uscbi.aws.accessKey"), config.getString("si.ct.uscbi.aws.secretKey"));
 
         super.setUp();
     }

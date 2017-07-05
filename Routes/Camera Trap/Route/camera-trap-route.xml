@@ -195,7 +195,7 @@
         -->
 
         <route id="CameraTrapStartProcessing">
-            <from uri="file:{{karaf.home}}/Process?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_CameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{si.ct.scbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_CameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -213,7 +213,7 @@
             <log message="${id}: Starting Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <to uri="extractor:extract?location={{karaf.home}}/CameraTrapData"/>
+            <to uri="extractor:extract?location={{si.ct.scbi.data.dir.path}}"/>
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>

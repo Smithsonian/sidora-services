@@ -218,7 +218,7 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:{{karaf.home}}/ProcessUnified?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_UnifiedCameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_UnifiedCameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -236,7 +236,7 @@
             <log message="${id}: Starting Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <to uri="extractor:extract?location={{karaf.home}}/UnifiedCameraTrapData"/>
+            <to uri="extractor:extract?location={{si.ct.uscbi.data.dir.path}}"/>
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
