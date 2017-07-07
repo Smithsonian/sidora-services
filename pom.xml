@@ -45,6 +45,7 @@
         <module>KAR</module>
         <module>Sidora-Batch</module>
         <module>Sidora-MCI</module>
+        <module>Sidora-Test-Utils</module>
     </modules>
 
     <properties>
@@ -103,6 +104,7 @@
         <karaf.version>3.0.7</karaf.version>
         <karaf3-version>3.0.2</karaf3-version>
         <log4j-version>1.2.17</log4j-version>
+        <log4j2-version>2.8.2</log4j2-version>
         <!-- problems by upgrading to maven-bundle-plugin 2.4.0 -->
         <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
         <maven-bundle-plugin.version>3.0.1</maven-bundle-plugin.version> <!-- Servicemix version -->
@@ -224,6 +226,21 @@
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
                 <version>${log4j-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j2-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j2-version}</version>
             </dependency>
             <dependency>
                 <groupId>net.coobird</groupId>

@@ -64,6 +64,8 @@ public class DeploymentPackageProcessFilter<T> implements GenericFileFilter<T> {
      */
     public boolean accept(GenericFile<T> file) {
 
+        log.debug("DeploymentPackageProcessFilter processDirPath: {}", Paths.get(processDirPath).toAbsolutePath());
+
         boolean isAcceptable = false;
         long directoryFileCount = 0;
 
@@ -74,7 +76,7 @@ public class DeploymentPackageProcessFilter<T> implements GenericFileFilter<T> {
             throw new IllegalArgumentException("The directory file count threshold is required for filter to function");
         }
 
-        try (Stream<Path> files = Files.list(Paths.get(processDirPath))) {
+        try (Stream<Path> files = Files.list(Paths.get(processDirPath).toAbsolutePath())) {
             directoryFileCount = files.count();
 
             if (directoryFileCount < processDirThreshold){
