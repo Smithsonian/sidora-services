@@ -30,6 +30,8 @@ package edu.si.services.camel.extractor;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultProducer;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import org.rauschig.jarchivelib.ArchiveEntry;
 import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
@@ -65,19 +67,17 @@ public class ExtractorProducer extends DefaultProducer
         Message in = exchange.getIn();
         File inBody = in.getBody(File.class);
 
-        //Create a string array of filename and extension(s)
-        String[] split = inBody.getName().split("\\.");
-        if (split.length < 2)
+        LOG.debug("In Body filename: {}", inBody);
+
+        if (StringUtils.isEmpty(FilenameUtils.getExtension(String.valueOf(inBody))))
         {   errorMsg = new StringBuilder();
             errorMsg.append("Improperly formatted file. No, file extension found for " + inBody.getName());
             LOG.error(errorMsg.toString());
             throw new ExtractorException(errorMsg.toString());
         }
 
-        LOG.debug("inBody archive file name and extension(s): {}", split);
-
         //Set location to extract to
-        File cameraTrapDataOutputDir = new File(this.endpoint.getLocation(), split[0]);
+        File cameraTrapDataOutputDir = new File(this.endpoint.getLocation(), FilenameUtils.getBaseName(String.valueOf(inBody)));
 
         //The ArchiveFactory can detect archive types based on file extensions and hand you the correct Archiver.
         Archiver archiver = ArchiverFactory.createArchiver(inBody);
@@ -128,6 +128,8 @@ public class ExtractorProducer extends DefaultProducer
         headers.put("CamelFileAbsolutePath", cameraTrapDataOutputDir.getAbsolutePath());
         headers.put("CamelFileAbsolute", false);
         headers.put("CamelFileParent", parent);
+
+        LOG.debug("Headers: {}", headers);
 
         exchange.getOut().setBody(cameraTrapDataOutputDir, File.class);
 
