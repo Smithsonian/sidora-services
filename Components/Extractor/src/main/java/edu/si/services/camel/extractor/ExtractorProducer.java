@@ -71,7 +71,7 @@ public class ExtractorProducer extends DefaultProducer
         String archiveFileExt = FilenameUtils.getExtension(archiveFile.getName());
         LOG.debug("Found archive file baseName={}, ext= {}", archiveFileBaseName, archiveFileExt);
 
-        if (archiveFileExt == null && archiveFileExt.isEmpty())
+        if (archiveFileExt == null || archiveFileExt.isEmpty())
         {   errorMsg = new StringBuilder();
             errorMsg.append("Improperly formatted file. No, file extension found for " + archiveFile.getName());
             LOG.error(errorMsg.toString());
