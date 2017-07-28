@@ -225,8 +225,8 @@ public class ExtractorComponentTest extends CamelTestSupport
             public void configure()
             {
                 from("direct:start")
-                        .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
-                        .to("extractor:extract?location=target/TestCameraTrapData")
+                        .to("log:edu.si.ctingest?level=DEBUG&showAll=true&multiline=true&maxChars=100000")
+                        .to("extractor:extract?location={{target.dir}}{{file.separator}}TestCameraTrapData")
                         .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
                         .to("mock:result");
             }
@@ -242,14 +242,9 @@ public class ExtractorComponentTest extends CamelTestSupport
     }
 
     @AfterClass
-    public static void afterClass()
-    {
+    public static void afterClass() throws IOException {
         if (DELETE_AFTER_TEST) {
-            try {
-                FileUtils.deleteDirectory(new File("TestCameraTrapData"));
-            } catch (IOException ex) {
-                LOG.error(null, ex);
-            }
+            FileUtils.deleteDirectory(new File("TestCameraTrapData"));
         }
     }
 }
