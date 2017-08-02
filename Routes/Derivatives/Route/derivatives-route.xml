@@ -209,8 +209,6 @@
                 </simple>
             </setHeader>
 
-
-
             <!-- Get the Content Models for the FDO and put them on a list. -->
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String" charset="utf-8"/>
@@ -386,6 +384,20 @@
                     </multicast>
                 </when>
 
+                <when> <!-- If the image is a NEF? Add a JPG datastream and thumbnail for the image to the FDO. -->
+                    <simple>
+                        ${header.dsMIME} == 'image/x-nikon-nef'
+                    </simple>
+                    <log message="${id} Derivatives: Found NEF (Nikon RAW)."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                    <multicast>
+                        <to uri="direct://processDerivativesNEFImage"/>
+                        <to uri="direct://processDerivativesFITS"/>
+                        <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
+                    </multicast>
+                </when>
+
                 <otherwise>
                     <!-- If the image is some other MIME type, just log a warning? -->
                     <log message="${id} Derivatives: Unsupported image type found. MIME: ${headers.dsMIME}"
@@ -411,6 +423,62 @@
             </choice>
 
             <log message="${id} Derivatives: Finished Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesProcessNEFImage">
+            <from uri="direct:processDerivativesNEFImage"/>
+            <log message="${id} Derivatives: Starting NEF (Nikon RAW) image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <recipientList>
+                <simple>
+                    <!-- exec:convert?args= - jpg:- -->
+                    <!--exec:convert?args= - jpg:${header.CamelFileNameProduced}.jpg-->
+                    exec:/opt/sidora/fits/tools/exiftool/perl/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg
+                </simple>
+            </recipientList>
+            <choice>
+                <when> <!-- If the conversion succeeded? Add a display datastream for the image to the FDO. -->
+                    <simple>
+                        ${headers.CamelExecExitValue} == 0
+                    </simple>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
+                    <!-- Also add a thumbnail from the JPEG since TIFF is not supported. -->
+                    <to uri="direct:processDerivativesThumbnailator"/>
+
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
+                    <recipientList>
+                        <simple>
+                            exec:rm?args=-f ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </recipientList>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.jpg"
+                                 loggingLevel="WARN"/>
+                            <!-- We also want to proactively tell monitoring -->
+                        </when>
+                    </choice>
+                </when>
+                <otherwise>
+                    <log message="${id} Derivatives: Unable to convert NEF (Nikon RAW) to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} Derivatives: Finished TIFF Image processing."
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
         </route>
