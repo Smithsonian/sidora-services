@@ -437,7 +437,7 @@
                 <simple>
                     <!-- exec:convert?args= - jpg:- -->
                     <!--exec:convert?args= - jpg:${header.CamelFileNameProduced}.jpg-->
-                    exec:/opt/sidora/fits/tools/exiftool/perl/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg
+                    exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -b -JpgFromRaw ${header.CamelFileNameProduced}
                 </simple>
             </recipientList>
             <choice>
@@ -445,12 +445,7 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
-                    <setBody>
-                        <simple>
-                            ${header.CamelFileNameProduced}.jpg
-                        </simple>
-                    </setBody>
-                    <to uri="reader:file"/>
+                    <to uri="file:?fileName=${header.CamelFileNameProduced}.jpg"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
                     <!-- Also add a thumbnail from the JPEG since TIFF is not supported. -->
                     <to uri="direct:processDerivativesThumbnailator"/>
