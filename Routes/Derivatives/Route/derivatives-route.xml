@@ -453,7 +453,7 @@
                     <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
                     <recipientList>
                         <simple>
-                            exec:rm?args=-f ${header.CamelFileNameProduced}.jpg
+                            exec:rm?args=-f ${header.CamelFileNameProduced}
                         </simple>
                     </recipientList>
                     <choice>
