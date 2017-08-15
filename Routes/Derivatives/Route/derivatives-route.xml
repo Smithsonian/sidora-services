@@ -30,7 +30,9 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
-           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
+           xmlns:camel="http://camel.apache.org/schema/blueprint"
+           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd">
 
     <!-- <osgi:reference id="activemq" interface="org.apache.camel.Component"/> -->
 
@@ -209,8 +211,6 @@
                 </simple>
             </setHeader>
 
-
-
             <!-- Get the Content Models for the FDO and put them on a list. -->
             <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
             <convertBodyTo type="java.lang.String" charset="utf-8"/>
@@ -328,24 +328,26 @@
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
-            <choice> <!-- Filter content by image format. -->
-
-                <when> <!-- If the image is a JPEG? Add an archival JPEG2000 and a thumbnail to the FDO. -->
+            <choice>
+                <description>Filter content by image format.</description>
+                <when>
+                    <description>If the image is a JPEG? Add an archival JPEG2000 and a thumbnail to the FDO.</description>
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
                     <log message="${id} Derivatives: Found JPEG."
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
-                    <!-- Add a thumbnail from the JPEG. -->
                     <multicast>
+                        <description>Add a thumbnail from the JPEG.</description>
                         <to uri="direct://processDerivativesThumbnailator"/>
                         <to uri="direct://processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
 
-                <when> <!-- If the image is a TIFF? Add a JPG datastream and thumbnail for the image to the FDO. -->
+                <when>
+                    <description> If the image is a TIFF? Add a JPG datastream and thumbnail for the image to the FDO.</description>
                     <simple>
                         ${header.dsMIME} == 'image/tiff' || ${header.dsMIME} == 'image/tif'
                     </simple>
@@ -359,7 +361,8 @@
                     </multicast>
                 </when>
 
-                <when> <!-- If the image is a JPEG2000? Add a JPG datastream and thumbnail to the FDO. -->
+                <when>
+                    <description>If the image is a JPEG2000? Add a JPG datastream and thumbnail to the FDO.</description>
                     <simple>
                         ${header.dsMIME} == 'image/jp2'
                     </simple>
@@ -372,7 +375,8 @@
                     </multicast>
                 </when>
 
-                <when> <!-- If the image is a PNG, GIF, BMP? Add a JPG datastream and thumbnail for the image to the FDO. -->
+                <when>
+                    <description>If the image is a PNG, GIF, BMP? Add a JPG datastream and thumbnail for the image to the FDO.</description>
                     <simple>
                         ${header.dsMIME} == 'image/png' || ${header.dsMIME} == 'image/gif' || ${header.dsMIME} == 'image/bmp'
                     </simple>
@@ -386,19 +390,47 @@
                     </multicast>
                 </when>
 
+                <when>
+                    <description>If the image is a NEF? Add a JPG datastream and thumbnail for the image to the FDO.</description>
+                    <simple>
+                        ${header.dsMIME} == 'image/x-nikon-nef'
+                    </simple>
+                    <log message="${id} Derivatives: Found NEF (Nikon RAW)."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                    <multicast>
+                        <to uri="direct://processDerivativesNEFImage"/>
+                        <to uri="direct://processDerivativesFITS"/>
+                        <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
+                    </multicast>
+                </when>
+
+                <when>
+                    <description>If the image is a DNG? Add a JPG datastream and thumbnail for the image to the FDO.</description>
+                    <simple>
+                        ${header.dsMIME} == 'image/x-adobe-dng'
+                    </simple>
+                    <log message="${id} Derivatives: Found DNG (Camera RAW)."
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                    <multicast>
+                        <to uri="direct://processDerivativesDNGImage"/>
+                        <to uri="direct://processDerivativesFITS"/>
+                        <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
+                    </multicast>
+                </when>
+
                 <otherwise>
-                    <!-- If the image is some other MIME type, just log a warning? -->
+                    <description>If the image is some other MIME type, just log a warning?</description>
                     <log message="${id} Derivatives: Unsupported image type found. MIME: ${headers.dsMIME}"
                          loggingLevel="WARN"/>
                 </otherwise>
 
             </choice>
 
-            <recipientList> <!-- Delete the temporary file. Note: This approach is Unix specific. -->
-                <simple>
-                    exec:rm?args=-f ${header.CamelFileNameProduced}
-                </simple>
-            </recipientList>
+            <!-- Delete the temporary file. Note: This approach is Unix specific. -->
+            <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}"/>
+
             <choice>
                 <when>
                     <simple>
@@ -406,11 +438,105 @@
                     </simple>
                     <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}"
                          loggingLevel="WARN"/>
-                    <!-- We also want to proactively tell monitoring -->
                 </when>
             </choice>
 
             <log message="${id} Derivatives: Finished Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesProcessDNGImage">
+            <from uri="direct:processDerivativesDNGImage"/>
+            <log message="${id} Derivatives: Starting DNG image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Create a JPEG from DNG image -->
+            <toD uri="exec:convert?args= - jpg:${header.CamelFileNameProduced}.jpg"/>
+
+            <choice>
+                <description>If the conversion succeeded? Add a display datastream for the image to the FDO.</description>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} == 0
+                    </simple>
+                    <setBody>
+                        <simple>
+                            ${header.CamelFileNameProduced}.jpg
+                        </simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
+
+                    <!-- Also add a thumbnail from the JPEG since DNG is not supported. -->
+                    <to uri="direct:processDerivativesThumbnailator"/>
+
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
+                    <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}.jpg"/>
+
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.jpg"
+                                 loggingLevel="WARN"/>
+                        </when>
+                    </choice>
+                </when>
+                <otherwise>
+                    <log message="${id} Derivatives: Unable to convert DNG to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} Derivatives: Finished DNG Image processing."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesProcessNEFImage">
+            <from uri="direct:processDerivativesNEFImage"/>
+            <log message="${id} Derivatives: Starting NEF (Nikon RAW) image processing ..."
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
+            <!-- Create a JPEG from NEF (Nikon RAW) image -->
+            <toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>
+
+            <choice>
+                <description>If the conversion succeeded? Add a display datastream for the image to the FDO.</description>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} == 0
+                    </simple>
+                    <to uri="file:?fileName=${header.CamelFileNameProduced}.jpg"/>
+                    <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
+
+                    <!-- Also add a thumbnail from the JPEG since TIFF is not supported. -->
+                    <to uri="direct:processDerivativesThumbnailator"/>
+
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
+                    <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}"/>
+
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}.jpg"
+                                 loggingLevel="WARN"/>
+                        </when>
+                    </choice>
+                </when>
+                <otherwise>
+                    <log message="${id} Derivatives: Unable to convert NEF (Nikon RAW) to JPG. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id} Derivatives: Finished NEF (Nikon RAW) Image processing."
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
         </route>
@@ -428,7 +554,7 @@
                 </simple>
             </recipientList>
             <choice>
-                <when> <!-- If the conversion succeeded? Add a display datastream for the image to the FDO. -->
+                <when>
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
