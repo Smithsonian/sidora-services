@@ -30,7 +30,9 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
-           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
+           xmlns:camel="http://camel.apache.org/schema/blueprint"
+           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd">
 
     <!-- <osgi:reference id="activemq" interface="org.apache.camel.Component"/> -->
 
@@ -426,7 +428,7 @@
 
             </choice>
 
-            <description>Delete the temporary file. Note: This approach is Unix specific.</description>
+            <!-- Delete the temporary file. Note: This approach is Unix specific. -->
             <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}"/>
 
             <choice>
@@ -450,7 +452,7 @@
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
-            <description>Create a JPEG from DNG image</description>
+            <!-- Create a JPEG from DNG image -->
             <toD uri="exec:convert?args= - jpg:${header.CamelFileNameProduced}.jpg"/>
 
             <choice>
@@ -467,10 +469,10 @@
                     <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
 
-                    <description>Also add a thumbnail from the JPEG since DNG is not supported.</description>
+                    <!-- Also add a thumbnail from the JPEG since DNG is not supported. -->
                     <to uri="direct:processDerivativesThumbnailator"/>
 
-                    <description>Delete the temporary JPG conversion file. Note: This approach is Unix specific.</description>
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
                     <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}.jpg"/>
 
                     <choice>
@@ -500,7 +502,7 @@
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
-            <description>Create a JPEG from NEF (Nikon RAW) image</description>
+            <!-- Create a JPEG from NEF (Nikon RAW) image -->
             <toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>
 
             <choice>
@@ -512,10 +514,10 @@
                     <to uri="file:?fileName=${header.CamelFileNameProduced}.jpg"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
 
-                    <description>Also add a thumbnail from the JPEG since TIFF is not supported.</description>
+                    <!-- Also add a thumbnail from the JPEG since TIFF is not supported. -->
                     <to uri="direct:processDerivativesThumbnailator"/>
 
-                    <description>Delete the temporary JPG conversion file. Note: This approach is Unix specific.</description>
+                    <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
                     <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}"/>
 
                     <choice>
