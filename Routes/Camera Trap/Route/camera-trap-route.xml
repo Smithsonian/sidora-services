@@ -94,8 +94,6 @@
         </property>
     </bean>
 
-    <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
-
     <!-- errorHandlerRef="ctingestErrorHandler" -->
     <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean" init-method="initIt" destroy-method="cleanUp"/>
 
@@ -129,8 +127,6 @@
                               useExponentialBackOff="true"/>
         </errorHandler>
         -->
-
-        <!-- This is not a globally scoped errorHandler -->
         <errorHandler id="noErrorHandler" type="NoErrorHandler" />
 
         <routeBuilder ref="cameraTrapRoutes"/>
@@ -195,7 +191,7 @@
         -->
 
         <route id="CameraTrapStartProcessing">
-            <from uri="file:{{si.ct.scbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_CameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{karaf.home}}/Process?delay=9000&amp;moveFailed=Error_CameraTrap&amp;move=Done&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -213,16 +209,10 @@
             <log message="${id}: Starting Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <to uri="extractor:extract?location={{si.ct.scbi.data.dir.path}}"/>
+            <to uri="extractor:extract?location={{karaf.home}}/CameraTrapData"/>
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-
-            <setHeader headerName="deploymentDataDir">
-                <simple>
-                    ${header.CamelFileAbsolutePath}
-                </simple>
-            </setHeader>
             <log message="${id}: AbsolutePath - ${header.CamelFileAbsolutePath}"
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
@@ -1320,13 +1310,8 @@
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
-            <setHeader headerName="CamelHttpQuery">
-                <simple>
-                    output=xml&amp;${body}
-                </simple>
-            </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectFusekiHttpCall"/>
+            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Query Result - ${body}"
@@ -1394,13 +1379,8 @@
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
-            <setHeader headerName="CamelHttpQuery">
-                <simple>
-                    output=xml&amp;${body}
-                </simple>
-            </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?output=xml&amp;${body}&amp;headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Find Query Result - ${body}"

@@ -121,11 +121,11 @@
         </dependency>
 
         <!-- Edan-Sidora -->
-        <dependency>
+        <!--<dependency>
             <groupId>edu.si.services.beans</groupId>
             <artifactId>edansidora</artifactId>
             <version>1.0</version>
-        </dependency>
+        </dependency>-->
 
     </dependencies>
 
