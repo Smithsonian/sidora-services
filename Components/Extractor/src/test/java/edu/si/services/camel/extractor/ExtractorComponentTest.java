@@ -33,7 +33,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +55,6 @@ public class ExtractorComponentTest extends CamelTestSupport
 {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractorComponentTest.class);
     private StringBuilder expectedExceptionMsg;
-    private static final boolean DELETE_AFTER_TEST = false;
 
     //TODO: Add more test!!! Need to make sure that Producer finds the correct new folder if there are multiple folders initially
     //currently we assume that an archive contains one or no compressed directory.
@@ -105,12 +103,6 @@ public class ExtractorComponentTest extends CamelTestSupport
         testExtractor("test-no-file-ext");
     }
 
-    @Test
-    public void testFileNameWithPeriods() throws Exception {
-        testExtractor("test_zip.with.periods_1.zip", false);
-        testExtractor("test_zip.with.periods_2.zip", false);
-    }
-
     public void testExtractor(String archive) throws Exception
     {
         this.testExtractor(archive, true);
@@ -136,7 +128,6 @@ public class ExtractorComponentTest extends CamelTestSupport
 
             assertNotNull("Results should not be null", body);
             assertTrue("Results should be a directory", body.isDirectory());
-            assertTrue("Directory name should match archive name", FilenameUtils.getBaseName(archive).equals(msg.getHeader("CamelFileNameOnly")));
             assertEquals("Parent directory should be 'TestCameraTrapData'", "TestCameraTrapData", body.getParentFile().getName());
             assertEquals("Directory should contain " + numFiles + " elements", numFiles, body.list().length);
 
@@ -225,8 +216,8 @@ public class ExtractorComponentTest extends CamelTestSupport
             public void configure()
             {
                 from("direct:start")
-                        .to("log:edu.si.ctingest?level=DEBUG&showAll=true&multiline=true&maxChars=100000")
-                        .to("extractor:extract?location={{target.dir}}{{file.separator}}TestCameraTrapData")
+                        .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
+                        .to("extractor:extract?location=TestCameraTrapData")
                         .to("log:edu.si.ctingest?level=DEBUG&showHeaders=true")
                         .to("mock:result");
             }
@@ -242,9 +233,15 @@ public class ExtractorComponentTest extends CamelTestSupport
     }
 
     @AfterClass
-    public static void afterClass() throws IOException {
-        if (DELETE_AFTER_TEST) {
+    public static void afterClass()
+    {
+        try
+        {
             FileUtils.deleteDirectory(new File("TestCameraTrapData"));
+        }
+        catch (IOException ex)
+        {
+            LOG.error(null, ex);
         }
     }
 }

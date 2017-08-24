@@ -157,18 +157,12 @@ public class BatchRequestControllerBean {
         URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
 
         String resourceFile = uri.toASCIIString();
-        String resourceFileExt = FilenameUtils.getExtension(resourceFile);
+
+        LOG.debug("Checking {} for MIME Type", resourceFile);
+
         String mimeType = null;
 
-        if (resourceFileExt.equalsIgnoreCase("nef")) {
-            mimeType = "image/x-nikon-nef";
-        } else if (resourceFileExt.equalsIgnoreCase("dng")) {
-            mimeType = "image/x-adobe-dng";
-        } else {
-            LOG.debug("Checking {} for MIME Type", resourceFile);
-
-            mimeType = new Tika().detect(resourceFile);
-        }
+        mimeType = new Tika().detect(resourceFile);
 
         LOG.debug("Batch Process " + resourceFile + " || MIME=" + mimeType);
 

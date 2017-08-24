@@ -28,14 +28,7 @@
 package edu.si.services.sidora.rest.batch;
 
 import com.j256.simplemagic.ContentInfoUtil;
-import edu.si.services.sidora.rest.batch.beans.BatchRequestControllerBean;
 import eu.medsea.mimeutil.MimeUtil;
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
 import org.junit.Test;
@@ -46,7 +39,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 
 /**
  * @author jbirkhimer
@@ -57,7 +49,7 @@ public class MimeTypeTest {
 
     @Test
     public void mimeTypeTest() throws URISyntaxException {
-        String string = "test-data/mimetype-test-files/Canon5DMkII_50mm_100_f4_001.dng";
+        String string = "test-data/mimetype-test-files/x.wav";
 
         URI path2 = new URI(string);
 
