@@ -923,25 +923,34 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
                  logName="edu.si.derivatives"/>
 
             <!-- Create a FITS derivative using Harvard FITS. -->
-            <recipientList>
+            <setHeader headerName="CamelHttpMethod">
+                <constant>GET</constant>
+            </setHeader>
+            <setHeader headerName="CamelHttpQuery">
                 <simple>
-                    <!-- exec:fits?args=-i ${header.CamelFileNameProduced} -o ${header.CamelFileName.produced}.xml -->
-                    exec:fits?args=-i ${header.CamelFileNameProduced}
-                    <!-- exec:fits?args=RAW(-i <<< /dev/stdin) -->
+                    file={{karaf.home}}/${header.CamelFileNameProduced}
                 </simple>
-            </recipientList>
+            </setHeader>
+            <toD uri="{{si.fits.host}}/examine"/>
+            <convertBodyTo type="java.lang.String"/>
+
+            <log message="${id} FITS Web Service Response Body:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
             <choice>
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        ${headers.CamelExecExitValue} == 0
+                        <!--${body} != ''-->
+                        ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
-                        <log message="${id} Derivatives: FITS MIME: ${headers.FITSmimeType}"
-                             loggingLevel="DEBUG"
-                             logName="edu.si.derivatives"/>
                     </setHeader>
+                    <log message="${id} Derivatives: FITS MIME: ${headers.dsMIME}"
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <log message="${id} Derivatives: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
@@ -949,7 +958,7 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
-                    <log message="${id} Derivatives: FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelExecExitValue}"
+                    <log message="${id} Derivatives: FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelHttpResponseCode}"
                          loggingLevel="ERROR"/>
                 </otherwise>
             </choice>

@@ -1206,30 +1206,42 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <recipientList>
+            <!-- Create a FITS derivative using Harvard FITS. -->
+            <setHeader headerName="CamelHttpMethod">
+                <constant>GET</constant>
+            </setHeader>
+            <setHeader headerName="CamelHttpQuery">
                 <simple>
-                    exec:fits?args=-i ${header.CamelFileAbsolutePath}
+                    file={{karaf.home}}/${header.CamelFileNameProduced}
                 </simple>
-            </recipientList>
+            </setHeader>
+            <toD uri="{{si.fits.host}}/examine"/>
+            <convertBodyTo type="java.lang.String"/>
+
+            <log message="${id} Fit Web Service Output:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
             <choice>
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        ${header.CamelExecExitValue} == 0
+                        <!--${body} != ''-->
+                        ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
-                        <log message="${id}: FITS MIME: ${header.FITSmimeType}"
-                             loggingLevel="DEBUG"
-                             logName="{{si.ct.id}}"/>
                     </setHeader>
+                    <log message="${id} Derivatives: FITS MIME: ${headers.dsMIME}"
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <log message="${id}: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
-                    <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
+                    <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelHttpResponseCode}"
                          loggingLevel="ERROR"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
