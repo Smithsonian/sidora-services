@@ -191,6 +191,8 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
         context.start();
 
+        Thread.sleep(1000); //my machines file i/o is slow sometimes causing test to fail
+
         assertMockEndpointsSatisfied();
 
         log.debug("The deployment cache directory we are testing for: {}", deploymentCacheDir);

@@ -110,6 +110,7 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
 
         <onException>
             <exception>java.net.ConnectException</exception>
+            <exception>org.apache.camel.http.common.HttpOperationFailedException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
                               redeliveryDelay="1000"

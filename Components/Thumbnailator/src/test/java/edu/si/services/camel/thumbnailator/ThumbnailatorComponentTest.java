@@ -98,13 +98,13 @@ public class ThumbnailatorComponentTest extends CamelTestSupport
     @Test
     public void testThumbnailator_Stress_10ImagesIn1sec() throws InterruptedException, IOException
     {
-        this.testStresser(10, 1, 1000);
+        this.testStresser(10, 1, 4000); //using 4000 timeout for slower computers
     }
 
     @Test
     public void testThumbnailator_Stress_30ImagesIn1sec5Thread() throws InterruptedException, IOException
     {
-        this.testStresser(30, 5, 1000);
+        this.testStresser(30, 5, 4000); //using 4000 timeout for slower computers
     }
 
     @Override

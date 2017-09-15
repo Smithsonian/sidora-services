@@ -234,6 +234,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         template.sendBodyAndHeader("file:{{si.ct.uscbi.stage.dir.path}}?doneFileName=${file:name}.done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
+        Thread.sleep(1000); //my machines file i/o is slow sometimes causing test to fail
 
         log.info("Expected deployment file location = {}", expectedFileExists);
         assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));

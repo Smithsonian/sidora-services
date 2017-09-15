@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>sidora-test-utils</artifactId>
+        <groupId>edu.si.services</groupId>
+        <version>1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <name>SI :: Sidora :: Test :: Utils :: FITSservlet</name>
+    <artifactId>fits-servlet-test</artifactId>
+    <version>1.0</version>
+
+    <properties>
+        <servlet.port>8080</servlet.port>
+        <!--<dynamic.test.port>39799</dynamic.test.port>-->
+        <karaf.home>${project.build.directory}/test-classes</karaf.home>
+        <fits.home>${project.build.directory}/fits/${fits.version}</fits.home>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-blueprint</artifactId>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test-blueprint</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-aws</artifactId>
+            <!--<version>2.18.0</version>-->
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-csv</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-groovy</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-velocity</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.servicemix.bundles</groupId>
+            <artifactId>org.apache.servicemix.bundles.velocity-tools</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-saxon</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-schematron</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-exec</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>CameraTrap</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>edansidora</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FedoraRepo</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FcrepoRest</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>VelocityToolsHandler</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Reader</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Thumbnailator</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Extractor</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>xmlunit</groupId>
+            <artifactId>xmlunit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Test Logging -->
+        <!--<dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>-->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+
+        <!-- Http client tests -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Integration Testing gear -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.enterprise</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <defaultGoal>verify</defaultGoal>
+
+        <!-- Copy test resources to output folder target/test-classes -->
+        <testResources>
+            <!-- don't forget to specify the default test resources directory -->
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+
+            <!-- add the Camera Trap and WCS Routes directory as resources -->
+            <testResource>
+                <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${project.build.directory}/test-classes/etc</targetPath>
+            </testResource>
+            <!-- add the emammal property file needed by the unified route -->
+            <testResource>
+                <directory>../../Beans/Edan-Sidora/Karaf-config/etc</directory>
+                <targetPath>${project.build.directory}/test-classes/etc</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Beans/Edan-Sidora/Karaf-config/Input</directory>
+                <targetPath>${project.build.directory}/test-classes/Input</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Camera Trap/Input</directory>
+                <targetPath>${project.build.directory}/test-classes/Input</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Camera Trap/Route</directory>
+                <targetPath>${project.build.directory}/test-classes/Routes</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/WCS/Route</directory>
+                <targetPath>${project.build.directory}/test-classes/Routes</targetPath>
+            </testResource>
+        </testResources>
+
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+
+            <!-- reserve network ports for integration testing -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <configuration>
+                    <portNames>
+                        <portName>dynamic.test.port</portName>
+                    </portNames>
+                </configuration>
+                <executions>
+                    <execution>
+                        <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering -->
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>reserve-network-port</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*Test*</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <fits.home>${fits.home}</fits.home>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <si.fits.host>http://localhost:${dynamic.test.port}/fits</si.fits.host>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <fits.home>${fits.home}</fits.home>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <si.fits.host>http://localhost:${dynamic.test.port}/fits</si.fits.host>
+                    </systemPropertyVariables>
+                    <includes>
+                        <include>**/*_IT</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.cargo</groupId>
+                <artifactId>cargo-maven2-plugin</artifactId>
+                <configuration>
+                    <container>
+                        <containerId>tomcat7x</containerId>
+                        <!--<type>embedded</type>--> <!-- had issues adding fits jars to shared classpath loader first test passes then rest fail-->
+                        <systemProperties>
+                            <fits.home>${fits.home}</fits.home>
+                            <!-- keep Apache Derby as quiet as possible -->
+                            <derby.stream.error.field>java.lang.System.err</derby.stream.error.field>
+                            <derby.stream.error.logSeverityLevel>5000</derby.stream.error.logSeverityLevel>
+                        </systemProperties>
+                        <log>${project.build.directory}/cargo.log</log>
+                        <output>${project.build.directory}/cargo-output.log</output>
+                        <!-- had issues adding fits jars to shared classpath loader first test passes then rest fail-->
+                        <!--<dependencies>
+                            &lt;!&ndash;<dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/*.jar</location>
+                            </dependency>&ndash;&gt;
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/AES31.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/commons-cli-1.1.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/commons-collections-3.2.1.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/commons-configuration-1.8.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/commons-io-2.4.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/commons-lang-2.6.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/commons-logging-1.2.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/fast-md5.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/fits-1.0.4.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/hclaps.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/jaxen-core.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/jaxen-jdom.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/jdom.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/jna-4.1.0.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/log4j-1.2.17.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/ots_1.0.39.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/saxon9-dom.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/saxon9.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/saxon9-jdom.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/saxpath.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/serializer.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/slf4j-api-1.7.12.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/slf4j-log4j12-1.7.12.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/stax2-api-3.0.1.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/staxmate-2.0.0.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/woodstox-core-lgpl-4.0.7.jar</location>
+                            </dependency>
+                            <dependency>
+                                <classpath>shared</classpath>
+                                <location>${fits.home}/lib/xercesImpl-2.9.1.jar</location>
+                            </dependency>
+                        </dependencies>-->
+                    </container>
+                    <configuration>
+                        <home>${project.build.directory}/cargo-tomcat</home>
+                        <properties>
+                            <cargo.logging>high</cargo.logging>
+                            <cargo.servlet.uriencoding>UTF-8</cargo.servlet.uriencoding>
+                            <cargo.jvmargs>-Xmx512m</cargo.jvmargs>
+                            <cargo.servlet.port>${dynamic.test.port}</cargo.servlet.port>
+                            <!-- fire AJP into /dev/null -->
+                            <cargo.tomcat.ajp.port>0</cargo.tomcat.ajp.port>
+                            <fits.home>${fits.home}</fits.home>
+                        </properties>
+                        <files>
+                            <copy>
+                                <file>${basedir}/src/test/resources/fits.xml</file>
+                                <toDir>../fits/${fits.version}/xml</toDir>
+                                <overwrite>true</overwrite>
+                            </copy>
+                        </files>
+                        <configfiles>
+                            <configfile>
+                                <file>${project.basedir}/src/test/resources/catalina.properties</file>
+                                <todir>conf</todir>
+                            </configfile>
+                        </configfiles>
+                    </configuration>
+                    <deployer>
+                        <!-- empty deployer element prevents Cargo from trying to deploy our project, which is a bundle, into
+                        Tomcat -->
+                    </deployer>
+                    <deployables>
+                        <deployable>
+                            <location>${project.build.directory}/fits/${FITSservlet.version}.war</location>
+                            <type>war</type>
+                            <properties>
+                                <context>fits</context>
+                            </properties>
+                        </deployable>
+                    </deployables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start-tomcat</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-tomcat</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.3.0</version>
+                <executions>
+                    <execution>
+                        <id>fits</id>
+                        <!-- the wget goal actually binds itself to this phase by default -->
+                        <phase>process-test-resources</phase>
+                        <!--<phase>clean</phase>-->
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>http://projects.iq.harvard.edu/files/fits/files/${fits.version}.zip</url>
+                            <unpack>true</unpack>
+                            <overwrite>false</overwrite>
+                            <!-- default target location, just to demonstrate the parameter -->
+                            <outputDirectory>${project.build.directory}/fits</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>fits-web-service</id>
+                        <!-- the wget goal actually binds itself to this phase by default -->
+                        <phase>process-test-resources</phase>
+                        <!--<phase>clean</phase>-->
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>http://projects.iq.harvard.edu/files/fits/files/${FITSservlet.version}.war</url>
+                            <overwrite>false</overwrite>
+                            <!-- default target location, just to demonstrate the parameter -->
+                            <outputDirectory>${project.build.directory}/fits</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

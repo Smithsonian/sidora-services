@@ -164,86 +164,19 @@ mysql> DESCRIBE camelBatchResources;
 ```
 
 ## ServiceMix setup and configuration:
-### Copy batch.process.sql.properties from `Sidora-Batch/src/test/resources/sql` to `<smx-install>/sql/`
+### Copy batch.process.sql.properties from `Routes/Sidora-Batch/Karaf-config/sql/` to `<smx-install>/sql/`
 ```bash
 # mkdir <smx-install>/sql
 # cp sidora-services/Routes/Sidora-Batch/Karaf-config/sql/batch.process.sql.properties <smx-install>/sql/
 ```
 
-### Create camel batch karaf config `<smx-install>/etc/edu.si.sidora.batch.cfg`
-```sql
-################################################################################
-#
-#   Copyright 2015-2016 Smithsonian Institution.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License"); you may not
-#   use this file except in compliance with the License.You may obtain a copy of
-#   the License at: http://www.apache.org/licenses/
-#
-#   This software and accompanying documentation is supplied without
-#   warranty of any kind. The copyright holder and the Smithsonian Institution:
-#   (1) expressly disclaim any warranties, express or implied, including but not
-#   limited to any implied warranties of merchantability, fitness for a
-#   particular purpose, title or non-infringement; (2) do not assume any legal
-#   liability or responsibility for the accuracy, completeness, or usefulness of
-#   the software; (3) do not represent that use of the software would not
-#   infringe privately owned rights; (4) do not warrant that the software
-#   is error-free or will be maintained, supported, updated or enhanced;
-#   (5) will not be liable for any indirect, incidental, consequential special
-#   or punitive damages of any kind or nature, including but not limited to lost
-#   profits or loss of data, on any basis arising from contract, tort or
-#   otherwise, even if any of the parties has been warned of the possibility of
-#   such loss or damage.
-#
-#   his distribution includes several third-party libraries, each with their own
-#   license terms. For a complete copy of all copyright and license terms, including
-#   those of third-party libraries, please see the product release notes.
-#
-################################################################################
-
-# The properties defined in this file will be made available through karaf config properties
-# and you can update through the karaf admin console to change the value
-#
-#
-# For example, you may edit an existing property configured in this file via the SMX client commands and propagate the changes
-#
-# config:edit edu.si.sidora.batch
-# config:property-set <property-to-be-set> <property-value>
-# config:update
-
-########################################################
-#
-# Sidora Batch Processing properties
-#
-# Default properties used to identify the Batch route logs
-# edu.si.batch=edu.si.batch
-#
-########################################################
-
-edu.si.batch=edu.si.batch
-
-# The fedora host and password
-si.fedora.host=http://localhost:8080/fedora
-si.fedora.password=<fedora-password>
-
-# The fedora user must be different from the Camera Trap routes otherwise derivatives will not be made
-si.fedora.batch.user=<fedora-batch-user>
-
-# The REST endpoint for the Batch Process
-sidora.batch.service.address=/sidora/rest/batch/process
-
-# MySQL database setup
-mysql.host=localhost
-mysql.port=3306
-mysql.database=sidora
-mysql.username=<camelMySQL-user>
-mysql.password=<camelMySQL-password>
-```
+### Create camel batch karaf config file `<smx-install>/etc/edu.si.sidora.batch.cfg` (Make sure to the properties are correct)
+[edu.si.sidora.batch.cfg](../Routes/Sidora-Batch/Karaf-config/etc/edu.si.sidora.batch.cfg)
 
 # Deploy the Sidora-Batch service to ServiceMix
 - Shutdown ServiceMIX
 - Clone sidora-services git repo
-- Create edu.si.sidora.batch.cgf from step above
+- Create edu.si.sidora.batch.cgf from step above (Make sure to the properties are correct)
 - Create batch.process.sql.properties from step above
 - Compile sidora-services from git clone
 - Deploy sidora-deployment.kar

@@ -48,11 +48,24 @@
     <name>SI :: Services :: Components :: Fedora Commons REST</name>
     <!-- <url>http://oris.si.edu</url> -->
 
+    <properties>
+        <servlet.port>8080</servlet.port>
+        <!--<dynamic.test.port>40994</dynamic.test.port>-->
+        <fedora.home>${project.build.directory}/fedora-home</fedora.home>
+        <fuseki.base>${project.build.directory}/fuseki-base</fuseki.base>
+        <tomcat.version>7.0.70</tomcat.version>
+    </properties>
+
     <dependencies>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-cxf</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -63,7 +76,7 @@
         </dependency>
 
         <!-- Logging -->
-        <dependency>
+        <!--<dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <scope>provided</scope>
@@ -78,6 +91,21 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>-->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -97,15 +125,65 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-client</artifactId>
             <scope>test</scope>
+        </dependency>-->
+
+        <!-- Integration Testing gear -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-fuseki-war</artifactId>
+            <type>war</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-log4j12</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.trippi</groupId>
+            <artifactId>trippi-sparql-fcrepo-webapp</artifactId>
+            <type>war</type>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
         <defaultGoal>install</defaultGoal>
+
+        <testResources>
+            <!-- don't forget to specify the default test resources directory -->
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+
+            <testResource>
+                <directory>../../Sidora-Test-Utils/src/test/resources/fedora-home</directory>
+                <targetPath>${fedora.home}</targetPath>
+                <filtering>true</filtering>
+            </testResource>
+            <testResource>
+                <directory>../../Sidora-Test-Utils/src/test/resources/fuseki-base</directory>
+                <targetPath>${fuseki.base}</targetPath>
+                <filtering>true</filtering>
+            </testResource>
+            <testResource>
+                <directory>../../Sidora-Test-Utils/src/test/resources/foxml</directory>
+                <targetPath>${project.build.directory}/foxml</targetPath>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
 
         <plugins>
       
@@ -131,6 +209,134 @@
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                     </instructions>
                 </configuration>
+            </plugin>
+
+            <!-- reserve network ports for integration testing -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <configuration>
+                    <portNames>
+                        <portName>dynamic.test.port</portName>
+                    </portNames>
+                </configuration>
+                <executions>
+                    <execution>
+                        <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering, specifically
+                          into fedora.fcfg -->
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>reserve-network-port</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*Test*</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <si.fuseki.host>http://localhost:${dynamic.test.port}/jena-fuseki-war</si.fuseki.host>
+                        <si.fedora.host>http://localhost:${dynamic.test.port}/trippi-sparql-fcrepo-webapp</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <si.fuseki.host>http://localhost:${dynamic.test.port}/jena-fuseki-war</si.fuseki.host>
+                        <si.fedora.host>http://localhost:${dynamic.test.port}/trippi-sparql-fcrepo-webapp</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
+                    </systemPropertyVariables>
+                    <includes>
+                        <include>**/*_IT</include>
+                        <include>**/*IntegrationTest</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.cargo</groupId>
+                <artifactId>cargo-maven2-plugin</artifactId>
+                <configuration>
+                    <container>
+                        <containerId>tomcat7x</containerId>
+                        <type>embedded</type>
+                        <systemProperties>
+                            <fedora.home>${fedora.home}</fedora.home>
+                            <FUSEKI_BASE>${fuseki.base}</FUSEKI_BASE>
+                            <!-- keep Apache Derby as quiet as possible -->
+                            <derby.stream.error.field>java.lang.System.err</derby.stream.error.field>
+                            <derby.stream.error.logSeverityLevel>5000</derby.stream.error.logSeverityLevel>
+                        </systemProperties>
+                        <log>${project.build.directory}/cargo.log</log>
+                        <output>${project.build.directory}/cargo-output.log</output>
+                    </container>
+                    <configuration>
+                        <properties>
+                            <cargo.logging>high</cargo.logging>
+                            <cargo.servlet.uriencoding>UTF-8</cargo.servlet.uriencoding>
+                            <cargo.jvmargs>-Xmx512m</cargo.jvmargs>
+                            <cargo.servlet.port>${dynamic.test.port}</cargo.servlet.port>
+                            <!-- fire AJP into /dev/null -->
+                            <cargo.tomcat.ajp.port>0</cargo.tomcat.ajp.port>
+                        </properties>
+                    </configuration>
+                    <deployer>
+                        <!-- empty deployer element prevents Cargo from trying to deploy our project, which is a bundle, into
+                        Tomcat -->
+                    </deployer>
+                    <deployables>
+                        <deployable>
+                            <groupId>org.apache.jena</groupId>
+                            <artifactId>jena-fuseki-war</artifactId>
+                            <type>war</type>
+                        </deployable>
+                        <deployable>
+                            <groupId>edu.si.trippi</groupId>
+                            <artifactId>trippi-sparql-fcrepo-webapp</artifactId>
+                            <type>war</type>
+                        </deployable>
+                    </deployables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start-tomcat</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-tomcat</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>
