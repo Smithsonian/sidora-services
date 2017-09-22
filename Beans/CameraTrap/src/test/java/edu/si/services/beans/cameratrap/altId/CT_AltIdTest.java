@@ -25,13 +25,15 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.beans.cameratrap;
+package edu.si.services.beans.cameratrap.altId;
 
+import edu.si.services.beans.cameratrap.CT_BlueprintTestSupport;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -43,12 +45,14 @@ import static org.apache.commons.io.FileUtils.readFileToString;
 /**
  * @author jbirkhimer
  */
+@Ignore
 public class CT_AltIdTest extends CT_BlueprintTestSupport {
 
     private static String LOG_NAME = "edu.si.ct";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     private static final File testManifest = new File("src/test/resources/AltIdSampleData/Legacy/deployment_manifest.xml");
     private static final File projectRELS_EXT = new File("src/test/resources/AltIdSampleData/Legacy/projectRELS-EXT.rdf");
@@ -63,7 +67,7 @@ public class CT_AltIdTest extends CT_BlueprintTestSupport {
 
     @Override
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties");
     }
 
     @Override
