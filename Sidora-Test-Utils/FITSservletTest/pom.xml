@@ -164,6 +164,16 @@
             <artifactId>xmlunit</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Test Logging -->
         <!--<dependency>
@@ -245,28 +255,28 @@
             <!-- add the Camera Trap and WCS Routes directory as resources -->
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
-                <targetPath>${project.build.directory}/test-classes/etc</targetPath>
+                <targetPath>${karaf.home}/etc</targetPath>
             </testResource>
             <!-- add the emammal property file needed by the unified route -->
             <testResource>
                 <directory>../../Beans/Edan-Sidora/Karaf-config/etc</directory>
-                <targetPath>${project.build.directory}/test-classes/etc</targetPath>
+                <targetPath>${karaf.home}/etc</targetPath>
             </testResource>
             <testResource>
                 <directory>../../Beans/Edan-Sidora/Karaf-config/Input</directory>
-                <targetPath>${project.build.directory}/test-classes/Input</targetPath>
+                <targetPath>${karaf.home}/Input</targetPath>
             </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Input</directory>
-                <targetPath>${project.build.directory}/test-classes/Input</targetPath>
+                <targetPath>${karaf.home}/Input</targetPath>
             </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Route</directory>
-                <targetPath>${project.build.directory}/test-classes/Routes</targetPath>
+                <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
             <testResource>
                 <directory>../../Routes/WCS/Route</directory>
-                <targetPath>${project.build.directory}/test-classes/Routes</targetPath>
+                <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
         </testResources>
 
@@ -315,6 +325,10 @@
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                         <si.fits.host>http://localhost:${dynamic.test.port}/fits</si.fits.host>
+                        <si.fuseki.host>http://localhost:${dynamic.test.port}/fuseki</si.fuseki.host>
+                        <si.fedora.host>http://localhost:${dynamic.test.port}/fedora</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -328,6 +342,10 @@
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                         <si.fits.host>http://localhost:${dynamic.test.port}/fits</si.fits.host>
+                        <si.fuseki.host>http://localhost:${dynamic.test.port}/fuseki</si.fuseki.host>
+                        <si.fedora.host>http://localhost:${dynamic.test.port}/fedora</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
                     </systemPropertyVariables>
                     <includes>
                         <include>**/*_IT</include>

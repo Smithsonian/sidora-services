@@ -35,6 +35,11 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.camel.util.KeyValueHolder;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.FileBasedConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -53,9 +58,7 @@ import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 
@@ -64,8 +67,14 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
  */
 public class UCT_FITS_IT extends CamelBlueprintTestSupport {
 
-    private String defaultTestProperties = "src/test/resources/test.properties";
-    private static final File testFile = new File("src/test/resources/BBB_9425.NEF");
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
+    private String fedoraHost = System.getProperty("si.fedora.host");
+    private String fedoraUser = System.getProperty("si.fedora.user");
+    private String fedoraPassword = System.getProperty("si.fedora.password");
+    private String fusekiHost = System.getProperty("si.fuseki.host");
+    private static Configuration config = null;
+    private static final File testFile = new File(KARAF_HOME + "/BBB_9425.NEF");
     protected static final String FITS_URI = System.getProperty("si.fits.host");
 
     private static CloseableHttpClient httpClient;
@@ -100,6 +109,56 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
     @AfterClass
     public static void cleanUpHttpClient() throws IOException {
         httpClient.close();
+    }
+
+    @Override
+    public void setUp() throws Exception {
+        Parameters params = new Parameters();
+        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.fileBased().setFile(new File(defaultTestProperties)));
+        config = builder.getConfiguration();
+
+        List<String> propFileList = loadAdditionalPropertyFiles();
+        if (loadAdditionalPropertyFiles() != null) {
+            for (String propFile : propFileList) {
+
+                FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
+                        new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                                .configure(params.fileBased().setFile(new File(propFile)));
+
+                for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext(); ) {
+                    String key = i.next();
+                    Object value = builder2.getConfiguration().getProperty(key);
+                    if (!config.containsKey(key)) {
+                        config.setProperty(key, value);
+                    }
+                }
+            }
+        }
+
+        if (fedoraHost != null && !fedoraHost.isEmpty()) {
+            config.setProperty("si.fedora.host", fedoraHost);
+        }
+        if (fedoraUser != null && !fedoraUser.isEmpty()) {
+            config.setProperty("si.fedora.user", fedoraUser);
+        }
+        if (fedoraPassword != null && !fedoraPassword.isEmpty()) {
+            config.setProperty("si.fedora.password", fedoraPassword);
+        }
+        if (fusekiHost != null && !fusekiHost.isEmpty()) {
+            config.setProperty("si.fuseki.endpoint", fusekiHost);
+        }
+
+        //Set a reasonable number of redeliveries for testing purposes
+        config.setProperty("min.connectEx.redeliveries", 2);
+
+        builder.save();
+        super.setUp();
+    }
+
+    protected List<String> loadAdditionalPropertyFiles() {
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
     }
 
     @Test
