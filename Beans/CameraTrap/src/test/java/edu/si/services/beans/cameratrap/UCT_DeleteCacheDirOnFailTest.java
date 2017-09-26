@@ -112,7 +112,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testIllegalArgumentException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/" + deploymentZip.getName();
+        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -124,7 +124,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testConnectException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/" + deploymentZip.getName();
+        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapFindObjectByPIDPredicate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -136,7 +136,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testDeploymentPackageException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/" + deploymentZip.getName();
+        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapValidatePackage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -148,7 +148,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testFileNotFoundException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/" + deploymentZip.getName();
+        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapValidatePackage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -160,7 +160,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testFedoraObjectNotFoundException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Done/" + deploymentZip.getName();
+        expectedFileExists = "target/test-classes/ProcessUnified/Done/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
