@@ -27,25 +27,27 @@
 
 package edu.si.services.beans.cameratrap;
 
+import edu.si.services.beans.edansidora.EdanIdsException;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.ChoiceDefinition;
-import org.apache.camel.model.SplitDefinition;
-import org.apache.camel.model.ToDynamicDefinition;
+import org.apache.camel.model.*;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jbirkhimer
@@ -55,11 +57,12 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
     private static String LOG_NAME = "edu.si.mci";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     String deploymentZipLoc = "src/test/resources/UnifiedManifest-TestFiles/scbi_unified_test_deployment.zip";
-    String cacheDir = "target/test-classes/UnifiedCameraTrapData";
-    String deploymentCacheDir = "target/test-classes/UnifiedCameraTrapData/" + FilenameUtils.getBaseName(deploymentZipLoc);
+    String cacheDir = KARAF_HOME + "/UnifiedCameraTrapData";
+    String deploymentCacheDir = KARAF_HOME + "/UnifiedCameraTrapData/" + FilenameUtils.getBaseName(deploymentZipLoc);
     File deploymentZip;
     String expectedFileExists;
     String exceptionTestName;
@@ -73,7 +76,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Override
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
     }
 
     @Override
@@ -85,8 +88,8 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
     public void setUp() throws Exception {
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setDefaultTestProperties(defaultTestProperties);
-        deleteDirectory("target/test-classes/ProcessUnified");
-        deleteDirectory("target/test-classes/UnifiedCameraTrapData");
+        deleteDirectory(KARAF_HOME + "/ProcessUnified");
+        deleteDirectory(KARAF_HOME + "/UnifiedCameraTrapData");
 
         super.setUp();
 
@@ -112,7 +115,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testIllegalArgumentException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
+        expectedFileExists = KARAF_HOME + "/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -124,19 +127,66 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testConnectException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
+
+        Integer minConnectExRedelivery = getConfig().getInt("min.connectEx.redeliveries");
+
+        expectedFileExists = KARAF_HOME + "/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+        mockResult.expectedFileExists(expectedFileExists);
+        mockResult.setAssertPeriod(1500);
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+        mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(ConnectException.class);
+        mockError.expectedHeaderReceived("redeliveryCount", minConnectExRedelivery);
+        mockError.expectedFileExists(expectedFileExists);
+        mockResult.setAssertPeriod(1500);
+
+        context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByType(SetBodyDefinition.class).selectFirst().before().to("mock:result");
+                weaveById("logConnectException").after().to("mock:error");
+            }
+        });
+
         context.getRouteDefinition("UnifiedCameraTrapFindObjectByPIDPredicate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveByType(ToDynamicDefinition.class).selectFirst().replace().to("mock:result").throwException(ConnectException.class, "Simulating Connection Exception");
+                //processor used to replace sql query to test onException and retries
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws Exception {
+                        Message in = exchange.getIn();
+                        in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
+                            throw new ConnectException("Simulating Connection Exception");
+                    }
+                };
+
+                //advice sending to database and replace with processor
+                weaveByType(ToDynamicDefinition.class).selectFirst().replace().process(processor);
+
             }
         });
-        runTest();
+
+        context.start();
+
+        assertMockEndpointsSatisfied();
+
+        log.debug("The deployment cache directory we are testing for: {}", deploymentCacheDir);
+        boolean cacheDirExists = Files.exists(new File(deploymentCacheDir).toPath());
+        log.debug("deploymentCacheDir exists: {}", cacheDirExists);
+        //log.debug("CamelExceptionCaught = {}", mockResult.getExchanges().get(0).getProperty("CamelExceptionCaught"));
+        assertTrue("Cache directory should not exist", !cacheDirExists);
+
+        log.info("cache dir = {}, file = {}", cacheDir, expectedFileExists);
+        assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));
     }
 
     @Test
     public void testDeploymentPackageException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
+        expectedFileExists = KARAF_HOME + "/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapValidatePackage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -148,7 +198,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testFileNotFoundException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
+        expectedFileExists = KARAF_HOME + "/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapValidatePackage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -160,7 +210,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     @Test
     public void testFedoraObjectNotFoundException() throws Exception {
-        expectedFileExists = "target/test-classes/ProcessUnified/Done/s3_upload_success/" + deploymentZip.getName();
+        expectedFileExists = KARAF_HOME + "/ProcessUnified/Done/s3_upload_success/" + deploymentZip.getName();
         context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -188,10 +238,10 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMinimumMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
-
+        mockResult.setAssertPeriod(7000);
         context.start();
 
-        Thread.sleep(1000); //my machines file i/o is slow sometimes causing test to fail
+        Thread.sleep(1500);
 
         assertMockEndpointsSatisfied();
 

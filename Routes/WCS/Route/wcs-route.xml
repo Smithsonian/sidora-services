@@ -146,8 +146,12 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
                               redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
-                              maximumRedeliveries="200"
+                              maximumRedeliveries="{{min.connectEx.redeliveries}}"
                               retryAttemptedLogLevel="WARN"/>
+            <log message="[${routeId}] :: Error reported: ${exception.message}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"
+                 id="logConnectException"/>
         </onException>
 
         <onException>
@@ -178,14 +182,15 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
                               redeliveryDelay="{{si.ct.edanIds.redeliveryDelay}}"
-                              maximumRedeliveries="5"
+                              maximumRedeliveries="{{min.edan.redeliveries}}"
                               retryAttemptedLogLevel="WARN"/>
             <continued>
                 <constant>true</constant>
             </continued>
             <log message="[${routeId}] :: EdanIds Error reported: ${exception.message}"
                  loggingLevel="ERROR"
-                 logName="{{si.ct.id}}"/>
+                 logName="{{si.ct.id}}"
+                 id="logEdanIdsException"/>
         </onException>
 
         <!--
@@ -1340,7 +1345,7 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
                          loggingLevel="DEBUG"
                          logName="edanidslog"/>
 
-                    <to uri="bean:edanApiBean?method=sendRequest"/>
+                    <to uri="bean:edanApiBean?method=sendRequest" id="edanApiSendRequest"/>
 
                 </otherwise>
             </choice>
@@ -1527,7 +1532,7 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
                 </simple>
             </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectFusekiHttpCall"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Query Result - ${body}"
@@ -1600,7 +1605,7 @@ http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/bluepri
                 </simple>
             </setHeader>
             <!-- Direct HTTP call to Fuseki endpoint due to having issue with setting the response type from FedoraClient/Fedora component. -->
-            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fuseki.endpoint}}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="findObjectByPIDFusekiHttpCall"/>
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: Find Query Result - ${body}"

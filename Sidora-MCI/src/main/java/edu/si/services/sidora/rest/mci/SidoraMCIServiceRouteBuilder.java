@@ -285,7 +285,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .setHeader("CamelHttpQuery", simple("file={{karaf.home}}/${header.CamelFileNameProduced}"))
-                .toD("{{si.fits.host}}/examine")
+                .toD("{{si.fits.host}}/examine").id("fitsRequest")
                 .convertBodyTo(String.class)
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} FITS Web Service Response Body:\\n${body}")
 

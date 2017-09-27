@@ -46,7 +46,8 @@ import java.util.Map;
 public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport {
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     //Test Data Directory contains the datastreams and other resources for the tests
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";

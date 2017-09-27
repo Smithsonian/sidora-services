@@ -62,7 +62,8 @@ import java.util.Properties;
 public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
     private static Configuration config = null;
 
     String deploymentZipLoc = "src/test/resources/UnifiedManifest-TestFiles/scbi_unified_test_deployment.zip";
@@ -83,7 +84,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
     @Override
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties", "target/test-classes/etc/edu.si.sidora.emammal.cfg");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
     }
 
     @Override
@@ -252,7 +253,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         template.sendBodyAndHeader("file:{{si.ct.uscbi.stage.dir.path}}?doneFileName=${file:name}.done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
-        Thread.sleep(1000); //my machines file i/o is slow sometimes causing test to fail
+        Thread.sleep(1000); //for machines with slow file i/o sometimes causing test to fail
 
         log.info("Expected deployment file location = {}", expectedFileExists);
         assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));

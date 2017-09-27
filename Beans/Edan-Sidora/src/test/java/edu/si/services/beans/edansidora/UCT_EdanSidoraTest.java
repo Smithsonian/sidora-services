@@ -257,15 +257,16 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     public void edanIdsExceptionTest () throws Exception {
+        Integer minEdanRedelivery = getConfig().getInt("min.edan.redeliveries");
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("redeliveryCount", 5);
+        mockResult.expectedHeaderReceived("redeliveryCount", minEdanRedelivery);
 
         MockEndpoint mockError = getMockEndpoint("mock:error");
         mockError.expectedMessageCount(1);
         mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(EdanIdsException.class);
-        mockError.expectedHeaderReceived("redeliveryCount", 5);
+        mockError.expectedHeaderReceived("redeliveryCount", minEdanRedelivery);
 
         context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -276,7 +277,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                         Message in = exchange.getIn();
                         in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
                             try {
-                                if (in.getHeader("redeliveryCount", Integer.class) == 5) {
+                                if (in.getHeader("redeliveryCount", Integer.class) == minEdanRedelivery) {
                                     throw new IOException("Outer try exception");
                                 }
                                 try {

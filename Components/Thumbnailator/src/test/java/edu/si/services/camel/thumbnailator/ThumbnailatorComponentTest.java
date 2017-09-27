@@ -138,6 +138,7 @@ public class ThumbnailatorComponentTest extends CamelTestSupport
     {
         MockEndpoint mock = getMockEndpoint("mock:result");
         mock.expectedMessageCount(count);
+        mock.setAssertPeriod(maxTime);
 
         ExecutorService executor = Executors.newFixedThreadPool(poolSize);
         for (final String name : this.createTestList(count))

@@ -143,6 +143,9 @@ public class EDAN_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
             }
         }
 
+        config.setProperty("min.connectEx.redeliveries", 2);
+        config.setProperty("min.edan.redeliveries", 2);
+
         builder.save();
 
         super.setUp();
