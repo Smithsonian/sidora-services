@@ -47,14 +47,17 @@
 
     <properties>
         <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
+
+        <!-- Unit Test Properties-->
+        <karaf.home>${project.build.directory}/test-classes</karaf.home>
     </properties>
 
     <dependencies>
         <!-- must be first to avoid library conflict, Only needed during testing so scope is test -->
-        <!--<dependency>
+        <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-all</artifactId>
-        </dependency>-->
+        </dependency>
 
         <!--  osgi -->
         <dependency>
@@ -73,11 +76,11 @@
             <artifactId>camel-core</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!--<dependency>
+        <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-blueprint</artifactId>
             <scope>provided</scope>
-        </dependency>-->
+        </dependency>
 
         <!-- Logging -->
         <dependency>
@@ -132,6 +135,16 @@
             <groupId>edu.si.services.camel</groupId>
             <artifactId>Extractor</artifactId>
             <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-cxf</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-transports-http-jetty</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -250,6 +263,20 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- edan test service -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>edan-test-util</artifactId>
+            <version>1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>-->
+
     </dependencies>
 
     <build>
@@ -260,6 +287,7 @@
             <!-- don't forget to specify the default test resources directory -->
             <testResource>
                 <directory>src/test/resources</directory>
+                <filtering>true</filtering>
             </testResource>
 
             <testResource>
@@ -327,6 +355,75 @@
                 <configuration>
                     <useBlueprint>true</useBlueprint>
                 </configuration>
+            </plugin>
+
+            <!-- reserve network ports for integration testing -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <configuration>
+                    <portNames>
+                        <portName>dynamic.test.port</portName>
+                    </portNames>
+                </configuration>
+                <executions>
+                    <execution>
+                        <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering, specifically
+                          into fedora.fcfg -->
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>reserve-network-port</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*_IT</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
+                        <si.fuseki.host>http://localhost:9080/fuseki</si.fuseki.host>
+                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
+                        <si.sidora.edan.host>http://localhost:1101/edan</si.sidora.edan.host>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
+                        <si.fuseki.host>http://localhost:9080/fuseki</si.fuseki.host>
+                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
+                        <si.sidora.edan.host>http://localhost:1101/edan</si.sidora.edan.host>
+                    </systemPropertyVariables>
+                    <includes>
+                        <include>**/*_IT</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>
