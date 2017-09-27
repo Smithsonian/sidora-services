@@ -54,7 +54,7 @@ public class EDAN_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     private String fedoraPassword = System.getProperty("si.fedora.password");
     private String fusekiHost = System.getProperty("si.fuseki.host");
     private String fitsHost = System.getProperty("si.fits.host");
-    private String sidoraEdanHost = System.getProperty("si.sidora.edan.host");
+    private String sidoraEdanHost = System.getProperty("si.ct.uscbi.server");
     private static final String KARAF_HOME = System.getProperty("karaf.home");
     private static Configuration config = null;
     private String defaultTestProperties = KARAF_HOME + "/test.properties";
@@ -180,7 +180,7 @@ public class EDAN_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
             config.setProperty("si.fits.host", fitsHost);
         }
         if (sidoraEdanHost != null && !sidoraEdanHost.isEmpty()) {
-            config.setProperty("si.sidora.edan.host", sidoraEdanHost);
+            config.setProperty("si.ct.uscbi.server", sidoraEdanHost);
         }
 
         config.setProperty("min.connectEx.redeliveries", 2);

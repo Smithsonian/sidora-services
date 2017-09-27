@@ -61,7 +61,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     protected static final String FEDORA_URI = System.getProperty("si.fedora.host");
     protected static final String FUSEKI_URI = System.getProperty("si.fuseki.host") + "/fedora3";
     protected static final String FITS_URI = System.getProperty("si.fits.host");
-    protected static final String EDAN_TEST_URI = System.getProperty("si.sidora.edan.host");
+    protected static final String EDAN_TEST_URI = System.getProperty("si.ct.uscbi.server");
     private static final String KARAF_HOME = System.getProperty("karaf.home");
 
     private String defaultTestProperties = KARAF_HOME + "/test.properties";

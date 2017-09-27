@@ -393,7 +393,7 @@
                         <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
                         <si.fedora.user>fedoraAdmin</si.fedora.user>
                         <si.fedora.password>fc</si.fedora.password>
-                        <si.sidora.edan.host>http://localhost:1101/edan</si.sidora.edan.host>
+                        <si.ct.uscbi.server>http://localhost:${dynamic.test.port}/edan</si.ct.uscbi.server>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -409,7 +409,7 @@
                         <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
                         <si.fedora.user>fedoraAdmin</si.fedora.user>
                         <si.fedora.password>fc</si.fedora.password>
-                        <si.sidora.edan.host>http://localhost:1101/edan</si.sidora.edan.host>
+                        <si.ct.uscbi.server>http://localhost:${dynamic.test.port}/edan</si.ct.uscbi.server>
                     </systemPropertyVariables>
                     <includes>
                         <include>**/*_IT</include>
