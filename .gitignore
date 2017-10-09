@@ -1,13 +1,3 @@
-/Beans/CameraTrap/src/test/resources/test.properties
-/Beans/Edan-Sidora/src/test/resources/test.properties
-/Components/FcrepoRest/src/test/resources/fcrepotest.properties
-/Components/FedoraRepo/src/test/resources/test.properties
-/Sidora-Batch/src/test/resources/test.properties
-/Sidora-MCI/src/test/resources/test.properties
-/Sidora-Test-Utils/FITSservletTest/src/test/resources/test.properties
-
-
-
 /.idea
 /Components/Thumbnailator/nb-configuration.xml
 /Components/FedoraRepo/target/

@@ -12,7 +12,7 @@
 ```
 
 ## Edit catalina.properties
-Add Entries to `<FEDORA_CATALINA_HOME>/conf/catalina.properties` (see example [catalina.properties](src/test/resources/test.properties))
+Add Entries to `<FEDORA_CATALINA_HOME>/conf/catalina.properties` (see example [catalina.properties](src/test/resources/catalina.properties))
 
 * Add the `<fits.home>` environment variable.
     ```bash

@@ -43,6 +43,7 @@
 
     <properties>
         <servlet.port>8080</servlet.port>
+        <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep the fits web service up -->
         <!--<dynamic.test.port>39799</dynamic.test.port>-->
         <karaf.home>${project.build.directory}/test-classes</karaf.home>
         <fits.home>${project.build.directory}/fits/${fits.version}</fits.home>
@@ -274,10 +275,6 @@
                 <directory>../../Routes/Camera Trap/Route</directory>
                 <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
-            <testResource>
-                <directory>../../Routes/WCS/Route</directory>
-                <targetPath>${karaf.home}/Routes</targetPath>
-            </testResource>
         </testResources>
 
         <plugins>
@@ -317,19 +314,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludes>
-                        <exclude>**/*Test*</exclude>
+                        <exclude>**/*_IT</exclude>
                     </excludes>
-                    <systemPropertyVariables>
-                        <karaf.home>${karaf.home}</karaf.home>
-                        <fits.home>${fits.home}</fits.home>
-                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
-                        <si.fits.host>http://localhost:${dynamic.test.port}/fits</si.fits.host>
-                        <si.fuseki.host>http://localhost:${dynamic.test.port}/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:${dynamic.test.port}/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 
@@ -368,130 +354,13 @@
                 <configuration>
                     <container>
                         <containerId>tomcat7x</containerId>
-                        <!--<type>embedded</type>--> <!-- had issues adding fits jars to shared classpath loader first test passes then rest fail-->
                         <systemProperties>
-                            <fits.home>${fits.home}</fits.home>
                             <!-- keep Apache Derby as quiet as possible -->
                             <derby.stream.error.field>java.lang.System.err</derby.stream.error.field>
                             <derby.stream.error.logSeverityLevel>5000</derby.stream.error.logSeverityLevel>
                         </systemProperties>
                         <log>${project.build.directory}/cargo.log</log>
                         <output>${project.build.directory}/cargo-output.log</output>
-                        <!-- had issues adding fits jars to shared classpath loader first test passes then rest fail-->
-                        <!--<dependencies>
-                            &lt;!&ndash;<dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/*.jar</location>
-                            </dependency>&ndash;&gt;
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/AES31.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/commons-cli-1.1.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/commons-collections-3.2.1.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/commons-configuration-1.8.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/commons-io-2.4.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/commons-lang-2.6.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/commons-logging-1.2.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/fast-md5.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/fits-1.0.4.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/hclaps.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/jaxen-core.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/jaxen-jdom.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/jdom.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/jna-4.1.0.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/log4j-1.2.17.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/ots_1.0.39.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/saxon9-dom.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/saxon9.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/saxon9-jdom.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/saxpath.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/serializer.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/slf4j-api-1.7.12.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/slf4j-log4j12-1.7.12.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/stax2-api-3.0.1.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/staxmate-2.0.0.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/woodstox-core-lgpl-4.0.7.jar</location>
-                            </dependency>
-                            <dependency>
-                                <classpath>shared</classpath>
-                                <location>${fits.home}/lib/xercesImpl-2.9.1.jar</location>
-                            </dependency>
-                        </dependencies>-->
                     </container>
                     <configuration>
                         <home>${project.build.directory}/cargo-tomcat</home>
@@ -559,7 +428,6 @@
                         <id>fits</id>
                         <!-- the wget goal actually binds itself to this phase by default -->
                         <phase>process-test-resources</phase>
-                        <!--<phase>clean</phase>-->
                         <goals>
                             <goal>wget</goal>
                         </goals>
@@ -575,7 +443,6 @@
                         <id>fits-web-service</id>
                         <!-- the wget goal actually binds itself to this phase by default -->
                         <phase>process-test-resources</phase>
-                        <!--<phase>clean</phase>-->
                         <goals>
                             <goal>wget</goal>
                         </goals>

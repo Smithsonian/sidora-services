@@ -49,10 +49,10 @@
 
     <properties>
         <servlet.port>8080</servlet.port>
-        <!--<dynamic.test.port>39799</dynamic.test.port>-->
+        <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep fedora and fuseki up -->
+        <!--<dynamic.test.port>40994</dynamic.test.port>-->
         <fedora.home>${project.build.directory}/fedora-home</fedora.home>
         <fuseki.base>${project.build.directory}/fuseki-base</fuseki.base>
-        <tomcat.version>7.0.70</tomcat.version>
 
         <!-- Unit Test Properties-->
         <karaf.home>${project.build.directory}/test-classes</karaf.home>
@@ -411,13 +411,7 @@
                         <exclude>**/*_IT</exclude>
                     </excludes>
                     <systemPropertyVariables>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
                         <karaf.home>${karaf.home}</karaf.home>
-                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
-                        <si.fuseki.host>http://localhost:9080/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

@@ -111,56 +111,6 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
         httpClient.close();
     }
 
-    @Override
-    public void setUp() throws Exception {
-        Parameters params = new Parameters();
-        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
-                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                        .configure(params.fileBased().setFile(new File(defaultTestProperties)));
-        config = builder.getConfiguration();
-
-        List<String> propFileList = loadAdditionalPropertyFiles();
-        if (loadAdditionalPropertyFiles() != null) {
-            for (String propFile : propFileList) {
-
-                FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
-                        new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                                .configure(params.fileBased().setFile(new File(propFile)));
-
-                for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext(); ) {
-                    String key = i.next();
-                    Object value = builder2.getConfiguration().getProperty(key);
-                    if (!config.containsKey(key)) {
-                        config.setProperty(key, value);
-                    }
-                }
-            }
-        }
-
-        if (fedoraHost != null && !fedoraHost.isEmpty()) {
-            config.setProperty("si.fedora.host", fedoraHost);
-        }
-        if (fedoraUser != null && !fedoraUser.isEmpty()) {
-            config.setProperty("si.fedora.user", fedoraUser);
-        }
-        if (fedoraPassword != null && !fedoraPassword.isEmpty()) {
-            config.setProperty("si.fedora.password", fedoraPassword);
-        }
-        if (fusekiHost != null && !fusekiHost.isEmpty()) {
-            config.setProperty("si.fuseki.endpoint", fusekiHost);
-        }
-
-        //Set a reasonable number of redeliveries for testing purposes
-        config.setProperty("min.connectEx.redeliveries", 2);
-
-        builder.save();
-        super.setUp();
-    }
-
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
-    }
-
     @Test
     public void fitsVersionTest() throws IOException {
         log.debug("FITS_URI = {}", FITS_URI);
@@ -208,6 +158,7 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
         //The mock endpoint we are sending to for assertions
         MockEndpoint mockResult = getMockEndpoint("mock:mockResult");
         mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("dsMIME", "image/x-nikon-nef");
 
         /* Advicewith the routes as needed for this test */
         context.getRouteDefinition("UnifiedCameraTrapAddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {

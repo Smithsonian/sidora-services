@@ -50,10 +50,10 @@
 
     <properties>
         <servlet.port>8080</servlet.port>
+        <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep fedora and fuseki up -->
         <!--<dynamic.test.port>40994</dynamic.test.port>-->
         <fedora.home>${project.build.directory}/fedora-home</fedora.home>
         <fuseki.base>${project.build.directory}/fuseki-base</fuseki.base>
-        <tomcat.version>7.0.70</tomcat.version>
     </properties>
 
     <dependencies>
@@ -237,16 +237,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludes>
-                        <exclude>**/*Test*</exclude>
+                        <exclude>**/*IntegrationTest</exclude>
                     </excludes>
-                    <systemPropertyVariables>
-                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
-                        <si.fuseki.host>http://localhost:${dynamic.test.port}/jena-fuseki-war</si.fuseki.host>
-                        <si.fedora.host>http://localhost:${dynamic.test.port}/trippi-sparql-fcrepo-webapp</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 

@@ -48,7 +48,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +94,7 @@ public class FcrepoIntegrationTest extends CamelTestSupport {
     }
 
     private static void ingest(String pid, Path payload) throws IOException {
-        if (!checkObjecsExist(pid)) {
+        if (!checkObjectExist(pid)) {
             String ingestURI = FEDORA_URI + "/objects/" + pid + "?format=info:fedora/fedora-system:FOXML-1.1&ignoreMime=true";
 
             logger.debug("INGEST URI = {}", ingestURI);
@@ -110,7 +109,7 @@ public class FcrepoIntegrationTest extends CamelTestSupport {
         }
     }
 
-    private static boolean checkObjecsExist(String pid) throws IOException {
+    private static boolean checkObjectExist(String pid) throws IOException {
         String query = URLEncoder.encode("ASK FROM <info:edu.si.fedora#ri> WHERE { <info:fedora/" + pid + "> ?p ?o}", "UTF-8");
 
         HttpGet request = new HttpGet(FUSEKI_URI + "/fedora3?output=xml&query=" + query);
