@@ -49,8 +49,15 @@ import java.util.Properties;
 public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
 
     private Boolean useRealFedoraServer = false;
+    private String fedoraHost = System.getProperty("si.fedora.host");
+    private String fedoraUser = System.getProperty("si.fedora.user");
+    private String fedoraPassword = System.getProperty("si.fedora.password");
+    private String fusekiHost = System.getProperty("si.fuseki.host");
+    private String fitsHost = System.getProperty("si.fits.host");
+    private String sidoraMciHost = System.getProperty("si.sidora.mci.host");
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
     private static Configuration config = null;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
     private String propertiesPersistentId = "edu.si.sidora.mci";
 
 
@@ -61,6 +68,25 @@ public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
     protected void setUseActualFedoraServer(Boolean useActualFedoraServer) {
         this.useRealFedoraServer = useActualFedoraServer;
     }
+
+    protected void setFedoraServer(String fedorahost, String fedoraUser, String fedoraPassword) {
+        this.fedoraHost = fedorahost;
+        this.fedoraUser = fedoraUser;
+        this.fedoraPassword = fedoraPassword;
+    }
+
+    protected void setFuseki(String fusekiHost) {
+        this.fusekiHost = fusekiHost;
+    }
+
+    protected void setFits(String fitsHost) {
+        this.fitsHost = fitsHost;
+    }
+
+    protected void setSidoraMciHost(String sidoraMciHost) {
+        this.sidoraMciHost = sidoraMciHost;
+    }
+
 
     protected static Configuration getConfig() {
         return config;
@@ -88,11 +114,7 @@ public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
 
         //add fedora component using test properties to the context
         if (isUseActualFedoraServer()) {
-            FedoraSettings fedoraSettings = new FedoraSettings(
-                    String.valueOf(config.getString("si.fedora.host")),
-                    String.valueOf(config.getString("si.fedora.user")),
-                    String.valueOf(config.getString("si.fedora.password"))
-            );
+            FedoraSettings fedoraSettings = new FedoraSettings(fedoraHost, fedoraUser, fedoraPassword);
             FedoraComponent fedora = new FedoraComponent();
             fedora.setSettings(fedoraSettings);
             context.addComponent("fedora", fedora);
@@ -117,7 +139,7 @@ public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
     @Before
     @Override
     public void setUp() throws Exception {
-        System.setProperty("karaf.home", "/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-MCI/target/test-classes");
+        log.info("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
 
         Parameters params = new Parameters();
         FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
@@ -141,6 +163,25 @@ public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
                     }
                 }
             }
+        }
+
+        if (fedoraHost != null && !fedoraHost.isEmpty()) {
+            config.setProperty("si.fedora.host", fedoraHost);
+        }
+        if (fedoraUser != null && !fedoraUser.isEmpty()) {
+            config.setProperty("si.fedora.user", fedoraUser);
+        }
+        if (fedoraPassword != null && !fedoraPassword.isEmpty()) {
+            config.setProperty("si.fedora.password", fedoraPassword);
+        }
+        if (fusekiHost != null && !fusekiHost.isEmpty()) {
+            config.setProperty("si.fuseki.endpoint", fusekiHost);
+        }
+        if (fitsHost != null && !fitsHost.isEmpty()) {
+            config.setProperty("si.fits.host", fitsHost);
+        }
+        if (sidoraMciHost != null && !sidoraMciHost.isEmpty()) {
+            config.setProperty("sidora.mci.service.address", sidoraMciHost);
         }
 
         builder.save();

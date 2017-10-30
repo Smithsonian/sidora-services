@@ -18,6 +18,8 @@
     <properties>
         <http-components.version>4.4</http-components.version>
         <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
+        <!-- Unit Test Properties-->
+        <karaf.home>${project.build.directory}/test-classes</karaf.home>
     </properties>
 
     <dependencies>
@@ -248,6 +250,7 @@
             <!-- don't forget to specify the default test resources directory -->
             <testResource>
                 <directory>src/test/resources</directory>
+                <filtering>true</filtering>
             </testResource>
 
             <!-- add the Sidora-MCI Karaf-config directories -->
@@ -287,6 +290,76 @@
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
                     </instructions>
                 </configuration>
+            </plugin>
+
+            <!-- reserve network ports for integration testing -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <configuration>
+                    <portNames>
+                        <portName>dynamic.test.port</portName>
+                    </portNames>
+                </configuration>
+                <executions>
+                    <execution>
+                        <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering, specifically
+                          into fedora.fcfg -->
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>reserve-network-port</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*_IT</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <si.sidora.mci.host>http://localhost:${dynamic.test.port}/sidora/mci</si.sidora.mci.host>
+                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
+                        <si.fuseki.host>http://localhost:8080/fuseki</si.fuseki.host>
+                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                        <sidora.mci.service.address>http://localhost:${dynamic.test.port}/sidora/mci</sidora.mci.service.address>
+                        <si.fits.host>http://localhost:${dynamic.test.port}/fits-1.1.3</si.fits.host>
+                        <si.fuseki.host>http://localhost:${dynamic.test.port}/jena-fuseki-war</si.fuseki.host>
+                        <si.fedora.host>http://localhost:${dynamic.test.port}/trippi-sparql-fcrepo-webapp</si.fedora.host>
+                        <si.fedora.user>fedoraAdmin</si.fedora.user>
+                        <si.fedora.password>fc</si.fedora.password>
+                    </systemPropertyVariables>
+                    <includes>
+                        <include>**/*_IT</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

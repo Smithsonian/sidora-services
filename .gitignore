@@ -1,7 +1,3 @@
-/Components/FcrepoRest/src/test/resources/fcrepotest.properties
-/Components/FedoraRepo/src/test/resources/test.properties
-/Sidora-Batch/src/test/resources/test.properties
-
 /.idea
 /Components/Thumbnailator/nb-configuration.xml
 /Components/FedoraRepo/target/
@@ -9,6 +5,7 @@
 /Components/Reader/target/
 /Components/Extractor/target/
 /Beans/Excel/target
+
 **/.idea/workspace.xml
 **/.idea/tasks.xml
 *.iml

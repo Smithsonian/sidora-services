@@ -38,6 +38,11 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.aws.s3.S3Constants;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.LogDefinition;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.FileBasedConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -47,6 +52,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -56,7 +62,9 @@ import java.util.Properties;
 public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
+    private static Configuration config = null;
 
     String deploymentZipLoc = "src/test/resources/UnifiedManifest-TestFiles/scbi_unified_test_deployment.zip";
     File deploymentZip;
@@ -76,7 +84,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
     @Override
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties", "target/test-classes/etc/edu.si.sidora.emammal.cfg");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
     }
 
     @Override
@@ -91,8 +99,19 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
     @Override
     public void setUp() throws Exception {
+        System.setProperty("si.ct.uscbi.enableS3Routes", "true");
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setDefaultTestProperties(defaultTestProperties);
+
+        Parameters params = new Parameters();
+        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.fileBased().setFile(new File(defaultTestProperties)));
+        config = builder.getConfiguration();
+
+        config.setProperty("si.ct.uscbi.enableS3Routes", "true");
+
+        builder.save();
 
         super.setUp();
 
@@ -234,6 +253,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         template.sendBodyAndHeader("file:{{si.ct.uscbi.stage.dir.path}}?doneFileName=${file:name}.done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
+        Thread.sleep(1000); //for machines with slow file i/o sometimes causing test to fail
 
         log.info("Expected deployment file location = {}", expectedFileExists);
         assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));

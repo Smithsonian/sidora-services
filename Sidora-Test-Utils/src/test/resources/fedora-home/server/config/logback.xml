@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="5 seconds">
+  <property name="FEDORA_LOG_PATH"
+    value="${fedora.home}/server/logs/fedora${logfile.extension:-.log}"/>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%p %d{HH:mm:ss.SSS} \(%c{0}\) %m%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="FEDORA" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${FEDORA_LOG_PATH}</file>
+    <encoder>
+      <pattern>%p %d{yyyy-MM-dd' 'HH:mm:ss.SSS} [%t] \(%c{0}\) %m%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <maxIndex>5</maxIndex>
+      <FileNamePattern>${FEDORA_LOG_PATH}.%i</FileNamePattern>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <MaxFileSize>20MB</MaxFileSize>
+    </triggeringPolicy>
+  </appender>
+  <logger name="org.fcrepo" additivity="false" level="INFO">
+    <appender-ref ref="FEDORA"/>
+    <appender-ref ref="STDOUT"/>
+  </logger>
+
+  <logger name="edu.si.trippi" additivity="false" level="INFO">
+    <appender-ref ref="FEDORA"/>
+    <appender-ref ref="STDOUT"/>
+  </logger>
+
+  <logger name="org.mulgara" additivity="false" level="WARN">
+    <appender-ref ref="STDOUT"/>
+  </logger>
+
+  <root additivity="false" level="WARN">
+    <appender-ref ref="FEDORA"/>
+  </root>
+</configuration>

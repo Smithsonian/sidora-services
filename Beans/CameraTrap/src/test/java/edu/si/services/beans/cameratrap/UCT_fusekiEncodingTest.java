@@ -56,7 +56,8 @@ public class UCT_fusekiEncodingTest extends CT_BlueprintTestSupport {
     private static String LOG_NAME = "edu.si.test";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     //Camera Trap Deployment Manifest
     private File manifestFile = new File("src/test/resources/SID-912/deployment_manifest.xml");
@@ -70,7 +71,7 @@ public class UCT_fusekiEncodingTest extends CT_BlueprintTestSupport {
 
     @Override
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties");
     }
 
     @Override

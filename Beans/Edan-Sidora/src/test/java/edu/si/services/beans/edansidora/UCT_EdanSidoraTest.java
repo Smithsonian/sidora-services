@@ -28,7 +28,6 @@
 package edu.si.services.beans.edansidora;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
@@ -36,7 +35,11 @@ import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.ChoiceDefinition;
+import org.apache.cxf.endpoint.Server;
+import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
@@ -55,11 +58,20 @@ import static org.apache.commons.io.FileUtils.readFileToString;
 public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private static final String defaultTestProperties = "src/test/resources/test.properties";
-    private static File testManifest = new File("src/test/resources/unified-test-deployment/deployment_manifest.xml");
+    protected static final String FEDORA_URI = System.getProperty("si.fedora.host");
+    protected static final String FUSEKI_URI = System.getProperty("si.fuseki.host") + "/fedora3";
+    protected static final String FITS_URI = System.getProperty("si.fits.host");
+    protected static final String EDAN_TEST_URI = System.getProperty("si.ct.uscbi.server");
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
+
+    private static File testManifest = new File(KARAF_HOME + "/unified-test-deployment/deployment_manifest.xml");
     private static String deploymentZipLoc = "src/test/resources/idsTest.zip"; //scbi_unified_test_deployment.zip";
     private static File deploymentZip;
     private static String expectedFileExists;
+
+    private static Server server;
 
     @Override
     protected String getBlueprintDescriptor() {
@@ -68,7 +80,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Override
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties", "target/test-classes/etc/edu.si.sidora.emammal.cfg");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
     }
 
     @Override
@@ -76,14 +88,39 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
     }
 
+    @BeforeClass
+    public static void startServer() throws Exception {
+
+        System.out.println("===========[ EDAN_TEST_URI = " + EDAN_TEST_URI + " ]============");
+
+        // start a simple front service
+        JAXRSServerFactoryBean factory = new JAXRSServerFactoryBean();
+        factory.setAddress(EDAN_TEST_URI);
+        factory.setResourceClasses(EdanTestService.class);
+
+        server = factory.create();
+        server.start();
+    }
+
+    @AfterClass
+    public static void stopServer() {
+        server.stop();
+    }
+
     @Before
     @Override
     public void setUp() throws Exception {
+
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setDefaultTestProperties(defaultTestProperties);
-        deleteDirectory("target/test-classes/ProcessUnified");
-        deleteDirectory("target/test-classes/UnifiedCameraTrapData");
-        deleteDirectory("target/test-classes/siris-dropbox");
+        setFedoraServer(FEDORA_URI, System.getProperty("si.fedora.user"), System.getProperty("si.fedora.password"));
+        setFuseki(FUSEKI_URI);
+        setFits(FITS_URI);
+        setEdanHost(EDAN_TEST_URI);
+
+        deleteDirectory(KARAF_HOME + "/ProcessUnified");
+        deleteDirectory(KARAF_HOME + "/UnifiedCameraTrapData");
+        deleteDirectory(KARAF_HOME + "/siris-dropbox");
         super.setUp();
 
         deploymentZip = new File(deploymentZipLoc);
@@ -224,7 +261,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void idsPushTest() throws Exception {
 
-        expectedFileExists = "target/test-classes/siris-dropbox/ExportEmammal_emammal_image_testDeploymentId123/ExportEmammal_emammal_image_testDeploymentId123.xml";
+        expectedFileExists = KARAF_HOME + "/siris-dropbox/ExportEmammal_emammal_image_testDeploymentId123/ExportEmammal_emammal_image_testDeploymentId123.xml";
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -257,15 +294,16 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     public void edanIdsExceptionTest () throws Exception {
+        Integer minEdanRedelivery = getConfig().getInt("min.edan.redeliveries");
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("redeliveryCount", 5);
+        mockResult.expectedHeaderReceived("redeliveryCount", minEdanRedelivery);
 
         MockEndpoint mockError = getMockEndpoint("mock:error");
         mockError.expectedMessageCount(1);
         mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(EdanIdsException.class);
-        mockError.expectedHeaderReceived("redeliveryCount", 5);
+        mockError.expectedHeaderReceived("redeliveryCount", minEdanRedelivery);
 
         context.getRouteDefinition("UnifiedCameraTrapAddImageToEdanAndIds").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -276,7 +314,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                         Message in = exchange.getIn();
                         in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
                             try {
-                                if (in.getHeader("redeliveryCount", Integer.class) == 5) {
+                                if (in.getHeader("redeliveryCount", Integer.class) == minEdanRedelivery) {
                                     throw new IOException("Outer try exception");
                                 }
                                 try {
