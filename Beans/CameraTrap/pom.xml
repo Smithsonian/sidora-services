@@ -311,7 +311,7 @@
                 <filtering>true</filtering>
             </testResource>
 
-            <!-- add the Camera Trap and WCS Routes directory as resources -->
+            <!-- add the Camera Trap Route directory as resources -->
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
@@ -331,10 +331,6 @@
             </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Route</directory>
-                <targetPath>${karaf.home}/Routes</targetPath>
-            </testResource>
-            <testResource>
-                <directory>../../Routes/WCS/Route</directory>
                 <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
 

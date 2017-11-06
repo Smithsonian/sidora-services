@@ -48,8 +48,6 @@ import java.util.Map;
 public class CameraTrapIngestManifestSchemaValidationTest extends CamelTestSupport {
 
     //Camera Trap Deployment Manifest for tests
-    private File manifestLegacyFile = new File("src/test/resources/Manifest_Schema_Validation_TestFiles/legacy_deployment_manifest.xml");
-    private File manifestWCSFile = new File("src/test/resources/Manifest_Schema_Validation_TestFiles/WCS_deployment_manifest.xml");
     private File manifestUnifiedFile = new File("src/test/resources/Manifest_Schema_Validation_TestFiles/unified_deployment_manifest.xml");
 
     private String manifest;
@@ -90,30 +88,6 @@ public class CameraTrapIngestManifestSchemaValidationTest extends CamelTestSuppo
         if(tempInputDirectory.exists()){
             FileUtils.deleteDirectory(tempInputDirectory);
         }
-    }
-
-    @Test
-    public void legacyManifestSchematromValidationTests() throws Exception {
-        manifest = FileUtils.readFileToString(manifestLegacyFile);
-        xsdFile = "DeploymentManifest.xsd";
-        schFile = "DeploymentManifest2014.sch";
-
-        runManifestSchematronValidationTest("ProjectId", "nonIntTestValue", "SUCCESS"); //ProjectId text value changed to nonIntRestValue
-        runManifestSchematronValidationTest("ProjectId", "FAILED"); //ProjectId with empty text value
-        runManifestSchematronValidationTest("ProjectName", "FAILED"); //ProjectName with empty text value
-        runManifestSchematronValidationTest("SUCCESS"); //Valid Manifest
-    }
-
-    @Test
-    public void wcsManifestSchematromValidationTests() throws Exception {
-        manifest = FileUtils.readFileToString(manifestWCSFile);
-        xsdFile = "Unified_WCSDeploymentManifest.xsd";
-        schFile = "Unified_WCSDeploymentManifest.sch";
-
-        runManifestSchematronValidationTest("ProjectId", "nonIntTestValue", "SUCCESS"); //ProjectId text value changed to nonIntRestValue
-        runManifestSchematronValidationTest("ProjectId", "FAILED"); //ProjectId with empty text value
-        runManifestSchematronValidationTest("ProjectName", "FAILED"); //ProjectName with empty text value
-        runManifestSchematronValidationTest("SUCCESS"); //Valid Manifest
     }
 
     @Test
