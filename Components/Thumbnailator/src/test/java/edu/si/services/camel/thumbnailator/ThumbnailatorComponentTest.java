@@ -42,8 +42,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import static org.apache.camel.builder.Builder.constant;
-
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
@@ -157,8 +155,7 @@ public class ThumbnailatorComponentTest extends CamelTestSupport
             });
         }
 
-        //assertMockEndpointsSatisfied(maxTime, TimeUnit.MILLISECONDS);
-        assertMockEndpointsSatisfied();
+        assertMockEndpointsSatisfied(maxTime, TimeUnit.MILLISECONDS);
 
         for (Exchange e : mock.getExchanges())
         {
