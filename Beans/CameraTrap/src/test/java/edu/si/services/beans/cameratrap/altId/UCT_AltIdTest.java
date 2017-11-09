@@ -33,6 +33,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
+import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
+import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
 /**
  * Testing Project and Subproject findObject logic using alternate id's to check if an object exists
@@ -63,7 +65,11 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
 
     private static final File testManifest = new File("src/test/resources/AltIdSampleData/Unified/deployment_manifest.xml");
     private static final File projectRELS_EXT = new File("src/test/resources/AltIdSampleData/Unified/projectRELS-EXT.rdf");
+    private static final File projectDC = new File("src/test/resources/AltIdSampleData/Unified/projectDC.xml");
+
     private static final File subProjectRELS_EXT = new File("src/test/resources/AltIdSampleData/Unified/subProjectRELS-EXT.rdf");
+    private static final File subProjectDC = new File("src/test/resources/AltIdSampleData/Unified/subprojectDC.xml");
+
     private static final File objectNotFoundFusekiResponse = new File("src/test/resources/AltIdSampleData/objectNotFoundFusekiResponse.xml");
 
 
@@ -107,17 +113,27 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
     public void processParentsMockFedoraTest() throws Exception {
 
         //The mock endpoint we are sending to for assertions
-        MockEndpoint mockParents = getMockEndpoint("mock:processParentsResult");
-        mockParents.expectedMessageCount(1);
-        //We want to make sure that the expected bodies have the correct Project and SubProject RELS-EXT
-        //mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT), readFileToString(subProjectRELS_EXT));
-        mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT));
+//        MockEndpoint mockParents = getMockEndpoint("mock:processParentsResult");
+//        mockParents.expectedMessageCount(2);
+//        //We want to make sure that the expected bodies have the correct Project and SubProject RELS-EXT
+//        mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT), readFileToString(subProjectRELS_EXT));
+
+        MockEndpoint mockProjectDC = getMockEndpoint("mock:projectDCResult");
+        mockProjectDC.expectedMessageCount(1);
+        //mockProjectDC.expectedBodiesReceived(readFileToString(projectDC));
+
+        MockEndpoint mockSubprojectDC = getMockEndpoint("mock:subprojectDCResult");
+        mockSubprojectDC.expectedMessageCount(1);
+        //mockSubprojectDC.expectedBodiesReceived(readFileToString(subProjectDC));
 
         /* Advicewith the routes as needed for this test */
         context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                        //Intercept sending to processPlot we are only testing Project and Subproject RELS-EXT Creation
+                interceptSendToEndpoint("direct:findObjectByPIDPredicate.*").skipSendToOriginalEndpoint()
+                        .log(LoggingLevel.INFO, "Skipping findObjectByPIDPredicate")
+                        .setBody().simple("true");
+                //Intercept sending to processPlot we are only testing Project and Subproject RELS-EXT Creation
                 interceptSendToEndpoint("direct:processPlot").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping processPlot");
             }
         });
@@ -125,41 +141,64 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
         context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //NOTE: for some reason the intercepts also gets applied to other routes as well so we handle them here
-                //Intercept sending to fedora:create but provide a pid
-                interceptSendToEndpoint("fedora:create.*").skipSendToOriginalEndpoint()
-                        .choice()
-                        .when(simple("${routeId} == 'UnifiedCameraTrapProcessProject'"))
-                        .setHeader("CamelFedoraPid", simple("test:1"))
-                        .endChoice()
-                        .when(simple("${routeId} == 'UnifiedCameraTrapProcessSubproject'"))
-                        .setHeader("CamelFedoraPid", simple("test:2"))
-                        .endChoice()
-                        .end();
 
-                        //intercept sending to fedora:addDatastream and send to mock endpoint to assert correct RELS-EXT
-                interceptSendToEndpoint("fedora:addDatastream.*RELS-EXT.*").skipSendToOriginalEndpoint().setHeader("routeId", simple("${routeId}")).to("mock:processParentsResult");
+                //intercept calls to fedora that are not needed and skip them or replace with the expected response
+                weaveByToString(".*create.*").replace()
+                        .setHeader("CamelFedoraPid", simple("test:1"));
+                weaveByToString(".*addDatastream.*RELS-EXT.*").replace().log(LoggingLevel.INFO, "Skipping fedora:addDatastream for RELS-EXT");
+                weaveByToString(".*hasConcept.*").replace().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");
+                weaveByToString(".*addDatastream.*EAC-CPF.*").replace().log(LoggingLevel.INFO, "Skipping fedora:addDatastream for EAC-CPF");
+                weaveByToString(".*getDatastreamDissemination.*DC.*").replace()
+                        .log(LoggingLevel.INFO, "Skipping fedora:getDatastreamDissemination")
+                        .setBody().simple("<oai_dc:dc xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\"\n" +
+                        "           xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
+                        "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                        "           xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">\n" +
+                        "    <dc:title>Test Project</dc:title>\n" +
+                        "    <dc:identifier>test:1</dc:identifier>\n" +
+                        "</oai_dc:dc>");
 
-                //intercept other calls to fedora that are not needed and skip them
-                interceptSendToEndpoint("fedora:hasConcept.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");
-                interceptSendToEndpoint("fedora:addDatastream.*EAC-CPF.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping fedora:addDatastream for EAC-CPF");
+                // Intercept sending DC datastream to Fedora and send to mock for assertion
+                weaveById("addProjectDC").replace()
+                        .log(LoggingLevel.INFO, "Skipping fedora:addDatastream for DC")
+                        .setHeader("routeId", simple("${routeId}"))
+                        .to("mock:projectDCResult");
             }
         });
 
         context.getRouteDefinition("UnifiedCameraTrapProcessSubproject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //intercept other calls to fedora that are not needed and have not been intercepted yet and skip them
-                interceptSendToEndpoint("fedora:hasConcept.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");
-                interceptSendToEndpoint("fedora:addDatastream.*FGDC-Research.*").skipSendToOriginalEndpoint()
+
+                //intercept calls to fedora that are not needed and skip them or replace with the expected response
+                weaveByToString(".*create.*").replace()
+                        .setHeader("CamelFedoraPid", simple("test:1"));
+                weaveByToString(".*addDatastream.*RELS-EXT.*").replace().log(LoggingLevel.INFO, "Skipping fedora:addDatastream for RELS-EXT");
+                weaveByToString(".*hasConcept.*").replace().log(LoggingLevel.INFO, "Skipping fedora:hasConcept");
+                weaveByToString(".*addDatastream.*EAC-CPF.*").replace()
                         .log(LoggingLevel.INFO, "Skipping fedora:addDatastream for FGDC-Research");
+                weaveByToString(".*getDatastreamDissemination.*DC.*").replace()
+                        .log(LoggingLevel.INFO, "Skipping fedora:getDatastreamDissemination")
+                        .setBody().simple("<oai_dc:dc xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\"\n" +
+                        "           xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
+                        "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                        "           xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">\n" +
+                        "    <dc:title>Test Subproject</dc:title>\n" +
+                        "    <dc:identifier>test:2</dc:identifier>\n" +
+                        "</oai_dc:dc>");
+
+                //intercept sending DC datastream to Fedora and send to mock for assertion
+                weaveById("addSubprojectDC").replace()
+                        .log(LoggingLevel.INFO, "Skipping fedora:addDatastream for DC")
+                        .setHeader("routeId", simple("${routeId}"))
+                        .to("mock:subprojectDCResult");
             }
         });
 
         context.getRouteDefinition("UnifiedCameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                        //replace the actual fuseki http call and provide our own response
+                //replace the actual fuseki http call and provide our own response
                 weaveById("findObjectFusekiHttpCall").replace().setBody().simple(readFileToString(objectNotFoundFusekiResponse));
             }
         });
@@ -175,15 +214,21 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
         // The endpoint we want to start from with the exchange body and headers we want
         template.send("direct:processParents", exchange);
 
-        //assert again that the expected bodies have the correct Project and SubProject RELS-EXT
-        assertEquals(readFileToString(projectRELS_EXT), mockParents.getExchanges().get(0).getIn().getBody());
-        //assertEquals(readFileToString(subProjectRELS_EXT), mockParents.getExchanges().get(1).getIn().getBody());
+        assertMockEndpointsSatisfied();
+
+        XMLUnit.setIgnoreWhitespace(true);
+        XMLUnit.setIgnoreComments(true);
+        XMLUnit.setIgnoreWhitespace(true);
+
+        //assert that the expected bodies have the correct Project and SubProject DC datastream
+        assertXMLEqual(readFileToString(projectDC), mockProjectDC.getExchanges().get(0).getIn().getBody(String.class));
+        assertXMLEqual(readFileToString(subProjectDC), mockSubprojectDC.getExchanges().get(0).getIn().getBody(String.class));
 
         //Show the bodies sent to the mock endpoint in the log
-        for (Exchange mockExchange : mockParents.getExchanges()) {
-            log.info("Result from {} route: {}", mockExchange.getIn().getHeader("routeId"), mockExchange.getIn().getBody(String.class));
-        }
+//        for (Exchange mockExchange : mockParents.getExchanges()) {
+//            log.info("Result from {} route: {}", mockExchange.getIn().getHeader("routeId"), mockExchange.getIn().getBody(String.class));
+//        }
 
-        assertMockEndpointsSatisfied();
+
     }
 }

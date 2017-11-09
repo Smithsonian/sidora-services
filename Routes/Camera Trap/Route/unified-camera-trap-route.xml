@@ -28,9 +28,10 @@
   -->
 
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
-    xmlns:camel="http://camel.apache.org/schema/blueprint"xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsdhttp://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd">
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+           http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd">
 
     <!-- OSGI blueprint property placeholder -->
     <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
@@ -1864,11 +1865,11 @@
                             <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X"/>-->
 
                             <!-- Get the DC datastream for the project -->
-                            <to uri="fedora://getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
+                            <to uri="fedora:getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
                             <convertBodyTo type="java.lang.String"/>
                             <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
                             <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltSubprojectSIdoraConcept2DC"/>
-                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X"/>
+                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addSubprojectDC"/>
 
                         </when>
                         <otherwise>
@@ -2020,11 +2021,11 @@
                             <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X"/>-->
 
                             <!-- Get the DC datastream for the project -->
-                            <to uri="fedora://getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
+                            <to uri="fedora:getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
                             <convertBodyTo type="java.lang.String"/>
                             <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
                             <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltProjectSIdoraConcept2DC"/>
-                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X"/>
+                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addProjectDC"/>
 
                         </when>
                         <otherwise>
