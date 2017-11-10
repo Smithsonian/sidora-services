@@ -37,6 +37,7 @@ import org.apache.camel.model.LogDefinition;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
@@ -45,9 +46,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.custommonkey.xmlunit.XMLUnit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +62,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_CREATED;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.auth.AuthScope.ANY;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
@@ -166,6 +167,7 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
     }
 
     @Test
+    @Ignore
     public void testFedora() throws IOException {
         HttpGet request = new HttpGet(FEDORA_URI + "/objects/si:121909/datastreams/DC/content?format=xml");
         final String xml;
@@ -185,6 +187,7 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
     }
 
     @Test
+    @Ignore
     public void testFuseki() throws IOException {
         String parentPid = "si:121909";
 
@@ -222,17 +225,28 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
     }*/
 
     /**
-     * Testing Project and Subproject datastreams created and have alternate id's. The test assumes neither Project or SubProject exist
-     * and will continue to create the object.
+     * Testing Project and Subproject datastreams are created and the DC has the alternate ID. The test assumes neither Project or SubProject exist
+     * and will continue to create the object after findObject retries for both altId and name have been exhausted.
+     *
+     * Project and Subproject creation basic workflow:
+     *    - findObject using AltId if not found and retries are exhausted continue
+     *    - findObject using String Name if not found and retries are exhausted continue
+     *    - create fedora object RELS-EXT, EAC-CPF, parent/child relationship, and add the altId to the DC datastream
      *
      * @throws Exception
      */
     @Test
-    public void processParentsTest() throws Exception {
+    public void processParentsAltIDTest() throws Exception {
 
         //The mock endpoint we are sending to for assertions
         MockEndpoint mockResult = getMockEndpoint("mock:mockResult");
-        mockResult.expectedMessageCount(6);
+        mockResult.expectedMessageCount(4);
+
+        MockEndpoint mockAltIDResult = getMockEndpoint("mock:altIdResult");
+        mockAltIDResult.expectedMessageCount(16);
+
+        MockEndpoint mockNameResult = getMockEndpoint("mock:nameResult");
+        mockNameResult.expectedMessageCount(16);
 
         /* Advicewith the routes as needed for this test */
         context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -243,133 +257,32 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
                 //Grab the Datastreams from fedora and send then to the mock endpoint for assertion
                 weaveByType(LogDefinition.class).selectLast().after()
                         //Project Datastreams
-                        .toD("fcrepo:objects/${headers.ProjectPID}/datastreams?format=xml").id("mockResult1")
+                        .toD("fcrepo:objects/${headers.ProjectPID}/datastreams?format=xml").id("mockResult[0]")
+                        .log("Project Datastreams=\n${body}")
                         .convertBodyTo(String.class)
                         .to("mock:mockResult")
-                        .toD("fcrepo:objects/${headers.ProjectPID}/datastreams/DC/content?format=xml").id("mockResult2")
+                        .toD("fcrepo:objects/${headers.ProjectPID}/datastreams/DC/content?format=xml").id("mockResult[1]")
                         .convertBodyTo(String.class)
                         .log("Project DC=\n${body}")
                         .to("mock:mockResult")
-                        .toD("fcrepo:objects/${headers.ProjectPID}/datastreams/RELS-EXT/content?format=xml").id("mockResult3")
-                        .convertBodyTo(String.class)
-                        .log("Project RELS-EXT=\n${body}")
-                        .to("mock:mockResult")
 
                         //SubProject datastreams
-                        .toD("fcrepo:objects/${headers.SubProjectPID}/datastreams?format=xml").id("mockResult4")
+                        .toD("fcrepo:objects/${headers.SubProjectPID}/datastreams?format=xml").id("mockResult[2]")
+                        .log("Subproject Datastreams=\n${body}")
                         .convertBodyTo(String.class)
                         .to("mock:mockResult")
-                        .toD("fcrepo:objects/${headers.SubProjectPID}/datastreams/DC/content?format=xml").id("mockResult5")
+                        .toD("fcrepo:objects/${headers.SubProjectPID}/datastreams/DC/content?format=xml").id("mockResult[3]")
                         .convertBodyTo(String.class)
-                        .log("Sub Project DC=\n${body}")
-                        .to("mock:mockResult")
-                        .toD("fcrepo:objects/${headers.SubProjectPID}/datastreams/RELS-EXT/content?format=xml").id("mockResult6")
-                        .convertBodyTo(String.class)
-                        .log("Sub Project RELS-EXT=\n${body}")
+                        .log("Subproject DC=\n${body}")
                         .to("mock:mockResult");
-            }
-        });
-
-        context.start();
-
-        //Initialize the exchange with body and headers as needed
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
-        exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
-        exchange.getIn().setHeader("CamelFedoraPid", getConfig().getString("si.ct.root"));
-
-        // The endpoint we want to start from with the exchange body and headers we want
-        template.send("direct:processParents", exchange);
-
-        //Delay test so we can open fedora admin to look at the objects
-        //Thread.sleep(300000);
-
-        List<String> resultList = new ArrayList<String>();
-        for (Exchange resultExchange : mockResult.getExchanges()) {
-            resultList.add(resultExchange.getIn().getBody(String.class));
-        }
-
-        XMLUnit.setIgnoreWhitespace(true);
-        XMLUnit.setIgnoreComments(true);
-
-        //Assert Project DatastreamsUCT_AltId_IT
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/projectDatastreams.xml")), resultList.get(0));
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/projectDC.xml")), resultList.get(1));
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/projectRELS-EXT.rdf")), resultList.get(2));
-
-        //Assert Subproject Datastreams
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/subprojectDatastreams.xml")), resultList.get(3));
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/subprojectDC.xml")), resultList.get(4));
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/subProjectRELS-EXT.rdf")), resultList.get(5));
-
-        assertMockEndpointsSatisfied();
-    }
-
-    /**
-     * Testing Project and Subproject findObject logic using alternate id's to check if an object exists
-     * and falling back to checking using string name.
-     *
-     * The test assumes Project and SubProject with altId exist.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void altIDExistsTest() throws Exception {
-
-        //The mock endpoint we are sending to for assertions
-        MockEndpoint mockProjectResult = getMockEndpoint("mock:mockProjectResult");
-        mockProjectResult.expectedMessageCount(6);
-        mockProjectResult.expectedHeaderReceived("findObjectBy", "AltId");
-
-        MockEndpoint mockSubprojectResult = getMockEndpoint("mock:mockSubprojectResult");
-        mockSubprojectResult.expectedMessageCount(6);
-        mockSubprojectResult.expectedHeaderReceived("findObjectBy", "Name");
-
-        MockEndpoint mockProjectDC = getMockEndpoint("mock:projectDCResult");
-        mockProjectDC.expectedMessageCount(1);
-        //mockProjectDC.expectedBodiesReceived(readFileToString(projectDC));
-
-        MockEndpoint mockSubprojectDC = getMockEndpoint("mock:subprojectDCResult");
-        mockSubprojectDC.expectedMessageCount(1);
-        //mockSubprojectDC.expectedBodiesReceived(readFileToString(subProjectDC));
-
-        /* Advicewith the routes as needed for this test */
-        context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                interceptSendToEndpoint("direct:processPlot").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping processPlot");
-            }
-        });
-
-        context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                // Intercept sending DC datastream to Fedora and send to mock for assertion
-                weaveById("addProjectDC").before()
-                        .log(LoggingLevel.INFO, "Sending Project DC created to mock endpoint")
-                        .to("mock:projectDCResult");
-            }
-        });
-
-        context.getRouteDefinition("UnifiedCameraTrapProcessSubproject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                //intercept sending DC datastream to Fedora and send to mock for assertion
-                weaveById("addSubprojectDC").before()
-                        .log(LoggingLevel.INFO, "Sending Subproject DC created to mock endpoint")
-                        .setHeader("routeId", simple("${routeId}"))
-                        .to("mock:subprojectDCResult");
             }
         });
 
         context.getRouteDefinition("UnifiedCameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //Send to mock:result for assertion
-                weaveByType(LogDefinition.class).selectFirst().before()
-                        .choice()
-                        .when(simple("${header.findObjectBy} == 'AltId'")).to("mock:mockProjectResult")
-                        .otherwise().to("mockSubprojectResult");
+                weaveById("whenFindByAltId").after().to("mock:altIdResult");
+                weaveById("whenFindByName").after().to("mock:nameResult");
             }
         });
 
@@ -387,17 +300,32 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
         //Delay test so we can open fedora admin to look at the objects
         //Thread.sleep(300000);
 
-
-
-        XMLUnit.setIgnoreWhitespace(true);
-        XMLUnit.setIgnoreComments(true);
-
-        //Assert Project DC
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/projectDC.xml")), mockProjectDC.getExchanges().get(0).getIn().getBody(String.class));
-
-        //Assert Subproject DC
-        assertXMLEqual(readFileToString(new File(KARAF_HOME + "/AltIdSampleData/Unified/subprojectDC.xml")), mockSubprojectDC.getExchanges().get(0).getIn().getBody(String.class));
-
         assertMockEndpointsSatisfied();
+
+        List<String> resultList = new ArrayList<String>();
+        for (Exchange resultExchange : mockResult.getExchanges()) {
+            resultList.add(resultExchange.getIn().getBody(String.class));
+        }
+
+        //Assert Project Datastreams
+        assertNotNull("The Project Datastreams does not exist!", resultList.get(0));
+        assertTrue("The Project DC does not exist!", resultList.get(0).contains("dsid=\"DC\""));
+        assertNotNull("The Project RELS-EXT does not exist!", resultList.get(0).contains("dsid=\"RELS-EXT\""));
+        assertTrue("The Project EAC-CPF does not exist!", resultList.get(0).contains("dsid=\"EAC-CPF\""));
+
+        //Assert Subproject Datastreams
+        assertNotNull("The Subproject Datastreams does not exist!", resultList.get(2));
+        assertTrue("The Subproject DC does not exist!", resultList.get(2).contains("dsid=\"DC\""));
+        assertNotNull("The Subproject RELS-EXT does not exist!", resultList.get(3).contains("dsid=\"RELS-EXT\""));
+        assertTrue("The Subproject EAC-CPF does not exist!", resultList.get(2).contains("dsid=\"EAC-CPF\""));
+
+
+        //Assert Project DC contains the PID and altId
+        assertNotNull(resultList.get(1).split("<dc:identifier>")[1].split("</dc:identifier>")[0]);
+        assertEquals("testProjectId0001", resultList.get(1).split("<dc:identifier>")[2].split("</dc:identifier>")[0]);
+
+        //Assert Subproject DC contains the PID and altId
+        assertNotNull(resultList.get(3).split("<dc:identifier>")[1].split("</dc:identifier>")[0]);
+        assertEquals("testSubProjectId0001", resultList.get(3).split("<dc:identifier>")[2].split("</dc:identifier>")[0]);
     }
 }

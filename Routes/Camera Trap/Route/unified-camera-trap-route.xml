@@ -1501,7 +1501,7 @@
                     <simple>
                         ${header.findObjectBy} == 'AltId'
                     </simple>
-                    <setBody>
+                    <setBody id="whenFindByAltId">
                         <!-- Query for Alternate Id -->
                         <simple>
                             SELECT ?o FROM &lt;info:edu.si.fedora#ri&gt;
@@ -1517,7 +1517,7 @@
                     <simple>
                         ${header.findObjectBy} == 'Name'
                     </simple>
-                    <setBody>
+                    <setBody id="whenFindByName">
                         <!-- The query needs to also check directly along the parent axis since names are not unique. -->
                         <simple>
                             SELECT ?o FROM &lt;info:edu.si.fedora#ri&gt;
@@ -1956,7 +1956,7 @@
             </setBody>
 
             <!-- First look for the Project using Alternate Id -->
-            <to uri="direct:findObject"/>
+            <to uri="direct:findObject" id="findObjectProjectAltId"/>
 
             <choice>
                 <when>
@@ -1981,7 +1981,7 @@
                     </setBody>
 
                     <!-- Look for the Project again using string name -->
-                    <to uri="direct:findObject" />
+                    <to uri="direct:findObject" id="findObjectProjectName"/>
 
                     <choice>
                         <when>

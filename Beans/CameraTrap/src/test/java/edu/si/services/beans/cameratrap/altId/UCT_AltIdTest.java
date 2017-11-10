@@ -112,12 +112,6 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
     @Test
     public void processParentsMockFedoraTest() throws Exception {
 
-        //The mock endpoint we are sending to for assertions
-//        MockEndpoint mockParents = getMockEndpoint("mock:processParentsResult");
-//        mockParents.expectedMessageCount(2);
-//        //We want to make sure that the expected bodies have the correct Project and SubProject RELS-EXT
-//        mockParents.expectedBodiesReceived(readFileToString(projectRELS_EXT), readFileToString(subProjectRELS_EXT));
-
         MockEndpoint mockProjectDC = getMockEndpoint("mock:projectDCResult");
         mockProjectDC.expectedMessageCount(1);
         //mockProjectDC.expectedBodiesReceived(readFileToString(projectDC));
@@ -223,12 +217,45 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
         //assert that the expected bodies have the correct Project and SubProject DC datastream
         assertXMLEqual(readFileToString(projectDC), mockProjectDC.getExchanges().get(0).getIn().getBody(String.class));
         assertXMLEqual(readFileToString(subProjectDC), mockSubprojectDC.getExchanges().get(0).getIn().getBody(String.class));
+    }
 
-        //Show the bodies sent to the mock endpoint in the log
-//        for (Exchange mockExchange : mockParents.getExchanges()) {
-//            log.info("Result from {} route: {}", mockExchange.getIn().getHeader("routeId"), mockExchange.getIn().getBody(String.class));
-//        }
+    @Test
+    public void findObjectTest() throws Exception {
+        MockEndpoint mockAltIDResult = getMockEndpoint("mock:altIdResult");
+        mockAltIDResult.expectedMessageCount(8);
 
+        MockEndpoint mockNameResult = getMockEndpoint("mock:nameResult");
+        mockNameResult.expectedMessageCount(8);
 
+        /* Advicewith the routes as needed for this test */
+        context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToString(".*create.*").replace().stop();
+            }
+        });
+
+        context.getRouteDefinition("UnifiedCameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //replace the actual fuseki http call and provide our own response
+                weaveById("whenFindByAltId").after().to("mock:altIdResult");
+                weaveById("whenFindByName").after().to("mock:nameResult");
+                weaveById("findObjectFusekiHttpCall").replace().setBody().simple(readFileToString(objectNotFoundFusekiResponse));
+            }
+        });
+
+        context.start();
+
+        //Initialize the exchange with body and headers as needed
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
+        exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
+        exchange.getIn().setHeader("CamelFedoraPid", getConfig().getString("si.ct.root"));
+
+        // The endpoint we want to start from with the exchange body and headers we want
+        template.send("direct:processProject", exchange);
+
+        assertMockEndpointsSatisfied();
     }
 }
