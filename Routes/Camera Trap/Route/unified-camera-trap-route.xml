@@ -762,7 +762,20 @@
                     //CameraSiteName
                 </xpath>
             </setHeader>
+
+            <log message="${id}: Site: Alternate Id - ${header.DeploymentCorrelationId} Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+
+            <!-- Get the DC datastream for the site -->
+            <to uri="fedora:getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
+            <convertBodyTo type="java.lang.String"/>
+            <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltSiteSIdoraConcept2DC"/>
+            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addSiteDC"/>
+
             <log message="${id}: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1991,6 +2004,12 @@
                             <log message="${id}: Project does not exist for Alternate Id: ${header.DeploymentCorrelationId} or String Name: ${header.CamelFedoraLabel}"
                                  loggingLevel="INFO"
                                  logName="{{si.ct.id}}"/>
+                            <!-- Stash the CT Root PID. -->
+                            <setHeader headerName="ParentPID">
+                                <simple>
+                                    ${header.CamelFedoraPid}
+                                </simple>
+                            </setHeader>
 
                             <!-- Create UCT project and add it as a sub-concept of the Camera Trap root object. -->
                             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
@@ -2448,6 +2467,10 @@
                     </simple>
                 </setHeader>
 
+                <log message="${id}: InFlightConceptStatusPolling: Alternate Id - ${header.DeploymentCorrelationId} Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+                     loggingLevel="DEBUG"
+                     logName="{{si.ct.id}}"/>
+
                 <setHeader headerName="findObjectBy">
                     <simple>
                         AltId
@@ -2456,7 +2479,7 @@
 
                 <setBody>
                     <simple>
-                        ${body.deploymentId}
+                        ${header.DeploymentCorrelationId}
                     </simple>
                 </setBody>
 
