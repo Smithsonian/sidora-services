@@ -412,11 +412,43 @@
                     <log message="${id} Derivatives: Found DNG (Camera RAW)."
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
+
+                    <!-- FITS will not generate the correct output for DNG without the file ext. -->
+                    <log message="${id} Derivatives: Renaming Staged File For DNG processing: ${header.CamelFileNameProduced} to ${header.CamelFileNameProduced}.dng"
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                    <setHeader headerName="CamelFileNameProducedStash">
+                        <simple>${header.CamelFileNameProduced}</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple>${header.CamelFileNameProduced}</simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="file://staging/?fileName=${header.CamelFileNameProduced}.dng"/>
+                    <log message="${id} Derivatives: Renaming Staged File For DNG processing: ${header.CamelFileNameProduced} to "
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+
                     <multicast>
                         <to uri="direct://processDerivativesDNGImage"/>
                         <to uri="direct://processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
+                    <!-- Delete the temporary file created for DNG processing. Note: This approach is Unix specific. -->
+                    <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}"/>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}"
+                                 loggingLevel="WARN"/>
+                        </when>
+                    </choice>
+                    <!-- Unstash the original filename for deletion -->
+                    <setHeader headerName="CamelFileNameProduced">
+                        <simple>${header.CamelFileNameProducedStash}</simple>
+                    </setHeader>
                 </when>
 
                 <otherwise>
@@ -930,6 +962,11 @@
                     file={{karaf.home}}/${header.CamelFileNameProduced}
                 </simple>
             </setHeader>
+
+            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
             <toD uri="{{si.fits.host}}/examine"/>
             <convertBodyTo type="java.lang.String"/>
 
