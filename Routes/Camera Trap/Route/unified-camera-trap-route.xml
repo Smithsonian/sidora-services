@@ -1791,7 +1791,7 @@
                 </xpath>
             </setHeader>
 
-            <log message="${id}: Sub-project: Alternate Id - ${header.altId} Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id}: Sub-project: Alternate Id - ${header.DeploymentCorrelationId} | Label - ${header.CamelFedoraLabel} | Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1887,7 +1887,7 @@
                         </when>
                         <otherwise>
                             <!-- Return the existing project as the current object. -->
-                            <log message="${id}: Sub-project already exists for string name - ${body}."
+                            <log message="${id}: Sub-project already exists for String Name / Label - ${header.CamelFedoraLabel} with PID - ${body}."
                                  loggingLevel="DEBUG"
                                  logName="{{si.ct.id}}"/>
                             <setHeader headerName="CamelFedoraPid">
@@ -1900,7 +1900,7 @@
                 </when>
                 <otherwise>
                     <!-- Return the existing sub-project as the current object. -->
-                    <log message="${id}: Sub-project already exists for Alternate Id - ${body}."
+                    <log message="${id}: Sub-project already exists for Alternate Id - ${header.DeploymentCorrelationId} with PID - ${body}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1952,7 +1952,7 @@
                 </xpath>
             </setHeader>
 
-            <log message="${id}: Project: Alternate Id - ${header.DeploymentCorrelationId} Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+            <log message="${id}: Project: Alternate Id - ${header.DeploymentCorrelationId} | Label - ${header.CamelFedoraLabel} | Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -2049,7 +2049,7 @@
                         </when>
                         <otherwise>
                             <!-- Return the existing project as the current object. -->
-                            <log message="${id}: Project already exists for String Name - ${body}."
+                            <log message="${id}: Project already exists for String Name / Label - ${header.CamelFedoraLabel} with PID - ${body}."
                                  loggingLevel="DEBUG"
                                  logName="{{si.ct.id}}"/>
                             <setHeader headerName="CamelFedoraPid">
@@ -2062,7 +2062,7 @@
                 </when>
                 <otherwise>
                     <!-- Return the existing project as the current object. -->
-                    <log message="${id}: Project already exists for Alternate Id - ${body}."
+                    <log message="${id}: Project already exists for Alternate Id - ${header.DeploymentCorrelationId} with PID - ${body}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
