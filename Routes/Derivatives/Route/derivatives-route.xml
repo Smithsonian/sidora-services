@@ -424,10 +424,7 @@
                         <simple>${header.CamelFileNameProduced}</simple>
                     </setBody>
                     <to uri="reader:file"/>
-                    <to uri="file://staging/?fileName=${header.CamelFileNameProduced}.dng"/>
-                    <log message="${id} Derivatives: Renaming Staged File For DNG processing: ${header.CamelFileNameProduced} to "
-                         loggingLevel="DEBUG"
-                         logName="edu.si.derivatives"/>
+                    <to uri="file://?fileName=${header.CamelFileNameProduced}.dng"/>
 
                     <multicast>
                         <to uri="direct://processDerivativesDNGImage"/>
@@ -968,7 +965,7 @@
                  logName="edu.si.derivatives"/>
 
             <toD uri="{{si.fits.host}}/examine"/>
-            <convertBodyTo type="java.lang.String"/>
+            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
 
             <log message="${id} FITS Web Service Response Body:\n${body}"
                  loggingLevel="DEBUG"

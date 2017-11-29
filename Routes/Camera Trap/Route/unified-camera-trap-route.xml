@@ -1226,9 +1226,9 @@
                 </simple>
             </setHeader>
             <toD uri="{{si.fits.host}}/examine"/>
-            <convertBodyTo type="java.lang.String"/>
+            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
 
-            <log message="${id} Fit Web Service Output:\n${body}"
+            <log message="${id} FITS Web Service Output:\n${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
