@@ -1063,6 +1063,9 @@
                             <simple>
                                 ${headers.CamelExecExitValue} == 0
                             </simple>
+                            <delay>
+                                <constant>100</constant>
+                            </delay>
                             <to uri="fedora:addDatastream?name=PROXY_MP3&amp;type=audio/mpeg&amp;dsLabel=PROXY_MP3&amp;group=M&amp;versionable=false"/>
                             <log message="${id} Derivatives: Adding converted audio as mp3 to PROXY_MP3."
                                  loggingLevel="DEBUG"
