@@ -172,7 +172,7 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
 
         //Initialize the exchange with body and headers as needed
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("CamelFileNameProduced", testFile.getName());
+        exchange.getIn().setHeader("CamelFileAbsolutePath", testFile.getAbsolutePath());
         exchange.getIn().setHeader("CamelFedoraPid", "test:0001");
 
         // The endpoint we want to start from with the exchange body and headers we want
