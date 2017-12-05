@@ -26,7 +26,7 @@
   ~ those of third-party libraries, please see the product release notes.
   -->
 
-<foxml:digitalObject VERSION="1.1" PID="si:121909"
+<foxml:digitalObject VERSION="1.1" PID="test:123456"
                      xmlns:foxml="info:fedora/fedora-system:def/foxml#"
                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                      xsi:schemaLocation="info:fedora/fedora-system:def/foxml# http://www.fedora.info/definitions/1/0/foxml1-1.xsd">
@@ -41,7 +41,7 @@
         <foxml:datastreamVersion ID="RELS-EXT.0" LABEL="RDF Statements about this Object" CREATED="2014-03-11T18:13:07.114Z" MIMETYPE="application/rdf+xml" FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0" SIZE="674">
             <foxml:xmlContent>
                 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:fedora-model="info:fedora/fedora-system:def/model#">
-                    <rdf:Description rdf:about="info:fedora/si:121909">
+                    <rdf:Description rdf:about="info:fedora/test:123456">
                         <fedora:isMemberOfCollection rdf:resource="info:fedora/si:user-projects"></fedora:isMemberOfCollection>
                         <fedora-model:hasModel rdf:resource="info:fedora/si:projectCModel"></fedora-model:hasModel>
                     </rdf:Description>
@@ -66,7 +66,7 @@
                     <dc:title>eMammal</dc:title>
                     <dc:title>eMammal</dc:title>
                     <dc:description></dc:description>
-                    <dc:identifier>si:121909</dc:identifier>
+                    <dc:identifier>test:123456</dc:identifier>
                     <dc:relation></dc:relation>
                 </oai_dc:dc>
             </foxml:xmlContent>

@@ -131,7 +131,7 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
         BasicCredentialsProvider provider = new BasicCredentialsProvider();
         provider.setCredentials(ANY, new UsernamePasswordCredentials(System.getProperty("si.fedora.user"), System.getProperty("si.fedora.password")));
         httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
-        ingest("si:121909", Paths.get(FOXML, "eMammal.xml"));
+        ingest("test:123456", Paths.get(FOXML, "eMammal.xml"));
     }
 
     private static void ingest(String pid, Path payload) throws IOException {
@@ -180,7 +180,7 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
                 "  <dc:title>eMammal</dc:title>\n" +
                 "  <dc:title>eMammal</dc:title>\n" +
                 "  <dc:description></dc:description>\n" +
-                "  <dc:identifier>si:121909</dc:identifier>\n" +
+                "  <dc:identifier>test:123456</dc:identifier>\n" +
                 "  <dc:relation></dc:relation>\n" +
                 "</oai_dc:dc>\n";
         assertEquals(expectedProfile, xml);
@@ -189,7 +189,7 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
     @Test
     @Ignore
     public void testFuseki() throws IOException {
-        String parentPid = "si:121909";
+        String parentPid = "test:123456";
 
         String testQuery = URLEncoder.encode("ASK FROM <info:edu.si.fedora#ri> { <info:fedora/" + parentPid + "> ?p ?o .}", "UTF-8");
 
