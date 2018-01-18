@@ -33,20 +33,21 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.*;
 
 /**
  * Tests for the Camera Trap Validate Fields Route
- * Created by jbirkhimer on 2/29/16.
+ *
+ * @author jbirkhimer
  */
-public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintTestSupport {
+public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTestSupport {
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private static final String KARAF_HOME = System.getProperty("karaf.home");
     private String defaultTestProperties = KARAF_HOME + "/test.properties";
+
+    //Test Data Directory contains the datastreams and other resources for the tests
+    private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles";
 
     //Camera Trap Deployment Info for testing
     private String camelFileParent = "10002000";
@@ -59,7 +60,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
     private Map<String, Object> headers;
 
     //Camera Trap Deployment Manifest
-    private File manifestFile = new File("src/test/resources/LegacyManifest-TestFiles/p151d18321/deployment_manifest.xml");
+    private File manifestFile = new File(testDataDir + "/scbi_unified_stripped_p125d18981/deployment_manifest.xml");
     private String manifest;
 
     //Datastream and Field values
@@ -78,12 +79,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
     @Override
     protected String getBlueprintDescriptor() {
         //use the production route for testing that the pom copied into the test resources
-        return "Routes/camera-trap-route.xml";
-    }
-
-    @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties");
+        return "Routes/unified-camera-trap-route.xml";
     }
 
     /**
@@ -94,6 +90,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
     public void setUp() throws Exception {
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setDefaultTestProperties(defaultTestProperties);
+
         disableJMX();
 
         //Store the Deployment Manifest as string to set the camel ManifestXML header
@@ -154,7 +151,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
     }
 
     /**
-     * Validation test of the EAC-CPF Datastream for the defined Field.
+     * Validation test of the EAC-CPF Datastream for the ProjectName Field.
      *
      * @throws Exception
      */
@@ -163,15 +160,14 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return but modified for our test
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/EAC-CPF/fail-projectName-EAC-CPF.xml");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/EAC-CPF/fail_EAC_CPF.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        //message.append("Datastream EAC-CPF ProjectName Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - EAC-CPF ProjectName Field validation failed. ");
-        message.append("Expected Prairie Ridge Project but found No Project Name.");
+        message.append("Expected Sample Triangle Camera Trap Survey Project but found Sample Blah Blah Blah Project.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), false);
@@ -179,11 +175,11 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         ArrayList expectedBody = new ArrayList<>();
         expectedBody.add(expectedValidationMessage);
 
-        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", expectedBody);
+        runValidationAdviceWithTest("UnifiedCameraTrapValidate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", expectedBody);
     }
 
     /**
-     * Validation test of the EAC-CPF Datastream for the defined Field.
+     * Validation test of the EAC-CPF Datastream for the ProjectName Field.
      *
      * @throws Exception
      */
@@ -192,7 +188,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/EAC-CPF/valid-EAC-CPF.xml");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/EAC-CPF/valid_EAC_CPF.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -201,12 +197,12 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         expectedBody.append("//eac:nameEntry[1]/eac:part/text()|");
         expectedBody.append("//ProjectName/text()");
 
-        runValidationAdviceWithTest("Validate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", expectedBody.toString());
+        runValidationAdviceWithTest("UnifiedCameraTrapValidate_EAC-CPF_Datastream", "direct:validate_EAC-CPF_Datastream", expectedBody.toString());
     }
 
 
     /**
-     * Validation test of the FGDC Datastream for the defined Field.
+     * Validation test of the FGDC Datastream for the CameraDeploymentID Field.
      *
      * @throws Exception
      */
@@ -215,15 +211,14 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/FGDC/fail-CameraDeploymentID-FGDC.xml");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/FGDC/fail_FGDC.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        //message.append("Datastream FGDC CameraDeploymentID Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - FGDC CameraDeploymentID Field validation failed. ");
-        message.append("Expected 0000 but found 1111.");
+        message.append("Expected d18981 but found blahblah.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), false);
@@ -231,12 +226,12 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         ArrayList expectedBody = new ArrayList<>();
         expectedBody.add(expectedValidationMessage);
 
-        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", expectedBody);
+        runValidationAdviceWithTest("UnifiedCameraTrapValidate_FGDC_Datastream", "direct:validate_FGDC_Datastream", expectedBody);
     }
 
 
     /**
-     * Validation test of the FGDC Datastream for the defined Field.
+     * Validation test of the FGDC Datastream for the CameraDeploymentID Field.
      *
      * @throws Exception
      */
@@ -245,7 +240,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/FGDC/validFGDC.xml");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/FGDC/valid_FGDC.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -254,11 +249,11 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         expectedBody.append("//citeinfo/othercit/text()|");
         expectedBody.append("//CameraDeploymentID/text()");
 
-        runValidationAdviceWithTest("Validate_FGDC_Datastream", "direct:validate_FGDC_Datastream", expectedBody.toString());
+        runValidationAdviceWithTest("UnifiedCameraTrapValidate_FGDC_Datastream", "direct:validate_FGDC_Datastream", expectedBody.toString());
     }
 
     /**
-     * Validation test of the MODS Datastream for the defined Field.
+     * Validation test of the MODS Datastream for the ImageSequenceId Field.
      *
      * @throws Exception
      */
@@ -267,15 +262,14 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/MODS/fail-ImageSequenceId-MODS.xml");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/MODS/fail_MODS.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        //message.append("Datastream MODS ImageSequenceId Field Validation failed");
         message.append("Deployment Package ID - " + camelFileParent);
         message.append(", Message - MODS ImageSequenceId Field validation failed. ");
-        message.append("Expected 2970s1 but found 000000.");
+        message.append("Expected d18981s1 but found blahblah.");
 
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 message.toString(), false);
@@ -283,11 +277,11 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         ArrayList expectedBody = new ArrayList<>();
         expectedBody.add(expectedValidationMessage);
 
-        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody);
+        runValidationAdviceWithTest("UnifiedCameraTrapValidate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody);
     }
 
     /**
-     * Validation test of the MODS Datastream for the defined Field.
+     * Validation test of the MODS Datastream for the ImageSequenceId Field.
      *
      * @throws Exception
      */
@@ -296,7 +290,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/MODS/validMODS.xml");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/MODS/valid_MODS.xml");
 
         datastream = FileUtils.readFileToString(datastreamFile);
 
@@ -305,7 +299,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         expectedBody.append("//mods:relatedItem/mods:identifier/text()|");
         expectedBody.append("//ImageSequence[1]/ImageSequenceId[1]/text()");
 
-        runValidationAdviceWithTest("Validate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody.toString());
+        runValidationAdviceWithTest("UnifiedCameraTrapValidate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody.toString());
     }
 
     /**
@@ -318,14 +312,14 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationPASS.csv");
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/validResearcherCSV.bin");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/ResearcherObservation/valid_ResearcherObservationCSV.csv");
 
         runValidationAdviceWithTestCSV(datastreamFile, null);
     }
 
     /**
      * Validation test of the CSV ResearcherObservation Datastream.
+     * Fail when ImageSeqId or Observation Counts are not valid
      *
      * @throws Exception
      */
@@ -334,8 +328,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationFAIL.csv");
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/failResearcherCSV.bin");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/ResearcherObservation/fail_ResearcherObservationCSV.csv");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -345,30 +338,6 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
                 csvMessage.toString(), false);
 
-
-        runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);
-    }
-
-    /**
-     * Validation test of the CSV ResearcherObservation Datastream.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testValidate_CSV_ResearcherObservationCounts_Fail() throws Exception {
-
-        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
-        // with the same exchange body that fedora would return
-        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/ResearcherObservationCountsFAIL.csv");
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/ResearcherObservations/failCountsResearcherCSV.bin");
-
-        //The expected validation message
-        StringBuilder csvMessage = new StringBuilder();
-        csvMessage.append("ResearcherIdentifications CSV: Validation Failed!");
-
-        //creating a new messageBean that is expected from the test route
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
-                csvMessage.toString(), false);
 
         runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);
     }
@@ -382,14 +351,14 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationPASS.csv");
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/validVolunteerCSV.bin");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/VolunteerObservation/valid_VolunteerObservationCSV.csv");
 
         runValidationAdviceWithTestCSV(datastreamFile, null);
     }
 
     /**
      * Validation test of the CSV VolunteerObservation Datastream.
+     * Fail when ImageSeqId or Observation Counts are not valid
      *
      * @throws Exception
      */
@@ -398,8 +367,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationFAIL.csv");
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/failVolunteerCSV.bin");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/VolunteerObservation/fail_VolunteerObservationCSV.csv");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
@@ -413,21 +381,35 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
     }
 
     /**
-     * Validation test of the CSV VolunteerObservation Datastream.
+     * Validation test of the CSV ImageObservation Datastream.
+     * @throws Exception
+     */
+    @Test
+    public void testValidate_CSV_ImageObservation_Passed() throws Exception {
+
+        //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
+        // with the same exchange body that fedora would return
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/ImageObservation/valid_ImageObservationCSV.csv");
+
+        runValidationAdviceWithTestCSV(datastreamFile, null);
+    }
+
+    /**
+     * Validation test of the CSV ImageObservation Datastream.
+     * Fail when ImageSeqId or Observation Counts are not valid
      *
      * @throws Exception
      */
     @Test
-    public void testValidate_CSV_VolunteerObservationCounts_Fail() throws Exception {
+    public void testValidate_CSV_ImageObservation_Fail() throws Exception {
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return
-        //datastreamFile = new File("src/test/resources/SID-647_TestFiles/scbi_deployments_validation/fail/3191d18434/VolunteerObservationCountsFAIL.csv");
-        datastreamFile = new File("src/test/resources/LegacyManifest-TestFiles/Datastreams/CSV/VolunteerObservations/failCountsVolunteerCSV.bin");
+        datastreamFile = new File(testDataDir + "/DatastreamTestFiles/ImageObservation/fail_ImageObservationCSV.csv");
 
         //The expected validation message
         StringBuilder csvMessage = new StringBuilder();
-        csvMessage.append("VolunteerIdentifications CSV: Validation Failed!");
+        csvMessage.append("ImageIdentifications CSV: Validation Failed!");
 
         //creating a new messageBean that is expected from the test route
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
@@ -453,7 +435,7 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
         headers.put("ManifestXML", String.valueOf(manifest));
 
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition("CameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("UnifiedCameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
 
@@ -487,5 +469,4 @@ public class LegacyCameraTrapDatastreamFieldValidationTest extends CT_BlueprintT
 
         assertMockEndpointsSatisfied();
     }
-
 }
