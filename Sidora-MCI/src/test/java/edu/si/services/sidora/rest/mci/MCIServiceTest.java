@@ -66,16 +66,20 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
     static private String LOG_NAME = "edu.si.mci";
 
     private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
+    protected static final String FEDORA_URI = System.getProperty("si.fedora.host");
+    protected static final String FUSEKI_URI = System.getProperty("si.fuseki.host") + "/fedora3";
+    protected static final String FITS_URI = System.getProperty("si.fits.host");
+    protected static final String MCI_URI = System.getProperty("si.sidora.mci.host");
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
+
+    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     private static final String SERVICE_ADDRESS = "/sidora/mci";
-    private static final String PORT = String.valueOf(AvailablePortFinder.getNextAvailable());
-    private static final String PORT_PATH = PORT + SERVICE_ADDRESS;
-    private static final String BASE_URL = "http://localhost:" + PORT_PATH;
+    private static final String BASE_URL = MCI_URI + SERVICE_ADDRESS;
 
     //Default Test Params
-    private static File TEST_XML = new File("src/test/resources/sample-data/MCI_Inbox/valid-mci-payload.xml");
-    private static File TEST_BAD_XML = new File("src/test/resources/sample-data/MCI_Inbox/bad-mci-payload.xml");
+    private static File TEST_XML = new File(KARAF_HOME + "/sample-data/MCI_Inbox/valid-mci-payload.xml");
+    private static File TEST_BAD_XML = new File(KARAF_HOME + "/sample-data/MCI_Inbox/bad-mci-payload.xml");
 
     private CloseableHttpClient httpClient;
 
@@ -94,14 +98,18 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
     @Override
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.mci.cfg",
-                "target/test-classes/sql/mci.sql.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.mci.cfg",
+                KARAF_HOME + "/sql/mci.sql.properties");
     }
 
     @Before
     @Override
     public void setUp() throws Exception {
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
+        setFedoraServer(FEDORA_URI, System.getProperty("si.fedora.user"), System.getProperty("si.fedora.password"));
+        setFuseki(FUSEKI_URI);
+        setFits(FITS_URI);
+        setSidoraMciHost(MCI_URI);
         setDefaultTestProperties(defaultTestProperties);
         httpClient = HttpClientBuilder.create().build();
         super.setUp();
@@ -137,10 +145,10 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
             }
         });
 
-        HttpPost post = new HttpPost(BASE_URL + "/addProject");
+        HttpPost post = new HttpPost(MCI_URI + "/addProject");
         post.addHeader("Content-Type", "application/xml");
         post.addHeader("Accept", "application/xml");
-        //post.setEntity(new StringEntity(readFileToString(new File("src/test/resources/sample-data/MCI_Inbox/small.xml"))));
+        //post.setEntity(new StringEntity(readFileToString(new File(KARAF_HOME + "/sample-data/MCI_Inbox/small.xml"))));
         post.setEntity(new StringEntity(readFileToString(TEST_XML)));
         HttpResponse response = httpClient.execute(post);
         assertEquals(200, response.getStatusLine().getStatusCode());
@@ -181,7 +189,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
         //for (int i = 0; i < 25; i++) {
 
-            HttpPost post = new HttpPost(BASE_URL + "/addProject");
+            HttpPost post = new HttpPost(MCI_URI + "/addProject");
             post.addHeader("Content-Type", "application/xml");
             post.addHeader("Accept", "application/xml");
             //post.setEntity(new StringEntity(readFileToString(TEST_BAD_XML)));
@@ -369,6 +377,8 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
             @Override
             public void configure() throws Exception {
                 interceptSendToEndpoint(".*fedora:.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, LOG_NAME, "Skip Sending to Fedora").to("mock:fedora");
+
+                weaveById("fitsRequest").replace().setHeader("CamelHttpResponseCode", simple("200")).setBody().simple("Test Fits Output");
             }
         });
 
@@ -389,7 +399,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
         assertMockEndpointsSatisfied();
 
-        assertStringContains(mockFedora.getExchanges().get(5).getIn().getBody(String.class), "<fits xmlns=\"http://hul.harvard.edu/ois/xml/ns/fits/fits_output\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://hul.harvard.edu/ois/xml/ns/fits/fits_output http://hul.harvard.edu/ois/xml/xsd/fits/fits_output.xsd\"");
+        assertStringContains(mockFedora.getExchanges().get(5).getIn().getBody(String.class), "Test Fits Output");
 
         deleteDirectory(getConfig().getString("karaf.home") + "/staging");
     }

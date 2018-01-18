@@ -28,9 +28,10 @@
   -->
 
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
-    xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+           http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd">
 
     <!-- OSGI blueprint property placeholder -->
     <!-- The properties should not be changed from karaf or external cfg if there are deployments currently being ingested
@@ -159,11 +160,16 @@
 
         <onException>
             <exception>java.net.ConnectException</exception>
+            <exception>org.apache.camel.http.common.HttpOperationFailedException</exception>
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
                               redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
-                              maximumRedeliveries="200"
+                              maximumRedeliveries="{{min.connectEx.redeliveries}}"
                               retryAttemptedLogLevel="WARN"/>
+            <log message="[${routeId}] :: Error reported: ${exception.message}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"
+                 id="logConnectException"/>
         </onException>
 
         <onException>
@@ -194,7 +200,7 @@
             <redeliveryPolicy useExponentialBackOff="true"
                               backOffMultiplier="2"
                               redeliveryDelay="{{si.ct.edanIds.redeliveryDelay}}"
-                              maximumRedeliveries="5"
+                              maximumRedeliveries="{{min.edan.redeliveries}}"
                               retryAttemptedLogLevel="WARN"/>
             <continued>
                 <constant>true</constant>
@@ -1210,30 +1216,42 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <recipientList>
+            <!-- Create a FITS derivative using Harvard FITS. -->
+            <setHeader headerName="CamelHttpMethod">
+                <constant>GET</constant>
+            </setHeader>
+            <setHeader headerName="CamelHttpQuery">
                 <simple>
-                    exec:fits?args=-i ${header.CamelFileAbsolutePath}
+                    file={{karaf.home}}/${header.CamelFileNameProduced}
                 </simple>
-            </recipientList>
+            </setHeader>
+            <toD uri="{{si.fits.host}}/examine"/>
+            <convertBodyTo type="java.lang.String"/>
+
+            <log message="${id} Fit Web Service Output:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
             <choice>
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        ${header.CamelExecExitValue} == 0
+                        <!--${body} != ''-->
+                        ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
-                        <log message="${id}: FITS MIME: ${header.FITSmimeType}"
-                             loggingLevel="DEBUG"
-                             logName="{{si.ct.id}}"/>
                     </setHeader>
+                    <log message="${id} Derivatives: FITS MIME: ${headers.dsMIME}"
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
                     <log message="${id}: Exec FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
                 </when>
                 <otherwise>
-                    <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelExecExitValue}"
+                    <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelHttpResponseCode}"
                          loggingLevel="ERROR"
                          logName="{{si.ct.id}}"/>
                 </otherwise>

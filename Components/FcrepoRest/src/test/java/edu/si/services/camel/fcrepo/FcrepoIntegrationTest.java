@@ -36,10 +36,33 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.http.HttpStatus;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.http.HttpStatus.SC_CREATED;
+import static org.apache.http.auth.AuthScope.ANY;
 
 /**
  * Integration testing for the FcrepoComponent.
@@ -51,6 +74,60 @@ public class FcrepoIntegrationTest extends CamelTestSupport {
     @EndpointInject(uri = "mock:result")
     private MockEndpoint mockEndpoint;
     private final FcrepoConfiguration fcrepoConfiguration = new FcrepoConfiguration();
+
+    protected static final String FEDORA_URI = System.getProperty("si.fedora.host");
+    protected static final String FUSEKI_URI = System.getProperty("si.fuseki.host");
+    private static final String BUILD_DIR = System.getProperty("buildDirectory");
+    private static final String PID = "test:deploymentObject";
+    private static final String TEST_FOXML = "/test-classes/test_deploymentObject.xml";
+
+    private static CloseableHttpClient httpClient;
+
+    private static final Logger logger = LoggerFactory.getLogger(FcrepoIntegrationTest.class);
+
+    @BeforeClass
+    public static void loadObjectsIntoFedora() throws IOException, InterruptedException {
+        BasicCredentialsProvider provider = new BasicCredentialsProvider();
+        provider.setCredentials(ANY, new UsernamePasswordCredentials(System.getProperty("si.fedora.user"), System.getProperty("si.fedora.password")));
+        httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+        ingest(PID, Paths.get(BUILD_DIR, TEST_FOXML));
+    }
+
+    private static void ingest(String pid, Path payload) throws IOException {
+        if (!checkObjectExist(pid)) {
+            String ingestURI = FEDORA_URI + "/objects/" + pid + "?format=info:fedora/fedora-system:FOXML-1.1&ignoreMime=true";
+
+            logger.debug("INGEST URI = {}", ingestURI);
+
+            HttpPost ingest = new HttpPost(ingestURI);
+            ingest.setEntity(new ByteArrayEntity(Files.readAllBytes(payload)));
+            ingest.setHeader("Content-type", MediaType.TEXT_XML);
+            try (CloseableHttpResponse pidRes = httpClient.execute(ingest)) {
+                assertEquals("Failed to ingest " + pid + "!", SC_CREATED, pidRes.getStatusLine().getStatusCode());
+                logger.info("Ingested test object {}", EntityUtils.toString(pidRes.getEntity()));
+            }
+        }
+    }
+
+    private static boolean checkObjectExist(String pid) throws IOException {
+        String query = URLEncoder.encode("ASK FROM <info:edu.si.fedora#ri> WHERE { <info:fedora/" + pid + "> ?p ?o}", "UTF-8");
+
+        HttpGet request = new HttpGet(FUSEKI_URI + "/fedora3?output=xml&query=" + query);
+        final boolean exists;
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
+            assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+            String pidExists = EntityUtils.toString(response.getEntity()).split("<boolean>")[1].split("</boolean>")[0];
+            exists = Boolean.parseBoolean(pidExists);
+            logger.info("PID = {}, Exists = {}", pid, exists);
+        }
+
+        return exists;
+    }
+
+    @AfterClass
+    public static void cleanUpHttpClient() throws IOException {
+        httpClient.close();
+    }
 
     /**
      * Test calling datastreams api using the Fcrepo component.

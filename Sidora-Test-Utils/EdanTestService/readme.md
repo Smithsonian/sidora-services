@@ -11,7 +11,7 @@ The Edan test utility can be run separately as standalone or as a bundle deploye
 
 Make sure the `si.ct.uscbi.server` property is set in the `<smx-home>/etc/edu.si.sidora.emammal.cfg` property file
 
-Ex. `si.ct.uscbi.server = http://localhost:1101/edan`
+Ex. `si.ct.uscbi.server = /edan`
 
 *** AFTER YOU ARE FINISHED TESTING BE SURE TO CHANGE THIS PROPERTY TO THE ACTUAL EDAN HTTP PATH !!! ***
 
@@ -47,6 +47,10 @@ Or by placing the `edan-test-util-1.0.jar` into `<smx-home>/deploy`
 From cmd line:
 
 ```
+#If edan-test-util was started via camel:run
+curl -v -X GET "http://localhost:1101/edan/addEdan"
+
+#If edan-test-util was deployed to SMX
 curl -v -X GET "http://localhost:1101/edan/addEdan"
 ```
 

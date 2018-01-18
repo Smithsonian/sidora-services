@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<fits_configuration>
+	<!-- Order of the tools determines preference -->
+	<tools>
+		<!-- exclude-exts attribute is a comma delimited list of file extensions that the tool should not try to process -->
+        <!-- include-exts attribute is a comma delimited list of file extensions that are the only ones the tool will process -->
+        <!-- classpath-dirs attribute is a list of directories where any tool-specific Java JAR files and configuration files used solely by these JAR files -->
+		<tool class="edu.harvard.hul.ois.fits.tools.exiftool.Exiftool" exclude-exts="txt,wps,vsd,jar,avi,mov,mpg,mpeg,mkv,mp4,mxf,ogv,mj2,divx,dv,m4v,m2v,ismv,m2ts,mpeg4" classpath-dirs="lib/exiftool" />
+        <tool class="edu.harvard.hul.ois.fits.tools.mediainfo.MediaInfo" include-exts="avi,mov,mpg,mpeg,mkv,mp4,mxf,ogv,mj2,divx,dv,m4v,m2v,ismv,m2ts,mpeg4" classpath-dirs="lib/mediainfo" />
+        <tool class="edu.harvard.hul.ois.fits.tools.oisfileinfo.AudioInfo" include-exts="wav" classpath-dirs="lib/audioinfo" />
+        <tool class="edu.harvard.hul.ois.fits.tools.oisfileinfo.ADLTool" include-exts="adl" classpath-dirs="lib/adltool" />
+        <tool class="edu.harvard.hul.ois.fits.tools.oisfileinfo.VTTTool" include-exts="vtt" />
+        <tool class="edu.harvard.hul.ois.fits.tools.droid.Droid"  exclude-exts="odm" classpath-dirs="lib/droid" />
+        <tool class="edu.harvard.hul.ois.fits.tools.jhove.Jhove" exclude-exts="dng,mbx,mbox,arw,adl,eml,java,doc,docx,docm,odt,rtf,pages,wpd,wp,epub,csv,avi,mov,mpg,mpeg,mkv,mp4,mpeg4,m2ts,mxf,ogv,mj2,divx,dv,m4v,m2v,ismv,pcd" classpath-dirs="lib/jhove" />
+        <tool class="edu.harvard.hul.ois.fits.tools.fileutility.FileUtility" exclude-exts="dng,wps,adl,jar,epub,csv" classpath-dirs="lib/fileutility" />
+        <!--<tool class="edu.harvard.hul.ois.fits.tools.exiftool.Exiftool" exclude-exts="txt,wps,vsd,jar,avi,mov,mpg,mpeg,mkv,mp4,mxf,ogv,mj2,divx,dv,m4v,m2v,ismv,m2ts,mpeg4" classpath-dirs="lib/exiftool" />-->
+        <tool class="edu.harvard.hul.ois.fits.tools.nlnz.MetadataExtractor" include-exts="bmp,gif,jpg,jpeg,wp,wpd,odt,doc,pdf,mp3,bfw,flac,html,xml,arc" classpath-dirs="lib/nzmetool,xml/nlnz"/>
+        <tool class="edu.harvard.hul.ois.fits.tools.oisfileinfo.FileInfo" classpath-dirs="lib/fileinfo" />
+        <tool class="edu.harvard.hul.ois.fits.tools.oisfileinfo.XmlMetadata" include-exts="xml" classpath-dirs="lib/xmlmetadata" />
+        <tool class="edu.harvard.hul.ois.fits.tools.ffident.FFIdent" exclude-exts="dng,wps,vsd,jar,ppt,rtf" classpath-dirs="lib/ffident" />
+        <tool class="edu.harvard.hul.ois.fits.tools.tika.TikaTool" exclude-exts="jar,avi,mov,mpg,mpeg,mkv,mp4,mpeg4,m2ts,mxf,ogv,mj2,divx,dv,m4v,m2v,ismv" classpath-dirs="lib/tika"/>
+	</tools>
+	
+	<output>
+		<dataConsolidator class="edu.harvard.hul.ois.fits.consolidation.OISConsolidator"/>
+		<display-tool-output>false</display-tool-output>
+		<report-conflicts>true</report-conflicts>	
+		<validate-tool-output>false</validate-tool-output>
+		<internal-output-schema>xml/fits_output.xsd</internal-output-schema>
+		<external-output-schema>http://hul.harvard.edu/ois/xml/xsd/fits/fits_output.xsd</external-output-schema>
+		<fits-xml-namespace>http://hul.harvard.edu/ois/xml/ns/fits/fits_output</fits-xml-namespace>
+		<enable-statistics>true</enable-statistics>
+		<enable-checksum>true</enable-checksum>
+		<!-- The below controls the exclusion of the checksum for certain files, even if enable-checksum is true -->
+		<!-- Video Exclusions -->
+		<!-- <checksum-exclusions exclude-exts="avi,mov,mpg,mkv,mp4,mxf,ogv,mj2,divx,dv,m4v,m2v,ismv"/> -->
+		<!-- Audio Exclusions -->
+		<!-- <checksum-exclusions exclude-exts="wav,aif,mp3,mp4,m4a,ra,rm"/> -->
+	</output>
+	
+	<process>
+		<max-threads>20</max-threads>
+	</process>
+	
+	<!-- file name of the droid signature file to use in tools/droid/-->
+	<droid_sigfile>DROID_SignatureFile_V82.xml</droid_sigfile>
+	
+	<!-- the fits home is used by the MediaInfo tool to load the jna api libs  -->
+	<!-- in most cases you won't need to change -->
+	<!-- example for BB will be /fits -->
+	<fits_home>.</fits_home>	
+		
+</fits_configuration>
