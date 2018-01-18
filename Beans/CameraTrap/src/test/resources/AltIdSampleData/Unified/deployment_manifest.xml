@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CameraTrapDeployment>
+    <ProjectId>testProjectId0001</ProjectId>
+    <ProjectName>Test Project</ProjectName>
+    <ProjectObjectives>Some Project Objective</ProjectObjectives>
+    <PublishDate>2015-12-31</PublishDate>
+    <ProjectOwners>
+        <ProjectOwner>
+            <ProjectOwnerName>Test Owner</ProjectOwnerName>
+            <ProjectOwnerEmail>testOwner@si.edu</ProjectOwnerEmail>
+        </ProjectOwner>
+    </ProjectOwners>
+    <PrincipalInvestigators>
+        <PrincipalInvestigator>
+            <PrincipalInvestigatorName>TestInvestigator</PrincipalInvestigatorName>
+            <PrincipalInvestigatorEmail>testInvestigator@si.edu</PrincipalInvestigatorEmail>
+        </PrincipalInvestigator>
+        <PrincipalInvestigator>
+            <PrincipalInvestigatorName>TestInvestigator2</PrincipalInvestigatorName>
+            <PrincipalInvestigatorEmail>testInvestigator2@si.edu</PrincipalInvestigatorEmail>
+        </PrincipalInvestigator>
+        <PrincipalInvestigator>
+            <PrincipalInvestigatorName>TestInvestigator3</PrincipalInvestigatorName>
+            <PrincipalInvestigatorEmail>testInvestigator3@si.edu</PrincipalInvestigatorEmail>
+        </PrincipalInvestigator>
+    </PrincipalInvestigators>
+    <ProjectContacts>
+        <ProjectContact>
+            <ProjectContactName>Test Owner</ProjectContactName>
+            <ProjectContactEmail>testOwner@si.edu</ProjectContactEmail>
+        </ProjectContact>
+    </ProjectContacts>
+    <ProjectLatitude>30.632937</ProjectLatitude>
+    <ProjectLongitude>-86.615033</ProjectLongitude>
+    <CountryCode>US</CountryCode>
+    <ProjectDataAccessandUseConstraints></ProjectDataAccessandUseConstraints>
+    <SubProjectId>testSubProjectId0001</SubProjectId>
+    <SubProjectName>Test Subproject</SubProjectName>
+    <SubProjectDesign></SubProjectDesign>
+    <PlotName></PlotName>
+    <PlotTreatment></PlotTreatment>
+    <CameraDeploymentID>d00001</CameraDeploymentID>
+    <CameraSiteName>Test Camera Site</CameraSiteName>
+    <Originators>
+        <Originator>
+            <OriginatorName>12345</OriginatorName>
+        </Originator>
+    </Originators>
+    <ProposedCameraDeploymentBeginDate></ProposedCameraDeploymentBeginDate>
+    <ProposedCameraDeploymentEndDate></ProposedCameraDeploymentEndDate>
+    <ProposedLatitude>30.40497</ProposedLatitude>
+    <ProposedLongitude>-86.84176</ProposedLongitude>
+    <CameraDeploymentBeginDate>2016-01-03</CameraDeploymentBeginDate>
+    <CameraDeploymentEndDate>2016-01-17</CameraDeploymentEndDate>
+    <CameraDeploymentNotes><![CDATA[ Test Site Notes ]]></CameraDeploymentNotes>
+    <ActualLatitude>30.40497</ActualLatitude>
+    <ActualLongitude>-86.84176</ActualLongitude>
+    <CameraFailureDetails>Camera Functioning</CameraFailureDetails>
+    <Bait>No Bait</Bait>
+    <BaitDescription></BaitDescription>
+    <Feature>Not Entered</Feature>
+    <FeatureMethodology></FeatureMethodology>
+    <AccessConstraints>NE</AccessConstraints>
+    <CameraID>OK76</CameraID>
+    <DetectionDistance>5</DetectionDistance>
+    <QuietPeriodSetting>0</QuietPeriodSetting>
+    <ImageResolutionSetting>3.1</ImageResolutionSetting>
+    <SensitivitySetting>high</SensitivitySetting>
+    <ImageSequence>
+        <ImageSequenceId>d00001s1</ImageSequenceId>
+        <ImageSequenceBeginTime>2016-01-03T17:08:50</ImageSequenceBeginTime>
+        <ImageSequenceEndTime>2016-01-03T17:08:55</ImageSequenceEndTime>
+        <VolunteerIdentifications>
+            <Identification>
+                <IUCNId>4</IUCNId>
+                <TSNId>4</TSNId>
+                <SpeciesScientificName>Camera Trapper</SpeciesScientificName>
+                <SpeciesCommonName>Camera Trapper</SpeciesCommonName>
+                <Count>1</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </VolunteerIdentifications>
+        <ResearcherIdentifications>
+            <Identification>
+                <IUCNId>4</IUCNId>
+                <TSNId>4</TSNId>
+                <SpeciesScientificName>Camera Trapper</SpeciesScientificName>
+                <SpeciesCommonName>Camera Trapper</SpeciesCommonName>
+                <Count>1</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </ResearcherIdentifications>
+        <Image>
+            <ImageId>d00001s1i1</ImageId>
+            <ImageFileName>d00001s1i1.JPG</ImageFileName>
+            <ImageDateTime>2016-01-03 17:08:50</ImageDateTime>
+            <ImageOrder>1</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType></PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+    </ImageSequence>
+</CameraTrapDeployment>

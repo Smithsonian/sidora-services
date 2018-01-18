@@ -25,33 +25,21 @@
   ~ license terms. For a complete copy of all copyright and license terms, including
   ~ those of third-party libraries, please see the product release notes.
   -->
-<!DOCTYPE configuration>
-<configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>[%p] %d{HH:mm:ss.SSS} \(%c{0}\) %m%n</pattern>
-        </encoder>
-    </appender>
 
-    <logger name="edu.si" additivity="false" level="WARN">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-    <logger name="edu.si.trippi.impl" additivity="false" level="${testLogLevel:DEBUG}">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-    <logger name="org.apache.http" additivity="false" level="WARN">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-    <logger name="org.apache.http.wire" additivity="false" level="WARN">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-    <logger name="org.apache.http.headers" additivity="false" level="WARN">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-    <logger name="org.apache.camel" additivity="false" level="WARN">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-    <root additivity="false" level="INFO">
-        <appender-ref ref="STDOUT"/>
-    </root>
-</configuration>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <xsl:output method="xml" indent="yes" encoding="utf-8"/>
+
+    <xsl:param name="DeploymentCorrelationId"/>
+
+    <xsl:template match="@*|node()">
+        <xsl:copy>
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:copy>
+    </xsl:template>
+    <xsl:template match="dc:identifier">
+        <xsl:copy-of select="."/>
+        <dc:identifier><xsl:value-of select="$DeploymentCorrelationId"/></dc:identifier>
+    </xsl:template>
+
+</xsl:stylesheet>

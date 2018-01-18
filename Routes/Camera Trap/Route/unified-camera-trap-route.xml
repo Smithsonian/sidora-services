@@ -762,7 +762,20 @@
                     //CameraSiteName
                 </xpath>
             </setHeader>
+
+            <log message="${id}: Site: Alternate Id - ${header.DeploymentCorrelationId} Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+
+            <!-- Get the DC datastream for the site -->
+            <to uri="fedora:getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
+            <convertBodyTo type="java.lang.String"/>
+            <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
+            <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltSiteSIdoraConcept2DC"/>
+            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addSiteDC"/>
+
             <log message="${id}: Add Relation: Parent PID - ${header.ParentPID} Child PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
@@ -1439,13 +1452,15 @@
                     <!-- Add the parents if needed. -->
                     <!-- Project is required, Project is required -->
                     <to uri="direct:processProject"/>
+
                     <!-- Add Sub-Project if needed, Sub-Project is required -->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
-                            boolean(//SubProjectName/text()[1])
+                            boolean(//SubProjectName/text()[1]) or boolean(//SubProjectId/text()[1])
                         </xpath>
                         <to uri="direct:processSubproject"/>
                     </filter>
+
                     <!-- Add Plot if needed, Plot is optional -->
                     <filter>
                         <xpath resultType="java.lang.String" headerName="ManifestXML">
@@ -1453,6 +1468,7 @@
                         </xpath>
                         <to uri="direct:processPlot"/>
                     </filter>
+
                     <!-- Clean stashed header that could potentially lock for inflight check during post validations-->
                     <removeHeader headerName="DeploymentCorrelationId"/>
                 </when>
@@ -1472,20 +1488,13 @@
 
         <route id="UnifiedCameraTrapFindObject" errorHandlerRef="noErrorHandler">
             <from uri="direct:findObject"/>
-            <log message="${id}: Started find object ..."
+            <log message="${id}: Started find object by ${header.findObjectBy}..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <log message="${id}: Find: Label - ${body}  Parent - ${header.CamelFedoraPid}"
+            <log message="${id}: Find: ${body}  Parent - ${header.CamelFedoraPid}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <!--
-            <transform>
-                <simple>
-                    ${body.replaceAll("'", "\'")}
-                </simple>
-            </transform>
-            -->
             <!-- There is a bug in Camel that causes replaceAll to fail so I am using Groovy for now.  We
                  will want to remove this so we don't have to include the Groovy feature just for this.
                  The bug is fixed in newer versions of Camel.
@@ -1500,17 +1509,41 @@
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 
-            <setBody>
-                <!-- The query needs to also check directly along the parent axis since names are not unique. -->
-                <simple>
-                    SELECT ?o FROM &lt;info:edu.si.fedora#ri&gt;
-                    WHERE
-                    {
-                        ?o &lt;info:fedora/fedora-system:def/model#label&gt; '${body}' .
-                        &lt;info:fedora/${header.CamelFedoraPid}&gt; &lt;info:fedora/fedora-system:def/relations-external#hasConcept&gt; ?o .
-                    }
-                </simple>
-            </setBody>
+            <choice>
+                <when>
+                    <simple>
+                        ${header.findObjectBy} == 'AltId'
+                    </simple>
+                    <setBody id="whenFindByAltId">
+                        <!-- Query for Alternate Id -->
+                        <simple>
+                            SELECT ?o FROM &lt;info:edu.si.fedora#ri&gt;
+                            WHERE
+                            {
+                            ?o &lt;http://purl.org/dc/elements/1.1/identifier&gt; '${body}' .
+                            &lt;info:fedora/${header.CamelFedoraPid}&gt; &lt;info:fedora/fedora-system:def/relations-external#hasConcept&gt; ?o .
+                            }
+                        </simple>
+                    </setBody>
+                </when>
+                <when>
+                    <simple>
+                        ${header.findObjectBy} == 'Name'
+                    </simple>
+                    <setBody id="whenFindByName">
+                        <!-- The query needs to also check directly along the parent axis since names are not unique. -->
+                        <simple>
+                            SELECT ?o FROM &lt;info:edu.si.fedora#ri&gt;
+                            WHERE
+                            {
+                            ?o &lt;info:fedora/fedora-system:def/model#label&gt; '${body}' .
+                            &lt;info:fedora/${header.CamelFedoraPid}&gt; &lt;info:fedora/fedora-system:def/relations-external#hasConcept&gt; ?o .
+                            }
+                        </simple>
+                    </setBody>
+                </when>
+            </choice>
+
             <!-- Converting the query above to URL encoded string to send over HTTP with GET method. -->
             <setBody>
                 <groovy>
@@ -1559,9 +1592,24 @@
                     <simple>
                         ${body} == ''
                     </simple>
-                    <!-- Throw custom exception to trigger re-try attempts on search -->
-                    <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
-                                    message="The fedora object not found"/>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${header.findObjectBy} == 'AltId'
+                            </simple>
+                            <!-- Throw custom exception to trigger re-try attempts on search -->
+                            <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
+                                            message="The fedora object not found for Alternate ID '${header.DeploymentCorrelationId}'"/>
+                        </when>
+                        <when>
+                            <simple>
+                                ${header.findObjectBy} == 'Name'
+                            </simple>
+                            <!-- Throw custom exception to trigger re-try attempts on search -->
+                            <throwException exceptionType="edu.si.services.fedorarepo.FedoraObjectNotFoundException"
+                                            message="The fedora object not found for string name '${header.CamelFedoraLabel}'"/>
+                        </when>
+                    </choice>
                 </when>
             </choice>
             <log message="${id}: Finished find object."
@@ -1661,6 +1709,12 @@
             <log message="${id}: Plot: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="findObjectBy">
+                <simple>
+                    Name
+                </simple>
+            </setHeader>
             <to uri="direct:findObject" />
             <choice>
                 <when>
@@ -1722,60 +1776,131 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <!-- Look for the sub-project. -->
-            <setBody>
+            <!-- Look for the sub-project Alternate Id. -->
+            <!-- Label used for fedora object and in-flight checks -->
+            <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //SubProjectName
                 </xpath>
-            </setBody>
-            <setHeader headerName="CamelFedoraLabel">
-                <simple>
-                    ${body}
-                </simple>
             </setHeader>
-            <!-- stash subproject identifier to be used for the in-flight parent process checks. -->
+
+            <!-- SubProject identifier used for AltId and in-flight checks. -->
             <setHeader headerName="DeploymentCorrelationId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //SubProjectId
                 </xpath>
             </setHeader>
-            <log message="${id}: Sub-project: Label - ${body}  Parent PID - ${header.CamelFedoraPid}"
+
+            <log message="${id}: Sub-project: Alternate Id - ${header.DeploymentCorrelationId} | Label - ${header.CamelFedoraLabel} | Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="direct:findObject" />
+
+            <setHeader headerName="findObjectBy">
+                <simple>
+                    AltId
+                </simple>
+            </setHeader>
+
+            <setBody>
+                <simple>
+                    ${header.DeploymentCorrelationId}
+                </simple>
+            </setBody>
+
+            <!-- First look for the SubProject using Alternate Id -->
+            <to uri="direct:findObject"/>
+
             <choice>
                 <when>
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id}: Sub-project does not exist"
+                    <log message="${id}: Sub-project does not exist for Alternate Id: ${header.DeploymentCorrelationId}"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
-                    <!-- Stash the Project PID. -->
-                    <setHeader headerName="ParentPID">
+
+                    <setHeader headerName="findObjectBy">
                         <simple>
-                            ${header.CamelFedoraPid}
+                            Name
                         </simple>
                     </setHeader>
-                    <!-- Create UCT sub-project and add it as a sub-concept of the project. -->
-                    <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-                    <!-- Add a minimal RELS-EXT to the sub-project -->
-                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-                    <!-- Add Relation from parent UCT project to the child UCT sub-project -->
-                    <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <!-- Add an EAC-CPF datastream for concept metadata. -->
+
                     <setBody>
                         <simple>
-                            ${header.ManifestXML}
+                            ${header.CamelFedoraLabel}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestSubproject.xsl?saxon=true"/>
-                    <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF%20Record&amp;versionable=true"/>
+
+                    <!-- Look for the SubProject again using string name -->
+                    <to uri="direct:findObject" />
+
+                    <choice>
+                        <when>
+                            <simple>
+                                ${body} == ''
+                            </simple>
+                            <log message="${id}: Sub-project does not exist for Alternate Id: ${header.DeploymentCorrelationId} or String Name: ${header.CamelFedoraLabel}"
+                                 loggingLevel="DEBUG"
+                                 logName="{{si.ct.id}}"/>
+                            <!-- Stash the Project PID. -->
+                            <setHeader headerName="ParentPID">
+                                <simple>
+                                    ${header.CamelFedoraPid}
+                                </simple>
+                            </setHeader>
+
+                            <!-- Create UCT sub-project and add it as a sub-concept of the project. -->
+                            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+
+                            <!-- Add a minimal RELS-EXT to the sub-project -->
+                            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
+                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+
+                            <!-- Add Relation from parent UCT project to the child UCT sub-project -->
+                            <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
+
+                            <!-- Add an EAC-CPF datastream for concept metadata. -->
+                            <setBody>
+                                <simple>
+                                    ${header.ManifestXML}
+                                </simple>
+                            </setBody>
+                            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestSubproject.xsl?saxon=true"/>
+                            <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF%20Record&amp;versionable=true"/>
+
+                            <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
+                            <!--<setBody>
+                                <simple>
+                                    ${header.ManifestXML}
+                                </simple>
+                            </setBody>
+                            <to uri="xslt:file:{{karaf.home}}/Input/xslt/Manifest2AltIdDC_identifier.xsl?saxon=true" id="xsltProjectSIdoraConcept2DC"/>
+                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X"/>-->
+
+                            <!-- Get the DC datastream for the project -->
+                            <to uri="fedora:getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
+                            <convertBodyTo type="java.lang.String"/>
+                            <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
+                            <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltSubprojectSIdoraConcept2DC"/>
+                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addSubprojectDC"/>
+
+                        </when>
+                        <otherwise>
+                            <!-- Return the existing project as the current object. -->
+                            <log message="${id}: Sub-project already exists for String Name / Label - ${header.CamelFedoraLabel} with PID - ${body}."
+                                 loggingLevel="DEBUG"
+                                 logName="{{si.ct.id}}"/>
+                            <setHeader headerName="CamelFedoraPid">
+                                <simple>
+                                    ${body}
+                                </simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
                 </when>
                 <otherwise>
                     <!-- Return the existing sub-project as the current object. -->
-                    <log message="${id}: Sub-project already exists - ${body}."
+                    <log message="${id}: Sub-project already exists for Alternate Id - ${header.DeploymentCorrelationId} with PID - ${body}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -1814,53 +1939,130 @@
                  logName="{{si.ct.id}}"/>
 
             <!-- Look for the project. -->
-            <setBody>
+            <!-- Label used for fedora object and in-flight checks -->
+            <setHeader headerName="CamelFedoraLabel">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //ProjectName
                 </xpath>
-            </setBody>
-            <setHeader headerName="CamelFedoraLabel">
-                <simple>
-                    ${body}
-                </simple>
             </setHeader>
-            <!-- stash project identifier to be used for the in-flight parent process checks. -->
+            <!-- Project identifier used for AltId and in-flight checks. -->
             <setHeader headerName="DeploymentCorrelationId">
                 <xpath resultType="java.lang.String" headerName="ManifestXML">
                     //ProjectId
                 </xpath>
             </setHeader>
-            <log message="${id}: Label - ${body}  Parent PID - ${header.CamelFedoraPid}."
+
+            <log message="${id}: Project: Alternate Id - ${header.DeploymentCorrelationId} | Label - ${header.CamelFedoraLabel} | Parent PID - ${header.CamelFedoraPid}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <to uri="direct:findObject"/>
+
+            <setHeader headerName="findObjectBy">
+                <simple>
+                    AltId
+                </simple>
+            </setHeader>
+
+            <setBody>
+                <simple>
+                    ${header.DeploymentCorrelationId}
+                </simple>
+            </setBody>
+
+            <!-- First look for the Project using Alternate Id -->
+            <to uri="direct:findObject" id="findObjectProjectAltId"/>
+
             <choice>
                 <when>
                     <simple>
                         ${body} == ''
                     </simple>
-                    <log message="${id}: Project does not exist."
+
+                    <log message="${id}: Project does not exist for Alternate Id: ${header.DeploymentCorrelationId}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
-                    <!-- Create UCT project and add it as a sub-concept of the Camera Trap root object. -->
-                    <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
-                    <!-- Add a minimal RELS-EXT to the project. -->
-                    <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
-                    <!-- Add Relation from parent UCT root object to the child UCT project. -->
-                    <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
-                    <!-- Add an EAC-CPF datastream for concept metadata. -->
+
+                    <setHeader headerName="findObjectBy">
+                        <simple>
+                            Name
+                        </simple>
+                    </setHeader>
+
                     <setBody>
                         <simple>
-                            ${header.ManifestXML}
+                            ${header.CamelFedoraLabel}
                         </simple>
                     </setBody>
-                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestProject.xsl?saxon=true"/>
-                    <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF&amp;versionable=true"/>
+
+                    <!-- Look for the Project again using string name -->
+                    <to uri="direct:findObject" id="findObjectProjectName"/>
+
+                    <choice>
+                        <when>
+                            <simple>
+                                ${body} == ''
+                            </simple>
+                            <log message="${id}: Project does not exist for Alternate Id: ${header.DeploymentCorrelationId} or String Name: ${header.CamelFedoraLabel}"
+                                 loggingLevel="INFO"
+                                 logName="{{si.ct.id}}"/>
+                            <!-- Stash the CT Root PID. -->
+                            <setHeader headerName="ParentPID">
+                                <simple>
+                                    ${header.CamelFedoraPid}
+                                </simple>
+                            </setHeader>
+
+                            <!-- Create UCT project and add it as a sub-concept of the Camera Trap root object. -->
+                            <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
+
+                            <!-- Add a minimal RELS-EXT to the project. -->
+                            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
+                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+
+                            <!-- Add Relation from parent UCT root object to the child UCT project. -->
+                            <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
+
+                            <!-- Add an EAC-CPF datastream for concept metadata. -->
+                            <setBody>
+                                <simple>
+                                    ${header.ManifestXML}
+                                </simple>
+                            </setBody>
+                            <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestProject.xsl?saxon=true"/>
+                            <to uri="fedora:addDatastream?name=EAC-CPF&amp;type=text/xml&amp;group=X&amp;dsLabel=EAC-CPF&amp;versionable=true"/>
+
+                            <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
+                            <!--<setBody>
+                                <simple>
+                                    ${header.ManifestXML}
+                                </simple>
+                            </setBody>
+                            <to uri="xslt:file:{{karaf.home}}/Input/xslt/Manifest2AltIdDC_identifier.xsl?saxon=true" id="xsltProjectSIdoraConcept2DC"/>
+                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X"/>-->
+
+                            <!-- Get the DC datastream for the project -->
+                            <to uri="fedora:getDatastreamDissemination?dsId=DC&amp;exchangePattern=InOut"/>
+                            <convertBodyTo type="java.lang.String"/>
+                            <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
+                            <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltProjectSIdoraConcept2DC"/>
+                            <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addProjectDC"/>
+
+                        </when>
+                        <otherwise>
+                            <!-- Return the existing project as the current object. -->
+                            <log message="${id}: Project already exists for String Name / Label - ${header.CamelFedoraLabel} with PID - ${body}."
+                                 loggingLevel="DEBUG"
+                                 logName="{{si.ct.id}}"/>
+                            <setHeader headerName="CamelFedoraPid">
+                                <simple>
+                                    ${body}
+                                </simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
                 </when>
                 <otherwise>
                     <!-- Return the existing project as the current object. -->
-                    <log message="${id}: Project already exists - ${body}."
+                    <log message="${id}: Project already exists for Alternate Id - ${header.DeploymentCorrelationId} with PID - ${body}."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="CamelFedoraPid">
@@ -2241,6 +2443,18 @@
                     </simple>
                 </setHeader>
 
+                <setHeader headerName="DeploymentCorrelationId">
+                    <simple>
+                        ${body.correlationId}
+                    </simple>
+                </setHeader>
+
+                <setHeader headerName="CamelFedoraLabel">
+                    <simple>
+                        ${body.correlationLabel}
+                    </simple>
+                </setHeader>
+
                 <!-- set required headers and body for the find object operation to function -->
                 <setHeader headerName="CamelFedoraPid">
                     <simple>
@@ -2252,15 +2466,26 @@
                         ${body.deploymentId}
                     </simple>
                 </setHeader>
+
+                <log message="${id}: InFlightConceptStatusPolling: Alternate Id - ${header.DeploymentCorrelationId} Label - ${header.CamelFedoraLabel}  Parent PID - ${header.CamelFedoraPid}"
+                     loggingLevel="DEBUG"
+                     logName="{{si.ct.id}}"/>
+
+                <setHeader headerName="findObjectBy">
+                    <simple>
+                        AltId
+                    </simple>
+                </setHeader>
+
                 <setBody>
                     <simple>
-                        ${body.correlationLabel}
+                        ${header.DeploymentCorrelationId}
                     </simple>
                 </setBody>
 
-                <to uri="direct:findObject" />
+                <!-- First look for the Project using Alternate Id -->
+                <to uri="direct:findObject"/>
 
-                <!-- if concept is found in RI, we can safely remove from the storage to release the wait lock -->
                 <choice>
                     <when>
                         <simple>
@@ -2270,6 +2495,41 @@
                              loggingLevel="DEBUG"
                              logName="{{si.ct.id}}"/>
                         <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
+                    </when>
+                    <when>
+                        <simple>
+                            ${body} == ''
+                        </simple>
+                        <log message="${id}: InFlightConceptStatusPolling: Project does not exist for Alternate Id: ${header.TempCorrelationId}."
+                             loggingLevel="DEBUG"
+                             logName="{{si.ct.id}}"/>
+
+                        <setHeader headerName="findObjectBy">
+                            <simple>
+                                Name
+                            </simple>
+                        </setHeader>
+
+                        <setBody>
+                            <simple>
+                                ${header.CamelFedoraLabel}
+                            </simple>
+                        </setBody>
+
+                        <to uri="direct:findObject"/>
+
+                        <!-- if concept is found in RI, we can safely remove from the storage to release the wait lock -->
+                        <choice>
+                            <when>
+                                <simple>
+                                    ${body} != ''
+                                </simple>
+                                <log message="${id}: InFlightConceptStatusPolling: Concept object: ${header.TempCorrelationId} found from RI.. removing from the data structure..."
+                                     loggingLevel="DEBUG"
+                                     logName="{{si.ct.id}}"/>
+                                <to uri="bean:cameraTrapStaticStore?method=removeCorrelationId(${header.TempCorrelationId})"/>
+                            </when>
+                        </choice>
                     </when>
                 </choice>
 

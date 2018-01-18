@@ -118,7 +118,7 @@ public class UCT_fusekiEncodingTest extends CT_BlueprintTestSupport {
         });
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("CamelFedoraPid", "si:121909");
+        exchange.getIn().setHeader("CamelFedoraPid", "test:123456");
         exchange.getIn().setBody("Panama: Ticks &amp; Climate Change");
 
         template.send("direct:processParents", exchange);
