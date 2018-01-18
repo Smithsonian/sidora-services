@@ -1235,15 +1235,21 @@
             </setHeader>
             <setHeader headerName="CamelHttpQuery">
                 <simple>
-                    file={{karaf.home}}/${header.CamelFileNameProduced}
+                    file=${header.CamelFileAbsolutePath}
                 </simple>
             </setHeader>
-            <toD uri="{{si.fits.host}}/examine"/>
-            <convertBodyTo type="java.lang.String"/>
 
-            <log message="${id} Fit Web Service Output:\n${body}"
+            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
                  loggingLevel="DEBUG"
-                 logName="edu.si.derivatives"/>
+                 logName="{{si.ct.id}}"/>
+
+            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+
+            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+
+            <log message="${id} FITS Web Service Output:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
 
             <choice>
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
@@ -1255,10 +1261,10 @@
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
                     </setHeader>
-                    <log message="${id} Derivatives: FITS MIME: ${headers.dsMIME}"
+                    <log message="${id}: FITS MIME: ${headers.dsMIME}"
                          loggingLevel="DEBUG"
-                         logName="edu.si.derivatives"/>
-                    <log message="${id}: Exec FITS. BODY: ${body}"
+                         logName="{{si.ct.id}}"/>
+                    <log message="${id}: FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>

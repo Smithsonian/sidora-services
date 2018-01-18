@@ -281,12 +281,12 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
         from("direct:addFITSDataStream").routeId("MCIProjectAddFITSDataStream")
                 .log(LoggingLevel.INFO, LOG_NAME, "Started processing FITS...")
 
-                .to("file://{{karaf.home}}/staging/")
+                .to("file://staging/")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .setHeader("CamelHttpQuery", simple("file={{karaf.home}}/${header.CamelFileNameProduced}"))
-                .toD("{{si.fits.host}}/examine").id("fitsRequest")
-                .convertBodyTo(String.class)
+                .toD("cxfrs:{{si.fits.host}}/examine?headerFilterStrategy=#dropHeadersStrategy").id("fitsRequest")
+                .convertBodyTo(String.class, "UTF-8")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} FITS Web Service Response Body:\\n${body}")
 
                 .choice()
@@ -314,7 +314,8 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query - ${body}")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
-                .toD("cxfrs:{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy")
+                .setHeader("CamelHttpQuery").simple("output=xml&${body}")
+                .toD("cxfrs:{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Find Query Result - ${body}")
