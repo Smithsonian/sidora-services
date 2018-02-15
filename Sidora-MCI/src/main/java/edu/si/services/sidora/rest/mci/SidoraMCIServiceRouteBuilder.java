@@ -78,7 +78,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .setHeader("error").simple("[${routeId}] :: correlationId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
                 .to("log:{{edu.si.mci}}?showAll=true&maxChars=100000&multiline=true&level=DEBUG")
-                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("onExceptionAddValidationErrorsToDB")
+                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=#requestDataSource").id("onExceptionAddValidationErrorsToDB")
                 .setBody(simple("${header.error}"))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, simple("400"))
                 .removeHeaders("mciProjectXML|mciProjectDESCMETA|mciResourceDESCMETA|error");
@@ -100,7 +100,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .logExhausted("{{mci.logExhausted}}")
                 .setHeader("error").simple("[${routeId}] :: correlationId = ${header.correlationId} :: Error reported: ${exception.message} - cannot process this message.")
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}")
-                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=requestDataSource").id("processProjectOnExceptionSQL");
+                .toD("sql:{{sql.errorProcessingRequest}}?dataSource=#requestDataSource").id("processProjectOnExceptionSQL");
 
         //Retry and continue when Folder Holder is not found in the Drupal dB
         onException(MCI_Exception.class)
@@ -143,7 +143,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} Using correlationId = ${headers.correlationId}")
 
                 //Add the request to the database (on exception log and continue)
-                .toD("sql:{{sql.addRequest}}?dataSource=requestDataSource").id("createRequest")
+                .toD("sql:{{sql.addRequest}}?dataSource=#requestDataSource").id("createRequest")
 
                 .setBody().simple("${header.mciProjectXML}", String.class)
 
@@ -166,7 +166,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
         from("seda:processProject").routeId("ProcessMCIProject")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Process MCI Project...")
 
-                .toD("sql:{{sql.consumeRequest}}?dataSource=requestDataSource").id("consumeRequest")
+                .toD("sql:{{sql.consumeRequest}}?dataSource=#requestDataSource").id("consumeRequest")
 
                 //Get the username from MCI Project XML
                 .setHeader("mciFolderHolder").xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class, ns, "mciProjectXML").id("folderHolderXpath")
@@ -188,12 +188,12 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.WARN, LOG_NAME, "${id}: Root object does not exist.")
                         .throwException(new IllegalArgumentException("Root object does not exist."))
                     .end()
-                .toD("sql:{{sql.completeRequest}}?dataSource=requestDataSource").id("completeRequest")
+                .toD("sql:{{sql.completeRequest}}?dataSource=#requestDataSource").id("completeRequest")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Successfully Processed MCI Project Request :: conceptPID = ${header.projectPID}, resourcePID = ${header.projectResourcePID}  :: correlationId = ${header.correlationId}");
 
         from("direct:findFolderHolderUserPID").routeId("MCIFindFolderHolderUserPID").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Find MCI Folder Holder User PID...")
-                .toD("sql:{{sql.find.mci.user.pid}}?dataSource=drupalDataSource").id("queryFolderHolder")
+                .toD("sql:{{sql.find.mci.user.pid}}?dataSource=#drupalDataSource").id("queryFolderHolder")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "Drupal db SQL Query Result Body: ${body}")
                 .choice()
                     .when().simple("${body.size} != 0 && ${body[0][user_pid]} != null")
@@ -216,7 +216,9 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
         from("direct:mciCreateConcept").routeId("MCICreateConcept")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Create MCI Project Concept...")
 
-                .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, "mciProjectDESCMETA")
+                .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, ns, "mciProjectDESCMETA")
+                //When setting the fedora label double encoding is needed for MCI Title's that contain special char's
+                .setHeader("mciLabel").groovy("URLEncoder.encode(URLEncoder.encode(request.headers.mciLabel))")
 
                 //Create the MCI Project Concept
                 .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
