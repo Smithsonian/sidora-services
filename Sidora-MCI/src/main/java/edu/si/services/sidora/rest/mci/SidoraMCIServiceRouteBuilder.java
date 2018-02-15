@@ -216,7 +216,8 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
         from("direct:mciCreateConcept").routeId("MCICreateConcept")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Create MCI Project Concept...")
 
-                .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, "mciProjectDESCMETA")
+                .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, ns, "mciProjectDESCMETA")
+                .setHeader("mciLabel").groovy("URLEncoder.encode(request.headers.mciLabel)")
 
                 //Create the MCI Project Concept
                 .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
