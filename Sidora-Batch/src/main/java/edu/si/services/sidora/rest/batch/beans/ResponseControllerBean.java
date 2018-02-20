@@ -27,7 +27,7 @@
 
 package edu.si.services.sidora.rest.batch.beans;
 
-import edu.si.services.sidora.rest.batch.model.responce.BatchRequestResponse;
+import edu.si.services.sidora.rest.batch.model.response.BatchRequestResponse;
 import edu.si.services.sidora.rest.batch.model.status.BatchStatus;
 import edu.si.services.sidora.rest.batch.model.status.ResourceStatus;
 import org.apache.camel.Exchange;

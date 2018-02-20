@@ -27,14 +27,11 @@
 
 package edu.si.services.sidora.rest.batch;
 
-import edu.si.services.sidora.rest.batch.model.BatchRequest;
-import edu.si.services.sidora.rest.batch.model.responce.BatchRequestResponse;
-import edu.si.services.sidora.rest.batch.model.status.ResourceStatus;
+import edu.si.services.sidora.rest.batch.model.response.BatchRequestResponse;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.sql.SqlComponent;
 import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.FileUtils;
@@ -56,9 +53,7 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 import javax.xml.bind.JAXBContext;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.PreparedStatement;
 import java.util.*;
 
 /**TODO: Fix Tests
