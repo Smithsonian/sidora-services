@@ -39,10 +39,6 @@ import org.apache.camel.component.aws.s3.S3Constants;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.LogDefinition;
 import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.FileBasedConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -52,7 +48,6 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -83,11 +78,6 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     }
 
     @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
-    }
-
-    @Override
     protected String[] preventRoutesFromStarting() {
         return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling", "UnifiedCameraTrapStartProcessing"};
     }
@@ -100,22 +90,9 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     @Override
     public void setUp() throws Exception {
         System.setProperty("si.ct.uscbi.enableS3Routes", "true");
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setDefaultTestProperties(defaultTestProperties);
-
-        Parameters params = new Parameters();
-        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
-                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                        .configure(params.fileBased().setFile(new File(defaultTestProperties)));
-        config = builder.getConfiguration();
-
-        config.setProperty("si.ct.uscbi.enableS3Routes", "true");
-
-        builder.save();
-
         super.setUp();
 
-        props = useOverridePropertiesWithPropertiesComponent();
+        props = getExtra();
 
         deleteTestDirectories();
 
@@ -174,8 +151,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
             @Override
             public void configure() throws Exception {
                 from("direct:listBuckets")
-                        .to("aws-s3:{{si.ct.uscbi.s3.approved.bucketName}}?amazonS3Client=#amazonS3Client"
-                                + "&operation=listBuckets")
+                        .to("aws-s3:{{si.ct.uscbi.s3.approved.bucketName}}?amazonS3Client=#amazonS3Client&operation=listBuckets")
                         .to("mock:result");
 
             }

@@ -38,8 +38,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
@@ -78,24 +76,24 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
         return "Routes/unified-camera-trap-route.xml";
     }
 
-    @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties");
-    }
+//    @Override
+//    protected List<String> loadAdditionalPropertyFiles() {
+//        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
+//    }
 
     @Override
     protected String[] preventRoutesFromStarting() {
         return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
     }
 
-    @Override
+    /*@Override
     public void setUp() throws Exception {
         setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
         setFedoraServer(FEDORA_URI, System.getProperty("si.fedora.user"), System.getProperty("si.fedora.password"));
         setFuseki(FUSEKI_URI);
         setDefaultTestProperties(defaultTestProperties);
         super.setUp();
-    }
+    }*/
 
     @Override
     public boolean isUseAdviceWith() {
@@ -203,7 +201,7 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
         exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
-        exchange.getIn().setHeader("CamelFedoraPid", getConfig().getString("si.ct.root"));
+        exchange.getIn().setHeader("CamelFedoraPid", getExtra().getProperty("si.ct.root"));
 
         // The endpoint we want to start from with the exchange body and headers we want
         template.send("direct:processParents", exchange);
@@ -251,7 +249,7 @@ public class UCT_AltIdTest extends CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
         exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
-        exchange.getIn().setHeader("CamelFedoraPid", getConfig().getString("si.ct.root"));
+        exchange.getIn().setHeader("CamelFedoraPid", getExtra().getProperty("si.ct.root"));
 
         // The endpoint we want to start from with the exchange body and headers we want
         template.send("direct:processProject", exchange);

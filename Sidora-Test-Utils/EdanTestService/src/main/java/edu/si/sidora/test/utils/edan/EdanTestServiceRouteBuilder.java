@@ -54,5 +54,10 @@ public class EdanTestServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "===================================================")
                 .log(LoggingLevel.INFO, LOG_NAME, "${body}")
                 .log(LoggingLevel.INFO, LOG_NAME, "===================================================");
+
+        from("direct:edan").routeId("edan-test")
+                .log(LoggingLevel.INFO, LOG_NAME, "===================================================")
+                .to("log:edan.test.service?showAll=true&multiline=true&maxChars=100000")
+                .log(LoggingLevel.INFO, LOG_NAME, "===================================================");
     }
 }

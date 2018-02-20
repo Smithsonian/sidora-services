@@ -42,9 +42,7 @@ import java.util.*;
  */
 public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTestSupport {
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     //Test Data Directory contains the datastreams and other resources for the tests
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles";
@@ -88,9 +86,6 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
      */
     @Override
     public void setUp() throws Exception {
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setDefaultTestProperties(defaultTestProperties);
-
         disableJMX();
 
         //Store the Deployment Manifest as string to set the camel ManifestXML header

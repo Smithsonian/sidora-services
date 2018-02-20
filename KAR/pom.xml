@@ -44,6 +44,14 @@
     <packaging>kar</packaging>
     <description>The SIdora Services Karaf Archive deployment artifact</description>
 
+    <properties>
+        <!--<target-karaf-etc-path>${basedir}/target/classes/resources/etc</target-karaf-etc-path>-->
+        <target-karaf-etc-path>${basedir}/target/etc</target-karaf-etc-path> <!-- for now keep config files out of KAR -->
+        <target-karaf-input-path>${basedir}/target/classes/resources/Input</target-karaf-input-path>
+        <target-karaf-deploy-path>${basedir}/target/classes/resources/deploy</target-karaf-deploy-path>
+        <target-karaf-sql-path>${basedir}/target/classes/resources/sql</target-karaf-sql-path>
+    </properties>
+
     <dependencies>
         <!-- SIdora Beans-->
         <dependency>
@@ -127,9 +135,106 @@
             <version>1.0</version>
         </dependency>
 
+        <!-- Edan-Sidora Test Service -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>edan-test-util</artifactId>
+            <version>1.0</version>
+            <classifier>features</classifier>
+            <type>xml</type>
+        </dependency>-->
+
     </dependencies>
 
     <build>
+        <!--The properties file that will be used for tests and token replacement during resource filtering-->
+        <!--<filters>
+            <filter>${karaf.properties}</filter>
+        </filters>-->
+
+        <!-- Copy resources to output folder -->
+        <!-- resources added to target/classes/resources will be included in the KAR and will be deployed to the correct locations when deploying the KAR itself. This way we make sure that any revisions or new velocity,xslt's get updated -->
+        <resources>
+            <!-- Camera Trap -->
+            <resource>
+                <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <excludes>
+                    <exclude>system.properties</exclude> <!-- missing default smx properties properties so exclude so we don't break smx we create it below -->
+                </excludes>
+                <filtering>true</filtering>
+            </resource>
+            <!-- copy the system properties file to target dir -->
+            <resource>
+                <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${basedir}/target</targetPath>
+                <excludes>
+                    <exclude>edu.si.sidora.karaf.cfg</exclude>
+                </excludes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Routes/Camera Trap/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Routes/Camera Trap/Route</directory>
+                <targetPath>${basedir}/target</targetPath>
+            </resource>
+            <resource>
+                <directory>../Routes/Derivatives/Route</directory>
+                <targetPath>${basedir}/target</targetPath>
+                <filtering>true</filtering>
+            </resource>
+
+            <!-- Edan-Sidora -->
+            <resource>
+                <directory>../Beans/Edan-Sidora/Karaf-config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Beans/Edan-Sidora/Karaf-config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+
+            <!-- Sidora-Batch -->
+            <resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/deploy</directory>
+                <targetPath>${basedir}/target</targetPath>
+            </resource>
+            <resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+
+            <!-- Sidora-MCI -->
+            <resource>
+                <directory>../Sidora-MCI/Karaf-Config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Sidora-MCI/Karaf-Config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Sidora-MCI/Karaf-Config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
@@ -141,6 +246,94 @@
                     <includeTransitiveDependency>false</includeTransitiveDependency>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <executions>
+                    <!-- supply properties to generate new config files -->
+                    <execution>
+                        <id>loadTestProperties</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files combine.self="append">
+                                <file>${karaf.properties}</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                    <!-- use production properties to generate new config files -->
+                    <execution>
+                        <id>loadSMXProperties</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files combine.self="append">
+                                <file>${smx.home}/etc/edu.si.sidora.batch.cfg</file>
+                                <file>${smx.home}/etc/edu.si.sidora.emammal.cfg</file>
+                                <file>${smx.home}/etc/edu.si.sidora.karaf.cfg</file>
+                                <file>${smx.home}/etc/edu.si.sidora.mci.cfg</file>
+                                <file>${smx.home}/etc/system.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                Plugin to add property files to maven for karaf feature.xml
+                When using 'configfile' element in the karaf feature.xml a maven url is required
+                Uncomment the 'configfile' section in the feature.xml and this plugin to enable this feature
+                Enabling will allow Karaf to automatically create/update config files in <karaf.home>/etc when a KAR is deployed
+            -->
+            <!--<plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-artifact</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                &lt;!&ndash; karaf config files &ndash;&gt;
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.karaf.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.karaf</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/system.properties</file>
+                                    <type>properties</type>
+                                    <classifier>system</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.emammal.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.emammal</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.batch.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.batch</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.mci.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.mci</classifier>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>-->
         </plugins>
     </build>
 </project>

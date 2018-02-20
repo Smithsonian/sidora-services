@@ -28,25 +28,27 @@
 package edu.si.services.beans.edansidora;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.ChoiceDefinition;
+import org.apache.camel.model.FilterDefinition;
 import org.apache.cxf.endpoint.Server;
 import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.custommonkey.xmlunit.XMLAssert;
+import org.junit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -57,14 +59,9 @@ import static org.apache.commons.io.FileUtils.readFileToString;
  */
 public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    protected static final String FEDORA_URI = System.getProperty("si.fedora.host");
-    protected static final String FUSEKI_URI = System.getProperty("si.fuseki.host") + "/fedora3";
-    protected static final String FITS_URI = System.getProperty("si.fits.host");
     protected static final String EDAN_TEST_URI = System.getProperty("si.ct.uscbi.server");
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
+    private static final String JMS_TEST_QUEUE = "edanIds.apim.update.test";
 
     private static File testManifest = new File(KARAF_HOME + "/unified-test-deployment/deployment_manifest.xml");
     private static String deploymentZipLoc = "src/test/resources/idsTest.zip"; //scbi_unified_test_deployment.zip";
@@ -78,28 +75,30 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         return "Routes/unified-camera-trap-route.xml";
     }
 
-    @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
-    }
-
-    @Override
-    protected String[] preventRoutesFromStarting() {
-        return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
-    }
-
+    /**
+     * Starts up an edan endpoint to test against
+     *
+     * @throws Exception
+     */
     @BeforeClass
     public static void startServer() throws Exception {
+
+        System.getProperties().list(System.out);
+
+//        EDAN_TEST_URI = "http://localhost:"+ System.getProperty("dynamic.test.port");
+//
+//        System.setProperty("si.ct.uscbi.server", EDAN_TEST_URI);
 
         System.out.println("===========[ EDAN_TEST_URI = " + EDAN_TEST_URI + " ]============");
 
         // start a simple front service
         JAXRSServerFactoryBean factory = new JAXRSServerFactoryBean();
-        factory.setAddress(EDAN_TEST_URI);
+        //factory.setAddress(EDAN_TEST_URI);
         factory.setResourceClasses(EdanTestService.class);
 
         server = factory.create();
         server.start();
+        System.out.println("===========[ JAXRSServerFactory Address = " + "" + " ]============");
     }
 
     @AfterClass
@@ -107,20 +106,8 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         server.stop();
     }
 
-    @Before
     @Override
     public void setUp() throws Exception {
-
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setDefaultTestProperties(defaultTestProperties);
-        setFedoraServer(FEDORA_URI, System.getProperty("si.fedora.user"), System.getProperty("si.fedora.password"));
-        setFuseki(FUSEKI_URI);
-        setFits(FITS_URI);
-        setEdanHost(EDAN_TEST_URI);
-
-        deleteDirectory(KARAF_HOME + "/ProcessUnified");
-        deleteDirectory(KARAF_HOME + "/UnifiedCameraTrapData");
-        deleteDirectory(KARAF_HOME + "/siris-dropbox");
         super.setUp();
 
         deploymentZip = new File(deploymentZipLoc);
@@ -261,11 +248,12 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void idsPushTest() throws Exception {
 
-        expectedFileExists = KARAF_HOME + "/siris-dropbox/ExportEmammal_emammal_image_testDeploymentId123/ExportEmammal_emammal_image_testDeploymentId123.xml";
+        expectedFileExists = getExtra().getProperty("si.ct.uscbi.idsPushLocation") + "/ExportEmammal_emammal_image_testDeploymentId123/ExportEmammal_emammal_image_testDeploymentId123.xml";
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
+        mockResult.setAssertPeriod(1500);
 
         context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -294,7 +282,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     public void edanIdsExceptionTest () throws Exception {
-        Integer minEdanRedelivery = getConfig().getInt("min.edan.redeliveries");
+        Integer minEdanRedelivery = Integer.valueOf(getExtra().getProperty("min.edan.redeliveries"));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);

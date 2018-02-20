@@ -31,17 +31,48 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 /**
+ * Class that creates EDAN server endpoints for testing purposes
+ *
  * @author jbirkhimer
  */
 @Path("/")
 public class EdanTestService {
 
     private static final Logger LOG = LoggerFactory.getLogger(EdanTestService.class);
+
+    /**
+     * Endpoint that accepts any path
+     * @return
+     */
+    @GET
+    @Path(value = "/{s:.*}")
+    public Response edanTest() {
+        LOG.info("Edan Test Server Received A Request");
+
+        Response.ResponseBuilder response = Response.ok("EDAN RESPONSE");
+
+        return response.build();
+    }
+
+    /**
+     * Endpoint that accepts any path
+     * @return
+     */
+    @POST
+    @Path(value = "/{s:.*}")
+    public Response workbenckCurlTest() {
+        LOG.info("Workbench Test Server Received A Request");
+
+        Response.ResponseBuilder response = Response.ok("WORKBENCH TEST RESPONSE");
+
+        return response.build();
+    }
 
     /**
      *

@@ -36,8 +36,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 
@@ -52,9 +50,6 @@ public class UCT_ProcessParents_Test extends EDAN_CT_BlueprintTestSupport {
 
     private static String LOG_NAME = "edu.si.uctingest";
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private String defaultTestProperties = "src/test/resources/test.properties";
-
     private static final File testManifest = new File("src/test/resources/unified-test-deployment/deployment_manifest.xml");
     private static final File projectRELS_EXT = new File("src/test/resources/test-data/projectRELS-EXT.rdf");
     private static final File subProjectRELS_EXT = new File("src/test/resources/test-data/subprojectRELS-EXT.rdf");
@@ -67,20 +62,8 @@ public class UCT_ProcessParents_Test extends EDAN_CT_BlueprintTestSupport {
     }
 
     @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList("target/test-classes/etc/edu.si.sidora.karaf.cfg", "target/test-classes/etc/system.properties", "target/test-classes/etc/edu.si.sidora.emammal.cfg");
-    }
-
-    @Override
     protected String[] preventRoutesFromStarting() {
         return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
-    }
-
-    @Override
-    public void setUp() throws Exception {
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setDefaultTestProperties(defaultTestProperties);
-        super.setUp();
     }
 
     @Override
@@ -165,7 +148,7 @@ public class UCT_ProcessParents_Test extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
         exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
-        exchange.getIn().setHeader("CamelFedoraPid", getConfig().getString("si.ct.root"));
+        exchange.getIn().setHeader("CamelFedoraPid", getExtra().getProperty("si.ct.root"));
 
         // The endpoint we want to start from with the exchange body and headers we want
         template.send("direct:processParents", exchange);

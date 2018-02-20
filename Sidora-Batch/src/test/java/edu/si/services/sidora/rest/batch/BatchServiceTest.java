@@ -59,7 +59,10 @@ import java.util.*;
 /**TODO: Fix Tests
  * @author jbirkhimer
  */
+@Ignore
 public class BatchServiceTest extends CamelBlueprintTestSupport {
+
+    private static final String KARAF_HOME = System.getProperty("karaf.home");
 
     // Flag to use MySql Server for testing otherwise Derby embedded dB will be used for testing.
     private static final Boolean USE_MYSQL_DB = false;
@@ -82,11 +85,10 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
     private EmbeddedDatabase db;
     private JdbcTemplate jdbcTemplate;
 
-    private static final Properties prop = new Properties();
+    private static final Properties props = new Properties();
 
 
     @Test
-    @Ignore
     public void newBatchRequest_addResourceObjects_Test() throws Exception {
 
         String resourceListXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/audioFiles.xml"));
@@ -164,7 +166,6 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
      * @throws Exception
      */
     @Test
-    @Ignore
     public void testStatus() throws Exception {
 
         String parentPid = "si:123456";
@@ -205,60 +206,11 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         log.info("===============[ DB Resource ]===============\n{}", jdbcTemplate.queryForList("select * from sidora.camelBatchResources where (\"correlationId\" = '" + correlationId + "' AND \"parentId\" = '" + parentPid + "')"));
     }
 
-    /**
-     * Sets up the system properties and Temp directories used by the route.
-     * @throws IOException
-     */
-    @BeforeClass
-    public static void setupSysPropsTempResourceDir() throws IOException {
-        FileInputStream propFile = new FileInputStream( "src/test/resources/test.properties");
-        FileInputStream sqlFile = new FileInputStream("target/test-classes/Karaf-config/sql/batch.process.sql.properties");
-
-//        Properties p = new Properties(System.getProperties());
-//        p.load(propFile);
-//        System.setProperties(p);
-        System.setProperty("karaf.home", "target/test-classes/Karaf-config");
-
-        prop.load(propFile);
-        prop.load(sqlFile);
-
-    }
-
     @Override
-    protected String[] loadConfigAdminConfigurationFile() {
-
-        /*File dir = new File("target/etc");
-        dir.mkdirs();
-
-        FileWriter writer = null;
-        File cfg = null;
-        try {
-            cfg = File.createTempFile("test-properties-", ".cfg", dir);
-            writer = new FileWriter(cfg);
-            prop.store(writer, null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return new String[]{cfg.getAbsolutePath(), "edu.si.sidora.batch"};*/
-
-        return new String[]{"src/test/resources/test.properties", "edu.si.sidora.batch"};
+    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
+        configAdmin.putAll(props);
+        return "edu.si.sidora.batch";
     }
-
-
-
-    @Override
-    protected Properties useOverridePropertiesWithPropertiesComponent() {
-        return prop;
-    }
-
 
     @Override
     protected JndiRegistry createRegistry() throws Exception {
@@ -267,13 +219,15 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         if (USE_MYSQL_DB) {
             BasicDataSource testMySQLdb = new BasicDataSource();
             testMySQLdb.setDriverClassName("com.mysql.jdbc.Driver");
-            testMySQLdb.setUrl("jdbc:mysql://" + prop.getProperty("mysql.host") + ":" + prop.getProperty("mysql.port") + "/" + prop.getProperty("mysql.database") + "?zeroDateTimeBehavior=convertToNull");
-            testMySQLdb.setUsername(prop.getProperty("mysql.username").toString());
-            testMySQLdb.setPassword(prop.getProperty("mysql.password").toString());
+            testMySQLdb.setUrl("jdbc:mysql://" + props.getProperty("mysql.host") + ":" + props.getProperty("mysql.port") + "/" + props.getProperty("mysql.database") + "?zeroDateTimeBehavior=convertToNull");
+            testMySQLdb.setUsername(props.getProperty("mysql.username").toString());
+            testMySQLdb.setPassword(props.getProperty("mysql.password").toString());
             reg.bind("dataSource", testMySQLdb);
         } else {
             reg.bind("dataSource", db);
         }
+
+        reg.bind("dataSource", db);
 
         reg.bind("jsonProvider", org.apache.cxf.jaxrs.provider.json.JSONProvider.class);
         reg.bind("jaxbProvider", org.apache.cxf.jaxrs.provider.JAXBElementProvider.class);
@@ -283,18 +237,43 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
 
     @Override
     protected String getBlueprintDescriptor() {
-        return "Karaf-config/deploy/sidora-batch.xml";
+        return "deploy/sidora-batch.xml";
+    }
+
+    protected List<String> loadAdditionalPropertyFiles() {
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.batch.cfg", KARAF_HOME + "/sql/batch.process.sql.properties");
     }
 
     @Override
-    @Before
     public void setUp() throws Exception {
+        log.info("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
+
+        List<String> propFileList = loadAdditionalPropertyFiles();
+        if (loadAdditionalPropertyFiles() != null) {
+            for (String propFile : propFileList) {
+                Properties extra = new Properties();
+                try {
+                    extra.load(new FileInputStream(propFile));
+                    props.putAll(extra);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        for (Map.Entry<Object, Object> p : System.getProperties().entrySet()) {
+            if (props.containsKey(p.getKey())) {
+                props.setProperty(p.getKey().toString(), p.getValue().toString());
+            }
+        }
+
         super.setUp();
+
         httpClient = HttpClientBuilder.create().build();
         //jaxb = JAXBContext.newInstance(CustomerList.class, Customer.class, Order.class, Product.class);
 
         db = new EmbeddedDatabaseBuilder()
-                .setType(EmbeddedDatabaseType.DERBY).setName(prop.getProperty("mysql.database")).addScripts("sql/createAndPopulateDatabase.sql").build();
+                .setType(EmbeddedDatabaseType.DERBY).setName("derbyTestDB").addScripts("sql/createAndPopulateDatabase.sql").build();
 
 //        FileInputStream sqlFile = new FileInputStream("src/test/resources/sql/createAndPopulateDatabase.sql");
 //        Properties sql = new Properties(System.getProperties());

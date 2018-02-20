@@ -53,16 +53,19 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-blueprint</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Testing -->
@@ -111,6 +114,18 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-exec</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-camel</artifactId>
+            <scope>test</scope>
+            <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.apache.camel</groupId>
+                    <artifactId>camel-jms</artifactId>
+                </exclusion>
+            </exclusions>-->
         </dependency>
         <dependency>
             <groupId>edu.si.services.beans</groupId>
@@ -253,15 +268,17 @@
                 <filtering>true</filtering>
             </testResource>
 
-            <!-- add the Camera Trap and WCS Routes directory as resources -->
+            <!-- add the Camera Trap Route directory as resources -->
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
             </testResource>
             <!-- add the emammal property file needed by the unified route -->
             <testResource>
                 <directory>../../Beans/Edan-Sidora/Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
             </testResource>
             <testResource>
                 <directory>../../Beans/Edan-Sidora/Karaf-config/Input</directory>
@@ -325,13 +342,9 @@
                     <systemPropertyVariables>
                         <karaf.home>${karaf.home}</karaf.home>
                         <fits.home>${fits.home}</fits.home>
+                        <fits.version>${fits.version}</fits.version>
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <buildDirectory>${project.build.directory}</buildDirectory>
-                        <si.fits.host>http://localhost:${dynamic.test.port}/fits</si.fits.host>
-                        <si.fuseki.host>http://localhost:${dynamic.test.port}/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:${dynamic.test.port}/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
                     </systemPropertyVariables>
                     <includes>
                         <include>**/*_IT</include>

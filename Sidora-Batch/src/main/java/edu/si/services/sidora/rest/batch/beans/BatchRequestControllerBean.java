@@ -29,6 +29,7 @@ package edu.si.services.sidora.rest.batch.beans;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.builder.xml.XPathBuilder;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
