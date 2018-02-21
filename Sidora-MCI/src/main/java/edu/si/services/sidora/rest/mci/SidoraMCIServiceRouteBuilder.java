@@ -395,7 +395,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
         from("direct:addFITSDataStream").routeId("MCIProjectAddFITSDataStream")
                 .log(LoggingLevel.INFO, LOG_NAME, "Started processing FITS...")
 
-                .to("file://{{karaf.home}}/staging/")
+                .to("file://staging/")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .setHeader("CamelHttpQuery", simple("file={{karaf.home}}/${header.CamelFileNameProduced}"))
