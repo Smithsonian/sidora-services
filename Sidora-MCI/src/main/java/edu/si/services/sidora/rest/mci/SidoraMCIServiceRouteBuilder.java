@@ -113,6 +113,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .logExhausted(false)
                 .continued(true)
                 .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
+                .setHeader("mciOwnerName").simple("mci.default.owner.name}}") //the user that the research project will be under when making the workbench http request
                 .log(LoggingLevel.WARN, LOG_NAME, "${exception.message} :: Using Default User PID ${header.mciOwnerPID}!!!").id("MCI_ExceptionOnException");
 
 
@@ -239,7 +240,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Starting Workbench Create Research Project Request...")
                 .setBody().simple("null")
                 .setHeader(Exchange.HTTP_METHOD, simple("GET"))
-                .setHeader(Exchange.HTTP_QUERY, simple("label=${header.mciResearchProjectLabel}&desc=${header.mciResearchProjectLabel}&user=${header.mciFolderHolder}"))
+                .setHeader(Exchange.HTTP_QUERY, simple("label=${header.mciResearchProjectLabel}&desc=${header.mciResearchProjectLabel}&user=${header.mciOwnerName}"))
                 //.setHeader(Exchange.HTTP_QUERY).groovy("URLEncoder.encode(request.headers.testRequestParams)")
                 .setBody().simple("")
 
@@ -303,6 +304,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                     .when().simple("${body.size} != 0 && ${body[0][user_pid]} != null")
                         .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
                         .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
+                        .setHeader("mciOwnerName").simple("${header.mciFolderHolder}")
                     .endChoice()
                     .otherwise()
                         .setBody().simple("[${routeId}] :: correlationId = ${header.correlationId} :: Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
