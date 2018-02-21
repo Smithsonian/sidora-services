@@ -215,7 +215,7 @@
             <resource>
                 <directory>../Routes/Sidora-Batch/Karaf-config/sql</directory>
                 <targetPath>${target-karaf-sql-path}</targetPath>
-                <filtering>true</filtering>
+                <!--<filtering>true</filtering>-->
             </resource>
 
             <!-- Sidora-MCI -->
@@ -231,7 +231,7 @@
             <resource>
                 <directory>../Sidora-MCI/Karaf-Config/sql</directory>
                 <targetPath>${target-karaf-sql-path}</targetPath>
-                <filtering>true</filtering>
+                <!--<filtering>true</filtering>-->
             </resource>
         </resources>
 
