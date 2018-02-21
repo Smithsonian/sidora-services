@@ -113,7 +113,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .logExhausted(false)
                 .continued(true)
                 .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
-                .setHeader("mciOwnerName").simple("mci.default.owner.name}}") //the user that the research project will be under when making the workbench http request
+                .setHeader("mciOwnerName").simple("{{mci.default.owner.name}}") //the user that the research project will be under when making the workbench http request
                 .log(LoggingLevel.WARN, LOG_NAME, "${exception.message} :: Using Default User PID ${header.mciOwnerPID}!!!").id("MCI_ExceptionOnException");
 
 
