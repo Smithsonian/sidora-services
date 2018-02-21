@@ -252,6 +252,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
                 weaveById("MCI_ExceptionOnException").after().to("mock:error");
                 weaveById("consumeRequest").remove();
                 weaveById("folderHolderXpath").remove();
+                weaveById("researchProjectLabelXpath").remove();
                 weaveById("setOwnerPID").before().to("mock:result").stop();
             }
         });
@@ -382,5 +383,169 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
         assertStringContains(mockFedora.getExchanges().get(5).getIn().getBody(String.class), "Test Fits Output");
 
         deleteDirectory(KARAF_HOME + "/staging");
+    }
+
+    /**
+     * Test the processProjectXpath body
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testResourceProjectLabelProcessMCIProjectRoute() throws Exception {
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("mciResearchProjectLabel", "Testing of MCI Project request #2");
+        mockResult.setAssertPeriod(1500);
+
+        context.getRouteDefinition("ProcessMCIProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("consumeRequest").remove();
+                weaveById("researchProjectLabelXpath").after().to("log:testMCI?showAll=true&multiline=true&maxChars=100000").to("mock:result").stop();
+            }
+        });
+
+        context.start();
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("mciProjectXML", readFileToString(TEST_XML));
+
+        template.send("seda:processProject", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testWorkbenchLoginSetCookie() throws Exception {
+        String testCookie = String.valueOf(UUID.randomUUID());
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("Cookie", testCookie);
+        mockResult.setAssertPeriod(1500);
+
+        context.getRouteDefinition("MCIWorkbenchLogin").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("workbenchLogin").replace()
+                        .setHeader("Set-Cookie").simple(testCookie)
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE).simple("302");
+                weaveById("workbenchLoginCreateResearchProjectCall").replace().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setBody("test body");
+
+        template.send("direct:workbenchLogin", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    @Ignore
+    public void testWorkbenchLoginException() throws Exception {
+    }
+
+    @Test
+    public void testWorkbenchCreateResearchProject() throws Exception {
+        String testPidResponse = "test:12345";
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("researchProjectPid", testPidResponse);
+        mockResult.setAssertPeriod(1500);
+
+        context.getRouteDefinition("MCIWorkbenchCreateResearchProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("workbenchCreateResearchProject").replace()
+                        .setBody().simple(testPidResponse)
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE).simple("200");
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("mciResearchProjectLabel", "testLabel");
+
+        template.send("direct:workbenchCreateResearchProject", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    @Ignore
+    public void testWorkbenchCreateResearchProjectException() throws Exception {
+    }
+
+    @Test
+    public void testMciProjectTemplate() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                from("direct:start")
+                        .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
+                        .log(LoggingLevel.DEBUG, "Transform Successful")
+                        .setHeader("mciProjectDESCMETA", simple("${body}", String.class))
+                        .to("direct:mciCreateConcept");
+            }
+        });
+        context.getRouteDefinition("MCICreateConcept").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint(".*fedora:.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, LOG_NAME, "Skip Sending to Fedora");
+                weaveById("mciCreateResource").replace().log("Skipping Create Resource");
+                weaveById("velocityMCIProjectTemplate").after().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setBody(readFileToString(new File("src/test/resources/test-mci.xml")));
+        exchange.getIn().setHeader("researchProjectPid", "test:001");
+        exchange.getIn().setHeader("CamelFedoraPid", "test:002");
+        exchange.getIn().setHeader("projectResourcePID", "test:003");
+        template.send("direct:start", exchange);
+
+        log.info("MciProjectTemplate result body: {}", mockResult.getExchanges().get(0).getIn().getBody());
+    }
+
+    @Test
+    public void testMciLabel() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                from("direct:start")
+                        .toD("xslt:file:{{karaf.home}}/Input/xslt/MCIProjectToSIdoraProject.xsl?saxon=true")
+                        .log(LoggingLevel.DEBUG, "Transform Successful")
+                        .setHeader("mciProjectDESCMETA", simple("${body}", String.class))
+                        .to("direct:mciCreateConcept");
+            }
+        });
+        context.getRouteDefinition("MCICreateConcept").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("mciLabel1").after().setBody().simple("${header.mciLabel}").to("mock:result").stop();
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setBody(readFileToString(new File("src/test/resources/test-mci.xml")));
+        exchange.getIn().setHeader("researchProjectPid", "test:001");
+        exchange.getIn().setHeader("CamelFedoraPid", "test:002");
+        exchange.getIn().setHeader("projectResourcePID", "test:003");
+        template.send("direct:start", exchange);
+
+        log.info("MciProjectTemplate result body: {}", mockResult.getExchanges().get(0).getIn().getBody());
+
+        log.info("Body Type: {}", mockResult.getExchanges().get(0).getIn().getBody().getClass());
+        assertIsInstanceOf(String.class, mockResult.getExchanges().get(0).getIn().getHeader("mciLabel"));
     }
 }

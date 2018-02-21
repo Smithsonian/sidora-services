@@ -266,7 +266,7 @@
                         </configuration>
                     </execution>
                     <!-- use production properties to generate new config files -->
-                    <execution>
+                    <!--<execution>
                         <id>loadSMXProperties</id>
                         <phase>initialize</phase>
                         <goals>
@@ -281,7 +281,7 @@
                                 <file>${smx.home}/etc/system.properties</file>
                             </files>
                         </configuration>
-                    </execution>
+                    </execution>-->
                 </executions>
             </plugin>
 
