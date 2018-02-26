@@ -131,7 +131,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
         mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(ConnectException.class);
         mockError.expectedHeaderReceived("redeliveryCount", minConnectExRedelivery);
         mockError.expectedFileExists(expectedFileExists);
-        mockResult.setAssertPeriod(7000);
+        mockError.setAssertPeriod(7000);
 
         context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
