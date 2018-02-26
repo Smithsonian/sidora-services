@@ -79,6 +79,7 @@
         <feature version="${camel.version}">camel-http</feature>
         <feature version="${camel.version}">camel-jdbc</feature>
         <feature version="${camel.version}">camel-sql</feature>
+        <feature version="${camel.version}">camel-gson</feature>
         <feature>hawtio-core</feature>
         <feature>webconsole</feature>
         <feature>activemq-web-console</feature>
