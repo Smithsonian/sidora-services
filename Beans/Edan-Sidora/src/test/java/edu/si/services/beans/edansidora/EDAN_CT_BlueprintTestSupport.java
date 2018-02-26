@@ -31,14 +31,7 @@ import edu.si.services.fedorarepo.FedoraComponent;
 import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.CamelContext;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
-import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.FileBasedConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.junit.Before;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
@@ -115,7 +108,6 @@ public class EDAN_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     @Override
     protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
         configAdmin.putAll(extra);
-        //return "edu.si.sidora.emammal";
-        return "edu.si.sidora.karaf";
+        return "edu.si.sidora.emammal";
     }
 }

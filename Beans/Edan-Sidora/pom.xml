@@ -48,6 +48,7 @@
     <properties>
         <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
         <servlet.port>8080</servlet.port>
+        <!--<solr.host>http://${edan.ids.solr.host}</solr.host>-->
         <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep fedora and fuseki up -->
         <!--<dynamic.test.port>40994</dynamic.test.port>-->
         <fedora.home>${project.build.directory}/fedora-home</fedora.home>
@@ -80,6 +81,11 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http-common</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -269,25 +275,55 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- edan test service -->
-        <!--<dependency>
-            <groupId>edu.si.services</groupId>
-            <artifactId>edan-test-util</artifactId>
-            <version>1.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-slf4j-impl</artifactId>
-                </exclusion>
-            </exclusions>
+        <!-- ActiveMQ test gear -->
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-camel</artifactId>
             <scope>test</scope>
-        </dependency>-->
+            <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.apache.camel</groupId>
+                    <artifactId>camel-jms</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-jackson</artifactId>
             <version>${camel.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-gson</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${fasterxml.jackson.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-json-validator</artifactId>
+            <version>2.20.0</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
@@ -330,20 +366,12 @@
             </testResource>
 
             <testResource>
-                <directory>../../Sidora-Test-Utils/src/test/resources/fedora-home</directory>
-                <targetPath>${fedora.home}</targetPath>
-                <filtering>true</filtering>
+                <directory>../../</directory>
+                <targetPath>${karaf.home}</targetPath>
+                <includes>
+                    <include>test.properties</include>
+                </includes>
             </testResource>
-            <testResource>
-                <directory>../../Sidora-Test-Utils/src/test/resources/fuseki-base</directory>
-                <targetPath>${fuseki.base}</targetPath>
-                <filtering>true</filtering>
-            </testResource>
-            <!--<testResource>
-                <directory>${basedir}/src/test/resources/foxml</directory>
-                <targetPath>${project.build.directory}/foxml</targetPath>
-                <filtering>true</filtering>
-            </testResource>-->
 
         </testResources>
 
@@ -371,19 +399,8 @@
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>edu.si.services.beans.edansidora</Bundle-SymbolicName>
-                        <!--<Private-Package>edu.si.services.*</Private-Package>
-                        <Import-Package>*</Import-Package>-->
-
-                        <!--<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>-->
-                        <!--<Embed-Transitive>true</Embed-Transitive>-->
-                        <!--<Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>-->
                         <Export-Package>edu.si.services.beans.edansidora</Export-Package>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
-
-                        <!--<Bundle-Description>${project.description}</Bundle-Description>
-                        <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
-                        <Private-Package>edu.si.services.beans.edansidora</Private-Package>
-                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>-->
                     </instructions>
                 </configuration>
             </plugin>
@@ -423,94 +440,6 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <karaf.home>${karaf.home}</karaf.home>
-                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
-                    </systemPropertyVariables>
-                    <includes>
-                        <include>**/*_IT</include>
-                    </includes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>integration-test</id>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Config for integration testing against fedora and fuseki -->
-            <!--<plugin>
-                <groupId>org.codehaus.cargo</groupId>
-                <artifactId>cargo-maven2-plugin</artifactId>
-                <configuration>
-                    <container>
-                        <containerId>tomcat7x</containerId>
-                        <type>embedded</type>
-                        <systemProperties>
-                            <fedora.home>${fedora.home}</fedora.home>
-                            <FUSEKI_BASE>${fuseki.base}</FUSEKI_BASE>
-                            &lt;!&ndash; keep Apache Derby as quiet as possible &ndash;&gt;
-                            <derby.stream.error.field>java.lang.System.err</derby.stream.error.field>
-                            <derby.stream.error.logSeverityLevel>5000</derby.stream.error.logSeverityLevel>
-                        </systemProperties>
-                        <log>${project.build.directory}/cargo.log</log>
-                        <output>${project.build.directory}/cargo-output.log</output>
-                    </container>
-                    <configuration>
-                        <properties>
-                            <cargo.logging>high</cargo.logging>
-                            <cargo.servlet.uriencoding>UTF-8</cargo.servlet.uriencoding>
-                            <cargo.jvmargs>-Xmx512m</cargo.jvmargs>
-                            <cargo.servlet.port>${dynamic.test.port}</cargo.servlet.port>
-                            &lt;!&ndash; fire AJP into /dev/null &ndash;&gt;
-                            <cargo.tomcat.ajp.port>0</cargo.tomcat.ajp.port>
-                        </properties>
-                    </configuration>
-                    <deployer>
-                        &lt;!&ndash; empty deployer element prevents Cargo from trying to deploy our project, which is a bundle, into
-                        Tomcat &ndash;&gt;
-                    </deployer>
-                    <deployables>
-                        <deployable>
-                            <groupId>org.apache.jena</groupId>
-                            <artifactId>jena-fuseki-war</artifactId>
-                            <type>war</type>
-                        </deployable>
-                        <deployable>
-                            <groupId>edu.si.trippi</groupId>
-                            <artifactId>trippi-sparql-fcrepo-webapp</artifactId>
-                            <type>war</type>
-                        </deployable>
-                    </deployables>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>start-tomcat</id>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>start</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>stop-tomcat</id>
-                        <phase>post-integration-test</phase>
-                        <goals>
-                            <goal>stop</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>-->
-
         </plugins>
     </build>
-
 </project>
