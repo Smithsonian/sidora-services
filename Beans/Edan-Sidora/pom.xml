@@ -28,7 +28,7 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>edu.si.services</groupId>
         <artifactId>beans</artifactId>
@@ -47,6 +47,11 @@
 
     <properties>
         <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
+        <servlet.port>8080</servlet.port>
+        <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep fedora and fuseki up -->
+        <!--<dynamic.test.port>40994</dynamic.test.port>-->
+        <fedora.home>${project.build.directory}/fedora-home</fedora.home>
+        <fuseki.base>${project.build.directory}/fuseki-base</fuseki.base>
 
         <!-- Unit Test Properties-->
         <karaf.home>${project.build.directory}/test-classes</karaf.home>
@@ -278,10 +283,22 @@
             <scope>test</scope>
         </dependency>-->
 
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jackson</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
         <defaultGoal>install</defaultGoal>
+
+        <!--The properties file that will be used for tests and token replacement during resource filtering-->
+        <!--<filters>
+            <filter>src/test/resources/test.properties</filter>
+        </filters>-->
 
         <!-- Copy test resources to output folder target/test-classes -->
         <testResources>
@@ -291,26 +308,42 @@
                 <filtering>true</filtering>
             </testResource>
 
+            <!-- add the Edan-Sidora Karaf-config directories -->
             <testResource>
                 <directory>Karaf-config</directory>
-                <!--<targetPath>${basedir}/target/test-classes/etc</targetPath>-->
+                <targetPath>${karaf.home}</targetPath>
+                <filtering>true</filtering>
             </testResource>
+            <!-- add the Camera Trap Route directory as resources -->
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
-                <targetPath>${basedir}/target/test-classes/etc</targetPath>
+                <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
             </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Input</directory>
-                <targetPath>${basedir}/target/test-classes/Input</targetPath>
+                <targetPath>${karaf.home}/Input</targetPath>
             </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Route</directory>
-                <targetPath>${basedir}/target/test-classes/Routes</targetPath>
+                <targetPath>${karaf.home}/Routes</targetPath>
+            </testResource>
+
+            <testResource>
+                <directory>../../Sidora-Test-Utils/src/test/resources/fedora-home</directory>
+                <targetPath>${fedora.home}</targetPath>
+                <filtering>true</filtering>
             </testResource>
             <testResource>
-                <directory>../../Routes/WCS/Route</directory>
-                <targetPath>${basedir}/target/test-classes/Routes</targetPath>
+                <directory>../../Sidora-Test-Utils/src/test/resources/fuseki-base</directory>
+                <targetPath>${fuseki.base}</targetPath>
+                <filtering>true</filtering>
             </testResource>
+            <!--<testResource>
+                <directory>${basedir}/src/test/resources/foxml</directory>
+                <targetPath>${project.build.directory}/foxml</targetPath>
+                <filtering>true</filtering>
+            </testResource>-->
 
         </testResources>
 
@@ -322,6 +355,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>JPG</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
             </plugin>
 
             <!-- to generate the MANIFEST-FILE of the bundle -->
@@ -346,15 +385,6 @@
                         <Private-Package>edu.si.services.beans.edansidora</Private-Package>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>-->
                     </instructions>
-                </configuration>
-            </plugin>
-
-            <!-- to run the example using mvn camel:run -->
-            <plugin>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-maven-plugin</artifactId>
-                <configuration>
-                    <useBlueprint>true</useBlueprint>
                 </configuration>
             </plugin>
 
@@ -388,13 +418,8 @@
                     </excludes>
                     <systemPropertyVariables>
                         <buildDirectory>${project.build.directory}</buildDirectory>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <karaf.home>${karaf.home}</karaf.home>
-                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
-                        <si.fuseki.host>http://localhost:9080/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
-                        <si.ct.uscbi.server>http://localhost:${dynamic.test.port}/edan</si.ct.uscbi.server>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -403,14 +428,9 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
                         <karaf.home>${karaf.home}</karaf.home>
-                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
-                        <si.fuseki.host>http://localhost:9080/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
-                        <si.ct.uscbi.server>http://localhost:${dynamic.test.port}/edan</si.ct.uscbi.server>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                     <includes>
                         <include>**/*_IT</include>
@@ -426,6 +446,69 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Config for integration testing against fedora and fuseki -->
+            <!--<plugin>
+                <groupId>org.codehaus.cargo</groupId>
+                <artifactId>cargo-maven2-plugin</artifactId>
+                <configuration>
+                    <container>
+                        <containerId>tomcat7x</containerId>
+                        <type>embedded</type>
+                        <systemProperties>
+                            <fedora.home>${fedora.home}</fedora.home>
+                            <FUSEKI_BASE>${fuseki.base}</FUSEKI_BASE>
+                            &lt;!&ndash; keep Apache Derby as quiet as possible &ndash;&gt;
+                            <derby.stream.error.field>java.lang.System.err</derby.stream.error.field>
+                            <derby.stream.error.logSeverityLevel>5000</derby.stream.error.logSeverityLevel>
+                        </systemProperties>
+                        <log>${project.build.directory}/cargo.log</log>
+                        <output>${project.build.directory}/cargo-output.log</output>
+                    </container>
+                    <configuration>
+                        <properties>
+                            <cargo.logging>high</cargo.logging>
+                            <cargo.servlet.uriencoding>UTF-8</cargo.servlet.uriencoding>
+                            <cargo.jvmargs>-Xmx512m</cargo.jvmargs>
+                            <cargo.servlet.port>${dynamic.test.port}</cargo.servlet.port>
+                            &lt;!&ndash; fire AJP into /dev/null &ndash;&gt;
+                            <cargo.tomcat.ajp.port>0</cargo.tomcat.ajp.port>
+                        </properties>
+                    </configuration>
+                    <deployer>
+                        &lt;!&ndash; empty deployer element prevents Cargo from trying to deploy our project, which is a bundle, into
+                        Tomcat &ndash;&gt;
+                    </deployer>
+                    <deployables>
+                        <deployable>
+                            <groupId>org.apache.jena</groupId>
+                            <artifactId>jena-fuseki-war</artifactId>
+                            <type>war</type>
+                        </deployable>
+                        <deployable>
+                            <groupId>edu.si.trippi</groupId>
+                            <artifactId>trippi-sparql-fcrepo-webapp</artifactId>
+                            <type>war</type>
+                        </deployable>
+                    </deployables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start-tomcat</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-tomcat</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>-->
 
         </plugins>
     </build>

@@ -34,7 +34,7 @@ import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
-import org.apache.camel.builder.xml.XsltBuilder;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,19 +113,18 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .logExhausted(false)
                 .continued(true)
                 .setHeader("mciOwnerPID").simple("{{mci.default.owner.pid}}")
+                .setHeader("mciOwnerName").simple("{{mci.default.owner.name}}") //the user that the research project will be under when making the workbench http request
                 .log(LoggingLevel.WARN, LOG_NAME, "${exception.message} :: Using Default User PID ${header.mciOwnerPID}!!!").id("MCI_ExceptionOnException");
 
 
 
-        from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer")
-                .routeId("SidoraMCIService")
+        from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer").routeId("SidoraMCIService")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting Sidora MCI Service Request for: ${header.operationName} ... ")
                 .recipientList(simple("direct:${header.operationName}"))
                 .removeHeaders("mciProjectXML|mciProjectDESCMETA|mciResourceDESCMETA|error")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished Sidora MCI Service Request for: ${header.operationName} ... ");
 
-        from("direct:addProject")
-                .routeId("AddMCIProject")
+        from("direct:addProject").routeId("AddMCIProject")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Add MCI Project...")
 
                 .convertBodyTo(String.class)
@@ -172,6 +171,10 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .setHeader("mciFolderHolder").xpath("//Fields/Field[@Name='Folder_x0020_Holder']/substring-after(., 'i:0#.w|us\\')", String.class, ns, "mciProjectXML").id("folderHolderXpath")
                 .log(LoggingLevel.DEBUG, "Found MCI Folder Holder: ${header.mciFolderHolder}")
 
+                //Get the Label for the Research Project
+                .setHeader("mciResearchProjectLabel").xpath("//Fields/Field[@Name='Title']/text()", String.class, ns, "mciProjectXML").id("researchProjectLabelXpath")
+                .log(LoggingLevel.DEBUG, "Found MCI Research Project Label: ${header.mciResearchProjectLabel}")
+
                 .to("direct:findFolderHolderUserPID").id("findFolderHolderUserPID")
 
                 .setBody().simple("${header.mciOwnerPID}", String.class).id("setOwnerPID")
@@ -182,14 +185,116 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .choice()
                     .when().simple("${body} == true")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: Root object exists.")
+                        //Create ResearchSpace to add the MCI project concept
+                        .to("direct:workbenchLogin")
                         .to("direct:mciCreateConcept").id("mciCreateConcept")
+                        .to("direct:workbenchClearCache")
                     .endChoice()
                     .otherwise()
                         .log(LoggingLevel.WARN, LOG_NAME, "${id}: Root object does not exist.")
                         .throwException(new IllegalArgumentException("Root object does not exist."))
                     .end()
                 .toD("sql:{{sql.completeRequest}}?dataSource=#requestDataSource").id("completeRequest")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Successfully Processed MCI Project Request :: conceptPID = ${header.projectPID}, resourcePID = ${header.projectResourcePID}  :: correlationId = ${header.correlationId}");
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Successfully Processed MCI Project Request :: researchProjectPID = ${header.researchProjectPid}, conceptPID = ${header.projectPID}, resourcePID = ${header.projectResourcePID}  :: correlationId = ${header.correlationId}");
+
+        from("direct:workbenchLogin").routeId("MCIWorkbenchLogin")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Starting Workbench Login Request...")
+
+                .setHeader("Content-Type", simple("application/x-www-form-urlencoded"))
+                .setHeader(Exchange.HTTP_METHOD, simple("POST"))
+                .removeHeader(Exchange.HTTP_QUERY)
+                .setBody().simple("name={{camel.workbench.user}}&pass={{camel.workbench.password}}&form_id=user_login&op=Log in")
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Request Body:${body}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Request Headers:${headers}")
+
+                //TODO: replace throwExceptionOnFailure param with onException to catch and handle the exception that is thrown for a 302 redirect response
+                .toD("cxfrs:{{camel.workbench.login.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false").id("workbenchLogin")
+                .convertBodyTo(String.class)
+                .choice()
+                    //After workbench login request we should get a Redirect Response Code: 302
+                    //There is no need to follow the redirect location if the login was successful we only need the cookie
+                    .when().simple("${header.CamelHttpResponseCode} == 302 && ${header.Set-Cookie} != null")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} $[routeId}: Workbench Login successful received Cookie: ${header.Set-Cookie}")
+                        //Set the Cookie header from the Set-Cookie that was par of the login response
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                String setCookie = exchange.getIn().getHeader("Set-Cookie", String.class);
+                                exchange.getIn().setHeader("Cookie", StringUtils.substringBefore(setCookie, ";"));
+                            }
+                        })
+                        .to("direct:workbenchCreateResearchProject").id("workbenchLoginCreateResearchProjectCall")
+                    .endChoice()
+                    .otherwise()
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Login Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Response Cookie: ${header.Set-Cookie}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Response Body:${body}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Response Headers:${headers}")
+
+                        .throwException(MCI_Exception.class, "${id} ${routeId}: Workbench Login Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Response Cookie: ${header.Set-Cookie}")
+                    .endChoice()
+                .end()
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Finished Workbench Login Request...");
+
+        from("direct:workbenchCreateResearchProject").routeId("MCIWorkbenchCreateResearchProject")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Starting Workbench Create Research Project Request...")
+                .setBody().simple("null")
+                .setHeader(Exchange.HTTP_METHOD, simple("GET"))
+                .setHeader(Exchange.HTTP_QUERY, simple("label=${header.mciResearchProjectLabel}&desc=${header.mciResearchProjectLabel}&user=${header.mciOwnerName}"))
+                //.setHeader(Exchange.HTTP_QUERY).groovy("URLEncoder.encode(request.headers.testRequestParams)")
+                .setBody().simple("")
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Body:${body}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Headers:${headers}")
+
+                .toD("cxfrs:{{camel.workbench.create.research.project.url}}?headerFilterStrategy=#dropHeadersStrategy").id("workbenchCreateResearchProject")
+                .convertBodyTo(String.class)
+
+                .choice()
+                    .when().simple("${body} not in ',,User not found,Could not create research space node' && ${header.CamelHttpResponseCode} == 200")
+                        //.log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Research Space Created PID: ${body}")
+                        .setHeader("researchProjectPid").simple("${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Research Space Created PID: ${header.researchProjectPid}")
+                    .endChoice()
+                    .otherwise()
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText},")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Response Body:${body}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Response Headers:${headers}")
+                        .throwException(MCI_Exception.class, "${id} ${routeId}: ${body}")
+                    .endChoice()
+                .end()
+
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Finished Workbench Create Research Project Request...");
+
+        //TODO: http://sidora0c.myquotient.net/~randerson/sidora/sidora0.6test/sidora/pid_expired/si:user-projects
+        // replace  si:user-projects with a pid or a comma separated list of pids
+        // If it works, returns
+        // Clearing cache for:si:user-projects
+        // if not, then will be a regular 404
+        from("direct:workbenchClearCache").routeId("MCIWorkbenchClearCache")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Starting Workbench Clear Cache for Research Project Request...")
+                .setHeader(Exchange.HTTP_METHOD, simple("GET"))
+                .removeHeader(Exchange.HTTP_QUERY)
+                //.setBody().groovy("URLEncoder.encode(request.headers.researchProjectPid)")
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Body:${body}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Headers:${headers}")
+
+                .toD("cxfrs:{{camel.workbench.clear.cache.url}}/${header.researchProjectPid}?headerFilterStrategy=#dropHeadersStrategy").id("workbenchClearCache")
+
+                .choice()
+                    .when().simple("${body} == 'Clearing cache for:${header.researchProjectPid}' && ${header.CamelHttpResponseCode} == 200")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Clear Cache for Research Project with PID: ${header.researchProjectPid}")
+                    .endChoice()
+                    .otherwise()
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Cleared Cache for Project Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText},")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Cleared Cache for Project Response Body:${body}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Cleared Cache for Project Response Headers:${headers}")
+                        //.throwException(MCI_Exception.class, "${id} ${routeId}: ${body}")
+                    .endChoice()
+                .end()
+
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Finished Workbench Clear Cache for Research Project Request...");
 
         from("direct:findFolderHolderUserPID").routeId("MCIFindFolderHolderUserPID").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Find MCI Folder Holder User PID...")
@@ -199,6 +304,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                     .when().simple("${body.size} != 0 && ${body[0][user_pid]} != null")
                         .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
                         .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
+                        .setHeader("mciOwnerName").simple("${header.mciFolderHolder}")
                     .endChoice()
                     .otherwise()
                         .setBody().simple("[${routeId}] :: correlationId = ${header.correlationId} :: Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
@@ -216,7 +322,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
         from("direct:mciCreateConcept").routeId("MCICreateConcept")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Create MCI Project Concept...")
 
-                .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, ns, "mciProjectDESCMETA")
+                .setHeader("mciLabel").xpath("//SIdoraConcept/primaryTitle/titleText/text()", String.class, ns, "mciProjectDESCMETA").id("mciLabel1")
                 //When setting the fedora label double encoding is needed for MCI Title's that contain special char's
                 .setHeader("mciLabel").groovy("URLEncoder.encode(URLEncoder.encode(request.headers.mciLabel))")
 
@@ -224,9 +330,13 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("fedora:create?pid=null&owner=${header.mciFolderHolder}&namespace=si&label=${header.mciLabel}")
                 .setHeader("projectPID", simple("${header.CamelFedoraPid}"))
 
-                //Create the Parent Child Relationship
-                .toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id}: Add Relation: Parent PID - ${header.researchProjectPid} Child PID - ${header.projectPID}")
 
+                //Create the Parent Child Relationship
+                //.toD("fedora:hasConcept?parentPid=${header.mciOwnerPID}&childPid=${header.CamelFedoraPid}")
+                .toD("fedora:hasConcept?parentPid=${header.researchProjectPid}&childPid=${header.projectPID}")
+
+                //TODO: For the Parent in the SIDORA datastream should we use the users pid (mciOwnerPID) or the research project pid
                 //Add the SIDORA Datastream
                 .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectSidoraTemplate.vsl").id("velocityMCIProjectSidoraTemplate")
                 .toD("fedora:addDatastream?name=SIDORA&type=text/xml&group=X&dsLabel=SIDORA%20Record&versionable=true")
@@ -244,8 +354,10 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .setHeader("CamelFedoraPid", simple("${header.projectPID}"))
 
+                //TODO: For the isAdministeredBy in the RELS_EXT datastream should we use the users pid (mciOwnerPID) or the research project pid
                 //Add the RELS=EXT Datastream
                 .toD("velocity:file:{{karaf.home}}/Input/templates/MCIProjectTemplate.vsl").id("velocityMCIProjectTemplate")
+                .log(LoggingLevel.INFO, LOG_NAME, "MciProjectTemplate result body: ${body}")
                 .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Concept - PID = ${header.projectPID} :: correlationId = ${header.correlationId}");

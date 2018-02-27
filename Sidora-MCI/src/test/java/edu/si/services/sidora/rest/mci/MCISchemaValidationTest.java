@@ -78,6 +78,20 @@ public class MCISchemaValidationTest extends CamelTestSupport {
         }
     }
 
+    @Test
+    public void testMciProjectTemplate() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setBody(readFileToString(new File("src/test/resources/test-mci.xml")));
+        exchange.getIn().setHeader("CamelFedoraPid", "test:001");
+        exchange.getIn().setHeader("projectResourcePID", "test:002");
+        template.send("direct:velocity", exchange);
+
+        log.info("MciProjectTemplate result body: {}", mockResult.getExchanges().get(0).getIn().getBody());
+    }
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
@@ -113,6 +127,10 @@ public class MCISchemaValidationTest extends CamelTestSupport {
                         .log(LoggingLevel.INFO, LOG_NAME, "Transform Failed: ${header.fileName} ]<<<<<<<<<<<<<<<<<<<<<")
                         .to("file:target/output/failed?fileName=${header.fileName}.xml")
                         .end()
+                        .to("mock:result");
+
+                from("direct:velocity")
+                        .toD("velocity:file:target/test-classes/Input/templates/MCIProjectTemplate.vsl").id("velocityMCIProjectTemplate")
                         .to("mock:result");
             }
         };

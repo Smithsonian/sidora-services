@@ -1,14 +1,15 @@
 #Deploying FITSservlet to Fedora Tomcat
 ### Installation Steps
-1. [Stop Fedora](#stop-fedora)
+1. [Deploy FITSservlet](#deploy-fitsservlet)
 2. [Edit catalina.properties](#edit-catalinaproperties)
-3. [Deploy FITSservlet](#deploy-fitsservlet)
+3. [Stop Fedora](#stop-fedora)
 4. [Start Fedora](#start-fedora)
 5. [Test FITS Web Service](#test-fits-web-service)
 
-## Stop Fedora
+
+## Deploy FITSservlet
 ```bash
-# service fedora stop
+# wget http://projects.iq.harvard.edu/files/fits/files/fits-1.1.3.war <FEDORA_CATALINA_HOME>webapps/
 ```
 
 ## Edit catalina.properties
@@ -19,16 +20,16 @@ Add Entries to `<FEDORA_CATALINA_HOME>/conf/catalina.properties` (see example [c
     fits.home=/opt/sidora/fits
     ```
 
-* Add all `<fits.home>/lib/` JAR files to the `shared.loader`
+* Add all `<fits.home>/lib/` JAR files to `<FEDORA_CATALINA_HOME>/webapps/fits-1.1.3/WEB-INF/lib/`
     ```bash
-    shared.loader=${fits.home}/lib/*.jar
+    cp <fits.home>/lib/*.jar <FEDORA_CATALINA_HOME>/webapps/fits-1.1.3/WEB-INF/lib/
     ```
 
     >***Note:** Do NOT add any JAR files that are contained in any of the FITS lib/ subdirectories to this classpath entry. They are added programmatically at runtime by the application. (Additional Information: https://github.com/harvard-lts/FITSservlet)*
 
-## Deploy FITSservlet
+## Stop Fedora
 ```bash
-# wget http://projects.iq.harvard.edu/files/fits/files/fits-1.1.3.war <FEDORA_CATALINA_HOME>webapps/
+# service fedora stop
 ```
 
 ## Start Fedora

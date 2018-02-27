@@ -37,7 +37,6 @@ import org.apache.camel.model.LogDefinition;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
@@ -45,7 +44,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,13 +56,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
-import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_CREATED;
-import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.auth.AuthScope.ANY;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
@@ -76,11 +72,6 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
  * @author jbirkhimer
  */
 public class UCT_AltId_IT extends CT_BlueprintTestSupport {
-
-    private static String LOG_NAME = "edu.si.mci";
-
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = true;
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     private static final File testManifest = new File("src/test/resources/AltIdSampleData/Unified/deployment_manifest.xml");
     private static final File projectRELS_EXT = new File("src/test/resources/AltIdSampleData/Unified/projectRELS-EXT.rdf");
@@ -103,27 +94,20 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
     }
 
     @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties");
-    }
-
-    @Override
     protected String[] preventRoutesFromStarting() {
         return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
     }
 
     @Override
-    public void setUp() throws Exception {
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setFedoraServer(FEDORA_URI, System.getProperty("si.fedora.user"), System.getProperty("si.fedora.password"));
-        setFuseki(FUSEKI_URI);
-        setDefaultTestProperties(defaultTestProperties);
-        super.setUp();
+    public boolean isUseAdviceWith() {
+        return true;
     }
 
     @Override
-    public boolean isUseAdviceWith() {
-        return true;
+    protected Properties useOverridePropertiesWithPropertiesComponent() {
+        Properties props = getExtra();
+        props.setProperty("si.ct.root", "test:123456");
+        return props;
     }
 
     @BeforeClass
@@ -292,7 +276,7 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
         exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
-        exchange.getIn().setHeader("CamelFedoraPid", getConfig().getString("si.ct.root"));
+        exchange.getIn().setHeader("CamelFedoraPid", getExtra().getProperty("si.ct.root"));
 
         // The endpoint we want to start from with the exchange body and headers we want
         template.send("direct:processParents", exchange);

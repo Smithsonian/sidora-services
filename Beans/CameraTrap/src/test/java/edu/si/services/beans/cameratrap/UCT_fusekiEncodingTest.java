@@ -53,37 +53,14 @@ import java.util.concurrent.CountDownLatch;
  */
 public class UCT_fusekiEncodingTest extends CT_BlueprintTestSupport {
 
-    private static String LOG_NAME = "edu.si.test";
-
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
-    private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
-
-    //Camera Trap Deployment Manifest
-    private File manifestFile = new File("src/test/resources/SID-912/deployment_manifest.xml");
-
-    private static final CountDownLatch LATCH = new CountDownLatch(1);
-
     @Override
     protected String getBlueprintDescriptor() {
         return "Routes/unified-camera-trap-route.xml";
     }
 
     @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties");
-    }
-
-    @Override
     protected String[] preventRoutesFromStarting() {
         return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
-    }
-
-    @Override
-    public void setUp() throws Exception {
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setDefaultTestProperties(defaultTestProperties);
-        super.setUp();
     }
 
     @Override

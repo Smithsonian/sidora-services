@@ -31,16 +31,12 @@ import edu.si.services.fedorarepo.FedoraComponent;
 import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.CamelContext;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
-import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.FileBasedConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.junit.Before;
 
-import java.io.File;
-import java.util.Iterator;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -48,60 +44,15 @@ import java.util.Properties;
  */
 public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
 
-    private Boolean useRealFedoraServer = false;
-    private String fedoraHost = System.getProperty("si.fedora.host");
-    private String fedoraUser = System.getProperty("si.fedora.user");
-    private String fedoraPassword = System.getProperty("si.fedora.password");
-    private String fusekiHost = System.getProperty("si.fuseki.host");
-    private String fitsHost = System.getProperty("si.fits.host");
-    private String sidoraMciHost = System.getProperty("si.sidora.mci.host");
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private static Configuration config = null;
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
-    private String propertiesPersistentId = "edu.si.sidora.mci";
+    private static Properties props = new Properties();
 
-
-    protected Boolean isUseActualFedoraServer() {
-        return useRealFedoraServer;
-    }
-
-    protected void setUseActualFedoraServer(Boolean useActualFedoraServer) {
-        this.useRealFedoraServer = useActualFedoraServer;
-    }
-
-    protected void setFedoraServer(String fedorahost, String fedoraUser, String fedoraPassword) {
-        this.fedoraHost = fedorahost;
-        this.fedoraUser = fedoraUser;
-        this.fedoraPassword = fedoraPassword;
-    }
-
-    protected void setFuseki(String fusekiHost) {
-        this.fusekiHost = fusekiHost;
-    }
-
-    protected void setFits(String fitsHost) {
-        this.fitsHost = fitsHost;
-    }
-
-    protected void setSidoraMciHost(String sidoraMciHost) {
-        this.sidoraMciHost = sidoraMciHost;
-    }
-
-
-    protected static Configuration getConfig() {
-        return config;
-    }
-
-    protected void setDefaultTestProperties(String defaultTestProperties) {
-        this.defaultTestProperties = defaultTestProperties;
-    }
-
-    protected void setPropertiesPersistentId(String propertiesPersistentId) {
-        this.propertiesPersistentId = propertiesPersistentId;
+    protected static Properties getProps() {
+        return props;
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return null;
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.mci.cfg", KARAF_HOME + "/sql/mci.sql.properties");
     }
 
     protected String[] preventRoutesFromStarting() {
@@ -113,12 +64,10 @@ public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
         CamelContext context = super.createCamelContext();
 
         //add fedora component using test properties to the context
-        if (isUseActualFedoraServer()) {
-            FedoraSettings fedoraSettings = new FedoraSettings(fedoraHost, fedoraUser, fedoraPassword);
+        FedoraSettings fedoraSettings = new FedoraSettings(props.getProperty("si.fedora.host"), props.getProperty("si.fedora.user"), props.getProperty("si.fedora.password"));
             FedoraComponent fedora = new FedoraComponent();
             fedora.setSettings(fedoraSettings);
             context.addComponent("fedora", fedora);
-        }
 
         //Prevent Certain Routes From Starting
         String[] routeList = preventRoutesFromStarting();
@@ -132,73 +81,34 @@ public class MCI_BlueprintTestSupport extends CamelBlueprintTestSupport {
     }
 
     @Override
-    protected String[] loadConfigAdminConfigurationFile() {
-        return new String[]{defaultTestProperties, "edu.si.sidora.mci"};
-    }
-
-    @Before
-    @Override
     public void setUp() throws Exception {
         log.info("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
-
-        Parameters params = new Parameters();
-        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
-                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                        .configure(params.fileBased().setFile(new File(defaultTestProperties)));
-        config = builder.getConfiguration();
 
         List<String> propFileList = loadAdditionalPropertyFiles();
         if (loadAdditionalPropertyFiles() != null) {
             for (String propFile : propFileList) {
-
-                FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
-                        new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                                .configure(params.fileBased().setFile(new File(propFile)));
-
-                for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext(); ) {
-                    String key = i.next();
-                    Object value = builder2.getConfiguration().getProperty(key);
-                    if (!config.containsKey(key)) {
-                        config.setProperty(key, value);
-                    }
+                Properties extra = new Properties();
+                try {
+                    extra.load(new FileInputStream(propFile));
+                    this.props.putAll(extra);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
 
-        if (fedoraHost != null && !fedoraHost.isEmpty()) {
-            config.setProperty("si.fedora.host", fedoraHost);
-        }
-        if (fedoraUser != null && !fedoraUser.isEmpty()) {
-            config.setProperty("si.fedora.user", fedoraUser);
-        }
-        if (fedoraPassword != null && !fedoraPassword.isEmpty()) {
-            config.setProperty("si.fedora.password", fedoraPassword);
-        }
-        if (fusekiHost != null && !fusekiHost.isEmpty()) {
-            config.setProperty("si.fuseki.endpoint", fusekiHost);
-        }
-        if (fitsHost != null && !fitsHost.isEmpty()) {
-            config.setProperty("si.fits.host", fitsHost);
-        }
-        if (sidoraMciHost != null && !sidoraMciHost.isEmpty()) {
-            config.setProperty("sidora.mci.service.address", sidoraMciHost);
+        for (Map.Entry<Object, Object> p : System.getProperties().entrySet()) {
+            if (props.containsKey(p.getKey())) {
+                props.setProperty(p.getKey().toString(), p.getValue().toString());
+            }
         }
 
-        builder.save();
         super.setUp();
     }
 
     @Override
-    protected Properties useOverridePropertiesWithPropertiesComponent() {
-
-        Properties extra = new Properties();
-
-        for (Iterator<String> i = config.getKeys(); i.hasNext();) {
-            String key = i.next();
-            Object value = config.getProperty(key);
-            extra.setProperty(key, String.valueOf(value));
-        }
-
-        return extra;
+    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
+        configAdmin.putAll(props);
+        return "edu.si.sidora.mci";
     }
 }

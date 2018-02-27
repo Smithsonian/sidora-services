@@ -25,7 +25,7 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.sidora.rest.batch.model.responce;
+package edu.si.services.sidora.rest.batch.model.response;
 
 import javax.xml.bind.annotation.*;
 
