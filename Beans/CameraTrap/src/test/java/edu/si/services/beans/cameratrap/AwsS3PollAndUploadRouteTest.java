@@ -137,6 +137,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
     private void deleteTestDirectories() {
         deleteDirectory(props.getProperty("si.ct.uscbi.process.dir.path"));
+        deleteDirectory(props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi");
         deleteDirectory(props.getProperty("si.ct.uscbi.data.dir.path"));
         deleteDirectory(props.getProperty("si.ct.uscbi.stage.dir.path"));
     }
@@ -245,7 +246,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         deleteTestDirectories();
         s3bucket = props.getProperty("si.ct.uscbi.s3.ingested.bucketName");
 
-        expectedFileExists = props.getProperty("si.ct.uscbi.process.dir.path") + "/Done"
+        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Done"
                 + "/" + props.getProperty("si.ct.external.upload.success.dir")
                 + "/" + deploymentZip.getName();
 
@@ -263,7 +264,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockResult.expectedMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
 
-        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.dir.path}}/Done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 
@@ -296,7 +297,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         deleteTestDirectories();
         s3bucket = props.getProperty("si.ct.uscbi.s3.ingested.bucketName");
 
-        expectedFileExists = props.getProperty("si.ct.uscbi.process.dir.path") + "/Done"
+        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Done"
                 + "/" + props.getProperty("si.ct.external.upload.error.dir")
                 + "/" + deploymentZip.getName();
 
@@ -331,7 +332,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockError.expectedFileExists(expectedFileExists);
         mockError.expectedPropertyReceived("CamelExceptionCaught", "com.amazonaws.services.s3.model.AmazonS3Exception: Simulating AWS S3 upload failure! (Service: null; Status Code: 0; Error Code: null; Request ID: null), S3 Extended Request ID: null");
 
-        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.dir.path}}/Done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 
@@ -359,7 +360,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         deleteTestDirectories();
         s3bucket = props.getProperty("si.ct.uscbi.s3.rejected.bucketName");
 
-        expectedFileExists = props.getProperty("si.ct.uscbi.process.dir.path") + "/Error_UnifiedCameraTrap"
+        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Error_UnifiedCameraTrap"
                 + "/" + props.getProperty("si.ct.external.upload.success.dir")
                 + "/" + deploymentZip.getName();
 
@@ -376,7 +377,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockResult.expectedMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
 
-        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.dir.path}}/Error_UnifiedCameraTrap", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Error_UnifiedCameraTrap", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 
@@ -410,7 +411,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
         s3bucket = props.getProperty("si.ct.uscbi.s3.rejected.bucketName");
 
-        expectedFileExists = props.getProperty("si.ct.uscbi.process.dir.path") + "/Error_UnifiedCameraTrap"
+        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Error_UnifiedCameraTrap"
                 + "/" + props.getProperty("si.ct.external.upload.error.dir")
                 + "/" + deploymentZip.getName();
 
@@ -445,7 +446,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockError.expectedFileExists(expectedFileExists);
         mockError.expectedPropertyReceived("CamelExceptionCaught", "com.amazonaws.services.s3.model.AmazonS3Exception: Simulating AWS S3 upload failure! (Service: null; Status Code: 0; Error Code: null; Request ID: null), S3 Extended Request ID: null");
 
-        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.dir.path}}/Error_UnifiedCameraTrap", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Error_UnifiedCameraTrap", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 

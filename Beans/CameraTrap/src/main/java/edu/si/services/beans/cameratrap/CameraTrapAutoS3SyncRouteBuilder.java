@@ -47,6 +47,9 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "si.ct.id")
     static private String CT_LOG_NAME;
 
+    @PropertyInject(value = "si.ct.non.ssd.dir.path")
+    private String nonSsdDirPath;
+
     @PropertyInject(value = "si.ct.uscbi.process.dir.path")
     private String processDirPath;
 
@@ -112,7 +115,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
 
 
             //Route for copying ingested deployments to AWS S3 ingested bucket
-            from("file:"+processDirPath+"/Done?delay={{si.ct.file.pollDelay}}" +
+            from("file:"+nonSsdDirPath+"/uscbi/Done?delay={{si.ct.file.pollDelay}}" +
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")
@@ -125,7 +128,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
 
 
             //Route for copying problematic deployments to AWS S3 rejected bucket
-            from("file:"+processDirPath+"/Error_UnifiedCameraTrap?delay={{si.ct.file.pollDelay}}" +
+            from("file:"+nonSsdDirPath+"/uscbi/Error_UnifiedCameraTrap?delay={{si.ct.file.pollDelay}}" +
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")
