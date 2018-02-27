@@ -184,7 +184,6 @@
             <resource>
                 <directory>../Routes/Derivatives/Route</directory>
                 <targetPath>${basedir}/target</targetPath>
-                <filtering>true</filtering>
             </resource>
 
             <!-- Edan-Sidora -->
