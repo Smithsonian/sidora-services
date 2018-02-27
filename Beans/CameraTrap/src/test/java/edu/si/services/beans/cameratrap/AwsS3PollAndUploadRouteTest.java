@@ -56,21 +56,29 @@ import java.util.Properties;
  */
 public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
-    private static Configuration config = null;
 
-    String deploymentZipLoc = "src/test/resources/UnifiedManifest-TestFiles/scbi_unified_test_deployment.zip";
+    String deploymentZipLoc = KARAF_HOME + "/UnifiedManifest-TestFiles/scbi_unified_test_deployment.zip";
     File deploymentZip;
     String expectedFileExists;
-    Properties props;
 
     AmazonS3ClientMock amazonS3Client;
     String s3bucket;
     List<Bucket> s3Buckets;
     List<S3ObjectSummary> s3objectList;
     S3Object s3Object;
+
+    private String processDirPath;
+    private String stageDirPath;
+    private String processDoneDirPath;
+    private String processErrorDirPath;
+    private String processDataDirPath;
+    private String s3UploadSuccessDirPath;
+    private String s3UploadErrorDirPath;
+
+    private String s3ApprovedBucket;
+    private String s3IngestBucket;
+    private String s3RejectedBucket;
 
     @Override
     protected String getBlueprintDescriptor() {
@@ -92,7 +100,14 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         System.setProperty("si.ct.uscbi.enableS3Routes", "true");
         super.setUp();
 
-        props = getExtra();
+        processDirPath = getExtra().getProperty("si.ct.uscbi.process.dir.path");
+        stageDirPath = getExtra().getProperty("si.ct.uscbi.stage.dir.path");
+        processDataDirPath = getExtra().getProperty("si.ct.uscbi.data.dir.path");
+        processDoneDirPath = getExtra().getProperty("si.ct.uscbi.process.done.dir.path");
+        processErrorDirPath = getExtra().getProperty("si.ct.uscbi.process.error.dir.path");
+
+        s3UploadSuccessDirPath = getExtra().getProperty("si.ct.external.upload.success.dir");
+        s3UploadErrorDirPath = getExtra().getProperty("si.ct.external.upload.error.dir");
 
         deleteTestDirectories();
 
@@ -103,13 +118,17 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     }
 
     private void configureS3() {
+        s3ApprovedBucket = getExtra().getProperty("si.ct.uscbi.s3.approved.bucketName");
+        s3IngestBucket = getExtra().getProperty("si.ct.uscbi.s3.ingested.bucketName");
+        s3RejectedBucket = getExtra().getProperty("si.ct.uscbi.s3.rejected.bucketName");
+
         //Initialize the Mock AmazonS3Client
         amazonS3Client = getAmazonS3Client();
 
         //Initialize the S3 Buckets
-        amazonS3Client.createBucket(props.getProperty("si.ct.uscbi.s3.approved.bucketName"));
-        amazonS3Client.createBucket(props.getProperty("si.ct.uscbi.s3.ingested.bucketName"));
-        amazonS3Client.createBucket(props.getProperty("si.ct.uscbi.s3.rejected.bucketName"));
+        amazonS3Client.createBucket(s3ApprovedBucket);
+        amazonS3Client.createBucket(s3IngestBucket);
+        amazonS3Client.createBucket(s3RejectedBucket);
 
         //Get the list of Buckets
         s3Buckets = amazonS3Client.listBuckets();
@@ -117,7 +136,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
         //Initialize and add an S3 Object
         s3Object = new S3Object();
-        s3Object.setBucketName(props.getProperty("si.ct.uscbi.s3.approved.bucketName"));
+        s3Object.setBucketName(s3ApprovedBucket);
         s3Object.setKey(deploymentZip.getName());
         if (deploymentZip != null) {
             try {
@@ -129,17 +148,18 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         amazonS3Client.objects.add(s3Object);
 
         //Get the list of Objects
-        s3objectList = amazonS3Client.listObjects(props.getProperty("si.ct.uscbi.s3.approved.bucketName")).getObjectSummaries();
+        s3objectList = amazonS3Client.listObjects(s3ApprovedBucket).getObjectSummaries();
         log.info("Initialized S3 Objects: {}", Arrays.toString(s3objectList.toArray()));
 
         log.info("S3 putObject Requests: {}", Arrays.toString(amazonS3Client.putObjectRequests.toArray()));
     }
 
     private void deleteTestDirectories() {
-        deleteDirectory(props.getProperty("si.ct.uscbi.process.dir.path"));
-        deleteDirectory(props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi");
-        deleteDirectory(props.getProperty("si.ct.uscbi.data.dir.path"));
-        deleteDirectory(props.getProperty("si.ct.uscbi.stage.dir.path"));
+        deleteDirectory(processDirPath);
+        deleteDirectory(processDataDirPath);
+        deleteDirectory(stageDirPath);
+        deleteDirectory(processDoneDirPath);
+        deleteDirectory(processErrorDirPath);
     }
 
     @Test
@@ -169,8 +189,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     @Test
     public void testPulldownAndDeleteFromS3() throws Exception {
         deleteTestDirectories();
-        s3bucket = props.getProperty("si.ct.uscbi.s3.approved.bucketName");
-        expectedFileExists = props.getProperty("si.ct.uscbi.stage.dir.path")+ "/" + deploymentZip.getName();
+        expectedFileExists = stageDirPath + "/" + deploymentZip.getName();
 
         context.getRouteDefinition("CameraTrapDeploymentsPrepareStageToProcess").noAutoStartup();
         context.getRouteDefinition("CameraTrapDeploymentsPulldownFromS3").autoStartup(true);
@@ -192,11 +211,11 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
         //Result Exchange Assertions
         assertIsInstanceOf(InputStream.class, resultExchange.getIn().getBody());
-        assertEquals(s3bucket, resultExchange.getIn().getHeader(S3Constants.BUCKET_NAME));
+        assertEquals(s3ApprovedBucket, resultExchange.getIn().getHeader(S3Constants.BUCKET_NAME));
         assertEquals(deploymentZip.getName(), resultExchange.getIn().getHeader(S3Constants.KEY));
 
         //Check that the s3object was deleted from thew correct S3 bucket
-        s3objectList = amazonS3Client.listObjects(s3bucket).getObjectSummaries();
+        s3objectList = amazonS3Client.listObjects(s3ApprovedBucket).getObjectSummaries();
         log.info("Object List After: {}", Arrays.toString(s3objectList.toArray()));
         assertFalse(s3objectList.contains(s3Object));
 
@@ -207,12 +226,12 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     @Test
     public void testPrepareStageToProcess() throws Exception {
         deleteTestDirectories();
-        expectedFileExists = props.getProperty("si.ct.uscbi.process.dir.path") + "/" + deploymentZip.getName();
+        expectedFileExists = processDirPath + "/" + deploymentZip.getName();
 
         //prevent ingest route from starting we don't want to start processing the deployment
         context.getRouteDefinition("UnifiedCameraTrapStartProcessing").noAutoStartup();
         //the UnifiedCameraTrapStartProcessing route would normally create the Process Dir itself
-        createDirectory(props.getProperty("si.ct.uscbi.process.dir.path"));
+        createDirectory(processDirPath);
 
         context.getRouteDefinition("CameraTrapDeploymentsPrepareStageToProcess").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -235,7 +254,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         log.info("Expected deployment file location = {}", expectedFileExists);
         assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));
         assertFalse("There should be NO done file in the Dir", Files.exists(
-                new File(props.getProperty("si.ct.uscbi.stage.dir.path") + "/" + deploymentZip.getName() + ".done").toPath()
+                new File(stageDirPath + "/" + deploymentZip.getName() + ".done").toPath()
                 )
         );
 
@@ -244,10 +263,9 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     @Test
     public void testDoneDirAndS3UploadSuccess() throws Exception {
         deleteTestDirectories();
-        s3bucket = props.getProperty("si.ct.uscbi.s3.ingested.bucketName");
 
-        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Done"
-                + "/" + props.getProperty("si.ct.external.upload.success.dir")
+        expectedFileExists = processDoneDirPath
+                + "/" + s3UploadSuccessDirPath
                 + "/" + deploymentZip.getName();
 
         context.getRouteDefinition("CameraTrapCopyIngestedDeploymentsToS3").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -264,7 +282,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockResult.expectedMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
 
-        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.done.dir.path", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 
@@ -272,7 +290,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
         //assert the request was to the correct bucket
         PutObjectRequest putObjectRequest = amazonS3Client.putObjectRequests.get(0);
-        assertEquals(s3bucket, putObjectRequest.getBucketName());
+        assertEquals(s3IngestBucket, putObjectRequest.getBucketName());
 
         //Result Exchange Assertions
         assertEquals(deploymentZip.getName(), resultExchange.getIn().getHeader(S3Constants.KEY));
@@ -283,9 +301,9 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         assertNull(resultExchange.getIn().getHeader(S3Constants.VERSION_ID));
 
         //Check that the s3object was sent to the correct S3 bucket
-        s3objectList = amazonS3Client.listObjects(s3bucket).getObjectSummaries();
+        s3objectList = amazonS3Client.listObjects(s3IngestBucket).getObjectSummaries();
         log.info("Object List After: {}", Arrays.toString(s3objectList.toArray()));
-        assertTrue(s3objectList.get(0).getBucketName().equals(s3bucket));
+        assertTrue(s3objectList.get(0).getBucketName().equals(s3IngestBucket));
         assertTrue(s3objectList.get(0).getKey().equals(deploymentZip.getName()));
 
         log.info("Expected deployment file location = {}", expectedFileExists);
@@ -295,10 +313,9 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     @Test
     public void testDoneDirS3UploadFailed() throws Exception {
         deleteTestDirectories();
-        s3bucket = props.getProperty("si.ct.uscbi.s3.ingested.bucketName");
 
-        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Done"
-                + "/" + props.getProperty("si.ct.external.upload.error.dir")
+        expectedFileExists = processDoneDirPath
+                + "/" + s3UploadErrorDirPath
                 + "/" + deploymentZip.getName();
 
         context.getRouteDefinition("CameraTrapCopyIngestedDeploymentsToS3").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -332,7 +349,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockError.expectedFileExists(expectedFileExists);
         mockError.expectedPropertyReceived("CamelExceptionCaught", "com.amazonaws.services.s3.model.AmazonS3Exception: Simulating AWS S3 upload failure! (Service: null; Status Code: 0; Error Code: null; Request ID: null), S3 Extended Request ID: null");
 
-        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Done", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.done.dir.path}}", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 
@@ -347,7 +364,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         assertNull(resultExchange.getIn().getHeader(S3Constants.VERSION_ID));
 
         //Check that the s3object was Not sent to the S3 bucket
-        s3objectList = amazonS3Client.listObjects(s3bucket).getObjectSummaries();
+        s3objectList = amazonS3Client.listObjects(s3IngestBucket).getObjectSummaries();
         log.info("Object List After: {}", Arrays.toString(s3objectList.toArray()));
         assertListSize(s3objectList, 0);
 
@@ -358,10 +375,9 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     @Test
     public void testErrorDirS3UploadSuccess() throws Exception {
         deleteTestDirectories();
-        s3bucket = props.getProperty("si.ct.uscbi.s3.rejected.bucketName");
 
-        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Error_UnifiedCameraTrap"
-                + "/" + props.getProperty("si.ct.external.upload.success.dir")
+        expectedFileExists = processErrorDirPath
+                + "/" + s3UploadSuccessDirPath
                 + "/" + deploymentZip.getName();
 
         context.getRouteDefinition("CameraTrapCopyErrorDeploymentsToS3").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -377,7 +393,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockResult.expectedMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
 
-        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Error_UnifiedCameraTrap", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.error.dir.path}}", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 
@@ -393,12 +409,12 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
 
         //assert there was a putObject request to the correct bucket
         PutObjectRequest putObjectRequest = amazonS3Client.putObjectRequests.get(0);
-        assertEquals(s3bucket, putObjectRequest.getBucketName());
+        assertEquals(s3RejectedBucket, putObjectRequest.getBucketName());
 
         //Check that the s3object was is correct
-        s3objectList = amazonS3Client.listObjects(s3bucket).getObjectSummaries();
+        s3objectList = amazonS3Client.listObjects(s3RejectedBucket).getObjectSummaries();
         log.info("Object List After: {}", Arrays.toString(s3objectList.toArray()));
-        assertTrue(s3objectList.get(0).getBucketName().equals(s3bucket));
+        assertTrue(s3objectList.get(0).getBucketName().equals(s3RejectedBucket));
         assertTrue(s3objectList.get(0).getKey().equals(deploymentZip.getName()));
 
         log.info("Expected deployment file location = {}", expectedFileExists);
@@ -409,10 +425,8 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
     public void testErrorDirS3UploadFailed() throws Exception {
         deleteTestDirectories();
 
-        s3bucket = props.getProperty("si.ct.uscbi.s3.rejected.bucketName");
-
-        expectedFileExists = props.getProperty("si.ct.non.ssd.dir.path") + "/uscbi/Error_UnifiedCameraTrap"
-                + "/" + props.getProperty("si.ct.external.upload.error.dir")
+        expectedFileExists = processErrorDirPath
+                + "/" + s3UploadErrorDirPath
                 + "/" + deploymentZip.getName();
 
         context.getRouteDefinition("CameraTrapCopyErrorDeploymentsToS3").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -446,7 +460,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockError.expectedFileExists(expectedFileExists);
         mockError.expectedPropertyReceived("CamelExceptionCaught", "com.amazonaws.services.s3.model.AmazonS3Exception: Simulating AWS S3 upload failure! (Service: null; Status Code: 0; Error Code: null; Request ID: null), S3 Extended Request ID: null");
 
-        template.sendBodyAndHeader("file:{{si.ct.non.ssd.dir.path}}/uscbi/Error_UnifiedCameraTrap", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.error.dir.path}}", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 
@@ -461,7 +475,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         assertNull(resultExchange.getIn().getHeader(S3Constants.VERSION_ID));
 
         //Check that the s3object was Not sent to the S3 bucket
-        s3objectList = amazonS3Client.listObjects(s3bucket).getObjectSummaries();
+        s3objectList = amazonS3Client.listObjects(s3RejectedBucket).getObjectSummaries();
         log.info("Object List After: {}", Arrays.toString(s3objectList.toArray()));
         assertListSize(s3objectList, 0);
 
