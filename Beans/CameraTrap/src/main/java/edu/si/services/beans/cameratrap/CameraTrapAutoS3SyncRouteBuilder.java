@@ -115,7 +115,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
 
 
             //Route for copying ingested deployments to AWS S3 ingested bucket
-            from("file:"+nonSsdDirPath+"/uscbi/Done?delay={{si.ct.file.pollDelay}}" +
+            from("file:"+nonSsdDirPath+"/{{si.ct.uscbi.done.dir.path}}?delay={{si.ct.file.pollDelay}}" +
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")
@@ -128,7 +128,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
 
 
             //Route for copying problematic deployments to AWS S3 rejected bucket
-            from("file:"+nonSsdDirPath+"/uscbi/Error_UnifiedCameraTrap?delay={{si.ct.file.pollDelay}}" +
+            from("file:"+nonSsdDirPath+"/{{si.ct.uscbi.error.dir.path}}?delay={{si.ct.file.pollDelay}}" +
                     "&maxMessagesPerPoll={{si.ct.file.maxMessagesPerPoll}}" +
                     "&move={{si.ct.external.upload.success.dir}}" +
                     "&moveFailed={{si.ct.external.upload.error.dir}}")

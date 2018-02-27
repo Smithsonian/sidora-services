@@ -235,7 +235,7 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.non.ssd.dir.path}}/uscbi/Error_UnifiedCameraTrap/${file:onlyname})}&amp;move={{si.ct.non.ssd.dir.path}}/uscbi/Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.non.ssd.dir.path}}/{{si.ct.uscbi.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.non.ssd.dir.path}}/{{si.ct.uscbi.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
