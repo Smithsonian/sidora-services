@@ -287,11 +287,11 @@ public class EdanAPITest extends CamelTestSupport {
 
         template.send("direct:createEdanJsonContent", exchange);
 
-        //Now make editContent EDAN request
+        //Now make createContent EDAN request
         String edanJson = mockResult.getExchanges().get(0).getIn().getHeader("edanJson", String.class);
 
         exchange.getIn().setHeader("edanServiceEndpoint", "/content/v1.1/admincontent/createContent.htm");
-        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "id=" + TEST_EDAN_ID + "&content="+ edanJson); //QUOTIENTPROD
+        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "content="+ edanJson); //QUOTIENTPROD
 
         template.send("direct:edanTest", exchange);
 
