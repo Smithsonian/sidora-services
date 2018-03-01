@@ -27,13 +27,21 @@
 
 package edu.si.services.beans.cameratrap;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.model.SetBodyDefinition;
+import org.apache.camel.model.ToDynamicDefinition;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,12 +52,10 @@ import java.util.Map;
  */
 public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     //Test Data Directory contains the datastreams and other resources for the tests
-    private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";
+    private String testDataDir = KARAF_HOME + "/UnifiedManifest-TestFiles";
 
     //Camera Trap Deployment Info for testing
     private String camelFileParent = "10002000";
@@ -62,8 +68,13 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
     private Map<String, Object> headers;
 
     //Camera Trap Deployment Manifest
-    private File manifestFile = new File("src/test/resources/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/deployment_manifest.xml");
+    private File manifestFile = new File(testDataDir + "/scbi_unified_stripped_p125d18981/deployment_manifest.xml");
     private String manifest;
+    File deploymentZip;
+
+    private String processDirPath;
+    private String processDoneDirPath;
+    private String processErrorDirPath;
 
     /**
      * Override this method, and return the location of our Blueprint XML file to be used for testing.
@@ -82,9 +93,6 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
      */
     @Override
     public void setUp() throws Exception {
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setDefaultTestProperties(defaultTestProperties);
-
         disableJMX();
 
         //Store the Deployment Manifest as string to set the camel ManifestXML header
@@ -100,6 +108,23 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         headers.put("SitePID", "test:0000");
 
         super.setUp();
+
+        processDirPath = getExtra().getProperty("si.ct.uscbi.process.dir.path");
+        processDoneDirPath = getExtra().getProperty("si.ct.uscbi.process.done.dir.path");
+        processErrorDirPath = getExtra().getProperty("si.ct.uscbi.process.error.dir.path");
+
+        deleteDirectory(processDirPath);
+        deleteDirectory(processDoneDirPath);
+        deleteDirectory(processErrorDirPath);
+
+        //Modify the default error handler so that we can send failed exchanges to mock:result for assertions
+        // Sending to dead letter does not seem to work as expected for this
+        context.setErrorHandlerBuilder(new DefaultErrorHandlerBuilder().onPrepareFailure(new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                template.send("mock:result", exchange);
+            }
+        }));
     }
 
     /**
@@ -166,7 +191,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         String routeId = "UnifiedCameraTrapAddMODSDataStream";
         String routeURI = "direct:addMODSDataStream";
 
-        File MODS_DatastreamTestFile = new File(testDataDir + "/MODS/valid_MODS.xml");
+        File MODS_DatastreamTestFile = new File(testDataDir + "/DatastreamTestFiles/MODS/valid_MODS.xml");
 
         String MODS_DatastreamExpected = FileUtils.readFileToString(MODS_DatastreamTestFile);
 

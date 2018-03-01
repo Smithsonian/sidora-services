@@ -32,14 +32,9 @@ import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.CamelContext;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.camel.util.KeyValueHolder;
-import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.FileBasedConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.junit.Before;
 
-import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -47,53 +42,20 @@ import java.util.*;
  */
 public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
 
-    private Boolean useRealFedoraServer = false;
-    private String fedoraHost = System.getProperty("si.fedora.host");
-    private String fedoraUser = System.getProperty("si.fedora.user");
-    private String fedoraPassword = System.getProperty("si.fedora.password");
-    private String fusekiHost = System.getProperty("si.fuseki.host");
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private static Configuration config = null;
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
-    private String propertiesPersistentId = "edu.si.sidora.karaf";
+    private static Properties extra = new Properties();
     private static AmazonS3ClientMock amazonS3Client;
 
-    protected Boolean isUseActualFedoraServer() {
-        return useRealFedoraServer;
-    }
-
-    protected void setUseActualFedoraServer(Boolean useActualFedoraServer) {
-        this.useRealFedoraServer = useActualFedoraServer;
-    }
-
-    protected void setFedoraServer(String fedorahost, String fedoraUser, String fedoraPassword) {
-        this.fedoraHost = fedorahost;
-        this.fedoraUser = fedoraUser;
-        this.fedoraPassword = fedoraPassword;
-    }
-
-    protected void setFuseki(String fusekiHost) {
-        this.fusekiHost = fusekiHost;
-    }
-
-    protected static Configuration getConfig() {
-        return config;
+    protected static Properties getExtra() {
+        return extra;
     }
 
     protected static AmazonS3ClientMock getAmazonS3Client() {
         return amazonS3Client;
     }
 
-    protected void setDefaultTestProperties(String defaultTestProperties) {
-        this.defaultTestProperties = defaultTestProperties;
-    }
-
-    protected void setPropertiesPersistentId(String propertiesPersistentId) {
-        this.propertiesPersistentId = propertiesPersistentId;
-    }
-
     protected List<String> loadAdditionalPropertyFiles() {
-        return null;
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
     }
 
     protected String[] preventRoutesFromStarting() {
@@ -105,12 +67,10 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
         CamelContext context = super.createCamelContext();
 
         //add fedora component using test properties to the context
-        if (isUseActualFedoraServer()) {
-            FedoraSettings fedoraSettings = new FedoraSettings(fedoraHost, fedoraUser, fedoraPassword);
-            FedoraComponent fedora = new FedoraComponent();
-            fedora.setSettings(fedoraSettings);
-            context.addComponent("fedora", fedora);
-        }
+        FedoraSettings fedoraSettings = new FedoraSettings(extra.getProperty("si.fedora.host"), extra.getProperty("si.fedora.user"), extra.getProperty("si.fedora.password"));
+        FedoraComponent fedora = new FedoraComponent();
+        fedora.setSettings(fedoraSettings);
+        context.addComponent("fedora", fedora);
 
         //Prevent Certain Routes From Starting
         String[] routeList = preventRoutesFromStarting();
@@ -128,85 +88,39 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
         services.put("amazonS3Client", asService(amazonS3Client, null));
     }
 
-//    @Override
-//    protected JndiRegistry createRegistry() throws Exception {
-//        JndiRegistry registry = super.createRegistry();
-//
-//        registry.bind("amazonS3Client", amazonS3Client);
-//
-//        return registry;
-//    }
-
-    @Override
-    protected String[] loadConfigAdminConfigurationFile() {
-        return new String[]{defaultTestProperties, "edu.si.sidora.karaf"};
-    }
-
-
-    @Before
     @Override
     public void setUp() throws Exception {
-        log.info("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
-
-        Parameters params = new Parameters();
-        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
-                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                        .configure(params.fileBased().setFile(new File(defaultTestProperties)));
-        config = builder.getConfiguration();
+        //System.getProperties().list(System.out);
+        log.debug("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
 
         List<String> propFileList = loadAdditionalPropertyFiles();
         if (loadAdditionalPropertyFiles() != null) {
             for (String propFile : propFileList) {
-
-                FileBasedConfigurationBuilder<FileBasedConfiguration> builder2 =
-                        new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                                .configure(params.fileBased().setFile(new File(propFile)));
-
-                for (Iterator<String> i = builder2.getConfiguration().getKeys(); i.hasNext(); ) {
-                    String key = i.next();
-                    Object value = builder2.getConfiguration().getProperty(key);
-                    if (!config.containsKey(key)) {
-                        config.setProperty(key, value);
-                    }
+                Properties extra = new Properties();
+                try {
+                    extra.load(new FileInputStream(propFile));
+                    this.extra.putAll(extra);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
 
-        if (fedoraHost != null && !fedoraHost.isEmpty()) {
-            config.setProperty("si.fedora.host", fedoraHost);
+        for (Map.Entry<Object, Object> p : System.getProperties().entrySet()) {
+            if (extra.containsKey(p.getKey())) {
+                extra.setProperty(p.getKey().toString(), p.getValue().toString());
+            }
         }
-        if (fedoraUser != null && !fedoraUser.isEmpty()) {
-            config.setProperty("si.fedora.user", fedoraUser);
-        }
-        if (fedoraPassword != null && !fedoraPassword.isEmpty()) {
-            config.setProperty("si.fedora.password", fedoraPassword);
-        }
-        if (fusekiHost != null && !fusekiHost.isEmpty()) {
-            config.setProperty("si.fuseki.endpoint", fusekiHost);
-        }
-
-        //Set a reasonable number of redeliveries for testing purposes
-        config.setProperty("min.connectEx.redeliveries", 2);
-
-        builder.save();
 
         //Initialize the Mock AmazonS3Client
-        amazonS3Client = new AmazonS3ClientMock(config.getString("si.ct.uscbi.aws.accessKey"), config.getString("si.ct.uscbi.aws.secretKey"));
+        amazonS3Client = new AmazonS3ClientMock(extra.getProperty("si.ct.uscbi.aws.accessKey"), extra.getProperty("si.ct.uscbi.aws.secretKey"));
 
         super.setUp();
     }
 
     @Override
-    protected Properties useOverridePropertiesWithPropertiesComponent() {
-
-        Properties extra = new Properties();
-
-        for (Iterator<String> i = config.getKeys(); i.hasNext();) {
-            String key = i.next();
-            Object value = config.getProperty(key);
-            extra.setProperty(key, String.valueOf(value));
-        }
-
-        return extra;
+    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
+        configAdmin.putAll(extra);
+        return "edu.si.sidora.karaf";
     }
 }

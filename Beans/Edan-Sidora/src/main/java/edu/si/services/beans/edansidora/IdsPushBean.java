@@ -48,8 +48,6 @@ public class IdsPushBean {
 
     @PropertyInject(value = "si.ct.uscbi.idsPushLocation")
     private String pushLocation;
-    @PropertyInject(value = "si.ct.uscbi.tempLocationForZip")
-    private String tempLocation;
     private static File inputLocation;
     private static String deploymentId;
     private Map<String, String> ignored = new HashMap<String, String>();

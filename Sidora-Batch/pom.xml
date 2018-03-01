@@ -46,6 +46,9 @@
     <properties>
         <http-components.version>4.4</http-components.version>
         <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
+
+        <!-- Unit Test Properties-->
+        <karaf.home>${project.build.directory}/test-classes</karaf.home>
     </properties>
 
 
@@ -269,7 +272,22 @@
 
             <!-- add the Sidora-Batch Karaf-config directories -->
             <testResource>
-                <directory>../Routes/Sidora-Batch</directory>
+                <directory>../Routes/Sidora-Batch/Karaf-config/</directory>
+                <targetPath>${karaf.home}</targetPath>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>**/deploy/*.*</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/deploy</directory>
+                <targetPath>${karaf.home}/deploy</targetPath>
+            </testResource>
+            <!-- add the Camera Trap Route directory as resources -->
+            <testResource>
+                <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
             </testResource>
 
         </testResources>
@@ -306,6 +324,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*_IT</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <karaf.home>${karaf.home}</karaf.home>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
 
             <!-- to run the example using mvn camel:run -->

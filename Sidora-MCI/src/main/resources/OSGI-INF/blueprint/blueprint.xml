@@ -63,7 +63,7 @@
 
 	<!-- This is the JDBC data source which uses a MySQL database -->
 	<bean id="drupalDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-		<property name="driverClassName" value="${mci.db.driverClassName}"/>
+		<property name="driverClassName" value="${db.driverClassName}"/>
 		<property name="url" value="${drupal.db.url}"/>
 		<property name="username" value="${drupal.db.username}"/>
 		<property name="password" value="${drupal.db.password}"/>
@@ -74,7 +74,7 @@
 
 	<!-- This is the JDBC data source which uses a MySQL database -->
 	<bean id="requestDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-		<property name="driverClassName" value="${mci.db.driverClassName}"/>
+		<property name="driverClassName" value="${db.driverClassName}"/>
 		<property name="url" value="${request.db.url}"/>
 		<property name="username" value="${request.db.username}"/>
 		<property name="password" value="${request.db.password}"/>
