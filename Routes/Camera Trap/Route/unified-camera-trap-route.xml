@@ -106,7 +106,17 @@
             <set>
                 <value>ManifestXML</value>
                 <value>CamelSchematronValidationReport</value>
+                <value>datastreamValidationXML</value>
                 <value>Content-Type</value>
+                <value>Content-Length</value>
+                <value>Transfer-Encoding</value>
+                <value>Vary</value>
+                <value>Server</value>
+                <value>User-Agent</value>
+                <value>Host</value>
+                <value>CamelHttpMethod</value>
+                <value>CamelHttpResponseCode</value>
+                <value>CamelHttpResponseText</value>
             </set>
         </property>
     </bean>
@@ -783,6 +793,14 @@
             <log message="${id}: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
+
+            <!-- For new deployments we need to reload the parent tree node in workbench-->
+            <setHeader headerName="workbenchNodePid">
+                <simple>${header.ParentPID}</simple>
+            </setHeader>
+
+            <to uri="direct:workbenchReloadPid"/>
+
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -997,14 +1015,14 @@
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
-                    <log message="${id}: Derivatives: Found JPEG."
+                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found JPEG."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
-                    <log message="${id}: Derivatives: Found non-JPEG Image."
+                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found non-JPEG Image."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
@@ -1751,6 +1769,13 @@
                     </setBody>
                     <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestPlot.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-CTPlot%20Record&amp;versionable=true"/>
+
+                    <!-- For new plots we need to reload the parent tree node in workbench-->
+                    <setHeader headerName="workbenchNodePid">
+                        <simple>${header.ParentPID}</simple>
+                    </setHeader>
+                    <to uri="direct:workbenchReloadPid"/>
+
                 </when>
                 <otherwise>
                     <!-- Return the existing plot as the current object. -->
@@ -1889,6 +1914,12 @@
                             <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
                             <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltSubprojectSIdoraConcept2DC"/>
                             <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addSubprojectDC"/>
+
+                            <!-- For new plots we need to reload the parent tree node in workbench-->
+                            <setHeader headerName="workbenchNodePid">
+                                <simple>${header.ParentPID}</simple>
+                            </setHeader>
+                            <to uri="direct:workbenchReloadPid"/>
 
                         </when>
                         <otherwise>
@@ -2051,6 +2082,12 @@
                             <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
                             <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltProjectSIdoraConcept2DC"/>
                             <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addProjectDC"/>
+
+                            <!-- For new plots we need to reload the parent tree node in workbench-->
+                            <setHeader headerName="workbenchNodePid">
+                                <simple>${header.ParentPID}</simple>
+                            </setHeader>
+                            <to uri="direct:workbenchReloadPid"/>
 
                         </when>
                         <otherwise>
@@ -2543,6 +2580,79 @@
 
             <log message="${id}: InFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="UnifiedCameraTrapReloadWorkbenchConceptTreePid">
+            <from uri="direct:workbenchReloadPid"/>
+            <onException>
+                <exception>java.net.ConnectException</exception>
+                <exception>org.apache.camel.http.common.HttpOperationFailedException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.connectEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: Could Not Refresh Workbench Tree Node for ${header.workbenchNodePid}! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="workbenchConnectException"/>
+            </onException>
+
+            <log message="${id} ${routeId}: Starting Workbench Clear Cache for Research Project Tree Concept PID Request..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Workbench Reload Pid = ${header.workbenchNodePid}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Workbench Reload Body = ${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <simple>GET</simple>
+            </setHeader>
+
+            <!-- remove problem headers as the headerFilterStrategy only prevents from adding to the http headers and the camel http component will still use camel headers listed in the headerFilterStrategy to build the request url such as CamelHttpQuery -->
+            <removeHeaders pattern="CamelHttpQuery|CamelHttpResponseCode|CamelHttpResponseText"/>
+
+            <setBody>
+                <simple></simple>
+            </setBody>
+
+            <toD uri="{{camel.workbench.clear.cache.url}}/${header.workbenchNodePid}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="workbenchReloadPid"/>
+
+            <choice>
+                <when>
+                    <simple>
+                        ${header.CamelHttpResponseCode} == 200
+                    </simple>
+                    <!--${body} == 'Clearing cache for:${header.workbenchNodePid}' &amp;&amp; -->
+                    <log message="${id} ${routeId}: Workbench Clear Cache for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}."
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </when>
+                <otherwise>
+                    <log message="${id} ${routeId}: Workbench Cleared Cache for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}."
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                    <log message="${id} ${routeId}: Workbench Cleared Cache Response Body:${body}"
+                         loggingLevel="DEBUG"
+                         logName="{{si.ct.id}}"/>
+                    <log message="${id} ${routeId}: Workbench Cleared Cache Response Headers:${headers}"
+                         loggingLevel="DEBUG"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
+
+
+            <log message="${id} ${routeId}: Finished Workbench Clear Cache for PID..."
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
     </camelContext>
