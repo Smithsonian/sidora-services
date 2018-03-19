@@ -27,13 +27,23 @@
 
 package edu.si.services.beans.cameratrap;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.impl.DefaultExchange;
+import org.apache.camel.model.SetBodyDefinition;
+import org.apache.camel.model.ToDynamicDefinition;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.File;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -207,5 +217,105 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
 
         assertMockEndpointsSatisfied();
 
+    }
+
+    @Test
+    public void testFitsSocketException() throws Exception {
+
+        Integer minSocketExRedelivery = getConfig().getInt("min.socketEx.redeliveries");
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+        mockResult.setAssertPeriod(1500);
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+        mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(SocketException.class);
+        mockError.expectedHeaderReceived("redeliveryCount", minSocketExRedelivery);
+        mockResult.setAssertPeriod(1500);
+
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                from("direct:start")
+                        .to("direct:addFITSDataStream");
+            }
+        });
+
+        context.getRouteDefinition("UnifiedCameraTrapAddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //processor used to replace sql query to test onException and retries
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws Exception {
+                        Message in = exchange.getIn();
+                        in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
+                        throw new SocketException("Simulating java.net.SocketException: Connection reset");
+                    }
+                };
+
+                weaveById("fitsServiceException").after().to("mock:error");
+                weaveById("fitsHttpRequest").replace().process(processor);
+                weaveById("fitsAddDatastream").replace().log(LoggingLevel.INFO, "Skipping Fedora addDatastream!!!").to("mock:result");
+
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/d18981s1i1.JPG");
+
+        template.send("direct:start", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testFitsSocketExceptionAndExecFail() throws Exception {
+
+        Integer minSocketExRedelivery = getConfig().getInt("min.socketEx.redeliveries");
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(0); //we should not
+        mockResult.setAssertPeriod(1500);
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+        mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(SocketException.class);
+        mockError.expectedHeaderReceived("redeliveryCount", minSocketExRedelivery);
+        mockResult.setAssertPeriod(1500);
+
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                from("direct:start")
+                        .to("direct:addFITSDataStream");
+            }
+        });
+
+        context.getRouteDefinition("UnifiedCameraTrapAddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //processor used to replace sql query to test onException and retries
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws Exception {
+                        Message in = exchange.getIn();
+                        in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
+                        throw new SocketException("Simulating java.net.SocketException: Connection reset");
+                    }
+                };
+
+                weaveById("fitsServiceException").after().to("mock:error");
+                weaveById("fitsHttpRequest").replace().process(processor);
+                weaveById("fitsAddDatastream").replace().log(LoggingLevel.INFO, "Skipping Fedora addDatastream!!!").to("mock:result");
+
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        //exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/d18981s1i1.JPG");
+
+        template.send("direct:start", exchange);
+
+        assertMockEndpointsSatisfied();
     }
 }

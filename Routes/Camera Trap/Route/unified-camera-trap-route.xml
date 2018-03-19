@@ -1225,6 +1225,26 @@
 
         <route id="UnifiedCameraTrapAddFITSDataStream">
             <from uri="direct:addFITSDataStream"/>
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.socketEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed. Falling back to fits exec call!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="fitsServiceException"/>
+                <toD uri="exec:fits?args=-i ${header.CamelFileAbsolutePath}" id="fitsExecCall"/>
+                <log message="${id} FITS Exec Value = ${header.CamelExecExitValue}"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
+            </onException>
+
             <log message="${id}: Started processing FITS ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1238,16 +1258,18 @@
                     file=${header.CamelFileAbsolutePath}
                 </simple>
             </setHeader>
+            <!-- ensure that we actually have a 200 response from the fits web service as this header could have been set upstream by another http request -->
+            <removeHeader headerName="CamelHttpResponseCode"/>
 
             <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="fitsHttpRequest"/>
 
             <convertBodyTo type="java.lang.String" charset="UTF-8"/>
 
-            <log message="${id} FITS Web Service Output:\n${body}"
+            <log message="${id} FITS Output:\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1255,8 +1277,7 @@
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        <!--${body} != ''-->
-                        ${header.CamelHttpResponseCode} == 200
+                        ${header.CamelExecExitValue} == 0 || ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
@@ -1267,10 +1288,10 @@
                     <log message="${id}: FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
-                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false" id="fitsAddDatastream"/>
                 </when>
                 <otherwise>
-                    <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelHttpResponseCode}"
+                    <log message="${id}: FITS processing failed for PID: ${header.CamelFedoraPid}"
                          loggingLevel="ERROR"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
