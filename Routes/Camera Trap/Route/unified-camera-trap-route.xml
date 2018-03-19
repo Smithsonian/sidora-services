@@ -1235,14 +1235,10 @@
                 <continued>
                     <constant>true</constant>
                 </continued>
-                <log message="[${routeId}] :: FITS web service request failed. Falling back to fits exec call!! Error reported: ${exception.message}"
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
                      loggingLevel="WARN"
                      logName="{{si.ct.id}}"
                      id="fitsServiceException"/>
-                <toD uri="exec:fits?args=-i ${header.CamelFileAbsolutePath}" id="fitsExecCall"/>
-                <log message="${id} FITS Exec Value = ${header.CamelExecExitValue}"
-                     loggingLevel="INFO"
-                     logName="{{si.ct.id}}"/>
             </onException>
 
             <log message="${id}: Started processing FITS ..."
@@ -1277,7 +1273,7 @@
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        ${header.CamelExecExitValue} == 0 || ${header.CamelHttpResponseCode} == 200
+                        ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
                         <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
