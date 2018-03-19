@@ -90,7 +90,8 @@
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
                   trace="false"
-                  streamCache="true">
+                  streamCache="true"
+                  useMDCLogging="true">
 
         <!--
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.

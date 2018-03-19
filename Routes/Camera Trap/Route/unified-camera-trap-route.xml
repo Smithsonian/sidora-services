@@ -113,10 +113,37 @@
 
     <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
 
-    <!-- errorHandlerRef="ctingestErrorHandler" -->
-    <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean" init-method="initIt" destroy-method="cleanUp"/>
+    <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
+    <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
+         <property name="brokerURL" value="${broker.url}"/>
+        <!--<property name="brokerURL" value="tcp://localhost:61616"/>-->
+        <property name="userName" value="smx"/>
+        <property name="password" value="smx"/>
+    </bean>
 
-    <bean id="idsPushBean" class="edu.si.services.beans.edansidora.IdsPushBean"/>
+    <!-- Use a pooled connections for scalability -->
+    <bean id="pooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start" destroy-method="stop">
+        <property name="maxConnections" value="8" />
+        <property name="connectionFactory" ref="connectionFactory" />
+    </bean>
+
+    <!-- Use pooled connections for JMS -->
+    <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+        <property name="connectionFactory" ref="pooledConnectionFactory"/>
+        <property name="concurrentConsumers" value="1"/>
+        <!-- When ready we can make this run more consumers. -->
+        <!-- <property name="concurrentConsumers" value="10"/> -->
+    </bean>
+
+    <!-- Use the Camel JMS Components for performance and route flexibility -->
+    <bean id="jms" class="org.apache.camel.component.jms.JmsComponent">
+        <property name="connectionFactory" ref="connectionFactory"/>
+    </bean>
+
+    <!-- Use the Camel AMQ component for performance -->
+    <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+        <property name="configuration" ref="jmsConfig"/>
+    </bean>
 
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -193,22 +220,6 @@
             <continued>
                 <constant>true</constant>
             </continued>
-        </onException>
-
-        <onException>
-            <exception>edu.si.services.beans.edansidora.EdanIdsException</exception>
-            <redeliveryPolicy useExponentialBackOff="true"
-                              backOffMultiplier="2"
-                              redeliveryDelay="{{si.ct.edanIds.redeliveryDelay}}"
-                              maximumRedeliveries="{{min.edan.redeliveries}}"
-                              retryAttemptedLogLevel="WARN"/>
-            <continued>
-                <constant>true</constant>
-            </continued>
-            <log message="[${routeId}] :: EdanIds Error reported: ${exception.message}"
-                 loggingLevel="ERROR"
-                 logName="{{si.ct.id}}"
-                 id="logEdanIdsException"/>
         </onException>
 
         <!--
@@ -333,6 +344,15 @@
 
                         <!-- Validate image count and check filenames. -->
                         <to uri="direct:validateIngest"/>
+
+
+                        <!-- Send message to EdanIds route for processing -->
+                        <setHeader headerName="addEdanIds">
+                            <simple>true</simple>
+                        </setHeader>
+
+                        <to uri="activemq:queue:{{edanIds.queue}}" id="edanIdsActiveMQ"/>
+
                     </otherwise>
                 </choice>
 
@@ -879,12 +899,6 @@
             </split>
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
 
-            <log message="PERFORMING IDS PUSH idsPushBean"
-                 loggingLevel="DEBUG"
-                 logName="{{si.ct.id}}"/>
-
-            <to uri="bean:idsPushBean?method=createAndPush"/>
-
             <!-- Researcher is required for Unified CT Ingest. -->
             <to uri="direct:addResearcherObservationResource"/>
 
@@ -997,20 +1011,18 @@
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
-                    <log message="${id}: Derivatives: Found JPEG."
+                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found JPEG."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
-                    <log message="${id}: Derivatives: Found non-JPEG Image."
+                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found non-JPEG Image."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
-
-            <to uri="direct:addImageToEdanAndIds"/>
 
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
@@ -1313,65 +1325,6 @@
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id}: Finished processing MODS."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-        </route>
-
-        <route id="UnifiedCameraTrapAddImageToEdanAndIds">
-            <from uri="direct:addImageToEdanAndIds"/>
-            <log message="${id}: Started processing EDAN and IDS..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-            <choice>
-                <when>
-                    <xpath headerName="ManifestXML">
-                        <!--//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = "Homo sapiens"-->
-                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.edanids.speciesScientificName.filter'), text())] != ''
-                    </xpath>
-                    <log message="NO POST TO EDAN, exclude this image ${header.imageid}"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                    <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
-                </when>
-                <otherwise>
-                    <setHeader headerName="extraJson">
-                        <simple>{{si.ct.uscbi.extra_property}}</simple>
-                    </setHeader>
-
-                    <setBody>
-                        <simple>
-                            ${header.ManifestXML}
-                        </simple>
-                    </setBody>
-                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true"/>
-
-                    <setHeader headerName="edanJson">
-                        <simple>
-                            ${body}
-                        </simple>
-                    </setHeader>
-
-                    <log message="POST THIS TO EDAN: ${headers.edanJson}"
-                         loggingLevel="DEBUG"
-                         logName="{{si.ct.id}}"/>
-
-                    <setHeader headerName="edanUri">
-                        <groovy>
-                            "content=" + URLEncoder.encode(request.headers.edanJson) + ""
-                        </groovy>
-                    </setHeader>
-
-                    <log message="service: {{si.ct.uscbi.edanService}} uri: ${headers.edanUri} "
-                         loggingLevel="DEBUG"
-                         logName="edanidslog"/>
-
-                    <to uri="bean:edanApiBean?method=sendRequest" id="edanApiSendRequest"/>
-
-                </otherwise>
-            </choice>
-
-            <log message="${id}: Finished processing EDAN and IDS."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>

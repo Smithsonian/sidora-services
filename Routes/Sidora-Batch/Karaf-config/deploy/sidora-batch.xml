@@ -94,7 +94,7 @@
 
     <!-- This is the JDBC data source which uses a MySQL database -->
     <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="driverClassName" value="${db.driverClassName}"/>
         <property name="url" value="jdbc:mysql://${mysql.host}:${mysql.port}/${mysql.database}?zeroDateTimeBehavior=convertToNull"/>
         <property name="username" value="${mysql.username}"/>
         <property name="password" value="${mysql.password}"/>

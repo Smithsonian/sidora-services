@@ -275,6 +275,19 @@
             <artifactId>javax.servlet-api</artifactId>
             <scope>test</scope>
         </dependency>-->
+        <!-- ActiveMQ test gear -->
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-camel</artifactId>
+            <scope>test</scope>
+            <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.apache.camel</groupId>
+                    <artifactId>camel-jms</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
 
         <!-- Integration Testing gear -->
         <dependency>
@@ -303,6 +316,11 @@
     <build>
         <defaultGoal>install</defaultGoal>
 
+        <!--The properties file that will be used for tests and token replacement during resource filtering-->
+        <!--<filters>
+            <filter>src/test/resources/test.properties</filter>
+        </filters>-->
+
         <!-- Copy test resources to output folder target/test-classes -->
         <testResources>
             <!-- don't forget to specify the default test resources directory -->
@@ -315,11 +333,13 @@
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
             </testResource>
             <!-- add the emammal property file needed by the unified route -->
             <testResource>
                 <directory>../Edan-Sidora/Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
             </testResource>
             <testResource>
                 <directory>../Edan-Sidora/Karaf-config/Input</directory>

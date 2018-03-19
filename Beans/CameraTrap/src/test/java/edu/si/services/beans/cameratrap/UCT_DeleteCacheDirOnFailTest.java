@@ -27,7 +27,6 @@
 
 package edu.si.services.beans.cameratrap;
 
-import edu.si.services.beans.edansidora.EdanIdsException;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
@@ -41,13 +40,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author jbirkhimer
@@ -56,16 +51,13 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
     private static String LOG_NAME = "edu.si.mci";
 
-    private static final boolean USE_ACTUAL_FEDORA_SERVER = false;
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
 
     String deploymentZipLoc = "src/test/resources/UnifiedManifest-TestFiles/scbi_unified_test_deployment.zip";
     String cacheDir = KARAF_HOME + "/UnifiedCameraTrapData";
     String deploymentCacheDir = KARAF_HOME + "/UnifiedCameraTrapData/" + FilenameUtils.getBaseName(deploymentZipLoc);
     File deploymentZip;
     String expectedFileExists;
-    String exceptionTestName;
 
     private static final CountDownLatch LATCH = new CountDownLatch(1);
 
@@ -75,23 +67,20 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
     }
 
     @Override
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
-    }
-
-    @Override
     protected String[] preventRoutesFromStarting() {
         return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
     }
 
     @Override
     public void setUp() throws Exception {
-        setUseActualFedoraServer(USE_ACTUAL_FEDORA_SERVER);
-        setDefaultTestProperties(defaultTestProperties);
+        System.setProperty("si.ct.uscbi.enableS3Routes", "true");
+
         deleteDirectory(KARAF_HOME + "/ProcessUnified");
         deleteDirectory(KARAF_HOME + "/UnifiedCameraTrapData");
 
         super.setUp();
+
+        context.getRouteDefinition("CameraTrapDeploymentsPulldownFromS3").noAutoStartup();
 
         deploymentZip = new File(deploymentZipLoc);
         log.debug("Exchange_FILE_NAME = {}", deploymentZip.getName());
@@ -128,21 +117,21 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
     @Test
     public void testConnectException() throws Exception {
 
-        Integer minConnectExRedelivery = getConfig().getInt("min.connectEx.redeliveries");
+        Integer minConnectExRedelivery = Integer.valueOf(getExtra().getProperty("min.connectEx.redeliveries"));
 
         expectedFileExists = KARAF_HOME + "/ProcessUnified/Error_UnifiedCameraTrap/s3_upload_success/" + deploymentZip.getName();
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMinimumMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
-        mockResult.setAssertPeriod(1500);
+        mockResult.setAssertPeriod(7000);
 
         MockEndpoint mockError = getMockEndpoint("mock:error");
         mockError.expectedMessageCount(1);
         mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(ConnectException.class);
         mockError.expectedHeaderReceived("redeliveryCount", minConnectExRedelivery);
         mockError.expectedFileExists(expectedFileExists);
-        mockResult.setAssertPeriod(1500);
+        mockError.setAssertPeriod(7000);
 
         context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -171,6 +160,8 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
         });
 
         context.start();
+
+        Thread.sleep(1500);
 
         assertMockEndpointsSatisfied();
 

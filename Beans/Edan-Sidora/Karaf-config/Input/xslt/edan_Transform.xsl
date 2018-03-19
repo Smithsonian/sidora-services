@@ -36,6 +36,7 @@
     <xsl:param name="imageid"/>
     <xsl:param name="CamelFedoraPid"/>
     <xsl:param name="extraJson"/>
+    <xsl:param name="edanId"/>
 
     <xsl:template match="/">
 
@@ -43,6 +44,7 @@
             <xsl:with-param name="imageid"><xsl:value-of select="$imageid"/></xsl:with-param>
             <xsl:with-param name="CamelFedoraPid"><xsl:value-of select="$CamelFedoraPid"/></xsl:with-param>
             <xsl:with-param name="extraJson"><xsl:value-of select="$extraJson"/></xsl:with-param>
+            <xsl:with-param name="edanId"><xsl:value-of select="$edanId"/></xsl:with-param>
         </xsl:apply-templates>
     </xsl:template>
 
@@ -50,6 +52,7 @@
         <xsl:param name="imageid"/>
         <xsl:param name="CamelFedoraPid"/>
         <xsl:param name="extraJson"/>
+        <xsl:param name="edanId"/>
         <xsl:text>{</xsl:text>
         <xsl:text>"content": &#xa;{</xsl:text>
         <xsl:value-of select="$extraJson"/>
@@ -104,7 +107,8 @@
           <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
         </xsl:for-each><xsl:text>",</xsl:text>
         <xsl:text>&#xa;"type": "</xsl:text>emammal_image<xsl:text>",</xsl:text>
-        <xsl:text>&#xa;"url": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>"</xsl:text>
+        <xsl:text>&#xa;"url": "</xsl:text><xsl:value-of select="$imageid"/><xsl:text>"</xsl:text><xsl:if test="$edanId != ''"><xsl:text>,</xsl:text>
+        <xsl:text>&#xa;"id": "</xsl:text><xsl:value-of select="$edanId"/><xsl:text>"</xsl:text></xsl:if>
         <xsl:text>&#xa;}</xsl:text>
     </xsl:template>
 
