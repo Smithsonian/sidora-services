@@ -235,7 +235,7 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_UnifiedCameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.uscbi.process.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -267,7 +267,7 @@
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 
-            <threads poolSize="3" maxPoolSize="5">
+            <threads poolSize="3" maxPoolSize="5" id="ctThreads">
 
                 <!--If there is an issue with staging large archives we can can 'slow' down the route with delay below. -->
                 <delay>
