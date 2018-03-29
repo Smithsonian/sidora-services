@@ -49,8 +49,8 @@ public class FailedDeploymentDataDirRollback {
         Message out = exchange.getIn();
         deploymentDataDir = out.getHeader("deploymentDataDir", String.class);
 
-        log.info("=================[ Headers ]=================\n" + String.valueOf(out.getHeaders()));
-        log.info("=================[ Properties ]=================\n" + String.valueOf(exchange.getProperties()));
+        log.debug("=================[ Headers ]=================\n" + String.valueOf(out.getHeaders()));
+        log.debug("=================[ Properties ]=================\n" + String.valueOf(exchange.getProperties()));
 
             if (Files.exists(new File(deploymentDataDir).toPath())) {
                 log.info("DELETING FAILED DEPLOYMENT DATA DIR = {}", deploymentDataDir);
@@ -59,7 +59,7 @@ public class FailedDeploymentDataDirRollback {
                 log.error("Camera Trap Deployment Data Dir '{}' does not exist", deploymentDataDir);
             }
 
-        log.info("Return value for moveFailed = {}", moveFailedDir);
+        log.debug("Return value for moveFailed = {}", moveFailedDir);
         return moveFailedDir;
     }
 }

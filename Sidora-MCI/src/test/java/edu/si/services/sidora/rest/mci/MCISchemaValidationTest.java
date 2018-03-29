@@ -84,7 +84,6 @@ public class MCISchemaValidationTest extends CamelTestSupport {
         mockResult.expectedMinimumMessageCount(1);
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setBody(readFileToString(new File("src/test/resources/test-mci.xml")));
         exchange.getIn().setHeader("CamelFedoraPid", "test:001");
         exchange.getIn().setHeader("projectResourcePID", "test:002");
         template.send("direct:velocity", exchange);

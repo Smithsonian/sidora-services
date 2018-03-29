@@ -270,6 +270,20 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
             }
         });
 
+        context.getRouteDefinition("UnifiedCameraTrapProcessProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint("direct:workbenchReloadPid").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping Workbench HTTP Call");
+            }
+        });
+
+        context.getRouteDefinition("UnifiedCameraTrapProcessSubproject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint("direct:workbenchReloadPid").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping Workbench HTTP Call");
+            }
+        });
+
         context.start();
 
         //Initialize the exchange with body and headers as needed

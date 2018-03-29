@@ -505,7 +505,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
         });
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setBody(readFileToString(new File("src/test/resources/test-mci.xml")));
+        exchange.getIn().setBody(readFileToString(TEST_XML));
         exchange.getIn().setHeader("researchProjectPid", "test:001");
         exchange.getIn().setHeader("CamelFedoraPid", "test:002");
         exchange.getIn().setHeader("projectResourcePID", "test:003");
@@ -537,7 +537,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
         });
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setBody(readFileToString(new File("src/test/resources/test-mci.xml")));
+        exchange.getIn().setBody(readFileToString(TEST_XML));
         exchange.getIn().setHeader("researchProjectPid", "test:001");
         exchange.getIn().setHeader("CamelFedoraPid", "test:002");
         exchange.getIn().setHeader("projectResourcePID", "test:003");

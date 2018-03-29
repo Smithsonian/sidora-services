@@ -282,7 +282,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
         mockResult.expectedMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
 
-        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.done.dir.path", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
+        template.sendBodyAndHeader("file:{{si.ct.uscbi.process.done.dir.path}}", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
 
         assertMockEndpointsSatisfied();
 

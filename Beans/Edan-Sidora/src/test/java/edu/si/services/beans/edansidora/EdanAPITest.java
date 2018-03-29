@@ -115,6 +115,8 @@ public class EdanAPITest extends CamelTestSupport {
 
         props.putAll(System.getProperties());
 
+        edanApiBean.initIt();
+
         if (LOCAL_TEST) {
             startEdanTestServer();
         } else {
@@ -125,13 +127,12 @@ public class EdanAPITest extends CamelTestSupport {
 
         if (DEBUG) {
             System.getProperties().list(System.out);
-            LOG.info("===========[ Props ]============");
+            LOG.debug("===========[ Props ]============");
             props.list(System.out);
         }
 
         SOLR_SERVER = props.getProperty("edan.ids.solr.host");
 
-        edanApiBean.initIt();
         edanApiBean.setServer(props.getProperty("si.ct.uscbi.server"));
         edanApiBean.setApp_id(props.getProperty("si.ct.uscbi.appId"));
         edanApiBean.setEdan_key(props.getProperty("si.ct.uscbi.edanKey"));
