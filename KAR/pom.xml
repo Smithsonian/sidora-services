@@ -214,7 +214,6 @@
             <resource>
                 <directory>../Routes/Sidora-Batch/Karaf-config/sql</directory>
                 <targetPath>${target-karaf-sql-path}</targetPath>
-                <!--<filtering>true</filtering>-->
             </resource>
 
             <!-- Sidora-MCI -->
@@ -230,7 +229,6 @@
             <resource>
                 <directory>../Sidora-MCI/Karaf-Config/sql</directory>
                 <targetPath>${target-karaf-sql-path}</targetPath>
-                <!--<filtering>true</filtering>-->
             </resource>
         </resources>
 
@@ -244,44 +242,6 @@
                     <aggregateFeatures>true</aggregateFeatures>
                     <includeTransitiveDependency>false</includeTransitiveDependency>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-                <version>1.0.0</version>
-                <executions>
-                    <!-- supply properties to generate new config files -->
-                    <execution>
-                        <id>loadTestProperties</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>read-project-properties</goal>
-                        </goals>
-                        <configuration>
-                            <files combine.self="append">
-                                <file>${karaf.properties}</file>
-                            </files>
-                        </configuration>
-                    </execution>
-                    <!-- use production properties to generate new config files -->
-                    <!--<execution>
-                        <id>loadSMXProperties</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>read-project-properties</goal>
-                        </goals>
-                        <configuration>
-                            <files combine.self="append">
-                                <file>${smx.home}/etc/edu.si.sidora.batch.cfg</file>
-                                <file>${smx.home}/etc/edu.si.sidora.emammal.cfg</file>
-                                <file>${smx.home}/etc/edu.si.sidora.karaf.cfg</file>
-                                <file>${smx.home}/etc/edu.si.sidora.mci.cfg</file>
-                                <file>${smx.home}/etc/system.properties</file>
-                            </files>
-                        </configuration>
-                    </execution>-->
-                </executions>
             </plugin>
 
             <!--
@@ -335,4 +295,77 @@
             </plugin>-->
         </plugins>
     </build>
+
+    <!-- Profile configuration -->
+    <profiles>
+        <!-- The configuration of the testing profile -->
+        <profile>
+            <id>test</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <executions>
+                            <!-- supply properties to generate new config files -->
+                            <execution>
+                                <id>loadTestProperties</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>read-project-properties</goal>
+                                </goals>
+                                <configuration>
+                                    <files combine.self="append">
+                                        <!--<file>${project.root.basedir}/test.properties</file>-->
+                                        <file>${project.root.basedir}/test.properties</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- The configuration of the production profile -->
+        <!-- The profile will be activated when the system property "smx.home.path" is specified with any value -->
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>smx.home.path</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <executions>
+                            <!-- use production properties to generate new config files -->
+                            <execution>
+                                <id>loadSMXProperties</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>read-project-properties</goal>
+                                </goals>
+                                <configuration>
+                                    <files combine.self="append">
+                                        <file>${smx.home.path}/etc/edu.si.sidora.batch.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.emammal.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.karaf.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.mci.cfg</file>
+                                        <file>${smx.home.path}/etc/system.properties</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

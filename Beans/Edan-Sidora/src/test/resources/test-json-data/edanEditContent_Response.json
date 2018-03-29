@@ -1,0 +1,57 @@
+//TODO: Update this with correct info for the test deployment and image id used for test
+
+/*
+{
+  "id": "p2b-1515252134647-1515436502565-0",
+  "title": "Camera Trap Image White-tailed Deer",
+  "unitCode": "QUOTIENT",
+  "linkedId": "",
+  "type": "emammal_image",
+  "url": "emammal_image:d18981s1i1",
+  "content": {
+    "project_id": "p125",
+    "project_name": "Sample Triangle Camera Trap Survey Project",
+    "sub_project_id": "sp818",
+    "sub_project_name": "Triangle Wild",
+    "deployment_id": "d18981",
+    "deployment_name": "RaleighBYO 416",
+    "image_sequence_id": "d18981s1",
+    "image": {
+      "id": "d18981s1i1",
+      "online_media": [
+        {
+          "content": "http://ids.si.edu/ids/deliveryService?id\u003demammal_image_d18981s1i1",
+          "idsId": "emammal_image_d18981s1i1",
+          "sidoraPid": "test:001",
+          "type": "Images",
+          "caption": "Camera Trap Image White-tailed Deer",
+          "thumbnail": "http://ids.si.edu/ids/deliveryService?id\u003demammal_image_d18981s1i1\u0026max\u003d100"
+        }
+      ],
+      "date_time": "2016-02-13 12:11:26",
+      "photo_type": "animal",
+      "photo_type_identified_by": "",
+      "interest_ranking": "None"
+    },
+    "image_identifications": [
+      {
+        "iucn_id": "42394",
+        "species_scientific_name": "Odocoileus virginianus",
+        "individual_animal_notes": "",
+        "species_common_name": "White-tailed Deer",
+        "count": 3,
+        "age": "",
+        "sex": "",
+        "individual_id": "",
+        "animal_recognizable": ""
+      }
+    ]
+  },
+  "hash": "79f8970fbbbd10820fc17c9411ddc0f422a1da7a",
+  "docSignature": "d18981s1i1_f8a72fc490a9f673b1a84e5e317c92e1",
+  "timestamp": "2018-01-08 13:35:02.0",
+  "lastTimeUpdated": "2018-01-17 11:15:16.0",
+  "status": 0,
+  "version": "p2b-1515252134647-1515436502565-0",
+  "publicSearch": true
+}*/

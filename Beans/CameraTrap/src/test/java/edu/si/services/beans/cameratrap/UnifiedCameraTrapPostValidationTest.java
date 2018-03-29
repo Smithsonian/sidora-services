@@ -27,6 +27,7 @@
 
 package edu.si.services.beans.cameratrap;
 
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ChoiceDefinition;
@@ -628,7 +629,13 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
             public void configure() throws Exception {
 
                 //weaveByType(LogDefinition.class).after().to("mock:result");
-                weaveByType(ChoiceDefinition.class).before().to("mock:result");
+                weaveByType(ChoiceDefinition.class).before()
+                        .choice()
+                            .when().simple("${body} not is 'java.util.List'")
+                                .to("mock:result").stop()
+                            .endChoice()
+                        .end()
+                        .to("mock:result");
             }
         });
     }

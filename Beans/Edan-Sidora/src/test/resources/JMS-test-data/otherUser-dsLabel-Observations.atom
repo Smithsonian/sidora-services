@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<entry xmlns="http://www.w3.org/2005/Atom" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/">
+    <id>urn:uuid:b0f79980-757b-4750-8b3e-72426843de6a</id>
+    <updated>2017-12-05T18:13:50.884Z</updated>
+    <author>
+        <name>otherUser</name>
+        <uri>http://localhost:8080/fedora</uri>
+    </author>
+    <title type="text">modifyDatastreamByValue</title>
+    <category term="${si.ct.namespace}:test" scheme="fedora-types:pid" label="xsd:string"/>
+    <category term="OBJ" scheme="fedora-types:dsID" label="xsd:string"/>
+    <category term="" scheme="fedora-types:altIDs" label="fedora-types:ArrayOfString"/>
+    <category term="Researcher Observations" scheme="fedora-types:dsLabel" label="xsd:string"/>
+    <category term="null" scheme="fedora-types:formatURI" label="xsd:string"/>
+    <category term="[OMITTED]" scheme="fedora-types:dsContent" label="xsd:base64Binary"/>
+    <category term="null" scheme="fedora-types:checksumType" label="xsd:string"/>
+    <category term="null" scheme="fedora-types:checksum" label="xsd:string"/>
+    <category term="null" scheme="fedora-types:logMessage" label="xsd:string"/>
+    <summary type="text">${si.ct.namespace}:test</summary>
+    <content type="text">2017-12-05T18:13:50.884Z</content>
+    <category term="3.8.1" scheme="info:fedora/fedora-system:def/view#version"/>
+    <category term="info:fedora/fedora-system:ATOM-APIM-1.0" scheme="http://www.fedora.info/definitions/1/0/types/formatURI"/>
+</entry>
