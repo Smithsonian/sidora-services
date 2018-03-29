@@ -938,7 +938,7 @@
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTSiteTemplate.vsl"/>
-            <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <log message="${id}: Finished resource processing."
                  loggingLevel="INFO"
@@ -997,7 +997,7 @@
 
             <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true"/>
 
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
@@ -1005,7 +1005,7 @@
             <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
 
@@ -1080,11 +1080,11 @@
             </transform>
             <convertBodyTo type="java.lang.String"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=true"/>
 
-            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=true"/>
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
             <setBody>
@@ -1154,11 +1154,11 @@
             </transform>
             <convertBodyTo type="java.lang.String"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=true"/>
 
-            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=true"/>
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl" />
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
             <setBody>
@@ -1220,11 +1220,11 @@
             </transform>
             <convertBodyTo type="java.lang.String"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=true"/>
 
-            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=true"/>
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
             <setBody>
@@ -1711,7 +1711,7 @@
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
                     <!-- Add Relation from parent UCT sub-project to the child UCT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- Add an FGDC-CTPlot datastream for concept metadata. -->
@@ -1838,7 +1838,7 @@
 
                             <!-- Add a minimal RELS-EXT to the sub-project -->
                             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
-                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
                             <!-- Add Relation from parent UCT project to the child UCT sub-project -->
                             <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -2006,7 +2006,7 @@
 
                             <!-- Add a minimal RELS-EXT to the project. -->
                             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
-                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
                             <!-- Add Relation from parent UCT root object to the child UCT project. -->
                             <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
