@@ -240,7 +240,7 @@ public class TabularMetadataGeneratorEndpointTest {
 
         TabularMetadataGeneratorEndpoint tabularMetadataGeneratorEndpoint = JAXRSClientFactory.create(TABULARMETADATAGENERATORENDPOINT_TESTURL, TabularMetadataGeneratorEndpoint.class, providers);
 
-        Codebook responce = tabularMetadataGeneratorEndpoint.getCodebook(testDataURL, hasHeaders, scanLimit);
+        Codebook Response = tabularMetadataGeneratorEndpoint.getCodebook(testDataURL, hasHeaders, scanLimit);
 
     }
 
@@ -283,13 +283,13 @@ public class TabularMetadataGeneratorEndpointTest {
         //Codebook xmlSRcodebook = (Codebook) jaxbUnmarshaller.unmarshal(xmlStreamReader);
 
         //Unmarshalling from a StringBuffer using a javax.xml.transform.stream.StreamSource
-        //Codebook codebookResponce = (Codebook) jaxbUnmarshaller.unmarshal(new StringReader(stringWriter.toString()));
+        //Codebook codebookResponse = (Codebook) jaxbUnmarshaller.unmarshal(new StringReader(stringWriter.toString()));
 
         //Unmarshalling from a File
         URL codebookesource = getClass().getResource("/testdata/expectedCodebook.xml");
         String codebookesourceFile = Paths.get(codebookesource.toURI()).toString();
         log.info("Codebook URL: {}", codebookesourceFile);
-        //Codebook codebookResponce = (Codebook) jaxbUnmarshaller.unmarshal(new File(codebookesourceFile));
+        //Codebook codebookResponse = (Codebook) jaxbUnmarshaller.unmarshal(new File(codebookesourceFile));
 
         //Unmarshalling from a org.w3c.dom.Node:
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

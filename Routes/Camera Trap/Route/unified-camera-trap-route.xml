@@ -106,17 +106,54 @@
             <set>
                 <value>ManifestXML</value>
                 <value>CamelSchematronValidationReport</value>
+                <value>datastreamValidationXML</value>
                 <value>Content-Type</value>
+                <value>Content-Length</value>
+                <value>Transfer-Encoding</value>
+                <value>Vary</value>
+                <value>Server</value>
+                <value>User-Agent</value>
+                <value>Host</value>
+                <value>CamelHttpMethod</value>
+                <value>CamelHttpResponseCode</value>
+                <value>CamelHttpResponseText</value>
             </set>
         </property>
     </bean>
 
     <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
 
-    <!-- errorHandlerRef="ctingestErrorHandler" -->
-    <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean" init-method="initIt" destroy-method="cleanUp"/>
+    <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
+    <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
+         <property name="brokerURL" value="${broker.url}"/>
+        <!--<property name="brokerURL" value="tcp://localhost:61616"/>-->
+        <property name="userName" value="smx"/>
+        <property name="password" value="smx"/>
+    </bean>
 
-    <bean id="idsPushBean" class="edu.si.services.beans.edansidora.IdsPushBean"/>
+    <!-- Use a pooled connections for scalability -->
+    <bean id="pooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start" destroy-method="stop">
+        <property name="maxConnections" value="8" />
+        <property name="connectionFactory" ref="connectionFactory" />
+    </bean>
+
+    <!-- Use pooled connections for JMS -->
+    <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+        <property name="connectionFactory" ref="pooledConnectionFactory"/>
+        <property name="concurrentConsumers" value="1"/>
+        <!-- When ready we can make this run more consumers. -->
+        <!-- <property name="concurrentConsumers" value="10"/> -->
+    </bean>
+
+    <!-- Use the Camel JMS Components for performance and route flexibility -->
+    <bean id="jms" class="org.apache.camel.component.jms.JmsComponent">
+        <property name="connectionFactory" ref="connectionFactory"/>
+    </bean>
+
+    <!-- Use the Camel AMQ component for performance -->
+    <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+        <property name="configuration" ref="jmsConfig"/>
+    </bean>
 
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -195,22 +232,6 @@
             </continued>
         </onException>
 
-        <onException>
-            <exception>edu.si.services.beans.edansidora.EdanIdsException</exception>
-            <redeliveryPolicy useExponentialBackOff="true"
-                              backOffMultiplier="2"
-                              redeliveryDelay="{{si.ct.edanIds.redeliveryDelay}}"
-                              maximumRedeliveries="{{min.edan.redeliveries}}"
-                              retryAttemptedLogLevel="WARN"/>
-            <continued>
-                <constant>true</constant>
-            </continued>
-            <log message="[${routeId}] :: EdanIds Error reported: ${exception.message}"
-                 loggingLevel="ERROR"
-                 logName="{{si.ct.id}}"
-                 id="logEdanIdsException"/>
-        </onException>
-
         <!--
         <onException id="thumbnailError">
             <exception>javax.imageio.IIOException</exception>
@@ -224,7 +245,7 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, Error_UnifiedCameraTrap/${file:onlyname})}&amp;move=Done&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.uscbi.process.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -256,7 +277,7 @@
                  loggingLevel="WARN"
                  logName="{{si.ct.id}}"/>
 
-            <threads poolSize="3" maxPoolSize="5">
+            <threads poolSize="3" maxPoolSize="5" id="ctThreads">
 
                 <!--If there is an issue with staging large archives we can can 'slow' down the route with delay below. -->
                 <delay>
@@ -333,6 +354,15 @@
 
                         <!-- Validate image count and check filenames. -->
                         <to uri="direct:validateIngest"/>
+
+
+                        <!-- Send message to EdanIds route for processing -->
+                        <setHeader headerName="addEdanIds">
+                            <simple>true</simple>
+                        </setHeader>
+
+                        <to uri="activemq:queue:{{edanIds.queue}}" id="edanIdsActiveMQ"/>
+
                     </otherwise>
                 </choice>
 
@@ -783,6 +813,14 @@
             <log message="${id}: Add Relation: Status - ${header.CamelFedoraStatus}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
+
+            <!-- For new deployments we need to reload the parent tree node in workbench-->
+            <setHeader headerName="workbenchNodePid">
+                <simple>${header.ParentPID}</simple>
+            </setHeader>
+
+            <to uri="direct:workbenchReloadPid" id="siteWorkbenchReloadPid"/>
+
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -879,12 +917,6 @@
             </split>
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
 
-            <log message="PERFORMING IDS PUSH idsPushBean"
-                 loggingLevel="DEBUG"
-                 logName="{{si.ct.id}}"/>
-
-            <to uri="bean:idsPushBean?method=createAndPush"/>
-
             <!-- Researcher is required for Unified CT Ingest. -->
             <to uri="direct:addResearcherObservationResource"/>
 
@@ -906,7 +938,7 @@
 
             <!-- Add the RELS-EXT datastream in one operation to gain about 70% of the total efficiency. -->
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTSiteTemplate.vsl"/>
-            <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?pid=${header.SitePID}&amp;name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <log message="${id}: Finished resource processing."
                  loggingLevel="INFO"
@@ -965,7 +997,7 @@
 
             <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true"/>
 
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
@@ -973,7 +1005,7 @@
             <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
 
@@ -997,20 +1029,18 @@
                     <simple>
                         ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
                     </simple>
-                    <log message="${id}: Derivatives: Found JPEG."
+                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found JPEG."
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                     <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                 </when>
                 <!-- Just warn for now. -->
                 <otherwise>
-                    <log message="${id}: Derivatives: Found non-JPEG Image."
+                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found non-JPEG Image."
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
-
-            <to uri="direct:addImageToEdanAndIds"/>
 
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
@@ -1050,11 +1080,11 @@
             </transform>
             <convertBodyTo type="java.lang.String"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Researcher%20Observations&amp;versionable=true"/>
 
-            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=true"/>
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
             <setBody>
@@ -1124,11 +1154,11 @@
             </transform>
             <convertBodyTo type="java.lang.String"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Volunteer%20Observations&amp;versionable=true"/>
 
-            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=true"/>
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl" />
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
             <setBody>
@@ -1190,11 +1220,11 @@
             </transform>
             <convertBodyTo type="java.lang.String"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=false"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=text/csv&amp;group=M&amp;dsLabel=Image%20Observations&amp;versionable=true"/>
 
-            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=CSV&amp;type=text/csv&amp;group=M&amp;dsLabel=CSV&amp;versionable=true"/>
             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTDatasetResourceTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
             <!-- This is a quick fix but it is not elegant to fetch the manifest again to transform it. -->
             <setBody>
@@ -1225,6 +1255,22 @@
 
         <route id="UnifiedCameraTrapAddFITSDataStream">
             <from uri="direct:addFITSDataStream"/>
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.socketEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="fitsServiceException"/>
+            </onException>
+
             <log message="${id}: Started processing FITS ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1238,16 +1284,18 @@
                     file=${header.CamelFileAbsolutePath}
                 </simple>
             </setHeader>
+            <!-- ensure that we actually have a 200 response from the fits web service as this header could have been set upstream by another http request -->
+            <removeHeader headerName="CamelHttpResponseCode"/>
 
             <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy"/>
+            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="fitsHttpRequest"/>
 
             <convertBodyTo type="java.lang.String" charset="UTF-8"/>
 
-            <log message="${id} FITS Web Service Output:\n${body}"
+            <log message="${id} FITS Output:\n${body}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
@@ -1255,7 +1303,6 @@
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        <!--${body} != ''-->
                         ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
@@ -1267,10 +1314,10 @@
                     <log message="${id}: FITS. BODY: ${body}"
                          loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
-                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false" id="fitsAddDatastream"/>
                 </when>
                 <otherwise>
-                    <log message="${id}: FITS processing failed. PID: ${header.CamelFedoraPid}  Error Code: ${header.CamelHttpResponseCode}"
+                    <log message="${id}: FITS processing failed for PID: ${header.CamelFedoraPid}"
                          loggingLevel="ERROR"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
@@ -1313,65 +1360,6 @@
             <to uri="fedora:addDatastream?name=MODS&amp;type=text/xml&amp;group=X&amp;dsLabel=MODS%20Record"/>
 
             <log message="${id}: Finished processing MODS."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-        </route>
-
-        <route id="UnifiedCameraTrapAddImageToEdanAndIds">
-            <from uri="direct:addImageToEdanAndIds"/>
-            <log message="${id}: Started processing EDAN and IDS..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-            <choice>
-                <when>
-                    <xpath headerName="ManifestXML">
-                        <!--//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = "Homo sapiens"-->
-                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.edanids.speciesScientificName.filter'), text())] != ''
-                    </xpath>
-                    <log message="NO POST TO EDAN, exclude this image ${header.imageid}"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                    <to uri="bean:idsPushBean?method=addToIgnoreList(${header.imageid})"/>
-                </when>
-                <otherwise>
-                    <setHeader headerName="extraJson">
-                        <simple>{{si.ct.uscbi.extra_property}}</simple>
-                    </setHeader>
-
-                    <setBody>
-                        <simple>
-                            ${header.ManifestXML}
-                        </simple>
-                    </setBody>
-                    <to uri="xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true"/>
-
-                    <setHeader headerName="edanJson">
-                        <simple>
-                            ${body}
-                        </simple>
-                    </setHeader>
-
-                    <log message="POST THIS TO EDAN: ${headers.edanJson}"
-                         loggingLevel="DEBUG"
-                         logName="{{si.ct.id}}"/>
-
-                    <setHeader headerName="edanUri">
-                        <groovy>
-                            "content=" + URLEncoder.encode(request.headers.edanJson) + ""
-                        </groovy>
-                    </setHeader>
-
-                    <log message="service: {{si.ct.uscbi.edanService}} uri: ${headers.edanUri} "
-                         loggingLevel="DEBUG"
-                         logName="edanidslog"/>
-
-                    <to uri="bean:edanApiBean?method=sendRequest" id="edanApiSendRequest"/>
-
-                </otherwise>
-            </choice>
-
-            <log message="${id}: Finished processing EDAN and IDS."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1740,7 +1728,7 @@
                     <to uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}"/>
                     <!-- Add a minimal RELS-EXT to the project -->
                     <to uri="velocity:file:{{karaf.home}}/Input/templates/CTPlotTemplate.vsl"/>
-                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+                    <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
                     <!-- Add Relation from parent UCT sub-project to the child UCT plot -->
                     <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
                     <!-- Add an FGDC-CTPlot datastream for concept metadata. -->
@@ -1751,6 +1739,13 @@
                     </setBody>
                     <to uri="xslt:file:{{karaf.home}}/Input/xslt/ManifestPlot.xsl?saxon=true"/>
                     <to uri="fedora:addDatastream?name=FGDC-CTPlot&amp;type=text/xml&amp;group=X&amp;dsLabel=FGDC-CTPlot%20Record&amp;versionable=true"/>
+
+                    <!-- For new plots we need to reload the parent tree node in workbench-->
+                    <setHeader headerName="workbenchNodePid">
+                        <simple>${header.ParentPID}</simple>
+                    </setHeader>
+                    <to uri="direct:workbenchReloadPid" id="plotWorkbenchReloadPid"/>
+
                 </when>
                 <otherwise>
                     <!-- Return the existing plot as the current object. -->
@@ -1860,7 +1855,7 @@
 
                             <!-- Add a minimal RELS-EXT to the sub-project -->
                             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
-                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
                             <!-- Add Relation from parent UCT project to the child UCT sub-project -->
                             <to uri="fedora:hasConcept?parentPid=${header.ParentPID}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -1889,6 +1884,12 @@
                             <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
                             <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltSubprojectSIdoraConcept2DC"/>
                             <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addSubprojectDC"/>
+
+                            <!-- For new plots we need to reload the parent tree node in workbench-->
+                            <setHeader headerName="workbenchNodePid">
+                                <simple>${header.ParentPID}</simple>
+                            </setHeader>
+                            <to uri="direct:workbenchReloadPid" id="subProjectWorkbenchReloadPid"/>
 
                         </when>
                         <otherwise>
@@ -2022,7 +2023,7 @@
 
                             <!-- Add a minimal RELS-EXT to the project. -->
                             <to uri="velocity:file:{{karaf.home}}/Input/templates/CTProjectTemplate.vsl"/>
-                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=false"/>
+                            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
 
                             <!-- Add Relation from parent UCT root object to the child UCT project. -->
                             <to uri="fedora:hasConcept?parentPid={{si.ct.root}}&amp;childPid=${header.CamelFedoraPid}"/>
@@ -2051,6 +2052,12 @@
                             <!--Update the DC datastream with with dc:identifier for the Alternate ID -->
                             <to uri="xslt:file:{{karaf.home}}/Input/xslt/addAltId2DC.xsl?saxon=true" id="xsltProjectSIdoraConcept2DC"/>
                             <to uri="fedora:addDatastream?name=DC&amp;type=text/xml&amp;group=X" id="addProjectDC"/>
+
+                            <!-- For new plots we need to reload the parent tree node in workbench-->
+                            <setHeader headerName="workbenchNodePid">
+                                <simple>${header.ParentPID}</simple>
+                            </setHeader>
+                            <to uri="direct:workbenchReloadPid" id="projectWorkbenchReloadPid"/>
 
                         </when>
                         <otherwise>
@@ -2543,6 +2550,79 @@
 
             <log message="${id}: InFlightConceptStatusPolling: Finished In-Flight Concept Process status check."
                  loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="UnifiedCameraTrapReloadWorkbenchConceptTreePid">
+            <from uri="direct:workbenchReloadPid"/>
+            <onException>
+                <exception>java.net.ConnectException</exception>
+                <exception>org.apache.camel.http.common.HttpOperationFailedException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.connectEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: Could Not Refresh Workbench Tree Node for ${header.workbenchNodePid}! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="workbenchConnectException"/>
+            </onException>
+
+            <log message="${id} ${routeId}: Starting Workbench Clear Cache for Research Project Tree Concept PID Request..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Workbench Reload Pid = ${header.workbenchNodePid}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Workbench Reload Body = ${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <simple>GET</simple>
+            </setHeader>
+
+            <!-- remove problem headers as the headerFilterStrategy only prevents from adding to the http headers and the camel http component will still use camel headers listed in the headerFilterStrategy to build the request url such as CamelHttpQuery -->
+            <removeHeaders pattern="CamelHttpQuery|CamelHttpResponseCode|CamelHttpResponseText"/>
+
+            <setBody>
+                <simple></simple>
+            </setBody>
+
+            <toD uri="{{camel.workbench.clear.cache.url}}/${header.workbenchNodePid}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="workbenchReloadPid"/>
+
+            <choice>
+                <when>
+                    <simple>
+                        ${header.CamelHttpResponseCode} == 200
+                    </simple>
+                    <!--${body} == 'Clearing cache for:${header.workbenchNodePid}' &amp;&amp; -->
+                    <log message="${id} ${routeId}: Workbench Clear Cache for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}."
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </when>
+                <otherwise>
+                    <log message="${id} ${routeId}: Workbench Cleared Cache for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}."
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                    <log message="${id} ${routeId}: Workbench Cleared Cache Response Body:${body}"
+                         loggingLevel="DEBUG"
+                         logName="{{si.ct.id}}"/>
+                    <log message="${id} ${routeId}: Workbench Cleared Cache Response Headers:${headers}"
+                         loggingLevel="DEBUG"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
+
+
+            <log message="${id} ${routeId}: Finished Workbench Clear Cache for PID..."
+                 loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
     </camelContext>

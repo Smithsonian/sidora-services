@@ -90,7 +90,8 @@
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
                   trace="false"
-                  streamCache="true">
+                  streamCache="true"
+                  useMDCLogging="true">
 
         <!--
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
@@ -1234,10 +1235,13 @@
                         </simple>
                     </setHeader>
 
-                    <to uri="reader:file"/>
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
 
                     <!-- Just copy it and create thumbnail. -->
-                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+                    <toD uri="{{si.fedora.host}}/objects/${header.pid}/datastreams/MP4?mimeType=video/mp4&amp;dsLabel=MP4&amp;controlGroup=M&amp;versionable=false&amp;dsLocation=file:{{karaf.home}}/${header.videoInput}&amp;authMethod=Basic&amp;authUsername={{si.fedora.user}}&amp;authPassword={{si.fedora.password}}"/>
+
                     <to uri="direct:processDerivativesVideoThumbnailTimePosition"/>
                     <to uri="direct:processDerivativesVideoThumbnail"/>
 
@@ -1260,7 +1264,15 @@
                     <!-- Make an MP4 derivative and TN. -->
                     <!-- Create a video derivative and thumbnail using ffmpeg. -->
                     <to uri="direct:processDerivativesVideoFFMPEG"/>
-                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple></simple>
+                    </setBody>
+                    <toD uri="{{si.fedora.host}}/objects/${header.pid}/datastreams/MP4?mimeType=video/mp4&amp;dsLabel=MP4&amp;controlGroup=M&amp;versionable=false&amp;dsLocation=file:{{karaf.home}}/${header.videoInput}&amp;authMethod=Basic&amp;authUsername={{si.fedora.user}}&amp;authPassword={{si.fedora.password}}"/>
+
                     <to uri="direct:processDerivativesVideoThumbnailTimePosition"/>
                     <to uri="direct:processDerivativesVideoThumbnail"/>
                 </when>
@@ -1276,7 +1288,14 @@
                     <!-- Make an MP4 derivative and TN. -->
                     <!-- Create a audio derivative using ffmpeg and MP4. -->
                     <to uri="direct:processDerivativesVideoFFMPEG"/>
-                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple></simple>
+                    </setBody>
+                    <toD uri="{{si.fedora.host}}/objects/${header.pid}/datastreams/MP4?mimeType=video/mp4&amp;dsLabel=MP4&amp;controlGroup=M&amp;versionable=false&amp;dsLocation=file:{{karaf.home}}/${header.videoInput}&amp;authMethod=Basic&amp;authUsername={{si.fedora.user}}&amp;authPassword={{si.fedora.password}}"/>
 
                     <!-- Create a audio thumbnail TN. -->
                     <setBody>
@@ -1392,13 +1411,6 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
-
-                    <setBody>
-                        <simple>
-                            ${header.CamelFileNameProduced}.mp4
-                        </simple>
-                    </setBody>
-                    <to uri="reader:file"/>
 
                     <setHeader headerName="videoInput">
                         <simple>

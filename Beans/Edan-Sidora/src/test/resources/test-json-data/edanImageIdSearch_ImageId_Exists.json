@@ -1,0 +1,72 @@
+{
+  "rows": [
+    {
+      "id": "p2b-1515252134647-1516215519247-0",
+      "title": "Camera Trap Image Northern Raccoon, Red Fox",
+      "unitCode": "QUOTIENT",
+      "type": "emammal_image",
+      "url": "emammal_image:testraccoonandfox",
+      "content": {
+        "project_id": "testProjectId",
+        "project_name": "Sample Camera Trap Survey Project",
+        "sub_project_id": "testSubprojectId",
+        "sub_project_name": "Test Camera Trap Survey Subproject",
+        "deployment_id": "testDeploymentId",
+        "deployment_name": "Test Deployment",
+        "image_sequence_id": "testImageSequence3",
+        "image": {
+          "id": "testRaccoonAndFox",
+          "online_media": [
+            {
+              "content": "http://ids.si.edu/ids/deliveryService?id\u003demammal_image_testRaccoonAndFox",
+              "idsId": "emammal_image_testRaccoonAndFox",
+              "sidoraPid": "test:001",
+              "type": "Images",
+              "caption": "Camera Trap Image Northern Raccoon,Red Fox",
+              "thumbnail": "http://ids.si.edu/ids/deliveryService?id\u003demammal_image_testRaccoonAndFox\u0026max\u003d100"
+            }
+          ],
+          "date_time": "2016-02-24 18:45:30",
+          "photo_type": "animal",
+          "photo_type_identified_by": "",
+          "interest_ranking": "None"
+        },
+        "image_identifications": [
+          {
+            "iucn_id": "180575",
+            "species_scientific_name": "Procyon lotor",
+            "individual_animal_notes": "",
+            "species_common_name": "Northern Raccoon",
+            "count": 2,
+            "age": "",
+            "sex": "",
+            "individual_id": "",
+            "animal_recognizable": ""
+          },
+          {
+            "iucn_id": "180604",
+            "species_scientific_name": "Vulpes vulpes",
+            "individual_animal_notes": "",
+            "species_common_name": "Red Fox",
+            "count": 2,
+            "age": "",
+            "sex": "",
+            "individual_id": "",
+            "animal_recognizable": ""
+          }
+        ]
+      },
+      "hash": "07d6e83cdd3553460cb4fd0a25290003699610ba",
+      "docSignature": "testraccoonandfox_a200acbf8ebf9506ba41d098c2b5ee6e",
+      "timestamp": "Wed Jan 17 13:58:39 EST 2018",
+      "lastTimeUpdated": "Wed Jan 17 13:58:39 EST 2018",
+      "status": 0,
+      "version": "p2b-1515252134647-1516215519247-0",
+      "publicSearch": true,
+      "linkedContent": {}
+    }
+  ],
+  "facets": {},
+  "start": 0,
+  "rowCount": 1
+}
