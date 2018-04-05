@@ -34,10 +34,10 @@ import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 
@@ -200,6 +200,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
         from("direct:workbenchLogin").routeId("MCIWorkbenchLogin")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Starting Workbench Login Request...")
 
+                .removeHeaders("CamelHttp*")
                 .setHeader("Content-Type", simple("application/x-www-form-urlencoded"))
                 .setHeader(Exchange.HTTP_METHOD, simple("POST"))
                 .removeHeader(Exchange.HTTP_QUERY)
@@ -209,39 +210,50 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Request Headers:${headers}")
 
                 //TODO: replace throwExceptionOnFailure param with onException to catch and handle the exception that is thrown for a 302 redirect response
-                .toD("cxfrs:{{camel.workbench.login.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false").id("workbenchLogin")
+                .toD("{{camel.workbench.login.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false").id("workbenchLogin")
                 .convertBodyTo(String.class)
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} $[routeId}: Workbench Login received Set-Cookie: ${header.Set-Cookie}")
+
                 .choice()
                     //After workbench login request we should get a Redirect Response Code: 302
                     //There is no need to follow the redirect location if the login was successful we only need the cookie
-                    .when().simple("${header.CamelHttpResponseCode} == 302 && ${header.Set-Cookie} != null")
+                    .when().simple("${header.CamelHttpResponseCode} in '302,200'  && ${header.Set-Cookie} != null")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} $[routeId}: Workbench Login successful received Cookie: ${header.Set-Cookie}")
                         //Set the Cookie header from the Set-Cookie that was par of the login response
                         .process(new Processor() {
                             @Override
                             public void process(Exchange exchange) throws Exception {
-                                String setCookie = exchange.getIn().getHeader("Set-Cookie", String.class);
-                                exchange.getIn().setHeader("Cookie", StringUtils.substringBefore(setCookie, ";"));
+                                ArrayList setCookie = exchange.getIn().getHeader("Set-Cookie", ArrayList.class);
+                                StringBuilder builder = new StringBuilder();
+                                for (int i = 0; i < setCookie.size(); i++) {
+                                    LOG.debug(String.valueOf(setCookie.get(i)).split(";", 2)[0]);
+                                    builder.append(String.valueOf(setCookie.get(i)).split(";", 2)[0]);
+                                    if( i != setCookie.size() - 1 ){
+                                        builder.append("; ");
+                                    }
+                                }
+                                exchange.getIn().setHeader("Cookie", builder.toString());
                             }
-                        })
-                        .to("direct:workbenchCreateResearchProject").id("workbenchLoginCreateResearchProjectCall")
+                        }).id("mciWBLoginParseSet-CookieHeader")
+                    .to("direct:workbenchCreateResearchProject").id("workbenchLoginCreateResearchProjectCall")
                     .endChoice()
                     .otherwise()
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Login Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Response Cookie: ${header.Set-Cookie}")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Response Body:${body}")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Response Headers:${headers}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Login Failed!!! Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Response Set-Cookie: ${header.Set-Cookie}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Failed! Response Body:${body}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Failed! Response Headers:${headers}")
 
-                        .throwException(MCI_Exception.class, "${id} ${routeId}: Workbench Login Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Response Cookie: ${header.Set-Cookie}")
+                        .throwException(MCI_Exception.class, "${id} ${routeId}: Workbench Login Failed!!! Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Response Cookie: ${header.Set-Cookie}")
                     .endChoice()
                 .end()
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Finished Workbench Login Request...");
 
         from("direct:workbenchCreateResearchProject").routeId("MCIWorkbenchCreateResearchProject")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Starting Workbench Create Research Project Request...")
-                .setBody().simple("null")
+
                 .setHeader(Exchange.HTTP_METHOD, simple("GET"))
                 .setHeader(Exchange.HTTP_QUERY, simple("label=${header.mciResearchProjectLabel}&desc=${header.mciResearchProjectLabel}&user=${header.mciOwnerName}"))
-                //.setHeader(Exchange.HTTP_QUERY).groovy("URLEncoder.encode(request.headers.testRequestParams)")
+                //.setHeader(Exchange.HTTP_QUERY).groovy("URLEncoder.encode(request.headers.CamelHttpQuery)")
                 .setBody().simple("")
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Body:${body}")
@@ -257,10 +269,10 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Research Space Created PID: ${header.researchProjectPid}")
                     .endChoice()
                     .otherwise()
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText},")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Response Body:${body}")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Response Headers:${headers}")
-                        .throwException(MCI_Exception.class, "${id} ${routeId}: ${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Failed!!! Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText},")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Failed! Response Body:${body}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Failed! Response Headers:${headers}")
+                        .throwException(MCI_Exception.class, "${id} ${routeId}: Workbench Create Research Project Failed!!! Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Body: ${body}")
                     .endChoice()
                 .end()
 
