@@ -90,8 +90,38 @@
 		<property name="outFilter">
 			<set>
 				<value>mciProjectXML</value>
-                <value>mciProjectDESCMETA</value>
+				<value>mciProjectDESCMETA</value>
 				<value>mciResourceDESCMETA</value>
+				<value>CamelHttpMethod</value>
+				<value>CamelHttpResponseCode</value>
+				<value>CamelHttpResponseText</value>
+				<value>Content-Type</value>
+				<value>Content-Length</value>
+				<value>Transfer-Encoding</value>
+				<value>transfer-encoding</value>
+				<value>Vary</value>
+				<value>Server</value>
+				<value>User-Agent</value>
+				<value>Host</value>
+				<value>Accept</value>
+				<value>Cache-Control</value>
+				<value>connection</value>
+				<value>Expect</value>
+				<value>Fuseki-Request-ID</value>
+				<value>Location</value>
+				<value>Pragma</value>
+				<value>Set-Cookie</value>
+				<value>X-Content-Type-Options</value>
+				<value>X-Frame-Options</value>
+				<value>X-UA-Compatible</value>
+				<value>CamelSqlRowCount</value>
+				<value>CamelSqlUpdateCount</value>
+				<value>correlationId</value>
+				<value>mciFolderHolder</value>
+				<value>mciOwnerName</value>
+				<value>mciOwnerPID</value>
+				<value>mciResearchProjectLabel</value>
+				<value>operationName</value>
 			</set>
 		</property>
 	</bean>

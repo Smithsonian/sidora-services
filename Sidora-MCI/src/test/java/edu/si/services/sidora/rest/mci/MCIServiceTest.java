@@ -50,6 +50,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -382,7 +383,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
         assertStringContains(mockFedora.getExchanges().get(5).getIn().getBody(String.class), "Test Fits Output");
 
-        deleteDirectory(KARAF_HOME + "/staging");
+        deleteDirectory("staging");
     }
 
     /**
@@ -418,18 +419,19 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
     @Test
     public void testWorkbenchLoginSetCookie() throws Exception {
-        String testCookie = String.valueOf(UUID.randomUUID());
+        ArrayList<String> testCookie = new ArrayList<>();
+        testCookie.add(String.valueOf(UUID.randomUUID()) + "=" + String.valueOf(UUID.randomUUID()) + ";");
+        testCookie.add(String.valueOf(UUID.randomUUID()) + "=" + String.valueOf(UUID.randomUUID()));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("Cookie", testCookie);
+        mockResult.expectedHeaderReceived("Cookie", testCookie.toString().replaceAll("[\\[,\\]]", ""));
         mockResult.setAssertPeriod(1500);
 
         context.getRouteDefinition("MCIWorkbenchLogin").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("workbenchLogin").replace()
-                        .setHeader("Set-Cookie").simple(testCookie)
                         .setHeader(Exchange.HTTP_RESPONSE_CODE).simple("302");
                 weaveById("workbenchLoginCreateResearchProjectCall").replace().to("mock:result");
             }
@@ -437,6 +439,7 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setBody("test body");
+        exchange.getIn().setHeader("Set-Cookie", testCookie);
 
         template.send("direct:workbenchLogin", exchange);
 
