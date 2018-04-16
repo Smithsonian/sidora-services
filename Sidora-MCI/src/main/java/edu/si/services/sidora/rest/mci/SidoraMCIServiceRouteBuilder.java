@@ -252,8 +252,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Starting Workbench Create Research Project Request...")
 
                 .setHeader(Exchange.HTTP_METHOD, simple("GET"))
-                .setHeader(Exchange.HTTP_QUERY, simple("label=${header.mciResearchProjectLabel}&desc=${header.mciResearchProjectLabel}&user=${header.mciOwnerName}"))
-                //.setHeader(Exchange.HTTP_QUERY).groovy("URLEncoder.encode(request.headers.CamelHttpQuery)")
+                .setHeader(Exchange.HTTP_QUERY).groovy("\"label=\" + URLEncoder.encode(request.headers.mciResearchProjectLabel) + \"&desc=\" + URLEncoder.encode(request.headers.mciResearchProjectLabel) + \"&user=\" + request.headers.mciOwnerName")
                 .setBody().simple("")
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Body:${body}")
