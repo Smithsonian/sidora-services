@@ -62,6 +62,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
         ns.add("fedora", "info:fedora/fedora-system:def/relations-external#");
         ns.add("eac", "urn:isbn:1-931666-33-4");
         ns.add("mods", "http://www.loc.gov/mods/v3");
+        ns.add("atom", "http://www.w3.org/2005/Atom");
 
         //Exception handling
         //Retries for all exceptions after response has been sent
@@ -77,8 +78,9 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsException");
 
 
-        from("activemq:queue:{{edanIds.queue}}?selector={{edanIds.selector}}").routeId("EdanIdsStartProcessing")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting processing ...")
+        from("activemq:queue:{{edanIds.queue}}").routeId("EdanIdsStartProcessing")
+        
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting processing ...").id("logStart")
 
                 //Set the Authorization header for Fedora HTTP calls
                 .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
@@ -89,18 +91,32 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Route Messages to the correct destination
                 .choice()
-                    .when().simple("${header.addEdanIds} == null")
-                        .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Fedora Message Found: PID: ${header.pid}, Method Name: ${header.methodName}, Origin: ${header.origin}")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Processing Body: ${body}")
-                        .to("direct:processFedoraMessage").id("startProcessingFedoraMessage")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing EDAN and IDS record update for PID: ${header.pid}.")
-                    .endChoice()
-                    .otherwise()
+                    .when().simple("${header.addEdanIds}")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Found: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
                         .to("direct:processCtDeployment").id("startProcessCtDeployment")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message")
+                    .endChoice()
+                    .otherwise()
+                        .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
+                        .setHeader("dsID").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsID']/@term", String.class, ns)
+                        .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
+
+                        .filter()
+                            .simple("${header.origin} == '{{si.fedora.user}}' || " +
+                                    " ${header.dsID} != 'OBJ' || " +
+                                    " ${header.dsLabel} contains 'Observations' || " +
+                                    " ${header.methodName} not in 'addDatastream,modifyDatastreamByValue,modifyDatastreamByReference,modifyObject,ingest' || " +
+                                    " ${header.pid} not contains '{{si.ct.namespace}}:'")
+
+                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required.").id("logFilteredMessage")
+                            .stop()
+                        .end()
+
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Fedora Message Found: Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Processing Body: ${body}")
+                        .to("direct:processFedoraMessage").id("startProcessingFedoraMessage")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing EDAN and IDS record update for PID: ${header.pid}.")
                     .endChoice()
                 .end();
 
