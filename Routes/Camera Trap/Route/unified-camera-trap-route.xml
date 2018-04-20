@@ -121,6 +121,11 @@
         </property>
     </bean>
 
+    <!-- Header Filter Strategy to prevent all headers from being added to HTTP calls -->
+    <bean id="wbHttpHeaderFilterStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value=".*"/>
+    </bean>
+
     <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
 
     <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
@@ -2595,31 +2600,23 @@
                 <simple></simple>
             </setBody>
 
-            <toD uri="{{camel.workbench.clear.cache.url}}/${header.workbenchNodePid}?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="workbenchReloadPid"/>
+            <toD uri="{{camel.workbench.clear.cache.url}}/${header.workbenchNodePid}?headerFilterStrategy=#wbHttpHeaderFilterStrategy" id="workbenchReloadPid"/>
+            <convertBodyTo type="java.lang.String"/>
 
             <choice>
                 <when>
                     <simple>
-                        ${header.CamelHttpResponseCode} == 200
+                        ${body} contains 'Clearing cache for:${header.workbenchNodePid}' &amp;&amp; ${header.CamelHttpResponseCode} == 200
                     </simple>
-                    <!--${body} == 'Clearing cache for:${header.workbenchNodePid}' &amp;&amp; -->
-                    <log message="${id} ${routeId}: Workbench Clear Cache for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}."
+                    <log message="${id} ${routeId}: Workbench Clear Cache Success for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Body: ${body}"
                          loggingLevel="INFO"
                          logName="{{si.ct.id}}"/>
                 </when>
                 <otherwise>
-                    <log message="${id} ${routeId}: Workbench Cleared Cache for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}."
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                    <log message="${id} ${routeId}: Workbench Cleared Cache Response Body:${body}"
-                         loggingLevel="DEBUG"
-                         logName="{{si.ct.id}}"/>
-                    <log message="${id} ${routeId}: Workbench Cleared Cache Response Headers:${headers}"
-                         loggingLevel="DEBUG"
-                         logName="{{si.ct.id}}"/>
+                    <throwException exceptionType="java.net.ConnectException"
+                                    message="Workbench Clear Cache Failed for PID: ${header.workbenchNodePid} | Response Code: ${header.CamelHttpResponseCode}, Response Text: ${header.CamelHttpResponseText}, Response Body: ${body}"/>
                 </otherwise>
             </choice>
-
 
             <log message="${id} ${routeId}: Finished Workbench Clear Cache for PID..."
                  loggingLevel="INFO"
