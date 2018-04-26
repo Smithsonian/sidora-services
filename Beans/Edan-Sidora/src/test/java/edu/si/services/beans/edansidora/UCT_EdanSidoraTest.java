@@ -34,6 +34,7 @@ import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.FilterDefinition;
 import org.apache.cxf.endpoint.Server;
@@ -46,6 +47,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketException;
+import java.util.Map;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 
@@ -604,5 +607,104 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
         assertMockEndpointsSatisfied();
 
+    }
+
+    @Test
+    public void httpRegexTest() {
+
+        String regex = "^(http|https|cxfrs?(:http|:https)|http4):.*$";
+
+        Exchange exchange1 = new DefaultExchange(context);
+        exchange1.getIn().setHeader("test1", "http://localhost:8080/fedora/objects/test:001/datastreams?format=xml");
+        exchange1.getIn().setHeader("test2", "https://localhost:8080/fedora/objects/test:001/datastreams?format=xml");
+        exchange1.getIn().setHeader("test3", "cxfrs:http://localhost:8080/fedora/objects/test:001/datastreams?format=xml");
+        exchange1.getIn().setHeader("test4", "cxfrs:https://localhost:8080/fedora/objects/test:001/datastreams?format=xml");
+        exchange1.getIn().setHeader("test5", "http4://localhost:8080/fedora/objects/test:001/datastreams?format=xml");
+        exchange1.getIn().setHeader("test5", "http4://localhost:8080/fedora/objects/test:001/datastreams?format=xml");
+        exchange1.getIn().setHeader("testOther1", "log://test?showAll=true&multiline=true&maxChars=1000000");
+        exchange1.getIn().setHeader("testOther2", "xslt://httptest");
+
+        for (Map.Entry<String, Object> s : exchange1.getIn().getHeaders().entrySet()) {
+            if (s.getKey().contains("Other")) {
+                assertPredicate(header(s.getKey()).regex(regex), exchange1, false);
+            } else {
+                assertPredicate(header(s.getKey()).regex(regex), exchange1, true);
+            }
+        }
+    }
+
+    @Test
+    public void edanIdsHTTPExceptionTest () throws Exception {
+        Integer minEdanHTTPRedelivery = Integer.valueOf(getExtra().getProperty("min.edan.http.redeliveries"));
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(0);
+        mockResult.expectedHeaderReceived("redeliveryCount", minEdanHTTPRedelivery);
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+        if ((minEdanHTTPRedelivery % 2) == 0 ) {
+            mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(HttpOperationFailedException.class);
+        } else {
+            mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(SocketException.class);
+        }
+        mockError.expectedHeaderReceived("redeliveryCount", minEdanHTTPRedelivery); //headers are not preserved from split
+
+        context.getRouteDefinition("EdanIdsProcessCtDeployment").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                /**
+                 * I have not been able to come up with a way of testing other exceptions (exception bar) being thrown
+                 * during retries for original exception (exception foo)
+                 * See link for a good explanation and example of the issue
+                 * https://stackoverflow.com/questions/13684775/camel-retry-control-with-multiple-exceptions
+                 */
+
+                //processor used to test onException and retries
+                final Processor processor = new Processor() {
+                    public void process(Exchange exchange) throws Exception {
+                        Message in = exchange.getIn();
+                        log.info("Redelivery Count = {}", in.getHeader(Exchange.REDELIVERY_COUNTER));
+                        exchange.setProperty(Exchange.TO_ENDPOINT, in.getHeader("CamelHttpUri"));
+                        log.info("exchangeProperty(Exchange.TO_ENDPOINT) = {}", exchange.getProperty(Exchange.TO_ENDPOINT));
+                        in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
+
+                        if (in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class) != null) {
+                            if ((in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class) % 2) != 0 && in.getHeader("redeliveryCount", Integer.class) != 0) {
+                                log.info("if block Redelivery Count = {}", in.getHeader(Exchange.REDELIVERY_COUNTER));
+                                log.info("if exchangeProperty(Exchange.TO_ENDPOINT) = {}", exchange.getProperty(Exchange.TO_ENDPOINT));
+                                throw new SocketException("Simulated SocketException!!!");
+                            } else {
+                                throw new HttpOperationFailedException("http://somehost", 404, null, null, null, null);
+                            }
+                        } else {
+                            throw new HttpOperationFailedException("http://somehost", 404, null, null, null, null);
+                        }
+                    }
+                };
+
+                //this will not trigger the onWhen in the onException use interceptSendToEndpoint
+                //weaveById("ctProcessGetFedoraDatastream").replace().process(processor);
+
+                interceptSendToEndpoint("http4:*").skipSendToOriginalEndpoint().process(processor);
+                weaveById("logEdanIdsHTTPException").after().to("mock:error");
+                weaveById("ctProcessEdanUpdate").replace().to("mock:result").stop();
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("addEdanIds", "true");
+        exchange.getIn().setHeader("ProjectId", "testProjectId");
+        exchange.getIn().setHeader("SiteId", "testDeploymentId");
+        exchange.getIn().setHeader("SitePID", "test:003");
+        exchange.getIn().setHeader("PIDAggregation", "test:004,test:005,test:006,test:007,test:008,test:009,test:010,test:011,test:012");
+        exchange.getIn().setHeader("ResearcherObservationPID", "test:010");
+        exchange.getIn().setHeader("VolunteerObservationPID", "test:011");
+        exchange.getIn().setHeader("ImageObservationPID", "test:012");
+
+        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+
+        assertMockEndpointsSatisfied();
     }
 }
