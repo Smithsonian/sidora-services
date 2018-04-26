@@ -139,8 +139,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Grab the objects datastreams as xml
                 .setHeader("CamelHttpMethod").constant("GET")
-                .setHeader(Exchange.HTTP_URI).constant("{{si.fedora.host}}/objects/${header.pid}/datastreams")
-                .setHeader(Exchange.HTTP_QUERY).constant("format=xml")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
+                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
 
                 .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
 
@@ -154,8 +154,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Grab the manifest from the parent
                 .setHeader("CamelHttpMethod").constant("GET")
-                .setHeader(Exchange.HTTP_URI).constant("{{si.fedora.host}}/objects/${header.parentPid}/datastreams/MANIFEST/content")
-                .setHeader(Exchange.HTTP_QUERY).constant("format=xml")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.parentPid}/datastreams/MANIFEST/content")
+                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
 
                 .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetManifestDatastream")
 
@@ -322,7 +322,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Grab the OBJ datastream of the image asset from fedora
                 .setHeader("CamelHttpMethod").constant("GET")
-                .setHeader(Exchange.HTTP_URI).constant("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
                 .removeHeader("CamelHttpQuery")
 
                 .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAddAssetGetFedoraOBJDatastreamContent")
@@ -343,7 +343,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Find Parent Query - ${body}")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
-                //.setHeader(Exchange.HTTP_URI).constant("{{si.fuseki.endpoint}}")
+                //.setHeader(Exchange.HTTP_URI).simple("{{si.fuseki.endpoint}}")
                 .setHeader("CamelHttpQuery").simple("output=xml&${body}")
 
                 .toD("htp4://{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
@@ -386,7 +386,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                             //Grab the objects datastreams as xml
                             .setHeader("CamelHttpMethod").constant("GET")
-                            .setHeader(Exchange.HTTP_URI).constant("{{si.fedora.host}}/objects/${header.pid}/datastreams")
+                            .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
                             .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
 
                             .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("ctProcessGetFedoraDatastream")
