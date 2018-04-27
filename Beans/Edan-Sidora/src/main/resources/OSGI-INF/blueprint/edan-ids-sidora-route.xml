@@ -73,7 +73,7 @@
         <property name="configuration" ref="jmsConfig"/>
     </bean>
 
-    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+    <!--<bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
         <property name="outFilter">
             <set>
                 <value>ManifestXML</value>
@@ -83,6 +83,11 @@
                 <value>Content-Type</value>
             </set>
         </property>
+    </bean>-->
+
+    <!-- Header Filter Strategy to prevent all headers from being added to Fedora HTTP calls except for Authorization-->
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value="^(?!Authorization$).*$"/>
     </bean>
 
     <bean id="edanApiBean" class="edu.si.services.beans.edansidora.EdanApiBean" init-method="initIt" destroy-method="cleanUp"/>
