@@ -30,9 +30,11 @@ package edu.si.services.beans.edansidora;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
+import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
 
 import java.io.File;
+import java.net.SocketException;
 import java.util.Base64;
 
 /**
@@ -63,10 +65,22 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
         ns.add("eac", "urn:isbn:1-931666-33-4");
         ns.add("mods", "http://www.loc.gov/mods/v3");
         ns.add("atom", "http://www.w3.org/2005/Atom");
+        ns.add("sidora", "http://oris.si.edu/2017/01/relations#");
 
         //Exception handling
-        //Retries for all exceptions after response has been sent
-        onException(edu.si.services.beans.edansidora.EdanIdsException.class)
+        onException(Exception.class, HttpOperationFailedException.class, SocketException.class)
+                .onWhen(exchangeProperty(Exchange.TO_ENDPOINT).regex("^(http|https|cxfrs?(:http|:https)|http4):.*"))
+                .useExponentialBackOff()
+                .backOffMultiplier(2)
+                .redeliveryDelay("{{si.ct.edanIds.redeliveryDelay}}")
+                .maximumRedeliveries("{{min.edan.http.redeliveries}}")
+                .retryAttemptedLogLevel(LoggingLevel.WARN)
+                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                .logNewException(true)
+                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}")
+                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsHTTPException");
+
+        onException(EdanIdsException.class)
                 .useExponentialBackOff()
                 .backOffMultiplier(2)
                 .redeliveryDelay("{{si.ct.edanIds.redeliveryDelay}}")
@@ -125,8 +139,10 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Grab the objects datastreams as xml
                 .setHeader("CamelHttpMethod").constant("GET")
-                .removeHeader("CamelHttpQuery")
-                .toD("{{si.fedora.host}}/objects/${header.pid}/datastreams?format=xml&headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
+                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+
+                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
 
                 //Get the label so we know what the imageid for image we are working with
                 .setHeader("imageid").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns)
@@ -138,8 +154,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Grab the manifest from the parent
                 .setHeader("CamelHttpMethod").constant("GET")
-                .removeHeader("CamelHttpQuery")
-                .toD("{{si.fedora.host}}/objects/${header.parentPid}/datastreams/MANIFEST/content?format=xml&headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetManifestDatastream")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.parentPid}/datastreams/MANIFEST/content")
+                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+
+                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetManifestDatastream")
+
                 .setHeader("ManifestXML").simple("${body}", String.class)
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Manifest: ${header.ManifestXML}")
 
@@ -303,8 +322,10 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Grab the OBJ datastream of the image asset from fedora
                 .setHeader("CamelHttpMethod").constant("GET")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
                 .removeHeader("CamelHttpQuery")
-                .toD("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content?headerFilterStrategy=#dropHeadersStrategy").id("idsAddAssetGetFedoraOBJDatastreamContent")
+
+                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAddAssetGetFedoraOBJDatastreamContent")
 
                 //Save the image asset to the file system alongside the asset xml
                 //TODO: we can get the filename with extension from the headers when getting the OBJ datastream from fedora
@@ -322,9 +343,10 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Find Parent Query - ${body}")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
+                //.setHeader(Exchange.HTTP_URI).simple("{{si.fuseki.endpoint}}")
                 .setHeader("CamelHttpQuery").simple("output=xml&${body}")
 
-                .toD("{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
+                .toD("htp4://{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Find Parent Query Result - ${body}")
@@ -361,10 +383,13 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         // Make sure the pid is not an observation object
                         .when().simple("${body} not in '${header.ResearcherObservationPID},${header.VolunteerObservationPID},${header.ImageObservationPID}'")
                             .log(LoggingLevel.INFO, LOG_NAME, "Split Body: ${body}, CamelSplitIndex: ${header.CamelSplitIndex}, CamelSplitSize: ${header.CamelSplitSize}, CamelSplitComplete: ${header.CamelSplitComplete}")
+
                             //Grab the objects datastreams as xml
                             .setHeader("CamelHttpMethod").constant("GET")
-                            .removeHeader("CamelHttpQuery")
-                            .toD("{{si.fedora.host}}/objects/${header.pid}/datastreams?format=xml&headerFilterStrategy=#dropHeadersStrategy").id("ctProcessGetFedoraDatastream")
+                            .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
+                            .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+
+                            .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("ctProcessGetFedoraDatastream")
 
                             //Get the label so we know what the imageid for image we are working with
                             .setHeader("imageid").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns)
