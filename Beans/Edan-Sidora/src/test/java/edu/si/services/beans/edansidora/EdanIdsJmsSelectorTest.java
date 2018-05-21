@@ -256,7 +256,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         });
 
         MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
-        resultEndpoint.expectedMessageCount(5);
+        resultEndpoint.expectedMessageCount(6);
         resultEndpoint.setAssertPeriod(1500);
 
 
@@ -286,6 +286,10 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
 
         //Test ingest methodName header value
         exchange.getIn().setHeader("methodName", "ingest");
+        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+
+        //Test purgeDatastream methodName header value
+        exchange.getIn().setHeader("methodName", "purgeDatastream");
         template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
@@ -361,6 +365,41 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("ResearcherObservationPID", "test:010");
         exchange.getIn().setHeader("VolunteerObservationPID", "test:011");
         exchange.getIn().setHeader("ImageObservationPID", "test:012");
+
+        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    /**
+     * Test that non camel user names get selected for processing. i.e. the user is not related to camel processes
+     * @throws Exception
+     */
+    @Test
+    public void testDeleteJmsSelectorOtherUser() throws Exception {
+        String expectedBody = readFileToString(new File(KARAF_HOME + "/JMS-test-data/otherUser-purgeDatastream.atom"));
+
+        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("startProcessingFedoraMessage").replace()
+                        .log(LoggingLevel.INFO, "${body}")
+                        .to("mock:result");
+            }
+        });
+
+        MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
+        resultEndpoint.expectedMessageCount(1);
+        resultEndpoint.expectedBodiesReceived(expectedBody);
+        resultEndpoint.expectedHeaderReceived("origin", "otherUser");
+        resultEndpoint.expectedHeaderReceived("methodName", "purgeDatastream");
+        resultEndpoint.expectedHeaderReceived("pid", TEST_PID);
+        resultEndpoint.setAssertPeriod(1500);
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("methodName", "purgeDatastream");
+        exchange.getIn().setHeader("pid", TEST_PID);
+        exchange.getIn().setBody(expectedBody, String.class);
 
         template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
 

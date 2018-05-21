@@ -311,6 +311,10 @@ public class JMS_testing extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("methodName", "ingest");
         template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
 
+        //Test purgeDatastream methodName header value
+        exchange.getIn().setHeader("methodName", "purgeDatastream");
+        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+
         assertMockEndpointsSatisfied();
     }
 
