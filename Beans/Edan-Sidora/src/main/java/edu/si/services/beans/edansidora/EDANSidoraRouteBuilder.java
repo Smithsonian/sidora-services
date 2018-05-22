@@ -462,20 +462,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 </sparql>
                 */
 
-                .setBody().xpath("//ri:boolean/text()", String.class, ns)
-
-                .choice()
-                    .when().simple("${body} == false")
-                        .setBody().simple("The fedora parent object not found!!!")
-                        .log(LoggingLevel.ERROR, LOG_NAME, "${id} EdanIds: ${body}")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                throw new FedoraObjectNotFoundException(exchange.getIn().getBody(String.class));
-                            }
-                        })
-                .end()
-
                 .setHeader("parentPid").xpath("substring-after(/ri:sparql/ri:results/ri:result[1]/ri:binding/ri:uri, 'info:fedora/')", String.class, ns)
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Parent PID: ${header.parentPid}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Find Parent Object...");
