@@ -441,7 +441,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 //.setHeader(Exchange.HTTP_URI).simple("{{si.fuseki.endpoint}}")
                 .setHeader("CamelHttpQuery").simple("output=xml&${body}")
 
-                .toD("htp4://{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
+                .toD("http4://{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Find Parent Query Result - ${body}")
