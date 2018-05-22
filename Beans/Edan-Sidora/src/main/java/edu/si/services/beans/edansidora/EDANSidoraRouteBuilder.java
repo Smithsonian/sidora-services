@@ -438,10 +438,10 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Find Parent Query - ${body}")
 
                 .setHeader("CamelHttpMethod", constant("GET"))
-                //.setHeader(Exchange.HTTP_URI).simple("{{si.fuseki.endpoint}}")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fuseki.endpoint}}")
                 .setHeader("CamelHttpQuery").simple("output=xml&${body}")
 
-                .toD("http4://{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
+                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Find Parent Query Result - ${body}")
