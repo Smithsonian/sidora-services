@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">
+    <head>
+        <variable name="subject"/>
+    </head>
+    <results>
+        <result>
+            <binding name="subject">
+                <uri>info:fedora/test:1398</uri>
+            </binding>
+        </result>
+    </results>
+</sparql>

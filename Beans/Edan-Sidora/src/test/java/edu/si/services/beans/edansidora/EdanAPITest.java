@@ -27,6 +27,7 @@
 
 package edu.si.services.beans.edansidora;
 
+import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -88,6 +89,7 @@ public class EdanAPITest extends CamelTestSupport {
     private static String TEST_DEPLOYMENT_ID = "testDeploymentId";
     private static String TEST_IAMGE_ID = "testRaccoonAndFox";
     private static String TEST_TITLE = "Camera Trap Image Northern Raccoon, Red Fox";
+    private static String TEST_SIDORA_PID = "test:0001";
     private static String TEST_TYPE = "emammal_image";
     private static String TEST_APP_ID = "QUOTIENTPROD";
 
@@ -522,6 +524,52 @@ public class EdanAPITest extends CamelTestSupport {
         assertMockEndpointsSatisfied();
     }
 
+    @Test
+    public void edanMetadataSearchFilterQuerySidoraPidTest() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(2);
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("edanServiceEndpoint", "/metadata/v2.0/metadata/search.htm");
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "q=id:" + TEST_EDAN_ID);
+        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "q=" + URLEncoder.encode("app_id:" + TEST_APP_ID + " AND type:" + TEST_TYPE + " AND id:" + TEST_EDAN_ID, "UTF-8"));
+
+        template.send("direct:edanTest", exchange);
+
+        /*Not Working*/
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:" + TEST_SIDORA_PID + "\"]", "UTF-8"));
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:test\\:0001\"]", "UTF-8"));
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:test%5C%3A0001\"]", "UTF-8"));
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:test", "UTF-8") + "\\:" + URLEncoder.encode("0001\"]", "UTF-8"));
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:\"test:0001\"\"]", "UTF-8"));
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:*\"]", "UTF-8"));
+
+        /*Working*/
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:test*0001\"]", "UTF-8")); //works with *
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:test?0001\"]", "UTF-8"));  //works with ?
+
+        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.online_media.sidorapid:" + TEST_SIDORA_PID.replace(":", "?") + "\"]", "UTF-8"));
+
+        template.send("direct:edanTest", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    @Ignore
+    public void edanDeleteTest() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("edanServiceEndpoint", "/content/v1.1/admincontent/releaseContent.htm");
+        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "id=p2b-1513178057393-1515183776910-0&type=" + TEST_TYPE);
+
+        template.send("direct:edanTest", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
     /*@Test
     @Ignore
     public void edanMetadataSearchFilterQueryUnmarshalJSONTest() throws Exception {
@@ -659,6 +707,26 @@ public class EdanAPITest extends CamelTestSupport {
         assertEquals("The returned uan does not match", expected_uan, result_uan);
 
     }
+
+
+    /*@Test
+    public void edanMetadataSearch2Test() throws Exception {
+        assumeFalse(LOCAL_TEST);
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+
+        Exchange exchange = new DefaultExchange(context);
+        //exchange.getIn().setHeader("edanServiceEndpoint", "/metadata/v1.1/metadata/search.htm");
+        exchange.getIn().setHeader("edanServiceEndpoint", "/metadata/v2.0/metadata/search.htm");
+        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "q=" + URLEncoder.encode("id:edanmdm-NMAI*", "UTF-8"));
+
+        template.send("direct:edanTest", exchange);
+
+        assertMockEndpointsSatisfied();
+    }*/
+
+
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {

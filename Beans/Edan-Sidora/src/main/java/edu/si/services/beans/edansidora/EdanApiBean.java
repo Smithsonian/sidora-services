@@ -114,6 +114,8 @@ public class EdanApiBean {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         sdfDate = df.format(new Date());
 
+        LOG.debug("setEdanAuth edanParams = {}", edanQuery);
+
         authContent = Base64Utility.encode(DigestUtils.sha1Hex(nonce + "\n" + edanQuery + "\n" + sdfDate + "\n" + edan_key).getBytes("UTF-8"));
     }
 

@@ -32,6 +32,8 @@
 
     <xsl:param name="imageid"/>
     <xsl:param name="idsAssetImagePrefix"/>
+    <xsl:param name="isPublic"/>
+    <xsl:param name="isInternal"/>
 
     <!-- identity transform -->
     <xsl:template match="@*|node()">
@@ -47,7 +49,7 @@
             <!--check to make sure the asset needs added-->
             <xsl:if test="not(count(//Asset[text()=concat($idsAssetImagePrefix, $imageid)]) > 0)">
             <!-- add a new element at the end -->
-            <Asset Name="{$idsAssetImagePrefix}{$imageid}.JPG" IsPublic="Yes" IsInternal="No" MaxSize="3000" InternalMaxSize="4000"><xsl:value-of
+            <Asset Name="{$idsAssetImagePrefix}{$imageid}.JPG" IsPublic="{$isPublic}" IsInternal="{$isInternal}" MaxSize="3000" InternalMaxSize="4000"><xsl:value-of
                     select="$idsAssetImagePrefix"/><xsl:value-of
                     select="$imageid"/></Asset>
             </xsl:if>
