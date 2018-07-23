@@ -72,6 +72,12 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "sidoraSolr.backOffMultiplier", defaultValue = "2")
     private String backOffMultiplier;
 
+    @PropertyInject(value = "sidora.solr.default.index", defaultValue = "gsearch_solr")
+    private static String DEFAULT_SOLR_INDEX;
+
+    @PropertyInject(value = "sidora.sianct.default.index", defaultValue = "gsearch_sianct")
+    private static String DEFAULT_SIANCT_INDEX;
+
     @Override
     public void configure() throws Exception {
         errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
@@ -148,12 +154,12 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                     .filter().simple("${header.pid} in '${header.ResearcherObservationPID},${header.VolunteerObservationPID},${header.ImageObservationPID}'")
                         .log(LoggingLevel.DEBUG, "${routeId} :: [2] FOUND OBSERVATION")
-                        .to("bean:MyBatchService?method=addJob(*, update, gsearch_sianct)")
+                        .to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
                         .log(LoggingLevel.DEBUG, "${routeId} :: [2] Send to createBatchJob:\n${header.solrJob}")
                         .to("seda:createBatchJob")
                     .end()
 //.stop()
-                    .to("bean:MyBatchService?method=addJob(*, update, gsearch_solr)")
+                    .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
                     .log(LoggingLevel.DEBUG, "${routeId} :: [3] Send to createBatchJob:\n${header.solrJob}")
                     .to("seda:createBatchJob");
 
@@ -176,25 +182,25 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         // Set the index we are operating and operation
                         .choice()
                             .when().simple("${header.methodName} == 'purgeDatastream' && ${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
-                                .to("bean:MyBatchService?method=addJob(*, delete, gsearch_sianct)")
+                                .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.sianct.default.index}})")
                                 .to("seda:createBatchJob")
                                 // Also create job for gsearch_solr
-                                .to("bean:MyBatchService?method=addJob(*, delete, gsearch_solr)")
+                                .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.solr.default.index}})")
                                 .to("seda:createBatchJob")
                             .endChoice()
                             .when().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
-                                .to("bean:MyBatchService?method=addJob(*, update, gsearch_sianct)")
+                                .to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
                                 .to("seda:createBatchJob")
                                 // Also create job for gsearch_solr
-                                .to("bean:MyBatchService?method=addJob(*, update, gsearch_solr)")
+                                .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
                                 .to("seda:createBatchJob")
                             .endChoice()
                             .when().simple("${header.methodName} == 'purgeDatastream'")
-                                .to("bean:MyBatchService?method=addJob(*, delete, gsearch_solr)")
+                                .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.solr.default.index}})")
                                 .to("seda:createBatchJob")
                             .endChoice()
                             .otherwise()
-                                .to("bean:MyBatchService?method=addJob(*, update, gsearch_solr)")
+                                .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
                                 .to("seda:createBatchJob")
                             .endChoice()
                         .end();
@@ -246,7 +252,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                                 .setBody().simple("<delete>${body.pid}</delete>")
                                 .endChoice()
 
-                            .when().simple("${body.index} == 'gsearch_sianct'")
+                            .when().simple("${body.index} == '{{sidora.sianct.default.index}}'")
                                 .log(LoggingLevel.INFO, "${routeId} :: Found *** SIANCT *** ${header.jobInfo}")
 
                                 .setHeader("pid").simple("${body.pid}", String.class)

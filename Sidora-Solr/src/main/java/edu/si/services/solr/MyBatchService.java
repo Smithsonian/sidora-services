@@ -48,13 +48,10 @@ public class MyBatchService {
     MySolrJob solrJob;
 
     public void addJob(Exchange exchange, String solrOperation) {
-        LOG.debug("******[0]******* DEFAULT_SOLR_INDEX = {}", DEFAULT_SOLR_INDEX);
-        DEFAULT_SOLR_INDEX = (DEFAULT_SOLR_INDEX == null) ? "gsearch_solr" : DEFAULT_SOLR_INDEX;
         addJob(exchange, solrOperation, DEFAULT_SOLR_INDEX);
     }
 
     public void addJob(Exchange exchange, String solrOperation, String index) {
-        LOG.debug("******[0.1]******* DEFAULT_SOLR_INDEX = {} | index = {}", DEFAULT_SOLR_INDEX, index);
         Message out = exchange.getIn();
 
         solrJob = new MySolrJob();

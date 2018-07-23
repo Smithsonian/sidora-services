@@ -54,7 +54,6 @@ public class MySolrJob {
 
 
     public MySolrJob() {
-        DEFAULT_SOLR_INDEX = (DEFAULT_SOLR_INDEX == null) ? "gsearch_solr" : DEFAULT_SOLR_INDEX;
         this.indexes = new ArrayList<>();
     }
 
@@ -80,7 +79,7 @@ public class MySolrJob {
         this.index = index;
         this.indexes.add(DEFAULT_SOLR_INDEX);
 
-        LOG.info("MySolrJob :: DEFAULT_SOLR_INDEX = {} | {}", DEFAULT_SOLR_INDEX, this.toString());
+        LOG.debug("MySolrJob :: DEFAULT_SOLR_INDEX = {} | {}", DEFAULT_SOLR_INDEX, this.toString());
     }
 
     public String getPid() {
