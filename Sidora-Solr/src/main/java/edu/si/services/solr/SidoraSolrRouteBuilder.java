@@ -263,7 +263,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                                 .log(LoggingLevel.DEBUG, "Send to XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
-                                .to("xslt:/Input/xslt/batch_CT_foxml-to-gsearch_sianct.xslt").id("foxmlToGsearchSianctXSLT")
+                                .to("xslt:file:{{karaf.home}}/Input/xslt/batch_CT_foxml-to-gsearch_sianct.xslt").id("foxmlToGsearchSianctXSLT")
 
                                 .log(LoggingLevel.DEBUG, "XSLT Body:\n${body}")
 
@@ -281,7 +281,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                                 .log(LoggingLevel.DEBUG, "Send to batch_foxml-to-gsearch_solr XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
-                                .to("xslt:/Input/xslt/batch_foxml-to-gsearch_solr.xslt").id("foxmlToGsearchSolrXSLT")
+                                .to("xslt:file:{{karaf.home}}/Input/xslt/batch_foxml-to-gsearch_solr.xslt").id("foxmlToGsearchSolrXSLT")
 
                                 .log(LoggingLevel.DEBUG, "batch_foxml-to-gsearch_solr output:\n${body}")
 
