@@ -315,7 +315,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .setHeader("CamelHttpMethod", constant("POST"))
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/xml"))
 
-                .toD("http://localhost:8091/solr/${header.solrIndex}/update?headerFilterStrategy=#dropHeadersStrategy").id("sendToSolr")
+                .toD("{{sidora.solr.endpoint}}/${header.solrIndex}/update?headerFilterStrategy=#dropHeadersStrategy").id("sendToSolr")
                 .convertBodyTo(String.class)
                 //TODO: check the response
 
