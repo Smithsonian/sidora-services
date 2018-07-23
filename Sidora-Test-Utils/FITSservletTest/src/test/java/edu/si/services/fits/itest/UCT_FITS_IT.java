@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -68,14 +69,9 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 public class UCT_FITS_IT extends CamelBlueprintTestSupport {
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private String defaultTestProperties = KARAF_HOME + "/test.properties";
-    private String fedoraHost = System.getProperty("si.fedora.host");
-    private String fedoraUser = System.getProperty("si.fedora.user");
-    private String fedoraPassword = System.getProperty("si.fedora.password");
-    private String fusekiHost = System.getProperty("si.fuseki.host");
-    private static Configuration config = null;
+    private static Properties extra = new Properties();
     private static final File testFile = new File(KARAF_HOME + "/BBB_9425.NEF");
-    protected static final String FITS_URI = System.getProperty("si.fits.host");
+    protected static String FITS_URI;
 
     private static CloseableHttpClient httpClient;
 
@@ -87,8 +83,42 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
     }
 
     @Override
-    protected String[] loadConfigAdminConfigurationFile() {
-        return new String[]{defaultTestProperties, "edu.si.sidora.karaf"};
+    public void setUp() throws Exception {
+        //System.getProperties().list(System.out);
+        log.debug("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
+
+        List<String> propFileList = loadAdditionalPropertyFiles();
+        if (loadAdditionalPropertyFiles() != null) {
+            for (String propFile : propFileList) {
+                Properties extra = new Properties();
+                try {
+                    extra.load(new FileInputStream(propFile));
+                    this.extra.putAll(extra);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        for (Map.Entry<Object, Object> p : System.getProperties().entrySet()) {
+            if (extra.containsKey(p.getKey())) {
+                extra.setProperty(p.getKey().toString(), p.getValue().toString());
+            }
+        }
+
+        super.setUp();
+
+        FITS_URI = extra.getProperty("si.fits.host");
+    }
+
+    protected List<String> loadAdditionalPropertyFiles() {
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
+    }
+
+    @Override
+    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
+        configAdmin.putAll(extra);
+        return "edu.si.sidora.karaf";
     }
 
     @Override
@@ -122,7 +152,7 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
             fitsVersion = EntityUtils.toString(response.getEntity());
         }
         logger.info("Found FITS Version:{}", fitsVersion);
-        String expectedVersion = "1.0.4";
+        String expectedVersion = "1.2.0";
         assertEquals(expectedVersion, fitsVersion.trim());
     }
 
@@ -172,7 +202,7 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
 
         //Initialize the exchange with body and headers as needed
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("CamelFileNameProduced", testFile.getName());
+        exchange.getIn().setHeader("CamelFileAbsolutePath", testFile.getAbsolutePath());
         exchange.getIn().setHeader("CamelFedoraPid", "test:0001");
 
         // The endpoint we want to start from with the exchange body and headers we want

@@ -245,27 +245,30 @@
     <build>
         <defaultGoal>install</defaultGoal>
 
+        <!--The properties file that will be used for tests and token replacement during resource filtering-->
+        <!--<filters>
+            <filter>${test.properties}</filter>
+        </filters>-->
+
         <!-- Copy test resources to output folder target/test-classes -->
         <testResources>
             <!-- don't forget to specify the default test resources directory -->
             <testResource>
                 <directory>src/test/resources</directory>
-                <filtering>true</filtering>
             </testResource>
 
-            <!-- add the Sidora-MCI Karaf-config directories -->
+            <!-- add the Sidora-Batch Karaf-config directories -->
             <testResource>
                 <directory>Karaf-Config</directory>
+                <targetPath>${karaf.home}</targetPath>
+                <filtering>true</filtering>
             </testResource>
-            <!-- TODO: NEED TO CENTRALISE KARAF-CONFIG ACROSS PROJECT MODULES -->
-            <!--<testResource>
-                <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
-                <targetPath>${basedir}/target/test-classes/etc</targetPath>
-            </testResource>
+            <!-- add the Camera Trap Route directory as resources -->
             <testResource>
-                <directory>../../Routes/Camera Trap/Input</directory>
-                <targetPath>${basedir}/target/test-classes/Input</targetPath>
-            </testResource>-->
+                <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
+            </testResource>
         </testResources>
 
         <plugins>
@@ -322,13 +325,8 @@
                     </excludes>
                     <systemPropertyVariables>
                         <buildDirectory>${project.build.directory}</buildDirectory>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <karaf.home>${karaf.home}</karaf.home>
-                        <si.sidora.mci.host>http://localhost:${dynamic.test.port}/sidora/mci</si.sidora.mci.host>
-                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
-                        <si.fuseki.host>http://localhost:8080/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -340,12 +338,6 @@
                         <karaf.home>${karaf.home}</karaf.home>
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <buildDirectory>${project.build.directory}</buildDirectory>
-                        <sidora.mci.service.address>http://localhost:${dynamic.test.port}/sidora/mci</sidora.mci.service.address>
-                        <si.fits.host>http://localhost:${dynamic.test.port}/fits-1.1.3</si.fits.host>
-                        <si.fuseki.host>http://localhost:${dynamic.test.port}/jena-fuseki-war</si.fuseki.host>
-                        <si.fedora.host>http://localhost:${dynamic.test.port}/trippi-sparql-fcrepo-webapp</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
                     </systemPropertyVariables>
                     <includes>
                         <include>**/*_IT</include>

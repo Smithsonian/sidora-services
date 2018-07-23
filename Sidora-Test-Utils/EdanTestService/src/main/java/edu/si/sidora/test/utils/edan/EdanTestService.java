@@ -35,7 +35,7 @@ import javax.ws.rs.core.Response;
 /**
  * @author jbirkhimer
  */
-@Path("/")
+//@Path("/")
 public class EdanTestService {
 
     /**
@@ -46,6 +46,16 @@ public class EdanTestService {
     @GET
     @Path(value = "/addEdan")
     public Response addEdan(@QueryParam("content") final String edanJson) {
+        return null;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @GET
+    @Path(value = "/{s:.*}")
+    public Response edan() {
         return null;
     }
 

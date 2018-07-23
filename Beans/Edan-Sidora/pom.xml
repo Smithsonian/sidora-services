@@ -28,7 +28,7 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>edu.si.services</groupId>
         <artifactId>beans</artifactId>
@@ -47,6 +47,12 @@
 
     <properties>
         <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
+        <servlet.port>8080</servlet.port>
+        <!--<solr.host>http://${edan.ids.solr.host}</solr.host>-->
+        <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep fedora and fuseki up -->
+        <!--<dynamic.test.port>40994</dynamic.test.port>-->
+        <fedora.home>${project.build.directory}/fedora-home</fedora.home>
+        <fuseki.base>${project.build.directory}/fuseki-base</fuseki.base>
 
         <!-- Unit Test Properties-->
         <karaf.home>${project.build.directory}/test-classes</karaf.home>
@@ -79,6 +85,16 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http-common</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http4</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
             <artifactId>camel-blueprint</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -106,7 +122,7 @@
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
             <version>1.0</version>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>edu.si.services.camel</groupId>
@@ -245,7 +261,6 @@
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-core</artifactId>
-            <version>3.1.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -264,24 +279,66 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- edan test service -->
-        <!--<dependency>
-            <groupId>edu.si.services</groupId>
-            <artifactId>edan-test-util</artifactId>
-            <version>1.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-slf4j-impl</artifactId>
-                </exclusion>
-            </exclusions>
+        <!-- ActiveMQ test gear -->
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-camel</artifactId>
             <scope>test</scope>
-        </dependency>-->
+            <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.apache.camel</groupId>
+                    <artifactId>camel-jms</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jackson</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-gson</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${fasterxml.jackson.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-json-validator</artifactId>
+            <version>2.20.0</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
     <build>
         <defaultGoal>install</defaultGoal>
+
+        <!--The properties file that will be used for tests and token replacement during resource filtering-->
+        <!--<filters>
+            <filter>src/test/resources/test.properties</filter>
+        </filters>-->
 
         <!-- Copy test resources to output folder target/test-classes -->
         <testResources>
@@ -291,25 +348,33 @@
                 <filtering>true</filtering>
             </testResource>
 
+            <!-- add the Edan-Sidora Karaf-config directories -->
             <testResource>
                 <directory>Karaf-config</directory>
-                <!--<targetPath>${basedir}/target/test-classes/etc</targetPath>-->
+                <targetPath>${karaf.home}</targetPath>
+                <filtering>true</filtering>
             </testResource>
+            <!-- add the Camera Trap Route directory as resources -->
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
-                <targetPath>${basedir}/target/test-classes/etc</targetPath>
+                <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
             </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Input</directory>
-                <targetPath>${basedir}/target/test-classes/Input</targetPath>
+                <targetPath>${karaf.home}/Input</targetPath>
             </testResource>
             <testResource>
                 <directory>../../Routes/Camera Trap/Route</directory>
-                <targetPath>${basedir}/target/test-classes/Routes</targetPath>
+                <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
+
             <testResource>
-                <directory>../../Routes/WCS/Route</directory>
-                <targetPath>${basedir}/target/test-classes/Routes</targetPath>
+                <directory>../../</directory>
+                <targetPath>${karaf.home}</targetPath>
+                <includes>
+                    <include>test.properties</include>
+                </includes>
             </testResource>
 
         </testResources>
@@ -322,6 +387,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>JPG</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
             </plugin>
 
             <!-- to generate the MANIFEST-FILE of the bundle -->
@@ -332,29 +403,9 @@
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>edu.si.services.beans.edansidora</Bundle-SymbolicName>
-                        <!--<Private-Package>edu.si.services.*</Private-Package>
-                        <Import-Package>*</Import-Package>-->
-
-                        <!--<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>-->
-                        <!--<Embed-Transitive>true</Embed-Transitive>-->
-                        <!--<Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>-->
                         <Export-Package>edu.si.services.beans.edansidora</Export-Package>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
-
-                        <!--<Bundle-Description>${project.description}</Bundle-Description>
-                        <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
-                        <Private-Package>edu.si.services.beans.edansidora</Private-Package>
-                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>-->
                     </instructions>
-                </configuration>
-            </plugin>
-
-            <!-- to run the example using mvn camel:run -->
-            <plugin>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-maven-plugin</artifactId>
-                <configuration>
-                    <useBlueprint>true</useBlueprint>
                 </configuration>
             </plugin>
 
@@ -388,46 +439,11 @@
                     </excludes>
                     <systemPropertyVariables>
                         <buildDirectory>${project.build.directory}</buildDirectory>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <karaf.home>${karaf.home}</karaf.home>
-                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
-                        <si.fuseki.host>http://localhost:9080/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
-                        <si.ct.uscbi.server>http://localhost:${dynamic.test.port}/edan</si.ct.uscbi.server>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
-                        <karaf.home>${karaf.home}</karaf.home>
-                        <si.fits.host>http://localhost:8080/fits-1.1.3</si.fits.host>
-                        <si.fuseki.host>http://localhost:9080/fuseki</si.fuseki.host>
-                        <si.fedora.host>http://localhost:8080/fedora</si.fedora.host>
-                        <si.fedora.user>fedoraAdmin</si.fedora.user>
-                        <si.fedora.password>fc</si.fedora.password>
-                        <si.ct.uscbi.server>http://localhost:${dynamic.test.port}/edan</si.ct.uscbi.server>
-                    </systemPropertyVariables>
-                    <includes>
-                        <include>**/*_IT</include>
-                    </includes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>integration-test</id>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
-
 </project>

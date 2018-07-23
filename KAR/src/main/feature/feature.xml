@@ -30,41 +30,60 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.1 http://karaf.apache.org/xmlns/features/v1.2.1">
 
+    <repository>mvn:io.hawt/hawtio-karaf/1.5.2/xml/features</repository>
+
     <!-- Sidora Dependencies -->
-    <feature name="sidora-dependencies" version="${version}" >
-        <bundle dependency="true" start-level='80'>mvn:commons-codec/commons-codec/${commons-codec.bundle.version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:org.apache.commons/commons-collections4/${commons-collections4.version}</bundle>
-        <!--<bundle dependency="true" start-level='80'>mvn:org.apache.poi/poi/${apache-poi.version}</bundle>-->
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/${servicemix.bundles.poi.version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/${servicemix.bundles.velocity-tools.version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/${servicemix.bundles.spring-beans.version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/${commons-httpclient.bundle.version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:com.google.guava/guava/${google-guava-version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:commons-dbcp/commons-dbcp/${commons-dbcp.version}</bundle>
-        <bundle dependency="true" start-level='80'>wrap:mvn:mysql/mysql-connector-java/${mysql-connector.version}</bundle>
-        <bundle dependency="true" start-level='80'>mvn:org.apache.tika/tika-core/${apache-tika.version}</bundle>
+    <feature name="sidora-dependencies" version="${version}" start-level="50">
+        <bundle dependency="true">mvn:commons-codec/commons-codec/${commons-codec.bundle.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.commons/commons-collections4/${commons-collections4.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.poi/${servicemix.bundles.poi.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.velocity-tools/${servicemix.bundles.velocity-tools.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.spring-beans/${servicemix.bundles.spring-beans.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/${commons-httpclient.bundle.version}</bundle>
+        <bundle dependency="true">mvn:com.google.guava/guava/${google-guava-version}</bundle>
+        <bundle dependency="true">mvn:commons-dbcp/commons-dbcp/${commons-dbcp.version}</bundle>
+        <bundle dependency="true">wrap:mvn:mysql/mysql-connector-java/${mysql-connector.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.tika/tika-core/${apache-tika.version}</bundle>
+
+        <!--
+            When using 'configfile' element in the karaf feature.xml a maven url is required
+            Uncomment the 'configfile' section in the feature.xml and the build-helper-maven-plugin plugin to enable this feature
+            Enabling will allow Karaf to automatically create/update config files in <karaf.home>/etc when a KAR is deployed
+        -->
+        <!-- Req. Camera Trap Config Files -->
+        <!--<configfile finalname="/etc/edu.si.sidora.karaf.cfg" override="false">mvn:edu.si.services/sidora-deployment/1.0/cfg/edu.si.sidora.karaf</configfile>
+        <configfile finalname="/etc/system.properties" override="false">mvn:edu.si.services/sidora-deployment/1.0/properties/system</configfile>
+        <configfile finalname="/etc/edu.si.sidora.emammal.cfg" override="false">mvn:edu.si.services/sidora-deployment/1.0/cfg/edu.si.sidora.emammal</configfile>
+        &lt;!&ndash; Req. Sidora Batch Config Files &ndash;&gt;
+        <configfile finalname="/etc/edu.si.sidora.batch.cfg" override="false">mvn:edu.si.services/sidora-deployment/1.0/cfg/edu.si.sidora.batch</configfile>
+        &lt;!&ndash; Req. Sidora MCI Config Files &ndash;&gt;
+        <configfile finalname="/etc/edu.si.sidora.mci.cfg" override="false">mvn:edu.si.services/sidora-deployment/1.0/cfg/edu.si.sidora.mci</configfile>-->
     </feature>
 
-    <feature name="edan-ids-dependencies" version="${version}" >
-        <!--<bundle dependency="true" start-level='80'>mvn:commons-logging/commons-logging/1.2</bundle>
-        <bundle dependency="true" start-level='80'>wrap:mvn:org.apache.httpcomponents/httpcore/4.4.4</bundle>
-        <bundle dependency="true" start-level='80'>wrap:mvn:org.apache.httpcomponents/httpclient/4.5.3</bundle>-->
+    <feature name="edan-ids-dependencies" version="${version}" start-level="50">
         <bundle dependency='true'>mvn:org.apache.httpcomponents/httpcore-osgi/${httpcore4.version}</bundle>
         <bundle dependency='true'>mvn:org.apache.httpcomponents/httpclient-osgi/${httpclient4.version}</bundle>
+        <!-- Edan Test Utility that provides an http endpoint for edan requests -->
+        <!--<bundle start="false">mvn:edu.si.services/edan-test-util/1.0</bundle>-->
     </feature>
 
     <!-- Sidora Camel Dependencies -->
-    <feature name="sidora-camel-dependencies" version="${camel.version}" >
-        <feature version="${camel.version}" start-level='50'>camel-exec</feature>
-        <feature version="${camel.version}" start-level='50'>camel-groovy</feature>
-        <feature version="${camel.version}" start-level='50'>camel-velocity</feature>
-        <feature version="${camel.version}" start-level='50'>camel-saxon</feature>
-        <feature version="${camel.version}" start-level='50'>camel-schematron</feature>
-        <feature version="${camel.version}" start-level='50'>camel-csv</feature>
-        <feature version="${camel.version}" start-level='50'>camel-aws</feature>
-        <feature version="${camel.version}" start-level='50'>camel-http</feature>
-        <feature version="${camel.version}" start-level='50'>camel-jdbc</feature>
-        <feature version="${camel.version}" start-level='50'>camel-sql</feature>
+    <feature name="sidora-camel-dependencies" version="${camel.version}" start-level="50">
+        <feature version="${camel.version}">camel-exec</feature>
+        <feature version="${camel.version}">camel-groovy</feature>
+        <feature version="${camel.version}">camel-velocity</feature>
+        <feature version="${camel.version}">camel-saxon</feature>
+        <feature version="${camel.version}">camel-schematron</feature>
+        <feature version="${camel.version}">camel-csv</feature>
+        <feature version="${camel.version}">camel-aws</feature>
+        <feature version="${camel.version}">camel-http</feature>
+        <feature version="${camel.version}">camel-jdbc</feature>
+        <feature version="${camel.version}">camel-sql</feature>
+        <feature version="${camel.version}">camel-gson</feature>
+        <feature version="${camel.version}">camel-http4</feature>
+        <feature>hawtio-core</feature>
+        <feature>webconsole</feature>
+        <feature>activemq-web-console</feature>
     </feature>
 
 </features>

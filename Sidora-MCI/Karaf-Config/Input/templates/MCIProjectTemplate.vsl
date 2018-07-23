@@ -9,10 +9,12 @@
          xmlns:islandora="http://islandora.ca/ontology/relsext#"
          xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
          xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-    <rdf:Description rdf:about="info:fedora/$headers.CamelFedoraPid">
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:sidora="http://oris.si.edu/2017/01/relations#">
+    <rdf:Description rdf:about="info:fedora/$headers.projectPID">
         <fedora-model:hasModel rdf:resource="info:fedora/si:collectionCModel"/>
         <fedora-model:hasModel rdf:resource="info:fedora/si:HierarchyObject"/>
         <fedora:hasResource rdf:resource="info:fedora/$headers.projectResourcePID"/>
+        <sidora:isAdministeredBy rdf:resource="info:fedora/$headers.researchProjectPid"/>
     </rdf:Description>
 </rdf:RDF>

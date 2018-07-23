@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<foxml:digitalObject VERSION="1.1" PID="test:123456"
+                     xmlns:foxml="info:fedora/fedora-system:def/foxml#"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     xsi:schemaLocation="info:fedora/fedora-system:def/foxml# http://www.fedora.info/definitions/1/0/foxml1-1.xsd">
+    <foxml:objectProperties>
+        <foxml:property NAME="info:fedora/fedora-system:def/model#state" VALUE="Active"/>
+        <foxml:property NAME="info:fedora/fedora-system:def/model#label" VALUE="eMammal"/>
+        <foxml:property NAME="info:fedora/fedora-system:def/model#ownerId" VALUE="forresterT"/>
+        <foxml:property NAME="info:fedora/fedora-system:def/model#createdDate" VALUE="2014-03-11T18:13:07.107Z"/>
+        <foxml:property NAME="info:fedora/fedora-system:def/view#lastModifiedDate" VALUE="2017-07-27T18:33:54.539Z"/>
+    </foxml:objectProperties>
+    <foxml:datastream ID="RELS-EXT" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+        <foxml:datastreamVersion ID="RELS-EXT.0" LABEL="RDF Statements about this Object" CREATED="2014-03-11T18:13:07.114Z" MIMETYPE="application/rdf+xml" FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0" SIZE="674">
+            <foxml:xmlContent>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:fedora-model="info:fedora/fedora-system:def/model#">
+                    <rdf:Description rdf:about="info:fedora/test:123456">
+                        <fedora:isMemberOfCollection rdf:resource="info:fedora/si:user-projects"></fedora:isMemberOfCollection>
+                        <fedora-model:hasModel rdf:resource="info:fedora/si:projectCModel"></fedora-model:hasModel>
+                    </rdf:Description>
+                </rdf:RDF>
+            </foxml:xmlContent>
+        </foxml:datastreamVersion>
+    </foxml:datastream>
+    <foxml:datastream ID="EAC-CPF" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+        <foxml:datastreamVersion ID="EAC-CPF.0" LABEL="EAC-CPF Record" CREATED="2014-03-11T18:13:07.115Z" MIMETYPE="text/xml" SIZE="1442">
+            <foxml:xmlContent>
+                <eac-cpf xmlns="urn:isbn:1-931666-33-4" xmlns:eac="urn:isbn:1-931666-33-4" xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <control><recordId>default</recordId><maintenanceStatus>revised</maintenanceStatus><maintenanceAgency><agencyName></agencyName></maintenanceAgency><localControl localType="Publication Date"><date></date></localControl><maintenanceHistory><maintenanceEvent><eventType>created</eventType><eventDateTime></eventDateTime><agentType>human</agentType><agent></agent><eventDescription></eventDescription></maintenanceEvent></maintenanceHistory></control>
+                    <cpfDescription><identity><entityType>corporateBody</entityType><nameEntry localType="primary"><part>eMammal</part></nameEntry><nameEntry localType="abbreviation"><part>eMammal</part></nameEntry></identity><description><existDates><dateRange><fromDate></fromDate><toDate></toDate></dateRange></existDates><place><placeEntry localType="address"></placeEntry><placeEntry localType="region"></placeEntry><placeEntry countryCode="US" longitude="0" latitude="0"></placeEntry></place><functions><function><term>Project Data Access and Use Constraints</term><descriptiveNote><p></p></descriptiveNote></function></functions></description><relations><cpfRelation><relationEntry></relationEntry><placeEntry localType="email address"></placeEntry><descriptiveNote><p>Project Owner</p></descriptiveNote></cpfRelation></relations></cpfDescription>
+                </eac-cpf>
+            </foxml:xmlContent>
+        </foxml:datastreamVersion>
+    </foxml:datastream>
+    <foxml:datastream ID="DC" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+        <foxml:datastreamVersion ID="DC.0" LABEL="Dublin Core Record" CREATED="2014-03-11T18:13:07.115Z" MIMETYPE="text/xml" SIZE="466">
+            <foxml:xmlContent>
+                <oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+                    <dc:title>eMammal</dc:title>
+                    <dc:title>eMammal</dc:title>
+                    <dc:description></dc:description>
+                    <dc:identifier>test:123456</dc:identifier>
+                    <dc:relation></dc:relation>
+                </oai_dc:dc>
+            </foxml:xmlContent>
+        </foxml:datastreamVersion>
+    </foxml:datastream>
+    <foxml:datastream ID="COLLECTION_POLICY" STATE="A" CONTROL_GROUP="X" VERSIONABLE="true">
+        <foxml:datastreamVersion ID="COLLECTION_POLICY.0" LABEL="COLLECTION_POLICY" CREATED="2014-03-11T18:13:07.999Z" MIMETYPE="text/xml" SIZE="2579">
+            <foxml:xmlContent>
+                <collection_policy xmlns="http://www.islandora.ca" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="" xsi:schemaLocation="http://www.islandora.ca http://syn.lib.umanitoba.ca/collection_policy.xsd">
+                    <content_models>
+                        <content_model dsid="ISLANDORACM" name="Digitized text (pdf)" namespace="si:" pid="si:fieldbookCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Tabular datasets" namespace="si:" pid="si:datasetCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="General image" namespace="si:" pid="si:generalImageCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Codebook" namespace="si:" pid="si:codebookCModel"></content_model>
+                    </content_models>
+                    <concept_models>
+                        <content_model dsid="ISLANDORACM" name="Project or sub-project" namespace="si:" pid="si:projectCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Natural history collection" namespace="si:" pid="si:ncdCollectionCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Research site, plot or area" namespace="si:" pid="si:ctPlotCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Person" namespace="si:" pid="si:peopleCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Organization, Institution or Expedition" namespace="si:" pid="si:organizationCModel"></content_model>
+
+                        <content_model dsid="ISLANDORACM" name="Instrument deployment" namespace="si:" pid="si:cameraTrapCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Animal or plant species or specimen" namespace="si:" pid="si:dwcCModel"></content_model>
+                        <content_model dsid="ISLANDORACM" name="Cultural heritage entity or object" namespace="si:" pid="si:lidoCollectionCModel"></content_model>
+                    </concept_models>
+                    <search_terms>
+                        <term field="dc.title">dc.title</term>
+                        <term field="dc.creator">dc.creator</term>
+                        <term default="true" field="dc.description">dc.description</term>
+                        <term field="dc.date">dc.date</term>
+                        <term field="dc.identifier">dc.identifier</term>
+                        <term field="dc.language">dc.language</term>
+                        <term field="dc.publisher">dc.publisher</term>
+                        <term field="dc.rights">dc.rights</term>
+                        <term field="dc.subject">dc.subject</term>
+                        <term field="dc.relation">dc.relation</term>
+                        <term field="dcterms.temporal">dcterms.temporal</term>
+                        <term field="dcterms.spatial">dcterms.spatial</term>
+                        <term field="fgs.DS.first.text">Full Text</term>
+                    </search_terms>
+                    <relationship>isMemberOfCollection</relationship>
+                </collection_policy>
+            </foxml:xmlContent>
+        </foxml:datastreamVersion>
+    </foxml:datastream>
+</foxml:digitalObject>

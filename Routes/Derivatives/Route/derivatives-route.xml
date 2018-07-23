@@ -90,7 +90,8 @@
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
                   trace="false"
-                  streamCache="true">
+                  streamCache="true"
+                  useMDCLogging="true">
 
         <!--
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
@@ -412,11 +413,40 @@
                     <log message="${id} Derivatives: Found DNG (Camera RAW)."
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
+
+                    <!-- FITS will not generate the correct output for DNG without the file ext. -->
+                    <log message="${id} Derivatives: Renaming Staged File For DNG processing: ${header.CamelFileNameProduced} to ${header.CamelFileNameProduced}.dng"
+                         loggingLevel="DEBUG"
+                         logName="edu.si.derivatives"/>
+                    <setHeader headerName="CamelFileNameProducedStash">
+                        <simple>${header.CamelFileNameProduced}</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple>${header.CamelFileNameProduced}</simple>
+                    </setBody>
+                    <to uri="reader:file"/>
+                    <to uri="file://?fileName=${header.CamelFileNameProduced}.dng"/>
+
                     <multicast>
                         <to uri="direct://processDerivativesDNGImage"/>
                         <to uri="direct://processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
+                    <!-- Delete the temporary file created for DNG processing. Note: This approach is Unix specific. -->
+                    <toD uri="exec:rm?args=-f ${header.CamelFileNameProduced}"/>
+                    <choice>
+                        <when>
+                            <simple>
+                                ${headers.CamelExecExitValue} != 0
+                            </simple>
+                            <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}"
+                                 loggingLevel="WARN"/>
+                        </when>
+                    </choice>
+                    <!-- Unstash the original filename for deletion -->
+                    <setHeader headerName="CamelFileNameProduced">
+                        <simple>${header.CamelFileNameProducedStash}</simple>
+                    </setHeader>
                 </when>
 
                 <otherwise>
@@ -930,8 +960,13 @@
                     file={{karaf.home}}/${header.CamelFileNameProduced}
                 </simple>
             </setHeader>
+
+            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+
             <toD uri="{{si.fits.host}}/examine"/>
-            <convertBodyTo type="java.lang.String"/>
+            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
 
             <log message="${id} FITS Web Service Response Body:\n${body}"
                  loggingLevel="DEBUG"
@@ -1029,6 +1064,9 @@
                             <simple>
                                 ${headers.CamelExecExitValue} == 0
                             </simple>
+                            <delay>
+                                <constant>100</constant>
+                            </delay>
                             <to uri="fedora:addDatastream?name=PROXY_MP3&amp;type=audio/mpeg&amp;dsLabel=PROXY_MP3&amp;group=M&amp;versionable=false"/>
                             <log message="${id} Derivatives: Adding converted audio as mp3 to PROXY_MP3."
                                  loggingLevel="DEBUG"
@@ -1197,10 +1235,13 @@
                         </simple>
                     </setHeader>
 
-                    <to uri="reader:file"/>
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
 
                     <!-- Just copy it and create thumbnail. -->
-                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+                    <toD uri="{{si.fedora.host}}/objects/${header.pid}/datastreams/MP4?mimeType=video/mp4&amp;dsLabel=MP4&amp;controlGroup=M&amp;versionable=false&amp;dsLocation=file:{{karaf.home}}/${header.videoInput}&amp;authMethod=Basic&amp;authUsername={{si.fedora.user}}&amp;authPassword={{si.fedora.password}}"/>
+
                     <to uri="direct:processDerivativesVideoThumbnailTimePosition"/>
                     <to uri="direct:processDerivativesVideoThumbnail"/>
 
@@ -1223,7 +1264,15 @@
                     <!-- Make an MP4 derivative and TN. -->
                     <!-- Create a video derivative and thumbnail using ffmpeg. -->
                     <to uri="direct:processDerivativesVideoFFMPEG"/>
-                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple></simple>
+                    </setBody>
+                    <toD uri="{{si.fedora.host}}/objects/${header.pid}/datastreams/MP4?mimeType=video/mp4&amp;dsLabel=MP4&amp;controlGroup=M&amp;versionable=false&amp;dsLocation=file:{{karaf.home}}/${header.videoInput}&amp;authMethod=Basic&amp;authUsername={{si.fedora.user}}&amp;authPassword={{si.fedora.password}}"/>
+
                     <to uri="direct:processDerivativesVideoThumbnailTimePosition"/>
                     <to uri="direct:processDerivativesVideoThumbnail"/>
                 </when>
@@ -1239,7 +1288,14 @@
                     <!-- Make an MP4 derivative and TN. -->
                     <!-- Create a audio derivative using ffmpeg and MP4. -->
                     <to uri="direct:processDerivativesVideoFFMPEG"/>
-                    <to uri="fedora:addDatastream?name=MP4&amp;type=video/mp4&amp;dsLabel=MP4&amp;group=M&amp;versionable=false"/>
+
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple></simple>
+                    </setBody>
+                    <toD uri="{{si.fedora.host}}/objects/${header.pid}/datastreams/MP4?mimeType=video/mp4&amp;dsLabel=MP4&amp;controlGroup=M&amp;versionable=false&amp;dsLocation=file:{{karaf.home}}/${header.videoInput}&amp;authMethod=Basic&amp;authUsername={{si.fedora.user}}&amp;authPassword={{si.fedora.password}}"/>
 
                     <!-- Create a audio thumbnail TN. -->
                     <setBody>
@@ -1355,13 +1411,6 @@
                     <simple>
                         ${headers.CamelExecExitValue} == 0
                     </simple>
-
-                    <setBody>
-                        <simple>
-                            ${header.CamelFileNameProduced}.mp4
-                        </simple>
-                    </setBody>
-                    <to uri="reader:file"/>
 
                     <setHeader headerName="videoInput">
                         <simple>
