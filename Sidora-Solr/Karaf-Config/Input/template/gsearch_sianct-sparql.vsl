@@ -1,0 +1,22 @@
+SELECT ?ctPID ?ctLabel ?sitePID ?siteLabel ?parkPID ?parkLabel ?projectPID ?projectLabel
+FROM <info:edu.si.fedora#ri> WHERE {
+ 
+?ctPID <info:fedora/fedora-system:def/relations-external#hasResource> <info:fedora/$headers.pid> ;
+    <info:fedora/fedora-system:def/model#label> ?ctLabel .
+  
+  OPTIONAL {
+    ?sitePID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ;
+      <info:fedora/fedora-system:def/model#hasModel> <info:fedora/si:ctPlotCModel> ;
+      <info:fedora/fedora-system:def/model#label> ?siteLabel .
+    ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?sitePID ;
+      <info:fedora/fedora-system:def/model#label> ?parkLabel } .
+  
+  OPTIONAL {
+    ?plotPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ;
+      <info:fedora/fedora-system:def/model#label> ?plotLabel .
+    ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ;
+      <info:fedora/fedora-system:def/model#label> ?parkLabel } .
+  
+  ?projectPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?parkPID ;
+    <info:fedora/fedora-system:def/model#label> ?projectLabel
+}

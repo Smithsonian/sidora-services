@@ -46,6 +46,7 @@
         <module>Sidora-Batch</module>
         <module>Sidora-MCI</module>
         <module>Sidora-Test-Utils</module>
+        <module>Sidora-Solr</module>
     </modules>
 
     <properties>
@@ -337,6 +338,11 @@
             <dependency>
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-script</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-solr</artifactId>
                 <version>${camel.version}</version>
             </dependency>
             <dependency>
