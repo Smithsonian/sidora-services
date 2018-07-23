@@ -368,7 +368,7 @@
 
                         <to uri="activemq:queue:{{edanIds.queue}}" id="edanIdsActiveMQ"/>
 
-                        <to uri="activemq:queue:{{sidoraSolr.queue}}" id="sidoraSolrActiveMQ"/>
+                        <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
 
                     </otherwise>
                 </choice>
