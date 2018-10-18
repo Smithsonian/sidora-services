@@ -198,6 +198,16 @@ public class BatchRequestControllerBean {
         out.setHeader("objDsLabelExtension", objDsLabelExtension);
     }
 
+    public void setObjLabel(Exchange exchange) {
+        out = exchange.getIn();
+        String fileName = out.getHeader("resourceFile", String.class);
+        fileName = FilenameUtils.getName(fileName);
+
+        String objDsLabel = fileName.substring(fileName.indexOf("_")+1, fileName.length()-1);
+
+        out.setHeader("objDsLabel", objDsLabel);
+    }
+
     /**
      * Check Status Response Codes
      * @param camelHttpResponseCode

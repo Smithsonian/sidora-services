@@ -703,6 +703,8 @@
 
             <!-- Need the Mime Type for the OBJ datastream -->
             <to uri="bean:batchRequestControllerBean?method=getMIMEType"/>
+            <!-- Use the uploaded filename for the OBJ datastream label-->
+            <to uri="bean:batchRequestControllerBean?method=setObjLabel"/>
 
             <log message="${id}: Batch Process: Found: ${header.dsMIME}"
                  loggingLevel="INFO"
@@ -718,7 +720,7 @@
                 <constant/>
             </setBody>
 
-            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.titleLabel}.${header.objDsLabelExtension}&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.objDsLabel}&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
 
             <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_obj_created)"/>
             <to uri="sql:{{sql.updateDsObjCreated}}"/>
