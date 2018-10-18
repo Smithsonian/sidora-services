@@ -78,8 +78,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
                 .logNewException(true)
-                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}")
-                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsHTTPException");
+                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
+//                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsHTTPException");
 
         onException(EdanIdsException.class)
                 .useExponentialBackOff()
@@ -89,8 +89,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
                 //.logExhausted(true)
-                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}")
-                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsException");
+                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
+//                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsException");
 
         //Retries for all exceptions after response has been sent
         onException(edu.si.services.fedorarepo.FedoraObjectNotFoundException.class)
@@ -101,8 +101,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
                 .logExhausted(true)
-                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}")
-                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}");
+                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
+//                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}");
 
 
         from("activemq:queue:{{edanIds.queue}}").routeId("EdanIdsStartProcessing")
@@ -176,19 +176,24 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setHeader("imageid").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns).id("setImageid")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: label: ${header.imageid}")
 
-                /* Let check the speciesScientificName in the deployment manifest to see if we even need to continue processing */
-                //Find the parent so we can grab the manifest
-                .to("direct:findParentObject").id("processFedoraFindParentObject")
+                //Check to see if we already have the manifest
+                .choice()
+                    .when().simple("${header.ManifestXML} == null")
+                        /* Let check the speciesScientificName in the deployment manifest to see if we even need to continue processing */
+                        //Find the parent so we can grab the manifest
+                        .to("direct:findParentObject").id("processFedoraFindParentObject")
 
-                //Grab the manifest from the parent
-                .setHeader("CamelHttpMethod").constant("GET")
-                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.parentPid}/datastreams/MANIFEST/content")
-                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+                        //Grab the manifest from the parent
+                        .setHeader("CamelHttpMethod").constant("GET")
+                        .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.parentPid}/datastreams/MANIFEST/content")
+                        .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
 
-                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetManifestDatastream")
+                        .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetManifestDatastream")
 
-                .setHeader("ManifestXML").simple("${body}", String.class)
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Manifest: ${header.ManifestXML}")
+                        .setHeader("ManifestXML").simple("${body}", String.class)
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Manifest: ${header.ManifestXML}")
+                    .endChoice()
+                .end()
 
                 //Filter out images that have speciesScientificName that are in the excluded list
                 .filter().xpath("//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.edanids.speciesScientificName.filter'), text())] != ''", "ManifestXML")
@@ -492,9 +497,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                             // edit/create the EDAN record
                             .to("direct:edanUpdate").id("ctProcessEdanUpdate")
-
-                            // add the asset and create/append the asset xml
-                            .to("direct:idsAssetUpdate").id("ctProcessIdsAssetUpdate")
                     .end()
                 .end()
 
