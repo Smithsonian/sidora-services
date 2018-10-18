@@ -203,7 +203,7 @@ public class BatchRequestControllerBean {
         String fileName = out.getHeader("resourceFile", String.class);
         fileName = FilenameUtils.getName(fileName);
 
-        String objDsLabel = fileName.substring(fileName.indexOf("_")+1, fileName.length()-1);
+        String objDsLabel = fileName.substring(fileName.indexOf("_")+1, fileName.length());
 
         out.setHeader("objDsLabel", objDsLabel);
     }
