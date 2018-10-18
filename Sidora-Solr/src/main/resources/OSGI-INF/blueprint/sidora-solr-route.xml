@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xmlns:cxf="http://cxf.apache.org/blueprint/core"
+           xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
+           xmlns:camel-cxf="http://camel.apache.org/schema/blueprint/cxf"
+           xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xsi:schemaLocation="
+         http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+         http://camel.apache.org/schema/blueprint/cxf http://camel.apache.org/schema/blueprint/cxf/camel-cxf.xsd
+         http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd
+         http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+         http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0 http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd">
+
+    <cm:property-placeholder id="sidora.karaf.solr.properties" persistent-id="edu.si.sidora.solr"
+                             update-strategy="none">
+        <cm:default-properties>
+            <cm:property name="edu.si.solr" value="edu.si.solr"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
+
+    <cxf:bus>
+        <cxf:features>
+            <cxf:logging/>
+        </cxf:features>
+    </cxf:bus>
+
+    <!-- Defined the server endpoint to create the cxf-rs consumer -->
+    <camel-cxf:rsServer id="rsServer" address="${sidora.solr.service.address}"
+                        serviceClass="edu.si.services.solr.rest.SidoraSolrService"
+                        loggingFeatureEnabled="true">
+        <camel-cxf:providers>
+            <ref component-id="jaxbProvider"/>
+            <ref component-id="jsonProvider"/>
+        </camel-cxf:providers>
+    </camel-cxf:rsServer>
+
+    <!-- Beans for the cxf-rs server -->
+    <!--<bean id="sidoraSolrService" class="edu.si.services.solr.rest.SidoraSolrService"/>-->
+    <bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+        <property name="marshallerProperties">
+            <map>
+                <entry>
+                    <key>
+                        <value>jaxb.formatted.output</value>
+                    </key>
+                    <value type="java.lang.Boolean">true</value>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="jsonProvider" class="org.apache.cxf.jaxrs.provider.json.JSONProvider"/>
+
+    <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
+    <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
+        <!--<property name="brokerURL" value="vm://localhost?broker.persistent=false&amp;broker.useJmx=false"/>-->
+        <!--<property name="brokerURL" value="tcp://localhost:61616"/>-->
+        <property name="brokerURL" value="${broker.url}"/>
+        <property name="userName" value="smx"/>
+        <property name="password" value="smx"/>
+    </bean>
+
+    <!-- Use a pooled connections for scalability -->
+    <bean id="pooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start"
+          destroy-method="stop">
+        <property name="maxConnections" value="8"/>
+        <property name="connectionFactory" ref="connectionFactory"/>
+    </bean>
+
+    <!-- Use pooled connections for JMS -->
+    <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+        <property name="connectionFactory" ref="pooledConnectionFactory"/>
+        <property name="concurrentConsumers" value="1"/>
+        <!-- When ready we can make this run more consumers. -->
+        <!-- <property name="concurrentConsumers" value="10"/> -->
+    </bean>
+
+    <!-- Use the Camel JMS Components for performance and route flexibility -->
+    <bean id="jms" class="org.apache.camel.component.jms.JmsComponent">
+        <property name="connectionFactory" ref="connectionFactory"/>
+    </bean>
+
+    <!-- Use the Camel AMQ component for performance -->
+    <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+        <property name="configuration" ref="jmsConfig"/>
+    </bean>
+
+    <!-- Header Filter Strategy to prevent all headers from being added to Fedora HTTP calls except for Authorization-->
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value="^(?!Authorization$).*$"/>
+    </bean>
+
+    <bean id="MyBatchService" class="edu.si.services.solr.MyBatchService"/>
+    <bean id="MyDocService" class="edu.si.services.solr.MyDocService"/>
+
+    <bean id="sidoraSolrRoutes" class="edu.si.services.solr.SidoraSolrRouteBuilder"/>
+
+    <!-- Provides the Camel routing setup -->
+    <camelContext id="SidoraSolrCamelContext"
+                  xmlns="http://camel.apache.org/schema/blueprint"
+                  xmlns:atom="http://www.w3.org/2005/Atom"
+                  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                  xmlns:fs="info:fedora/fedora-system:def/model#"
+                  xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/"
+                  xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
+                  xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
+                  trace="false"
+                  streamCache="true"
+                  useMDCLogging="true">
+
+        <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
+        <propertyPlaceholder id="properties"
+                             location="blueprint:sidora.karaf.solr.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.solr.cfg,file:${karaf.home}/etc/edu.si.sidora.karaf.cfg"/>
+
+        <routeBuilder ref="sidoraSolrRoutes"/>
+
+    </camelContext>
+
+</blueprint>
