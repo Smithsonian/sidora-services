@@ -32,7 +32,10 @@ import org.apache.camel.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
 
 /**
  * @author jbirkhimer
@@ -110,5 +113,54 @@ public class MyDocService {
         for(MySolrJob msj : r) {
             LOG.info("Received END {} ({} of {}): {}", aggHeader, r.indexOf(msj) + 1,r.size(), msj);
         }
+    }
+
+    public void printReindexList(Exchange exchange) throws Exception {
+        Message out = exchange.getIn();
+        List<MySolrJob> reindexBatchList = out.getHeader("reindexJobList", List.class);
+
+        List<MySolrJob> solrJobList = new ArrayList<>();
+        List<MySolrJob> sianctJobList = new ArrayList<>();
+        List<MySolrJob> inactiveSolrJobList = new ArrayList<>();
+        List<MySolrJob> inactiveSianctJobList = new ArrayList<>();
+
+        Integer inactive = 0;
+        String scianctIndex = exchange.getContext().resolvePropertyPlaceholders("{{sidora.sianct.default.index}}");
+        String solrIndex = exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.default.index}}");
+        String operationName = exchange.getIn().getHeader("operationName", String.class);
+
+        for (MySolrJob solrJob : reindexBatchList) {
+            //solrJob.setEndTime(new Date().getTime());
+            if (solrJob.index.equals(scianctIndex)) {
+                if (!solrJob.state.equalsIgnoreCase("inactive")) {
+                    sianctJobList.add(solrJob);
+                } else {
+                    inactiveSianctJobList.add(solrJob);
+                }
+            } else if (solrJob.index.equals(solrIndex)){
+                if (!solrJob.state.equalsIgnoreCase("inactive")) {
+                    solrJobList.add(solrJob);
+                } else {
+                    inactiveSolrJobList.add(solrJob);
+                }
+            }
+        }
+
+        StringBuilder body = new StringBuilder();
+        for(MySolrJob msj : reindexBatchList) {
+            if (!msj.state.equalsIgnoreCase("inactive")) {
+                body.append(operationName + " processed (" + (reindexBatchList.indexOf(msj) + 1) + " of " + reindexBatchList.size() + "): " + msj + "\n");
+            }
+        }
+        body.append("Total inactive records solr: " + inactiveSolrJobList.size() + ", Total inactive records sianct: " + inactiveSianctJobList.size() + "\n");
+        body.append("Total active records solr index: " + solrJobList.size() + ", Total active records sianct index: " + sianctJobList.size() + "\nCombined Records Indexed: " + reindexBatchList.size());
+
+        Date created = exchange.getProperty(Exchange.CREATED_TIMESTAMP, Date.class);
+        // calculate elapsed time
+        Date now = new Date();
+        long elapsed = now.getTime() - created.getTime();
+
+        body.append("\n" + operationName + " elapsed time: " + String.format("%tT", elapsed - TimeZone.getDefault().getRawOffset()));
+        out.setBody(body.toString());
     }
 }

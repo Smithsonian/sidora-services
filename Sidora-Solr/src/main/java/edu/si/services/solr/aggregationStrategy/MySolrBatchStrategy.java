@@ -74,47 +74,4 @@ public class MySolrBatchStrategy implements AggregationStrategy {
             }
         }
     }
-
-/*
-    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-        Message out = newExchange.getIn();
-
-        ArrayList<Object> pidList, originList, methodNameList, dsLabelList = null;
-
-        if (oldExchange == null) {
-            pidList = new ArrayList<Object>();
-            pidList.add(out.getBody());
-
-            originList = new ArrayList<Object>();
-            originList.add(out.getHeader("origin"));
-
-            methodNameList = new ArrayList<Object>();
-            methodNameList.add(out.getHeader("methodName"));
-
-            dsLabelList = new ArrayList<Object>();
-            dsLabelList.add(out.getHeader("dsLabel"));
-
-            newExchange.getIn().setBody(pidList);
-            newExchange.getIn().setHeader("originList", originList);
-            newExchange.getIn().setHeader("methodNameList", methodNameList);
-            newExchange.getIn().setHeader("dsLabelList", dsLabelList);
-
-            return newExchange;
-        } else {
-            pidList = oldExchange.getIn().getBody(ArrayList.class);
-            pidList.add(out.getBody());
-
-            originList = oldExchange.getIn().getHeader("originList", ArrayList.class);
-            originList.add(out.getHeader("origin"));
-
-            methodNameList = oldExchange.getIn().getHeader("methodNameList", ArrayList.class);
-            methodNameList.add(out.getHeader("methodName"));
-
-            dsLabelList = oldExchange.getIn().getHeader("dsLabelList", ArrayList.class);
-            dsLabelList.add(out.getHeader("dsLabel"));
-            return oldExchange;
-        }
-    }
-*/
-
 }

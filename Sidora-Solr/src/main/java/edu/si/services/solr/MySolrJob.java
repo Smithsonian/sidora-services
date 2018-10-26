@@ -31,7 +31,10 @@ import org.apache.camel.PropertyInject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * @author jbirkhimer
@@ -48,6 +51,10 @@ public class MySolrJob {
     String solrOperation;
     String index;
     ArrayList<String> indexes;
+    long startTime;
+    long endTime;
+    String solrdoc;
+    String solrStatus;
 
     @PropertyInject(value = "sidora.solr.default.index", defaultValue = "gsearch_solr")
     private static String DEFAULT_SOLR_INDEX;
@@ -55,6 +62,8 @@ public class MySolrJob {
 
     public MySolrJob() {
         this.indexes = new ArrayList<>();
+        this.startTime = new Date().getTime();
+
     }
 
     public MySolrJob(String pid, String origin, String methodName, String dsLabel) {
@@ -146,9 +155,45 @@ public class MySolrJob {
         this.indexes = indexes;
     }
 
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(long endTime) {
+        this.endTime = endTime;
+    }
+
+    public long getElapsed() {
+        return (endTime - startTime);
+    }
+
+    public String getSolrdoc() {
+        return solrdoc;
+    }
+
+    public void setSolrdoc(String solrdoc) {
+        this.solrdoc = solrdoc;
+    }
+
+    public String getSolrStatus() {
+        return solrStatus;
+    }
+
+    public void setSolrStatus(String solrStatus) {
+        this.solrStatus = solrStatus;
+    }
+
     @Override
     public String toString() {
-        return "MySolrJob{" +
+        return "SolrJob{" +
                 "pid='" + pid + '\'' +
                 ", origin='" + origin + '\'' +
                 ", methodName='" + methodName + '\'' +
@@ -157,6 +202,11 @@ public class MySolrJob {
                 ", solrOperation='" + solrOperation + '\'' +
                 ", index='" + index + '\'' +
                 ", indexes=" + indexes +
+                ", startTime=" + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date(startTime)) +
+                ", endTime=" + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date(endTime)) +
+                ", elapsed=" + String.format("%tT", getElapsed() - TimeZone.getDefault().getRawOffset()) +
+                ", solrDoc=" + solrdoc +
+                ", solrStatus=" + solrStatus +
                 '}';
     }
 }

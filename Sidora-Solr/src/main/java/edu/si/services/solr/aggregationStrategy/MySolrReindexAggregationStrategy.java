@@ -33,46 +33,48 @@ import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This is our own solr batch aggregation strategy where we can control
- * how each splitted message should be combined. As we do not want to
- * loose any message we copy from the new to the old to preserve the
- * doc lines as long we process them
- *
  * @author jbirkhimer
  */
-public class MySolrUpdateStrategy implements AggregationStrategy {
+public class MySolrReindexAggregationStrategy implements AggregationStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MySolrUpdateStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MySolrBatchStrategy.class);
 
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-        // put solr doc together in old exchange by adding the doc from new exchange
-        List<MySolrJob> batchJobsList = null;
+
+        List<MySolrJob> reindexJobList = null;
+        MySolrJob reindex_sianct = newExchange.getIn().getHeader("reindex_sianct", MySolrJob.class);
+        MySolrJob reindex_solr = newExchange.getIn().getHeader("reindex_solr", MySolrJob.class);
 
         if (oldExchange == null) {
-            // the first time we aggregate we only have the new exchange,
-            // so we just return it
+            reindexJobList = newExchange.getIn().getHeader("reindexJobList", List.class);
 
-            //add solr doc to the job
-            batchJobsList = newExchange.getIn().getHeader("batchJobs", List.class);
-            MySolrJob solrJob = newExchange.getIn().getHeader("solrJob", MySolrJob.class);
-            batchJobsList.get(batchJobsList.indexOf(solrJob)).setSolrdoc(newExchange.getIn().getBody(String.class));
+            if (reindexJobList == null) {
+                reindexJobList = new ArrayList<>();
+                newExchange.getIn().setHeader("reindexJobList", reindexJobList);
+            }
+
+            if (reindex_sianct != null) {
+                reindexJobList.add(reindex_sianct);
+            }
+            if (reindex_solr != null) {
+                reindexJobList.add(reindex_solr);
+            }
 
             return newExchange;
+        } else {
+            reindexJobList = oldExchange.getIn().getHeader("reindexJobList", List.class);
+
+            if (reindex_sianct != null) {
+                reindexJobList.add(reindex_sianct);
+            }
+            if (reindex_solr != null) {
+                reindexJobList.add(reindex_solr);
+            }
+            return oldExchange;
         }
-
-        //add solr doc to the job
-        batchJobsList = oldExchange.getIn().getHeader("batchJobs", List.class);
-        MySolrJob solrJob = newExchange.getIn().getHeader("solrJob", MySolrJob.class);
-        batchJobsList.get(batchJobsList.indexOf(solrJob)).setSolrdoc(newExchange.getIn().getBody(String.class));
-
-        String docs = oldExchange.getIn().getBody(String.class);
-        String newDoc = newExchange.getIn().getBody(String.class);
-
-        oldExchange.getIn().setBody(docs + "\n" + newDoc);
-
-        return oldExchange;
     }
 }

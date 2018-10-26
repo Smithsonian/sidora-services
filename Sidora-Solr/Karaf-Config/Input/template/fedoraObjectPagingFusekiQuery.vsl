@@ -1,0 +1,12 @@
+SELECT ?pid ?label ?ownerId ?state
+FROM <info:edu.si.fedora#ri>
+WHERE {
+?pid
+<info:fedora/fedora-system:def/model#label> ?label;
+<info:fedora/fedora-system:def/model#ownerId> ?ownerId;
+<info:fedora/fedora-system:def/model#state> ?state;
+
+}
+ORDER BY ?pid
+LIMIT $camelContext.resolvePropertyPlaceholders('{{sidora.solr.fuseki.limit}}')
+OFFSET $headers.offset

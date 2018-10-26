@@ -27,20 +27,47 @@
 
 package edu.si.services.solr;
 
-import edu.si.services.solr.aggregationStrategy.MySolrUpdateStrategy;
 import edu.si.services.solr.aggregationStrategy.MySolrBatchStrategy;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
-import org.apache.camel.PropertyInject;
+import edu.si.services.solr.aggregationStrategy.MySolrReindexAggregationStrategy;
+import edu.si.services.solr.aggregationStrategy.MySolrUpdateStrategy;
+import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
-import org.apache.camel.component.solr.SolrConstants;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.DirectXmlRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Base64;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
+import java.io.*;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /**
  * @author jbirkhimer
@@ -58,9 +85,9 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "si.fedora.password")
     private String fedoraPasword;
 
-    @PropertyInject(value = "sidora.solr.batch.size", defaultValue ="3")
+    @PropertyInject(value = "sidora.solr.batch.size", defaultValue ="1000")
     private String BATCH_SIZE;
-    @PropertyInject(value = "sidora.solr.batch.completionTimeout", defaultValue = "2000")
+    @PropertyInject(value = "sidora.solr.batch.completionTimeout", defaultValue = "300000")
     private String COMPLETION_TIMEOUT;
     @PropertyInject(value = "sidora.solr.createDoc.parallelProcessing", defaultValue = "true")
     private String PARALLEL_PROCESSING;
@@ -78,25 +105,49 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "sidora.sianct.default.index", defaultValue = "gsearch_sianct")
     private static String DEFAULT_SIANCT_INDEX;
 
+    /*public Predicate stopLoopPredicate() {
+        Predicate stopLoop = new Predicate() {
+            @Override
+            public boolean matches(Exchange exchange) {
+                return exchange.getIn().getHeader("offset") == null || !(exchange.getIn().getHeader("offset", Integer.class) >= exchange.getIn().getHeader("pidCount", Integer.class));
+            }
+        };
+        return stopLoop;
+    }*/
+
+    public Processor offsetLoopProcessor() {
+        Processor offset = new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                Integer offset = (Integer) exchange.getIn().getHeader("offset");
+                Integer limit = Integer.valueOf(exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.fuseki.limit}}"));
+                if (offset == null) {
+                    offset = 0;
+                } else {
+                    offset += limit;
+                }
+                exchange.getIn().setHeader("offset", offset);
+            }
+        };
+        return offset;
+    }
+
     @Override
     public void configure() throws Exception {
         errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
                 //.useOriginalMessage()
-//                .maximumRedeliveries(Integer.parseInt(redeliveryDelay))
-//                .redeliveryDelay(Integer.parseInt(maximumRedeliveries))
-//                .backOffMultiplier(Integer.parseInt(backOffMultiplier))
-                        .maximumRedeliveries(5)
-                        .redeliveryDelay(0)
-                        .backOffMultiplier(2)
+                .maximumRedeliveries(Integer.parseInt(redeliveryDelay))
+                .redeliveryDelay(Integer.parseInt(maximumRedeliveries))
+                .backOffMultiplier(Integer.parseInt(backOffMultiplier))
                 .useExponentialBackOff()
-                .retryAttemptedLogLevel(LoggingLevel.ERROR)
-                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .logRetryStackTrace(true)
+                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
                 .logExhausted(true)
                 .logExhaustedMessageHistory(true)
-                .logRetryStackTrace(true)
-                .log("${routeId} ERROR_HANDLER Body:${body}")
-        );
+                .logStackTrace(true)
+                .logHandled(true)
+                .log("${routeId} **** ERROR_HANDLER **** FAILURE_ROUTE_ID=${header.CamelFailureRouteId}, FAILURE_ENDPOINT=${header.CamelFailureEndpoint}, TO_ENDPOINT=${header.CamelToEndpoint}"));
 
         Namespaces ns = new Namespaces("atom", "http://www.w3.org/2005/Atom");
         ns.add("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
@@ -120,25 +171,150 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
         from("direct:solrRequest").routeId("SidoraSolrRequest")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Request: Starting processing ...")
-
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: SidoraSolr: Request: PID = ${header.pid}, Index = ${header.solrIndex}, Solr Operation = ${header.solrOperation}")
-
+                .setBody().simple("Hello World From Sidora Solr [ path = ${header.operationName} ]: pid = ${header.pid}, solrIndex = ${header.solrIndex}, solrOperation = ${header.solrOperation}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Request: Finished processing ...");
 
-        from("direct:setFedoraAuth").routeId("SidoraSolrSetFedoraAuth")
-                //Set the Authorization header for Fedora HTTP calls
-                .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} SidoraSolr: Fedora Authorization: ${header.Authorization}");
+        from("direct:solrDeleteAll").routeId("solrDeleteAll")
+                .filter().groovy("request.headers.auth != camelContext.resolvePropertyPlaceholders('{{si.fedora.password}}')")
+                    .setBody().simple("You Are Not Authorized To Preform This Operation!!!")
+                    .stop()
+                .end()
 
-        from("activemq:queue:{{sidoraCTSolr.queue}}").routeId("cameraTrapJob")
+                .setHeader("solrQuery").simple("<update><delete><query>*:*</query></delete></update>")
+
+                .filter().simple("${header.gsearch_sianct} == 'true'")
+                    .setHeader("solrIndex").simple("{{sidora.sianct.default.index}}")
+                    .setBody().simple("${header.solrQuery}")
+                    .log(LoggingLevel.DEBUG, "Delete from {{sidora.sianct.default.index}}. BODY = ${body}")
+                    .to("direct:solr")
+                    .setHeader("solrResponse").simple("Delete All from {{sidora.sianct.default.index}}\nResponse:\n${body}")
+                .end()
+
+                .filter().simple("${header.gsearch_solr} == 'true'")
+                    .setHeader("solrIndex").simple("{{sidora.solr.default.index}}")
+                    .setBody().simple("${header.solrQuery}")
+                    .log(LoggingLevel.DEBUG, "Delete from {{sidora.solr.default.index}}. BODY = ${body}")
+                    .to("direct:solr")
+                    .setHeader("solrResponse").simple("${header.solrResponse}\nDelete All from {{sidora.solr.default.index}}\nResponse:\n${body}")
+                .end()
+                .setBody().simple("${header.solrResponse}");
+
+        from("direct:solrDeleteByQuery").routeId("solrDeleteByQuery")
+                .filter().groovy("request.headers.auth != camelContext.resolvePropertyPlaceholders('{{si.fedora.password}}')")
+                    .setBody().simple("You Are Not Authorized To Preform This Operation!!!")
+                    .stop()
+                .end()
+
+                .setHeader("solrQuery").simple("<update><delete><query>${header.query}</query></delete></update>")
+
+                .filter().simple("${header.gsearch_sianct} == 'true'")
+                    .setHeader("solrIndex").simple("{{sidora.sianct.default.index}}")
+                    .setBody().simple("${header.solrQuery}")
+                    .log(LoggingLevel.DEBUG, "Delete from {{sidora.sianct.default.index}}. BODY = ${body}")
+                    .to("direct:solr")
+                    .setHeader("solrResponse").simple("Delete from {{sidora.sianct.default.index}}\nQuery:\n${header.query}\nResponse:\n${body}")
+                .end()
+
+                .filter().simple("${header.gsearch_solr} == 'true'")
+                    .setHeader("solrIndex").simple("{{sidora.solr.default.index}}")
+                    .setBody().simple("${header.solrQuery}")
+                    .log(LoggingLevel.DEBUG, "Delete from {{sidora.solr.default.index}}. BODY = ${body}")
+                    .to("direct:solr")
+                    .setBody().simple("${header.solrResponse}\nDelete from {{sidora.solr.default.index}}\nQuery:\n${header.query}\nResponse:\n${body}")
+                .end();
+
+        from("direct:solrReindexAll").routeId("solrReindexAll")
+                .filter().groovy("request.headers.auth != camelContext.resolvePropertyPlaceholders('{{si.fedora.password}}')")
+                    .setBody().simple("You Are Not Authorized To Preform This Operation!!!")
+                    .stop()
+                .end()
+
+                //get count for pagination
+                .to("velocity:file:{{karaf.home}}/Input/template/fedoraObjectCountFusekiQuery.vsl")
+                .to("direct:sianctFusekiQuery").id("reindexAllCountFusekiQuery")
+
+                .setHeader("pidCount").xpath("//ri:binding[@name = 'total']/ri:literal/text()", Integer.class, ns).id("getPidCount")
+                .log(LoggingLevel.INFO, "pidCount = ${header.pidCount}")
+                .setHeader("reindexCount").simple("0", Integer.class)
+
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        Message out = exchange.getIn();
+                        Integer pidCount = out.getHeader("pidCount", Integer.class);
+                        Integer limit = Integer.valueOf(exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.fuseki.limit}}"));
+                        Integer totalBatch = (pidCount + limit - 1) / limit;
+                        out.setHeader("totalBatch", totalBatch);
+                    }
+                })
+
+                //pagging over pids from fuseki using offset and limit
+                //.loopDoWhile(stopLoopPredicate()) //TODO: only in camel 2.17 and up :(
+                .loop().simple("${header.totalBatch}")
+                    .process(offsetLoopProcessor())
+
+                    .to("velocity:file:{{karaf.home}}/Input/template/fedoraObjectPagingFusekiQuery.vsl")
+                    .to("direct:sianctFusekiQuery").id("reindexAllPagingFusekiQuery")
+
+                    .setHeader("resultSize").xpath("count(//ri:binding[@name = 'pid'])", Integer.class, ns)
+                    .log(LoggingLevel.DEBUG, "resultCount =  ${header.resultSize}")
+
+                    .split().tokenizeXML("result")
+                        .streaming()
+                        .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
+                        .aggregationStrategy(new MySolrReindexAggregationStrategy())
+
+                        .log(LoggingLevel.DEBUG, "${routeId} Split Body:\n${body}")
+
+                        .setHeader("pid").xpath("substring-after(//binding[@name = 'pid']/uri , 'info:fedora/')", String.class, ns)
+                        .setHeader("origin").xpath("//binding[@name = 'ownerId']/literal", String.class, ns)
+                        .setHeader("dsLabel").xpath("//binding[@name = 'label']/literal", String.class, ns)
+                        .setHeader("state").xpath("substring-after(//binding[@name = 'state']/uri , 'info:fedora/fedora-system:def/model#')", String.class, ns)
+                        .setHeader("methodName").simple("${header.operationName}")
+
+                        .log(LoggingLevel.INFO, "${routeId} :: REINDEX [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel}, ${header.state} ]")
+
+                        .filter().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations' && ${header.gsearch_sianct} == 'true'")
+                            .log(LoggingLevel.DEBUG, "${routeId} :: **** FOUND OBSERVATION ****")
+                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
+                            //header is used for http response only
+                            .setHeader("reindex_sianct").simple("${header.solrJob}")
+                            .to("seda:createBatchJob?waitForTaskToComplete=Never")
+                        .end()//end filter
+
+                        .filter().simple("${header.gsearch_solr} == 'true'")
+                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            .setHeader("reindex_solr").simple("${header.solrJob}")
+                            .to("seda:createBatchJob?waitForTaskToComplete=Never")
+                        .end()//end filter
+                        .log(LoggingLevel.INFO, "Processing batch ( ${header.CamelLoopIndex}++ of ${header.totalBatch} ), adding: ${header.CamelSplitIndex}++ of ${header.resultSize} from batch")
+                    .end().id("reindexAllSplitEnd")//end split
+
+                    .removeHeaders("reindex_sianct|reindex_solr")
+                    .process(new Processor() {
+                        @Override
+                        public void process(Exchange exchange) throws Exception {
+                            Message out = exchange.getIn();
+                            out.setHeader("reindexCount", out.getHeader("reindexCount", Integer.class) + out.getHeader("resultSize", Integer.class));
+                        }
+                    })
+                    .log(LoggingLevel.INFO, "Reindex Processed batch ( ${header.CamelLoopIndex}++ of ${header.totalBatch} ), pids added: ( ${header.reindexCount} of ${header.pidCount} )")
+                .end().id("reindexAllLoopEnd")//end loop
+
+                .setHeader(Exchange.CONTENT_TYPE, constant("text/xml"))
+                .to("bean:MyDocService?method=printReindexList").id("printReindexJobs")
+                .removeHeaders("*");
+
+        from("activemq:queue:{{sidoraCTSolr.queue}}").routeId("cameraTrapSolrJob")
+                .log(LoggingLevel.DEBUG, "${routeId} :: <<<<<<<<<<<<<<<<<<<<<<<[0] RECEIVED >>>>>>>>>>>>>>>>>>>>>\nHeaders:\n${headers}\nBody:${body}")
                 .log(LoggingLevel.DEBUG, "${routeId} :: [0] RECEIVED Headers:\n${headers}")
                 .log(LoggingLevel.DEBUG, "${routeId} :: [0] RECEIVED PIDAggregation: ${header.PIDAggregation}")
-//.stop()
 
                 .split().tokenize(",", "PIDAggregation")
                     .setHeader("pid").simple("${body}")
 
-                    .toD("{{si.fedora.host}}/objects?pid=true&label=true&state=true&ownerId=true&terms=&query=pid~${header.pid}&resultFormat=xml&headerFilterStrategy=#dropHeadersStrategy").id("cameraTrapJobFedoraCall")
+                .toD("{{si.fedora.host}}/objects?pid=true&label=true&state=true&ownerId=true&query=pid~${header.pid}&resultFormat=xml&headerFilterStrategy=#dropHeadersStrategy").id("cameraTrapJobFedoraCall")
                     .convertBodyTo(String.class)
 
                     //TODO: check the response
@@ -158,12 +334,12 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.DEBUG, "${routeId} :: [2] Send to createBatchJob:\n${header.solrJob}")
                         .to("seda:createBatchJob")
                     .end()
-//.stop()
+
                     .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
                     .log(LoggingLevel.DEBUG, "${routeId} :: [3] Send to createBatchJob:\n${header.solrJob}")
                     .to("seda:createBatchJob");
 
-        from("activemq:queue:{{solr.apim.update.queue}}").routeId("start")
+        from("activemq:queue:{{solr.apim.update.queue}}").routeId("fedoraApimUpdateSolrJob")
                 .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
                 .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
                 .setBody().simple("${header.pid}")
@@ -181,7 +357,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                         // Set the index we are operating and operation
                         .choice()
-                            .when().simple("${header.methodName} == 'purgeDatastream' && ${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
+                            .when().simple("${header.methodName} in 'purge,purgeObject,purgeDatastream' && ${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
                                 .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.sianct.default.index}})")
                                 .to("seda:createBatchJob")
                                 // Also create job for gsearch_solr
@@ -195,7 +371,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                                 .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
                                 .to("seda:createBatchJob")
                             .endChoice()
-                            .when().simple("${header.methodName} == 'purgeDatastream'")
+                            .when().simple("${header.methodName} in 'purgeObject,purgeDatastream' || ${header.methodName} contains 'purge'")
                                 .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.solr.default.index}})")
                                 .to("seda:createBatchJob")
                             .endChoice()
@@ -205,10 +381,9 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                             .endChoice()
                         .end();
 
-        from("seda:createBatchJob").routeId("createBatchJob")
+        from("seda:createBatchJob").routeId("createBatchSolrJob")
                 .log(LoggingLevel.DEBUG, "***************************************************************************************")
                 .log(LoggingLevel.DEBUG, "${routeId} [0] :: Received Job:\n${header.solrJob}\n")
-//.stop()
 
                 .setHeader("batch").simple("jobsCreated")
                 .to("seda:storeReceived?waitForTaskToComplete=Never")
@@ -216,17 +391,29 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 //Aggregate based on solr operations (add/update/delete) and index (gsearch_solr/gsearch_sianct)
                 .aggregate(simple("${header.solrJob.index}"), new MySolrBatchStrategy()).completionSize(Integer.parseInt(BATCH_SIZE)).completionTimeout(Integer.parseInt(COMPLETION_TIMEOUT))
 
-                    .log(LoggingLevel.INFO, "#######################################[ startBatchJob (size = ${header.batchJobs.size} | solrIndex = ${header.solrIndex}) ]################################################\n${header.batchJobs}")
+                    .log(LoggingLevel.DEBUG, "#######################################[ startBatchJob (size = ${header.batchJobs.size} | solrIndex = ${header.solrIndex}) ]################################################\n${header.batchJobs}")
 
                     .to("direct:createDoc")
-//.stop()
 
-                    .setBody().simple("<update>\n<commit>\n${body}\n</commit>\n</update>")
+                    .setBody().simple("<update>\n<commit>\n<add>\n${body}\n</add>\n</commit>\n</update>")
                     .log(LoggingLevel.DEBUG, "BuildCombinedResponse:\n${body}")
-//.stop()
-                    .to("direct:solr");
 
-        from("direct:createDoc").routeId("createDoc")
+                    .to("direct:solr")
+
+                    //Set end time and solr status for jobs
+                    .process(new Processor() {
+                        @Override
+                        public void process(Exchange exchange) throws Exception {
+                            Message out = exchange.getIn();
+                            List<MySolrJob> batchJobsList = out.getHeader("batchJobs", List.class);
+                            for (int i = 0; i < batchJobsList.size(); i++) {
+                                batchJobsList.get(i).setEndTime(new Date().getTime());
+                                batchJobsList.get(i).setSolrStatus(out.getBody(String.class));
+                            }
+                        }
+                    });
+
+        from("direct:createDoc").routeId("createSolrDoc")
                 .log(LoggingLevel.DEBUG, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@[ Start createDoc (size = ${header.batchJobs.size}) ]@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
                 .log(LoggingLevel.DEBUG, "${routeId} :: Start createDoc (size = ${header.batchJobs.size}):\nbatchJobs: ${header.batchJobs}\n Body: ${body}")
 
@@ -241,97 +428,342 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         }
                     })
 
+                    .setHeader("solrJob").simple("${body}")
+
                     .setHeader("jobInfo").simple("[ ${header.count} of ${header.batchJobs.size} ] ( operation = ${body.solrOperation}, index = ${body.index} )")
                     .log(LoggingLevel.DEBUG, "++++++++++++++++++++++++++++++++++++++++[ ${header.jobInfo} ]+++++++++++++++++++++++++++++++++++++++++++")
                     .log(LoggingLevel.DEBUG, "${routeId} :: Start createDoc ${header.jobInfo}")
                     .setHeader("jobInfo").simple("${header.jobInfo} pid=${body.pid}, origin=${body.origin}, methodName=${body.methodName}, dsLabel=${body.dsLabel}")
-//.stop()
+
                         .choice()
                             .when().simple("${body.solrOperation} == 'delete'")
-                                .log(LoggingLevel.INFO, "${routeId} :: Found *** DELETE *** ${header.jobInfo}")
+                                .log(LoggingLevel.DEBUG, "${routeId} :: Found *** DELETE *** ${header.jobInfo}")
                                 .setBody().simple("<delete>${body.pid}</delete>")
-                                .endChoice()
+                            .endChoice()
 
                             .when().simple("${body.index} == '{{sidora.sianct.default.index}}'")
-                                .log(LoggingLevel.INFO, "${routeId} :: Found *** SIANCT *** ${header.jobInfo}")
+                                .log(LoggingLevel.DEBUG, "${routeId} :: Found *** SIANCT *** ${header.jobInfo}")
 
                                 .setHeader("pid").simple("${body.pid}", String.class)
                                 .setHeader("state").simple("${body.state}")
 
-                                /* ****** We will lose the MySolrJob object in the body here ****** */
-                                .to("direct:setFusekiQuery").id("fusekiQuery")
+                                .to("velocity:file:{{karaf.home}}/Input/template/gsearch_sianct-sparql.vsl")
+                                .to("direct:sianctFusekiQuery").id("createDocFusekiQuery")
 
                                 .log(LoggingLevel.DEBUG, "Send to XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
                                 .to("xslt:file:{{karaf.home}}/Input/xslt/batch_CT_foxml-to-gsearch_sianct.xslt").id("foxmlToGsearchSianctXSLT")
 
                                 .log(LoggingLevel.DEBUG, "XSLT Body:\n${body}")
-
-                                .setBody().simple("<add>\n${body}</add>")
                             .endChoice()
 
                             .otherwise()
-                                .log(LoggingLevel.INFO, "${routeId} :: Found *** SOLR ONLY *** ${header.jobInfo}")
+                                .log(LoggingLevel.DEBUG, "${routeId} :: Found *** SOLR ONLY *** ${header.jobInfo}")
                                 .setHeader("pid").simple("${body.pid}", String.class)
 
+                                /**
+                                 * fetch foxml using camel http component
+                                 * (NOTE: causes ConcurrentModificationException b/c the camel component is iterating over headers)
+                                 */
+                                /*.removeHeaders("CamelHttp*")
                                 .setHeader("CamelHttpMethod", constant("GET"))
+                                .setHeader("CamelHttpQuery").simple("context=public&format=info:fedora/fedora-system:FOXML-1.1")
                                 .setBody().simple("")
 
-                                .toD("http://localhost:8080/fedora/objects/${header.pid}/export?context=public&format=info:fedora/fedora-system:FOXML-1.1&authMethod=Basic&authUsername={{si.fedora.user}}&authPassword={{si.fedora.password}}&headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
+                                .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
+
+                                //.toD("{{si.fedora.host}}/objects/${header.pid}/export?copyHeaders=false&mapHttpMessageHeaders=false&headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
+                                //.toD("http4://localhost:8080/fedora/objects/${header.pid}/export?copyHeaders=false&mapHttpMessageHeaders=false&headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
+                                //.toD("jetty://localhost:8080/fedora/objects/${header.pid}/export?copyHeaders=false&mapHttpMessageHeaders=false&headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
+                                //.toD("fcrepo:objects/${header.pid}/export?context=public&format=info:fedora/fedora-system:FOXML-1.1").id("getFoxml")*/
+
+                                /**
+                                 * fetch foxml using HTTPClient
+                                 */
+                                .process(new Processor() {
+                                    @Override
+                                    public void process(Exchange exchange) throws Exception {
+                                        Message out = exchange.getIn();
+                                        String pid = out.getHeader("pid", String.class);
+                                        String fedoraHost = exchange.getContext().resolvePropertyPlaceholders("{{si.fedora.host}}");
+
+                                        CloseableHttpClient client = HttpClientBuilder.create().build();
+
+                                        URI uri = new URIBuilder(fedoraHost + "/objects/" + pid + "/export")
+                                                .setParameter("context", "public")
+                                                .setParameter("format", "info:fedora/fedora-system:FOXML-1.1")
+                                                .build();
+
+                                        HttpGet httpget = new HttpGet(uri);
+                                        httpget.setHeader(Exchange.CONTENT_TYPE, "text/xml");
+                                        httpget.setHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")));
+
+                                        LOG.debug("httpget uri: {}", httpget.getURI());
+
+                                        try (CloseableHttpResponse response = client.execute(httpget)) {
+                                            HttpEntity entity = response.getEntity();
+
+                                            LOG.debug("CloseableHttpResponse response.toString(): {}", response.toString());
+
+                                            Integer responseCode = response.getStatusLine().getStatusCode();
+                                            String statusLine = response.getStatusLine().getReasonPhrase();
+                                            String entityResponse = EntityUtils.toString(entity, "UTF-8");
+
+                                            //set the response
+                                            out.setBody(entityResponse);
+                                            LOG.debug("Fedora response Body: {}", entityResponse);
+
+                                            //copy response headers to camel
+                                            org.apache.http.Header[] headers = response.getAllHeaders();
+                                            LOG.debug("Fedora response Headers: {}", Arrays.toString(headers));
+
+                                            out.setHeader(Exchange.HTTP_RESPONSE_CODE, responseCode);
+                                            out.setHeader(Exchange.HTTP_RESPONSE_TEXT, statusLine);
+
+                                            if (responseCode != 200) {
+                                                LOG.error("Fedora response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                                                LOG.error("Fedora response entity: {}", entityResponse);
+                                            } else {
+                                                LOG.debug("Fedora response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                                            }
+                                        } catch (Exception e) {
+                                            throw new Exception("HTTP error sending request", e);
+                                        }
+                                        client.close();
+                                    }
+                                }).id("getFoxml")
 
                                 .log(LoggingLevel.DEBUG, "Send to batch_foxml-to-gsearch_solr XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
                                 .to("xslt:file:{{karaf.home}}/Input/xslt/batch_foxml-to-gsearch_solr.xslt").id("foxmlToGsearchSolrXSLT")
 
                                 .log(LoggingLevel.DEBUG, "batch_foxml-to-gsearch_solr output:\n${body}")
-
-                                .setBody().simple("<add>\n${body}</add>")
                             .endChoice()
-                        .end().id("createDocEndSplit")
-                    .end();
+                        .end().id("createDocEndChoice")
+                .end().id("createDocEndSplit");
 
-        from("direct:setFusekiQuery").routeId("setFusekiQuery")
-
-                .to("velocity:file:{{karaf.home}}/Input/template/gsearch_sianct-sparql.vsl")
-
+        from("direct:sianctFusekiQuery").routeId("sianctFusekiQuery")
                 .log(LoggingLevel.DEBUG, "${routeId} :: Fuseki Query - ${body}")
 
-                .setBody().groovy("\"query=\" + URLEncoder.encode(request.getBody(String.class));")
-
+                //TODO: Watch for ConcurrentModificationException may need to use HTTPClient instead
+                /*.setBody().groovy("\"query=\" + URLEncoder.encode(request.getBody(String.class));")
                 .log(LoggingLevel.DEBUG, "${routeId} :: Fuseki Query - ${body}\nHeaders:\n${headers}")
-//.stop()
+
+                .removeHeaders("CamelHttp*")
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .setHeader("CamelHttpQuery").simple("output=xml&${body}")
+                .toD("{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy").id("fusekiCall")
+                .convertBodyTo(String.class)*/
 
-                .toD("{{si.fuseki.endpoint}}?headerFilterStrategy=#dropHeadersStrategy")
-                .convertBodyTo(String.class)
+                /**
+                 * fetch foxml using HTTPClient
+                 */
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        Message out = exchange.getIn();
+                        String pid = out.getHeader("pid", String.class);
+                        String body = out.getBody(String.class);
+                        String fusekiHost = exchange.getContext().resolvePropertyPlaceholders("{{si.fuseki.endpoint}}");
+
+                        CloseableHttpClient client = HttpClientBuilder.create().build();
+
+                        URI uri = new URIBuilder(fusekiHost)
+                                //.setParameter("query", URLEncoder.encode(body, "UTF-8"))
+                                .setParameter("query", body)
+                                .setParameter("output", "xml")
+                                .build();
+
+                        HttpGet httpget = new HttpGet(uri);
+
+                        LOG.debug("httpget uri: {}", httpget.getURI());
+
+                        try (CloseableHttpResponse response = client.execute(httpget)) {
+                            HttpEntity entity = response.getEntity();
+
+                            LOG.debug("CloseableHttpResponse response.toString(): {}", response.toString());
+
+                            Integer responseCode = response.getStatusLine().getStatusCode();
+                            String statusLine = response.getStatusLine().getReasonPhrase();
+                            String entityResponse = EntityUtils.toString(entity, "UTF-8");
+
+                            //set the response
+                            out.setBody(entityResponse);
+                            LOG.debug("Fuseki response Body: {}", entityResponse);
+
+                            //copy response headers to camel
+                            org.apache.http.Header[] headers = response.getAllHeaders();
+                            LOG.debug("Fuseki response Headers: {}", Arrays.toString(headers));
+
+                            out.setHeader(Exchange.HTTP_RESPONSE_CODE, responseCode);
+                            out.setHeader(Exchange.HTTP_RESPONSE_TEXT, statusLine);
+
+                            if (responseCode != 200) {
+                                LOG.error("Fuseki response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                                LOG.error("Fuseki response entity: {}", entityResponse);
+                            } else {
+                                LOG.debug("Fuseki response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                            }
+                        } catch (Exception e) {
+                            throw new Exception("HTTP error sending Fuseki request", e);
+                        }
+                        client.close();
+                    }
+                }).id("fusekiCall")
                 //TODO: check the response
 
                 .log(LoggingLevel.DEBUG, "${routeId} :: Fuseki Response - ${body}");
 
-        from("direct:solr").routeId("solr")
+        from("direct:solr").routeId("sidoraSolrUpdate")
                 .log(LoggingLevel.DEBUG, "${routeId} :: Send Batch to (solrIndex = ${header.solrIndex}) for batch (size = ${header.batchJobs.size}) [ batchJobs: ${header.batchJobs} ]\n${body}")
 
+                /**
+                 * solr update using camel http component
+                 * (NOTE: causes ConcurrentModificationException b/c the camel component is iterating over headers)
+                 */
+                /*.removeHeaders("CamelHttp*")
+                .removeHeader("CamelHttpQuery")
                 .setHeader("CamelHttpMethod", constant("POST"))
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/xml"))
+                .toD("{{sidora.solr.endpoint}}/${header.solrIndex}/update?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=true").id("sendToSolr")*/
 
-                .toD("{{sidora.solr.endpoint}}/${header.solrIndex}/update?headerFilterStrategy=#dropHeadersStrategy").id("sendToSolr")
+                /**
+                 * solr update via HTTPClient
+                 */
+                /*.process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        Message out = exchange.getIn();
+                        String solrIndex = out.getHeader("solrIndex", String.class);
+                        String solrHost = exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.endpoint}}");
+
+                        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+
+                            URIBuilder builder = new URIBuilder(solrHost + "/" + solrIndex + "/update");
+                            URI uri = builder.build();
+
+                            HttpPost httpPost = new HttpPost(uri);
+                            httpPost.setHeader(Exchange.CONTENT_TYPE, "text/xml");
+                            //pass the body string request in the entity
+                            HttpEntity entity = new ByteArrayEntity(out.getBody(String.class).getBytes("UTF-8"));
+                            httpPost.setEntity(entity);
+
+
+                            LOG.debug("httpget uri: {}", httpPost.getURI());
+
+                            try (CloseableHttpResponse response = client.execute(httpPost)) {
+                                HttpEntity responseEntity = response.getEntity();
+
+                                LOG.debug("CloseableHttpResponse response.toString(): {}", response.toString());
+
+                                Integer responseCode = response.getStatusLine().getStatusCode();
+                                String statusLine = response.getStatusLine().getReasonPhrase();
+                                String entityResponse = EntityUtils.toString(responseEntity, "UTF-8");
+
+                                //set the response
+                                out.setBody(entityResponse);
+                                LOG.info("Solr response Body: {}", entityResponse);
+
+                                //copy response headers to camel
+                                Header[] headers = response.getAllHeaders();
+                                LOG.info("Solr response Headers: {}", Arrays.toString(headers));
+
+                                out.setHeader(Exchange.HTTP_RESPONSE_CODE, responseCode);
+                                out.setHeader(Exchange.HTTP_RESPONSE_TEXT, statusLine);
+
+                                if (responseCode != 200) {
+                                    LOG.info("Solr response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                                    LOG.error("Solr response entity: {}", entityResponse);
+                                } else {
+                                    LOG.info("Solr response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                                }
+                            } catch (Exception e) {
+                                throw new Exception("HTTP error sending request", e);
+                            }
+                        } catch (Exception e) {
+
+                        }
+                    }
+                }).id("sendToSolr")*/
+
+                /**
+                 * solr update via Solrj with rollback on fail
+                 */
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        Message out = exchange.getIn();
+                        String solrIndex = out.getHeader("solrIndex", String.class);
+                        String solrHost = exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.endpoint}}");
+                        String body = out.getBody(String.class);
+
+                        //Solrj method 1
+                        /*try (SolrClient client = new HttpSolrClient.Builder(solrHost + "/" + solrIndex).build()) {
+                            ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
+                            req.addContentStream(new ContentStreamBase.StringStream(body, "application/xml"));
+                            //req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+
+                            NamedList<Object> result = client.request(req);
+                            LOG.info("Result: " + result);
+                            Integer statusCode = (Integer)((NamedList)result.get("responseHeader")).get("solrStatus");
+                            if (statusCode == 0) {
+                                LOG.info("Successful index");
+                                client.commit();
+                            } else {`
+                                client.rollback();
+                                throw new Exception("Failed:\n"+result);
+                            }
+                            out.setBody(result);
+                        } catch (Exception e) {
+                            throw new Exception("Failed!!!!!");
+                        }*/
+
+
+                        //Solrj method 2
+                        try (SolrClient client = new HttpSolrClient.Builder(solrHost + "/" + solrIndex).build()) {
+                            DirectXmlRequest dxr = new DirectXmlRequest("/update", body);
+                            NamedList<Object> result = client.request(dxr);
+                            LOG.debug("Result: " + result);
+                            Integer statusCode = (Integer) ((NamedList) result.get("responseHeader")).get("status");
+                            if (statusCode == 0) {
+                                LOG.debug("Successful Solr Request.\nResult: {}", result);
+                                client.commit();
+                            } else {
+                                LOG.error("Solr update failed rollback!!!\nResult: {}", result);
+                                client.rollback();
+                                throw new Exception("Failed:\n" + result);
+                            }
+                            out.setBody(result);
+                        } catch (Exception e) {
+                            LOG.error("Solr Update Failed ERROR!!!\nBody:\n{}\nException:\n{}", out.getBody(), e.toString());
+                            e.printStackTrace();
+                            throw new Exception("Failed Solr Update!!!!!");
+                        }
+                    }
+                }).id("sendToSolr")
+
                 .convertBodyTo(String.class)
                 //TODO: check the response
 
-                .log(LoggingLevel.INFO, "${routeId} :: Solr Response - ${body}");
+                .log(LoggingLevel.DEBUG, "${routeId} :: Solr Response - ${body}");
 
-        /*from("direct:solrCommit").routeId("solrCommit")
-                .setHeader(SolrConstants.OPERATION, constant(SolrConstants.OPERATION_COMMIT))
-                .log(LoggingLevel.DEBUG, "${routeId} :: Send Commit to (solrIndex = ${header.solrIndex}) for batch (${header.index} | size = ${header.batchJobs.size}) [ batchJobs: ${header.batchJobs} ]")
-                .toD("solr://localhost:8091/solr/${header.solrIndex}");*/
+        from("seda:storeReceived").routeId("storeReceivedJobs")
+                .filter().simple("${header.solrJob} == null")
+                    //add jobs that were filtered so we can compare results
+                    .to("bean:MyBatchService?method=addJob(*, ${header.methodName}, ${header.dsLabel})")
+                .end()
+                .aggregate(simple("${header.batch}"), new GroupedExchangeAggregationStrategy()).completionSize(simple("${header.TOTAL_BATCH_COUNT}")).completionTimeout(10000)
+                    .to("bean:MyDocService?method=printReceived").id("printStoreReceivedJobs");
+    }
 
+    /*
         from("direct:checkObjectActive")
                 .setBody().simple("ASK FROM <info:edu.si.fedora#ri> WHERE { <info:fedora/${header.pid}> <info:fedora/fedora-system:def/model#state> <info:fedora/fedora-system:def/model#Active> .}")
                 .setBody().groovy("\"query=\" + URLEncoder.encode(request.getBody(String.class));")
 
                 .log(LoggingLevel.DEBUG, "${routeId} :: Is Active Query - ${body}")
 
+                .removeHeaders("CamelHttp*")
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .setHeader("CamelHttpQuery").simple("output=xml&${body}")
 
@@ -345,167 +777,5 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .end()
 
                 .log(LoggingLevel.DEBUG, "${routeId} :: Object State = ${header.state}");
-
-        from("seda:storeReceived").routeId("storeReceivedJobs")
-                .filter().simple("${header.solrJob} == null")
-                //add jobs that were filtered so we can compare results
-                .to("bean:MyBatchService?method=addJob(*, ${header.methodName}, ${header.dsLabel})")
-                .end()
-                .aggregate(simple("${header.batch}"), new GroupedExchangeAggregationStrategy()).completionSize(simple("${header.TOTAL_BATCH_COUNT}")).completionTimeout(2000)
-                    .to("bean:MyDocService?method=printReceived").id("printStoreReceivedJobs");
-    }
-
-    /*@Override
-    public void configure() throws Exception {
-        Namespaces ns = new Namespaces("atom", "http://www.w3.org/2005/Atom");
-        ns.add("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-        ns.add("fs", "info:fedora/fedora-system:def/model#");
-        ns.add("fedora-types", "http://www.fedora.info/definitions/1/0/types/");
-        ns.add("objDatastreams", "http://www.fedora.info/definitions/1/0/access/");
-        ns.add("ri", "http://www.w3.org/2005/sparql-results#");
-        ns.add("findObjects", "http://www.fedora.info/definitions/1/0/types/");
-        ns.add("fits", "http://hul.harvard.edu/ois/xml/ns/fits/fits_output");
-        ns.add("fedora", "info:fedora/fedora-system:def/relations-external#");
-        ns.add("eac", "urn:isbn:1-931666-33-4");
-        ns.add("mods", "http://www.loc.gov/mods/v3");
-        ns.add("atom", "http://www.w3.org/2005/Atom");
-        ns.add("sidora", "http://oris.si.edu/2017/01/relations#");
-
-        //Exception handling
-        onException(Exception.class, HttpOperationFailedException.class, SocketException.class)
-                .onWhen(exchangeProperty(Exchange.TO_ENDPOINT).regex("^(http|https|cxfrs?(:http|:https)|http4):.*"))
-                .useExponentialBackOff()
-                .backOffMultiplier(2)
-                .redeliveryDelay("{{sidoraSolr.redeliveryDelay}}")
-                .maximumRedeliveries("{{sidorasolr.max.http.redeliveries}}")
-                .retryAttemptedLogLevel(LoggingLevel.WARN)
-                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-                .logNewException(true)
-                .setHeader("error").simple("[${routeId}] :: SidoraSolr Error reported: ${exception.message}")
-                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logSidoraSolrHTTPException");
-
-        from("activemq:queue:{{solr.apim.update.queue}}").routeId("SidoraSolrStartProcessing")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Starting JMS processing...").id("logStart")
-
-                //Set the Authorization header for Fedora HTTP calls
-                .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Fedora JMS Message Found: PID=${header.pid}, Method Name=${header.methodName}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} SidoraSolr: Fedora JMS Message Headers: ${headers}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} SidoraSolr: Fedora JMS Message Body: ${body}")
-
-                //Remove unneeded headers that may cause problems later on
-                .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders|CamelSchematronValidationReport|datastreamValidationXML")
-
-
-                //TODO: AggregateWithFilter
-                // Filter out messages from CT ingest
-                // Aggregate on header methodName
-
-                //Filter out Fedora Messages created from the CT Ingest route
-                .filter()
-                    .simple("${header.origin} == '{{si.fedora.user}}' && " +
-                            " ${header.pid} contains '{{si.ct.namespace}}:'")
-                    .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Filtered CT JMS mesage [ Origin=${header.origin}, pid=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required.").id("logFilteredMessage")
-                    .stop()
-                .end()
-
-                .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
-
-                //Route Messages to the correct destination
-                .choice()
-                    .when().simple("${header.methodName} == 'purgeDatastream'")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Purge Datastream Found for PID: ${header.pid}")
-                        .to("direct:solrDelete")
-                    .endChoice()
-                    .otherwise()
-                        //Filter Observations for gsearch_scianct index
-                        .filter().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
-                            .to("direct:updateScianct")
-                        .end()
-                        .to("direct:updateSolr")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Finished processing Fedora JMS Message for PID: ${header.pid}.")
-                    .endChoice()
-                .end()
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Finished JMS processing...");
-
-
-        from("direct:solrDelete").routeId("SidoraSolrStartDelete")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Start Solr Delete for PID = ${header.pid}")
-
-                .setBody().simple("${header.pid}")
-                .setHeader(SolrConstants.OPERATION, constant(SolrConstants.OPERATION_DELETE_BY_ID))
-
-                // gsearch_scianct index delete
-                .filter().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
-                    .setHeader("solrURL").simple("{{solr.host}}:{{solr.port}}/solr/{{gsearch_scianct.index}}")
-                    .toD("solr://${header.solrURL}")
-
-                    // commit for gsearch_scianct
-                    .setHeader(SolrConstants.OPERATION,constant(SolrConstants.OPERATION_COMMIT))
-                    .toD("solr://${header.solrURL}")
-
-                    .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Finished Solr Delete PID = ${header.pid} from {{gsearch_scianct.index}}")
-                .end()
-
-                // gsearch_solr index delete
-                .setBody().simple("${header.pid}")
-                .setHeader(SolrConstants.OPERATION, constant(SolrConstants.OPERATION_DELETE_BY_ID))
-                .setHeader("solrURL").simple("{{solr.host}}:{{solr.port}}/solr/{{gsearch_solr.index}}")
-                .toD("solr://${header.solrURL}")
-
-                // commit for gsearch_solr
-                .setHeader(SolrConstants.OPERATION,constant(SolrConstants.OPERATION_COMMIT))
-                .toD("solr://${header.solrURL}")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Finished Solr Delete PID = ${header.pid} from {{gsearch_scianct.index}}");
-
-        from("direct:updateSolr").routeId("SidoraSolrStartUpdate")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Start Solr Update for PID = ${header.pid}")
-
-                .setBody().simple("${header.pid}")
-                .setHeader(SolrConstants.OPERATION, constant(SolrConstants.OPERATION_DELETE_BY_ID))
-
-                // gsearch_scianct index delete
-                .filter().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
-                .setHeader("solrURL").simple("{{solr.host}}:{{solr.port}}/solr/{{gsearch_scianct.index}}")
-                .toD("solr://${header.solrURL}")
-
-                // commit for gsearch_scianct
-                .setHeader(SolrConstants.OPERATION,constant(SolrConstants.OPERATION_COMMIT))
-                .toD("solr://${header.solrURL}")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Finished Solr Delete PID = ${header.pid} from {{gsearch_scianct.index}}")
-                .end()
-
-                // gsearch_solr index delete
-                .setBody().simple("${header.pid}")
-                .setHeader(SolrConstants.OPERATION, constant(SolrConstants.OPERATION_DELETE_BY_ID))
-                .setHeader("solrURL").simple("{{solr.host}}:{{solr.port}}/solr/{{gsearch_solr.index}}")
-                .toD("solr://${header.solrURL}")
-
-                // commit for gsearch_solr
-                .setHeader(SolrConstants.OPERATION,constant(SolrConstants.OPERATION_COMMIT))
-                .toD("solr://${header.solrURL}")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Finished Solr Delete PID = ${header.pid} from {{gsearch_scianct.index}}");
-
-        from("activemq:queue:{{sidoraCTSolr.queue}}").routeId("SidoraSolrStartProcessingCT")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Starting JMS processing...").id("logStart")
-
-                //Set the Authorization header for Fedora HTTP calls
-                .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: SidoraSolr: JMS Headers: ${headers}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id}: SidoraSolr: JMS Body: ${body}")
-
-                //Remove unneeded headers that may cause problems later on
-                .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders|CamelSchematronValidationReport|datastreamValidationXML")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Camera Trap Fedora JMS Message Found: PID=${header.pid}, Method Name=${header.methodName}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} SidoraSolr: Camera Trap Fedora JMS Message Headers: ${headers}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} SidoraSolr: Camera Trap Fedora JMS Message Body: ${body}")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} SidoraSolr: Finished JMS processing...");
-
-    }*/
+    */
 }
