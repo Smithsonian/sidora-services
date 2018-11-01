@@ -132,13 +132,13 @@ public class MyDocService {
         for (MySolrJob solrJob : reindexBatchList) {
             //solrJob.setEndTime(new Date().getTime());
             if (solrJob.index.equals(scianctIndex)) {
-                if (!solrJob.state.equalsIgnoreCase("inactive")) {
+                if (solrJob.state.equalsIgnoreCase("active")) {
                     sianctJobList.add(solrJob);
                 } else {
                     inactiveSianctJobList.add(solrJob);
                 }
             } else if (solrJob.index.equals(solrIndex)){
-                if (!solrJob.state.equalsIgnoreCase("inactive")) {
+                if (solrJob.state.equalsIgnoreCase("active")) {
                     solrJobList.add(solrJob);
                 } else {
                     inactiveSolrJobList.add(solrJob);
@@ -147,11 +147,11 @@ public class MyDocService {
         }
 
         StringBuilder body = new StringBuilder();
-        for(MySolrJob msj : reindexBatchList) {
-            if (!msj.state.equalsIgnoreCase("inactive")) {
+        /*for(MySolrJob msj : reindexBatchList) {
+            if (msj.state.equalsIgnoreCase("active")) {
                 body.append(operationName + " processed (" + (reindexBatchList.indexOf(msj) + 1) + " of " + reindexBatchList.size() + "): " + msj + "\n");
             }
-        }
+        }*/
         body.append("Total inactive records solr: " + inactiveSolrJobList.size() + ", Total inactive records sianct: " + inactiveSianctJobList.size() + "\n");
         body.append("Total active records solr index: " + solrJobList.size() + ", Total active records sianct index: " + sianctJobList.size() + "\nCombined Records Indexed: " + reindexBatchList.size());
 

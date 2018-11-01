@@ -34,39 +34,21 @@ import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
-import java.io.*;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -105,6 +87,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "sidora.sianct.default.index", defaultValue = "gsearch_sianct")
     private static String DEFAULT_SIANCT_INDEX;
 
+    //TODO: used by .loopDoWhile(stopLoopPredicate()) which is only in camel 2.17 and up :(
     /*public Predicate stopLoopPredicate() {
         Predicate stopLoop = new Predicate() {
             @Override
@@ -134,7 +117,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
+        /*errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
                 //.useOriginalMessage()
                 .maximumRedeliveries(Integer.parseInt(redeliveryDelay))
                 .redeliveryDelay(Integer.parseInt(maximumRedeliveries))
@@ -147,7 +130,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .logExhaustedMessageHistory(true)
                 .logStackTrace(true)
                 .logHandled(true)
-                .log("${routeId} **** ERROR_HANDLER **** FAILURE_ROUTE_ID=${header.CamelFailureRouteId}, FAILURE_ENDPOINT=${header.CamelFailureEndpoint}, TO_ENDPOINT=${header.CamelToEndpoint}"));
+                .log("${routeId} **** ERROR_HANDLER **** FAILURE_ROUTE_ID=${header.CamelFailureRouteId}, FAILURE_ENDPOINT=${header.CamelFailureEndpoint}, TO_ENDPOINT=${header.CamelToEndpoint}"));*/
 
         Namespaces ns = new Namespaces("atom", "http://www.w3.org/2005/Atom");
         ns.add("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
@@ -273,22 +256,22 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         .setHeader("state").xpath("substring-after(//binding[@name = 'state']/uri , 'info:fedora/fedora-system:def/model#')", String.class, ns)
                         .setHeader("methodName").simple("${header.operationName}")
 
-                        .log(LoggingLevel.INFO, "${routeId} :: REINDEX [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel}, ${header.state} ]")
+                        .log(LoggingLevel.DEBUG, "${routeId} :: REINDEX [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel}, ${header.state} ]")
 
-                        .filter().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations' && ${header.gsearch_sianct} == 'true'")
+                        .filter().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations' && ${header.gsearch_sianct} == 'true'")// && ${header.state} == 'Active'")
                             .log(LoggingLevel.DEBUG, "${routeId} :: **** FOUND OBSERVATION ****")
                             .to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
                             //header is used for http response only
                             .setHeader("reindex_sianct").simple("${header.solrJob}")
-                            .to("seda:createBatchJob?waitForTaskToComplete=Never")
+                            .to("seda:createBatchJob?waitForTaskToComplete=Never").id("reindexCreateSianctJob")
                         .end()//end filter
 
-                        .filter().simple("${header.gsearch_solr} == 'true'")
+                        .filter().simple("${header.gsearch_solr} == 'true'")// && ${header.state} == 'Active'")
                             .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
                             .setHeader("reindex_solr").simple("${header.solrJob}")
-                            .to("seda:createBatchJob?waitForTaskToComplete=Never")
+                            .to("seda:createBatchJob?waitForTaskToComplete=Never").id("reindexCreateSolrJob")
                         .end()//end filter
-                        .log(LoggingLevel.INFO, "Processing batch ( ${header.CamelLoopIndex}++ of ${header.totalBatch} ), adding: ${header.CamelSplitIndex}++ of ${header.resultSize} from batch")
+                        .log(LoggingLevel.DEBUG, "Processing batch ( ${header.CamelLoopIndex}++ of ${header.totalBatch} ), adding: ${header.CamelSplitIndex}++ of ${header.resultSize} from batch")
                     .end().id("reindexAllSplitEnd")//end split
 
                     .removeHeaders("reindex_sianct|reindex_solr")
@@ -351,7 +334,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 //                .to("seda:storeReceived?waitForTaskToComplete=Never")
 
                 //filter out fedora messages from CT ingest we have a separate pipeline for that
-                .filter().simple("${header.origin} != '{{si.fedora.user}}' || ${header.pid} not contains '{{si.ct.namespace}}:'")
+                .filter().simple("${header.origin} != '{{si.fedora.user}}' && ${header.pid} not contains '{{si.ct.namespace}}:'")
 
                     .log(LoggingLevel.DEBUG, "${routeId} :: [1] After ctUser Filter [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
 
@@ -393,6 +376,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                     .log(LoggingLevel.DEBUG, "#######################################[ startBatchJob (size = ${header.batchJobs.size} | solrIndex = ${header.solrIndex}) ]################################################\n${header.batchJobs}")
 
+                    .setHeader("startTime").simple(String.valueOf(new Date().getTime()), long.class)
+
                     .to("direct:createDoc")
 
                     .setBody().simple("<update>\n<commit>\n<add>\n${body}\n</add>\n</commit>\n</update>")
@@ -406,9 +391,18 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         public void process(Exchange exchange) throws Exception {
                             Message out = exchange.getIn();
                             List<MySolrJob> batchJobsList = out.getHeader("batchJobs", List.class);
-                            for (int i = 0; i < batchJobsList.size(); i++) {
-                                batchJobsList.get(i).setEndTime(new Date().getTime());
-                                batchJobsList.get(i).setSolrStatus(out.getBody(String.class));
+                            if (batchJobsList != null && batchJobsList.size() > 0) {
+                                for (int i = 0; i < batchJobsList.size(); i++) {
+                                    batchJobsList.get(i).setEndTime(new Date().getTime());
+                                    batchJobsList.get(i).setSolrStatus(out.getBody(String.class));
+                                    log.debug("Solr Status for pid = {}, {}, elapse time: ", batchJobsList.get(i).pid, batchJobsList.get(i).solrStatus, String.format("%tT", batchJobsList.get(i).getElapsed() - TimeZone.getDefault().getRawOffset()));
+                                }
+
+                                long startTime = batchJobsList.get(0).getStartTime();
+                                long endTime = new Date().getTime();
+                                long elapsed = endTime - startTime;
+                                String elapsedJob0 = String.format("%tT", batchJobsList.get(0).getElapsed() - TimeZone.getDefault().getRawOffset());
+                                log.info("Solr Batch Complete: size = {}, index: {}, elapse time: {}", batchJobsList.size(), batchJobsList.get(0).getIndex(), String.format("%tT", elapsed - TimeZone.getDefault().getRawOffset()));
                             }
                         }
                     });
@@ -540,6 +534,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                                 .log(LoggingLevel.DEBUG, "batch_foxml-to-gsearch_solr output:\n${body}")
                             .endChoice()
                         .end().id("createDocEndChoice")
+
                 .end().id("createDocEndSplit");
 
         from("direct:sianctFusekiQuery").routeId("sianctFusekiQuery")
@@ -752,8 +747,19 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                     //add jobs that were filtered so we can compare results
                     .to("bean:MyBatchService?method=addJob(*, ${header.methodName}, ${header.dsLabel})")
                 .end()
-                .aggregate(simple("${header.batch}"), new GroupedExchangeAggregationStrategy()).completionSize(simple("${header.TOTAL_BATCH_COUNT}")).completionTimeout(10000)
-                    .to("bean:MyDocService?method=printReceived").id("printStoreReceivedJobs");
+                .aggregate(simple("${header.batch}"), new GroupedExchangeAggregationStrategy())
+                    .completionSize(simple("${header.TOTAL_BATCH_COUNT}"))
+                    .completionTimeout(new Expression() {
+                        @Override
+                        public <T> T evaluate(Exchange exchange, Class<T> type) {
+                            if (exchange.getIn().getHeader("testTimeout", long.class) != null && exchange.getIn().getHeader("testTimeout", long.class) > 0) {
+                                return (T) Long.valueOf(exchange.getIn().getHeader("testTimeout", String.class));
+                            } else {
+                                return (T) Long.valueOf(COMPLETION_TIMEOUT);
+                            }
+                        }
+                    })
+                .to("bean:MyDocService?method=printReceived").id("printStoreReceivedJobs");
     }
 
     /*
