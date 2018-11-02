@@ -29,7 +29,10 @@ package edu.si.services.sidora.rest.batch;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
@@ -145,11 +148,25 @@ public class BatchTitleTest extends CamelTestSupport {
         assertMockEndpointsSatisfied();
     }
 
+    @Test
+    public void testObjDsLabel() throws Exception {
+        String resourceFileXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/image/imageFiles.xml"));
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedHeaderValuesReceivedInAnyOrder("resourceFile", "image1.jpg","image2.jpg","image3.jpg");
+        mockEndpoint.expectedHeaderValuesReceivedInAnyOrder("objDsLabel", "image1","image2","image3");
+
+        template.sendBody("direct:objLabel", resourceFileXML);
+
+        assertMockEndpointsSatisfied();
+    }
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
+                Namespaces ns = new Namespaces("ns1", "urn:shop");
 
                 from("direct:start")
                         .to("xslt:file:Input/xslt/BatchAssociationTitlePath.xsl?saxon=true")
@@ -163,6 +180,24 @@ public class BatchTitleTest extends CamelTestSupport {
                         .log(LoggingLevel.INFO, "TitlePath = ${header.titlePath}")
                         .log(LoggingLevel.INFO, "TitleLabel = ${header.titleLabel}")
                         .to("mock:result");
+
+                from("direct:objLabel")
+                        .log(LoggingLevel.INFO, "Start Body: ${body}")
+                        .split().xtokenize("//file", 'w', ns)
+                            .log(LoggingLevel.INFO, "Split Body: ${body}")
+                            .setHeader("resourceFile").xpath("//file/text()", String.class)
+                            .setHeader("objDsLabel").xpath("string(//file/@originalname)", String.class)
+                            .log(LoggingLevel.INFO, "resourceFile: ${header.resourceFile}, objDsLabel: ${header.objDsLabel}")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    log.info("stop");
+
+                                }
+                            })
+                            .to("mock:result")
+                        .end().id("splitEnd");
             }
         };
     }

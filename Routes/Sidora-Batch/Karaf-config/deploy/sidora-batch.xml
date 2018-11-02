@@ -250,24 +250,28 @@
 
             <!-- add each resource to the camelBatchResources mysql table -->
             <split>
-                <xpath headerName="resourceXML">
-                    //file/text()
-                </xpath>
+                <xtokenize mode="w">//file</xtokenize>
 
                 <setHeader headerName="resourceFile">
-                    <simple resultType="java.lang.String">
-                        ${body}
-                    </simple>
+                    <xpath resultType="java.lang.String">
+                        //file/text()
+                    </xpath>
                 </setHeader>
 
-                <to uri="sql:{{sql.insertResources}}"/>
+                <setHeader headerName="objDsLabel">
+                    <xpath resultType="java.lang.String">
+                        string(//file/@originalname)
+                    </xpath>
+                </setHeader>
+
+                <to uri="sql:{{sql.insertResources}}" id="sqlInsertResources"/>
 
                 <log message="${id}: Batch Request ResourceFile: ${header.resourceFile} added"
                      loggingLevel="DEBUG"
                      logName="{{edu.si.batch}}"/>
             </split>
 
-            <to uri="sql:{{sql.insertNewBatchRequest}}"/>
+            <to uri="sql:{{sql.insertNewBatchRequest}}" id="sqlInsertNewBatchRequest"/>
 
             <!-- send the xml response body -->
             <to uri="bean:responseControllerBean?method=batchRequestResponse"/>
@@ -500,6 +504,7 @@
 
             <convertBodyTo type="java.lang.String"/>
 
+            <!-- Use the uploaded filename (objDsLabel) if no title info provided -->
             <to uri="xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
 
             <!-- store the metadata with updated title -->
@@ -703,8 +708,6 @@
 
             <!-- Need the Mime Type for the OBJ datastream -->
             <to uri="bean:batchRequestControllerBean?method=getMIMEType"/>
-            <!-- Use the uploaded filename for the OBJ datastream label-->
-            <to uri="bean:batchRequestControllerBean?method=setObjLabel"/>
 
             <log message="${id}: Batch Process: Found: ${header.dsMIME}"
                  loggingLevel="INFO"
@@ -723,7 +726,7 @@
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.objDsLabel}&amp;versionable=true&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
 
             <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_obj_created)"/>
-            <to uri="sql:{{sql.updateDsObjCreated}}"/>
+            <to uri="sql:{{sql.updateDsObjCreated}}" id="sqlUpdateDsObjCreated"/>
 
             <log message="${id}: Finished processing OBJ."
                  loggingLevel="INFO"

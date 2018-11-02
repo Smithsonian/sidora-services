@@ -2,7 +2,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="xml" indent="yes" encoding="utf-8"/>
 
-    <!--<xsl:param name="titleLabel"/>-->
+    <xsl:param name="objDsLabel"/>
     <xsl:param name="titlePath"/>
     <xsl:param name="CamelSplitIndex"/>
 
@@ -37,9 +37,18 @@
 
         <xsl:choose>
             <xsl:when test="contains($path-to-title, $titlePath)">
-                <xsl:copy>
-                    <xsl:value-of select="concat(., '(', $CamelSplitIndex+1, ')')"/>
-                </xsl:copy>
+                <xsl:choose>
+                    <xsl:when test=".=''">
+                        <xsl:copy>
+                            <xsl:value-of select="$objDsLabel"/>
+                        </xsl:copy>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:copy>
+                            <xsl:value-of select="concat(., '(', $CamelSplitIndex+1, ')')"/>
+                        </xsl:copy>
+                    </xsl:otherwise>
+                </xsl:choose>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:copy>
