@@ -216,7 +216,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .end()
 
                 //get count for pagination
-                .to("velocity:file:{{karaf.home}}/Input/template/fedoraObjectCountFusekiQuery.vsl")
+                .to("velocity:file:{{karaf.home}}/Input/templates/fedoraObjectCountFusekiQuery.vsl")
                 .to("direct:sianctFusekiQuery").id("reindexAllCountFusekiQuery")
 
                 .setHeader("pidCount").xpath("//ri:binding[@name = 'total']/ri:literal/text()", Integer.class, ns).id("getPidCount")
@@ -239,7 +239,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .loop().simple("${header.totalBatch}")
                     .process(offsetLoopProcessor())
 
-                    .to("velocity:file:{{karaf.home}}/Input/template/fedoraObjectPagingFusekiQuery.vsl")
+                    .to("velocity:file:{{karaf.home}}/Input/templates/fedoraObjectPagingFusekiQuery.vsl")
                     .to("direct:sianctFusekiQuery").id("reindexAllPagingFusekiQuery")
 
                     .setHeader("resultSize").xpath("count(//ri:binding[@name = 'pid'])", Integer.class, ns)
@@ -446,7 +446,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                                 .setHeader("pid").simple("${body.pid}", String.class)
                                 .setHeader("state").simple("${body.state}")
 
-                                .to("velocity:file:{{karaf.home}}/Input/template/gsearch_sianct-sparql.vsl")
+                                .to("velocity:file:{{karaf.home}}/Input/templates/gsearch_sianct-sparql.vsl")
                                 .to("direct:sianctFusekiQuery").id("createDocFusekiQuery")
 
                                 .log(LoggingLevel.DEBUG, "Send to XSLT\nHeaders:\n${headers}\nBody:\n${body}")
