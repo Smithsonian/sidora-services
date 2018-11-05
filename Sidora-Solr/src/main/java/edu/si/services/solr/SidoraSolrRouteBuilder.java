@@ -41,8 +41,10 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+//import org.apache.solr.client.solrj.SolrClient;
+//import org.apache.solr.client.solrj.impl.HttpSolrClient;
+//import org.apache.solr.client.solrj.request.DirectXmlRequest;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -291,12 +293,16 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
         from("activemq:queue:{{sidoraCTSolr.queue}}").routeId("cameraTrapSolrJob")
                 .log(LoggingLevel.DEBUG, "${routeId} :: <<<<<<<<<<<<<<<<<<<<<<<[0] RECEIVED >>>>>>>>>>>>>>>>>>>>>\nHeaders:\n${headers}\nBody:${body}")
-                .log(LoggingLevel.DEBUG, "${routeId} :: [0] RECEIVED Headers:\n${headers}")
-                .log(LoggingLevel.DEBUG, "${routeId} :: [0] RECEIVED PIDAggregation: ${header.PIDAggregation}")
+
+                //Add the project pids to resource pid list
+                .setHeader("PIDAggregation").simple("{{si.ct.root}},${header.PIDAggregation},${header.ParentPID},${header.ProjectPID},${header.SubProjectPID},${header.SitePID},${header.PlotPID}")
+
+                .log(LoggingLevel.INFO, "${routeId} :: CT Solr Job RECEIVED, PID's: ${header.PIDAggregation}")
 
                 .split().tokenize(",", "PIDAggregation")
                     .setHeader("pid").simple("${body}")
 
+                .removeHeaders("CamelHttp*")
                 .toD("{{si.fedora.host}}/objects?pid=true&label=true&state=true&ownerId=true&query=pid~${header.pid}&resultFormat=xml&headerFilterStrategy=#dropHeadersStrategy").id("cameraTrapJobFedoraCall")
                     .convertBodyTo(String.class)
 
@@ -308,7 +314,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                     .setHeader("state").xpath("//fedora-types:state/text()", String.class, ns)
                     .setHeader("methodName").simple("ctIngest")
 
-                    .log(LoggingLevel.INFO, "${routeId} :: [0] RECEIVED [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel}, ${header.state} ]")
+                    .log(LoggingLevel.INFO, "${routeId} :: Processing CT SolrJob [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel}, ${header.state} ]")
 //.stop()
 
                     .filter().simple("${header.pid} in '${header.ResearcherObservationPID},${header.VolunteerObservationPID},${header.ImageObservationPID}'")
@@ -327,8 +333,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
                 .setBody().simple("${header.pid}")
 
-                .log(LoggingLevel.INFO, "${routeId} :: [1] RECEIVED [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
-                .log(LoggingLevel.DEBUG, "${routeId} :: [0] RECEIVED ${header.receivedJob}")
+                .log(LoggingLevel.INFO, "${routeId} :: Fedora Solr Job RECEIVED [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
 
 //                .setHeader("batch").simple("jmsReceived")
 //                .to("seda:storeReceived?waitForTaskToComplete=Never")
@@ -336,7 +341,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 //filter out fedora messages from CT ingest we have a separate pipeline for that
                 .filter().simple("${header.origin} != '{{si.fedora.user}}' && ${header.pid} not contains '{{si.ct.namespace}}:'")
 
-                    .log(LoggingLevel.DEBUG, "${routeId} :: [1] After ctUser Filter [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
+                    .log(LoggingLevel.INFO, "${routeId} :: [1] After ctUser Filter [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
 
                         // Set the index we are operating and operation
                         .choice()
@@ -715,7 +720,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
 
                         //Solrj method 2
-                        try (SolrClient client = new HttpSolrClient.Builder(solrHost + "/" + solrIndex).build()) {
+                        try {
+                            HttpSolrServer client = new HttpSolrServer(solrHost + "/" + solrIndex);
                             DirectXmlRequest dxr = new DirectXmlRequest("/update", body);
                             NamedList<Object> result = client.request(dxr);
                             LOG.debug("Result: " + result);
@@ -729,6 +735,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                                 throw new Exception("Failed:\n" + result);
                             }
                             out.setBody(result);
+                            client.shutdown();
                         } catch (Exception e) {
                             LOG.error("Solr Update Failed ERROR!!!\nBody:\n{}\nException:\n{}", out.getBody(), e.toString());
                             e.printStackTrace();

@@ -223,7 +223,8 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
-            <version>7.4.0</version>
+            <!--<version>7.4.0</version>-->
+            <version>4.10.4</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -247,7 +248,8 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>7.4.0</version>
+            <!--<version>7.4.0</version>-->
+            <version>4.10.4</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -259,7 +261,8 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
-            <version>7.4.0</version>
+            <!--<version>7.4.0</version>-->
+            <version>4.10.4</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
