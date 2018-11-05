@@ -248,9 +248,23 @@
                 </xpath>
             </setHeader>
 
+            <setBody>
+                <simple>
+                    ${header.resourceXML}
+                </simple>
+            </setBody>
+
+            <log message="${id}: Body for split: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
+
             <!-- add each resource to the camelBatchResources mysql table -->
             <split>
-                <xtokenize mode="w">//file</xtokenize>
+                <xtokenize mode="w" trim="true">//file</xtokenize>
+
+                <log message="${id}:  Split Body: ${body}"
+                     loggingLevel="DEBUG"
+                     logName="{{edu.si.batch}}"/>
 
                 <setHeader headerName="resourceFile">
                     <xpath resultType="java.lang.String">
@@ -318,6 +332,10 @@
 
             <to uri="sql:{{sql.selectResources}}"/>
 
+            <log message="${id} BatchProcessResources sql.selectResources headers: ${headers}\nBody: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
+
             <log message="${id}: Batch Request CorrelationId: ${header.correlationId}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
@@ -347,6 +365,12 @@
                 <setHeader headerName="resourceFile">
                     <simple>
                         ${body[resourceFile]}
+                    </simple>
+                </setHeader>
+
+                <setHeader headerName="objDsLabel">
+                    <simple>
+                        ${body[objDsLabel]}
                     </simple>
                 </setHeader>
 
@@ -722,6 +746,10 @@
             <setBody>
                 <constant/>
             </setBody>
+
+            <log message="${id}: BatchProcessAddOBJDatastream objDsLabel: ${header.objDsLabel}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
 
             <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.objDsLabel}&amp;versionable=true&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
 
