@@ -9,12 +9,12 @@
 # Generic Solr update requests
 ####################################
 ### Delete All using solr update endpoint
-POST http://${host_url}:8090/solr/${sidora.solr.default.index}gsearch_solr_test/update
+POST {{solr_host_url}}/{{sidora_solr_default_index}}gsearch_solr_test/update
 Content-Type: text/xml
 <update><commit><delete><query>*:*</query></delete></commit></update>
 
 ### Delete All using solr update endpoint
-POST http://${host_url}:8090/solr/${sidora.sianct.default.index}/update
+POST {{solr_host_url}}/{{sidora_sianct_default_index}}/update
 Content-Type: text/xml
 
 <update><commit><delete><query>*:*</query></delete></commit></update>
@@ -23,13 +23,13 @@ Content-Type: text/xml
 # Sidora Solr Camel Endpoint Calls
 ####################################
 ### Reindex All
-GET http://${host_url}:8181/cxf/sidora/solr/reindex?gsearch_solr=true&gsearch_sianct=true&auth=${password}
+GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
 
 ### Delete ALL
-GET http://${host_url}:8181/cxf/sidora/solr/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth=${password}
+GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
 
 ### Delete By Query (Query with single PID)
-GET http://${host_url}:8081/sidora/solr/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth=${password}&query=PID:test.pid\:123
+GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:test.pid\:123
 
 ### Delete By Query (Query with PID and wildcard)
-GET http://${host_url}:8081/sidora/solr/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth=${password}&query=PID:PID:test.pid\:*
+GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:PID:test.pid\:*
