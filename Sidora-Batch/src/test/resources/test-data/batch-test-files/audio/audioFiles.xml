@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <batch>
     <batch_id>batchID123456</batch_id>
-    <file originalname="audio1">audio1.mp3</file>
-    <file originalname="audio2">audio2.wav</file>
+    <file originalname="audio1.mp3">audio1.mp3</file>
+    <file originalname="audio2.wav">audio2.wav</file>
 </batch>

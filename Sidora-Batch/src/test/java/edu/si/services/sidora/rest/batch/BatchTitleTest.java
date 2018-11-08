@@ -154,7 +154,8 @@ public class BatchTitleTest extends CamelTestSupport {
 
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedHeaderValuesReceivedInAnyOrder("resourceFile", "image1.jpg","image2.jpg","image3.jpg");
-        mockEndpoint.expectedHeaderValuesReceivedInAnyOrder("objDsLabel", "image1","image2","image3");
+        mockEndpoint.expectedHeaderValuesReceivedInAnyOrder("objDsLabel", "image1.jpg","image2.jpg","image3.jpg");
+        mockEndpoint.expectedHeaderValuesReceivedInAnyOrder("primaryTitleLabel", "image1","image2","image3");
 
         template.sendBody("direct:objLabel", resourceFileXML);
 
@@ -187,7 +188,8 @@ public class BatchTitleTest extends CamelTestSupport {
                             .log(LoggingLevel.INFO, "Split Body: ${body}")
                             .setHeader("resourceFile").xpath("//file/text()", String.class)
                             .setHeader("objDsLabel").xpath("string(//file/@originalname)", String.class)
-                            .log(LoggingLevel.INFO, "resourceFile: ${header.resourceFile}, objDsLabel: ${header.objDsLabel}")
+                            .to("bean:batchRequestControllerBean?method=setPrimaryTitleLabel")
+                            .log(LoggingLevel.INFO, "resourceFile: ${header.resourceFile}, objDsLabel: ${header.objDsLabel}, primaryTitleLabel: ${header.primaryTitleLabel}")
                             .process(new Processor() {
                                 @Override
                                 public void process(Exchange exchange) throws Exception {

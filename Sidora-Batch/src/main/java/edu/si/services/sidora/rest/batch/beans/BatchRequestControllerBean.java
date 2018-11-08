@@ -198,14 +198,10 @@ public class BatchRequestControllerBean {
         out.setHeader("objDsLabelExtension", objDsLabelExtension);
     }
 
-    public void setObjLabel(Exchange exchange) {
+    public void setPrimaryTitleLabel(Exchange exchange) {
         out = exchange.getIn();
-        String fileName = out.getHeader("resourceFile", String.class);
-        fileName = FilenameUtils.getName(fileName);
-
-        String objDsLabel = fileName.substring(fileName.indexOf("_")+1, fileName.length());
-
-        out.setHeader("objDsLabel", objDsLabel);
+        String primaryTitleLabel = FilenameUtils.getBaseName(out.getHeader("objDsLabel", String.class));
+        out.setHeader("primaryTitleLabel", primaryTitleLabel);
     }
 
     /**

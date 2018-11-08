@@ -117,7 +117,7 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         MockEndpoint mockSqlInsertResourcesHeaders = getMockEndpoint("mock:sqlInsertResourcesHeaders");
         mockSqlInsertResourcesHeaders.expectedMessageCount(2);
         mockSqlInsertResourcesHeaders.expectedHeaderValuesReceivedInAnyOrder("resourceFile", "audio1.mp3", "audio2.wav");
-        mockSqlInsertResourcesHeaders.expectedHeaderValuesReceivedInAnyOrder("objDsLabel", "audio1", "audio2");
+        mockSqlInsertResourcesHeaders.expectedHeaderValuesReceivedInAnyOrder("objDsLabel", "audio1.mp3", "audio2.wav");
 
         context.getComponent("sql", SqlComponent.class).setDataSource(db);
         context.getRouteDefinition("BatchProcessResources").autoStartup(false);
@@ -230,7 +230,7 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
 
         String titlePath = template.requestBody("xslt:file:{{karaf.home}}/Input/xslt/BatchAssociationTitlePath.xsl?saxon=true", associationXML, String.class);
         String objDsLabel = XPathBuilder.xpath("string(//file/@originalname)", String.class).evaluate(context, "<batch>\n" +
-                        "    <file originalname=\"audio1\">audio1.mp3</file>\n" +
+                        "    <file originalname=\"audio1.mp3\">audio1.mp3</file>\n" +
                         "</batch>");
 
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
@@ -240,20 +240,23 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         MockEndpoint mockEndpointNoTitle = getMockEndpoint("mock:resultNoTitle");
         mockEndpointNoTitle.expectedMessageCount(1);
         mockEndpointNoTitle.expectedHeaderReceived("titleLabel","audio1");
+        mockEndpointNoTitle.expectedHeaderReceived("objDsLabel","audio1.mp3");
 
         context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
                 from("direct:start")
+                        .to("bean:batchRequestControllerBean?method=setPrimaryTitleLabel")
                         .to("xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
                         .to("bean:batchRequestControllerBean?method=setTitleLabel")
-                        .log(LoggingLevel.INFO, "titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
+                        .log(LoggingLevel.INFO, "primaryTitleLabel: ${header.primaryTitleLabel}, titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
                         .to("mock:result");
 
                 from("direct:startNoTitleInfo")
+                        .to("bean:batchRequestControllerBean?method=setPrimaryTitleLabel")
                         .to("xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
                         .to("bean:batchRequestControllerBean?method=setTitleLabel")
-                        .log(LoggingLevel.INFO, "titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
+                        .log(LoggingLevel.INFO, "primaryTitleLabel: ${header.primaryTitleLabel}, titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
                         .to("mock:resultNoTitle");
             }
         });

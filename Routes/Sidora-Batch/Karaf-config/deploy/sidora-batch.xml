@@ -374,6 +374,8 @@
                     </simple>
                 </setHeader>
 
+                <to uri="bean:batchRequestControllerBean?method=setPrimaryTitleLabel"/>
+
                 <to uri="sql:{{sql.markResourceConsumed}}"/>
 
                 <to uri="direct:addResource"/>
