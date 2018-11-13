@@ -84,6 +84,36 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Database -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jdbc</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-sql</artifactId>
+            <version>${camel.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.11.1.1</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- CXF -->
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -290,11 +320,11 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core-asl</artifactId>
             <scope>provided</scope>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient-osgi</artifactId>

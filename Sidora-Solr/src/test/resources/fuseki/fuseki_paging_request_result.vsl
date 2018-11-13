@@ -9,7 +9,7 @@
     <results>
         #set ($dummy = 1)
         #set ($start = 1)
-        #set ($limit = $dummy.valueOf($camelContext.resolvePropertyPlaceholders('{{sidora.solr.fuseki.limit}}')))
+        #set ($limit = $dummy.valueOf($camelContext.resolvePropertyPlaceholders('{{sidora.solr.page.limit}}')))
         #set ($range = [$start..$limit])
         #foreach($i in $range)
             #set( $j = $dummy.valueOf($i))

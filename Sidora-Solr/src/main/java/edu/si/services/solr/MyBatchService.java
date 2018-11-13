@@ -63,6 +63,7 @@ public class MyBatchService {
         solrJob.setSolrOperation(solrOperation);
         solrJob.setIndex(index);
         solrJob.indexes.add(index);
+        solrJob.setFoxml(out.getBody(String.class));
 
         LOG.debug("******[1]*******\nNEW solrJob = {}", solrJob);
 

@@ -115,6 +115,12 @@ public class Solr_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     }
 
     @Override
+    protected String[] loadConfigAdminConfigurationFile() {
+        // which .cfg file to use, and the name of the persistence-id
+        return new String[]{KARAF_HOME + "/etc/test.properties", "edu.si.sidora.solr"};
+    }
+
+    @Override
     protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
         configAdmin.putAll(extra);
         return "edu.si.sidora.solr";

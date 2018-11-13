@@ -55,6 +55,7 @@ public class MySolrJob {
     long endTime;
     String solrdoc;
     String solrStatus;
+    String foxml;
 
     @PropertyInject(value = "sidora.solr.default.index", defaultValue = "gsearch_solr")
     private static String DEFAULT_SOLR_INDEX;
@@ -171,8 +172,8 @@ public class MySolrJob {
         this.endTime = endTime;
     }
 
-    public long getElapsed() {
-        return (endTime - startTime);
+    public String getElapsed() {
+        return String.format("%tT", (endTime - startTime) - TimeZone.getDefault().getRawOffset());
     }
 
     public String getSolrdoc() {
@@ -191,6 +192,14 @@ public class MySolrJob {
         this.solrStatus = solrStatus;
     }
 
+    public String getFoxml() {
+        return foxml;
+    }
+
+    public void setFoxml(String foxml) {
+        this.foxml = foxml;
+    }
+
     @Override
     public String toString() {
         return "SolrJob{" +
@@ -202,9 +211,9 @@ public class MySolrJob {
                 ", solrOperation='" + solrOperation + '\'' +
                 ", index='" + index + '\'' +
                 ", indexes=" + indexes +
-                ", startTime=" + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date(startTime)) +
-                ", endTime=" + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date(endTime)) +
-                ", elapsed=" + String.format("%tT", getElapsed() - TimeZone.getDefault().getRawOffset()) +
+                ", startTime=[ " + startTime + " ] " + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date(startTime)) +
+                ", endTime=[ " + startTime + " ] " + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date(endTime)) +
+                ", elapsed=" + getElapsed() +
                 ", solrDoc=" + solrdoc +
                 ", solrStatus=" + solrStatus +
                 '}';

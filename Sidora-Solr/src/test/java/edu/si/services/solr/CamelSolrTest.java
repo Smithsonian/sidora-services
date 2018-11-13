@@ -29,19 +29,26 @@ package edu.si.services.solr;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.velocity.VelocityConstants;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.model.ChoiceDefinition;
+import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.DateTool;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +62,7 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
 
-    private static final Integer MAX_DOC = 10;
+    private static Integer MAX_DOC;
     private static Integer COMPLETION_SIZE;
     private static Integer TEST_COMPLETION_TIMEOUT = 1000;
     private static Integer TOTAL_BATCH_COUNT;
@@ -64,6 +71,9 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
     private static String CT_NAMESPACE;
 
     private static String CT_OWNER;
+
+    private EmbeddedDatabase db;
+    private JdbcTemplate jdbcTemplate;
 
     @Override
     protected String getBlueprintDescriptor() {
@@ -75,6 +85,25 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         super.setUp();
         CT_NAMESPACE = context.resolvePropertyPlaceholders("{{si.ct.namespace}}");
         CT_OWNER = context.resolvePropertyPlaceholders("{{si.fedora.user}}");
+        MAX_DOC = Integer.valueOf(context.resolvePropertyPlaceholders("{{sidora.solr.batch.size}}"));
+        db = new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.DERBY).setName("derbyTestDB").addScripts("sql/createAndPopulateDatabase.sql").build();
+        jdbcTemplate = new JdbcTemplate(db);
+    }
+
+    @Override
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+        db.shutdown();
+    }
+
+    @Override
+    protected JndiRegistry createRegistry() throws Exception {
+        JndiRegistry reg = super.createRegistry();
+        reg.bind("dataSource", db);
+        reg.bind("dataSourceReIndex", db);
+        return reg;
     }
 
     private HashMap<String, List<String>> buildJMSBatch(boolean filterCT) {
@@ -115,13 +144,13 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
             }
 
             if (filterCT) {
-                if (!user.equals(CT_OWNER) || !pid.contains(CT_NAMESPACE)) {
+                if (!user.equals(CT_OWNER)) {
                     log.info("Adding NON CT INGEST job: user = {} | pid = {} | label: {}", user, pid, label);
-                    TOTAL_BATCH_COUNT = ((label.equals(labelList[1])) ? TOTAL_BATCH_COUNT + 2 : TOTAL_BATCH_COUNT++);
+                    TOTAL_BATCH_COUNT = (label.equals(labelList[1]) ? TOTAL_BATCH_COUNT + 2 : ++TOTAL_BATCH_COUNT);
                 }
             } else {
                 //add extra because we have both index for
-                TOTAL_BATCH_COUNT = ((label.equals(labelList[1])) ? TOTAL_BATCH_COUNT + 2 : TOTAL_BATCH_COUNT++);
+                TOTAL_BATCH_COUNT = (label.equals(labelList[1]) ? TOTAL_BATCH_COUNT + 2 : ++TOTAL_BATCH_COUNT);
             }
 
             HashMap<String, Object> headers = new HashMap<>();
@@ -182,10 +211,24 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         MockEndpoint mockEnd = getMockEndpoint("mock:end");
         mockEnd.expectedMessageCount(1);
 
+        context.getRouteDefinition("fedoraApimUpdateSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("fedoraApimGetFoxml").replace().to("velocity:file:{{karaf.home}}/fedora/foxml/test_foxml.vsl");
+            }
+        });
+
+        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("updateSianctReindexJob").replace().log(LoggingLevel.INFO, "Skipp updating db");
+            }
+        });
+
         context.getRouteDefinition("createSolrDoc").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveByType(ChoiceDefinition.class).replace().to("mock:createDocResult");
+                weaveById("createSolrDocChoice").replace().to("mock:createDocResult");
             }
         });
 
@@ -218,7 +261,6 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
 
         log.info("Test TOTAL_BATCH_COUNT = {}", TOTAL_BATCH_COUNT);
 
-        //assertMockEndpointsSatisfied(Long.valueOf(context.resolvePropertyPlaceholders("{{sidora.solr.batch.completionTimeout}}")), TimeUnit.MILLISECONDS);
         assertMockEndpointsSatisfied(6000, TimeUnit.MILLISECONDS);
     }
 
@@ -231,25 +273,9 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
 
         COMPLETION_SIZE = Integer.valueOf(context.resolvePropertyPlaceholders("{{sidora.solr.batch.size}}"));
 
-        //Flag for if we want to test against real fedora/fuseki/solr
-        boolean LIVE_TEST = false;
-        final boolean I_KNOW_WHAT_I_AM_DOING = false;
-
-        //CT_NAMESPACE = getExtra().getProperty("si.ct.namespace");
-
-        int startPid = 12;
-        int endPid = 23; //subproject, plot, site, images, observations
-
         List<String> pidAgg = new ArrayList<>();
-        if (!LIVE_TEST || I_KNOW_WHAT_I_AM_DOING) {
-            for (int i = startPid; i <= endPid; i++) {
-                pidAgg.add(CT_NAMESPACE + ":" + i);
-            }
-        } else {
-            pidAgg.addAll(Arrays.asList(new String[]{}));
-            if(pidAgg.isEmpty()) {
-                throw new SidoraSolrException("For Live Test You must provide the pids!!!");
-            }
+        for (int i = 1; i <= MAX_DOC; i++) {
+            pidAgg.add(CT_NAMESPACE + ":" + i);
         }
 
         LOG.info("PIDAggregation list = {}", pidAgg);
@@ -267,7 +293,7 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         mockResult.expectedMessageCount(TOTAL_BATCH_COUNT/COMPLETION_SIZE+1);
 
         MockEndpoint mockCreateDocResult = getMockEndpoint("mock:createDocResult");
-        mockCreateDocResult.expectedMessageCount(TOTAL_BATCH_COUNT);
+        mockCreateDocResult.expectedMessageCount(TOTAL_BATCH_COUNT+1);
 
         MockEndpoint mockEnd = getMockEndpoint("mock:end");
         mockEnd.expectedMessageCount(1);
@@ -275,42 +301,49 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         context.getRouteDefinition("cameraTrapSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                if (!LIVE_TEST) {
-                    weaveById("cameraTrapJobFedoraCall").replace().to("velocity:file:{{karaf.home}}/fedora/fedora-search-response.vsl");
-                }
+                weaveById("ctJobGetFoxml").replace()
+                        .setHeader("origin").simple(CT_OWNER)
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String pid = out.getHeader("pid", String.class);
+                                if (observationResources.contains(pid)) {
+                                    out.setHeader("dsLabel", "Observations");
+                                } else {
+                                    out.setHeader("dsLabel", "testLabel");
+                                }
+                            }
+                        })
+                        .to("velocity:file:{{karaf.home}}/fedora/foxml/test_foxml.vsl");
+            }
+        });
+
+        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("updateSianctReindexJob").replace().log(LoggingLevel.INFO, "Skipp updating db");
             }
         });
 
         context.getRouteDefinition("createSolrDoc").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                if (!LIVE_TEST) {
-                    weaveByType(ChoiceDefinition.class).replace().to("mock:createDocResult");
-                } else {
-                    weaveByType(ChoiceDefinition.class).after().to("mock:createDocResult");
-                }
+                weaveById("createSolrDocChoice").replace().to("mock:createDocResult");
             }
         });
 
         context.getRouteDefinition("sidoraSolrUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                if (!LIVE_TEST) {
-                    weaveById("sendToSolr").replace().to("mock:result");
-                } else {
-                    weaveAddLast().to("mock:result");
-                }
+                weaveById("sendToSolr").replace().to("mock:result");
             }
         });
 
         context.getRouteDefinition("storeReceivedJobs").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                if (!LIVE_TEST) {
-                    weaveById("printStoreReceivedJobs").replace().to("mock:end");
-                } else {
-                    weaveById("printStoreReceivedJobs").after().to("mock:end");
-                }
+                weaveById("printStoreReceivedJobs").replace().to("mock:end");
             }
         });
 
@@ -443,28 +476,57 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
     }
 
     @Test
-    public void testFusekiPaginationTest() throws Exception {
-        TOTAL_BATCH_COUNT = Integer.valueOf(context.resolvePropertyPlaceholders("{{sidora.solr.fuseki.limit}}")) * MAX_DOC;
+    public void testFedoraSqlPaginationTest() throws Exception {
+        TOTAL_BATCH_COUNT = Integer.valueOf(context.resolvePropertyPlaceholders("{{sidora.solr.page.limit}}")) * MAX_DOC;
         MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
         resultEndpoint.expectedMessageCount(1);
         resultEndpoint.expectedHeaderReceived("totalBatch", TOTAL_BATCH_COUNT/MAX_DOC);
         resultEndpoint.expectedHeaderReceived("reindexCount", TOTAL_BATCH_COUNT);
         resultEndpoint.expectedHeaderReceived("pidCount", TOTAL_BATCH_COUNT);
-
+        resultEndpoint.expectedBodyReceived().body().contains("Total inactive records solr: 0, Total inactive records sianct: 0\n" +
+                "Total active records solr index: " + TOTAL_BATCH_COUNT + ", Total active records sianct index: 0\n" +
+                "Combined Records Indexed: " + TOTAL_BATCH_COUNT);
 
         context.getRouteDefinition("solrReindexAll").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("reindexAllCountFusekiQuery").replace().to("velocity:file:{{karaf.home}}/fuseki/fuseki_pidCount.vsl").log(LoggingLevel.INFO, "${body}");
-                weaveById("reindexAllPagingFusekiQuery").replace()
-                        .setHeader("loopIndex").simple("${header.CamelLoopIndex}", Integer.class)
-                        .log(LoggingLevel.INFO, "loopIndex = ${headers.loopIndex}")
-                        .to("velocity:file:{{karaf.home}}/fuseki/fuseki_paging_request_result.vsl")
-                        .log(LoggingLevel.INFO, "${body}");
+                weaveById("clearSianctReindexTable").remove();
+                weaveById("insertSianctReindexJob").remove();
+                weaveById("insertSolrReindexJob").remove();
+                weaveById("solrReindexAllPidCount").replace().setHeader("pidCount").simple(TOTAL_BATCH_COUNT + "");
+                weaveById("solrReindexAllPidBatch").replace().process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        ArrayList<LinkedHashMap<String,String>> testSqlResultBody = new ArrayList<>();
+                        for (int i = 1; i < (Integer.valueOf(exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.page.limit}}"))+1); i++) {
+                            LinkedHashMap<String, String> row = new LinkedHashMap<>();
+                            row.put("pid", "testPid:" + i);
+                            testSqlResultBody.add(row);
+                        }
+
+                        exchange.getIn().setBody(testSqlResultBody);
+                    }
+                });
+                weaveById("reindexGetFoxml").replace()
+                        .setHeader("origin").simple("testUser")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                exchange.getIn().setHeader("dsLabel", "testLabel");
+                            }
+                        })
+                        .to("velocity:file:{{karaf.home}}/fedora/foxml/test_foxml.vsl");
 
                 weaveById("reindexCreateSianctJob").remove();
                 weaveById("reindexCreateSolrJob").remove();
                 weaveById("printReindexJobs").after().log("${body}").to("mock:result");
+            }
+        });
+
+        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("updateSianctReindexJob").replace().log(LoggingLevel.INFO, "Skipp updating db");
             }
         });
 
@@ -473,16 +535,20 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("gsearch_sianct", true);
         exchange.getIn().setHeader("operationName", "solrReindexAll");
         exchange.getIn().setHeader("TOTAL_BATCH_COUNT", TOTAL_BATCH_COUNT);
-        exchange.getIn().setHeader("testLimit", context.resolvePropertyPlaceholders("{{sidora.solr.fuseki.limit}}"));
+        exchange.getIn().setHeader("testLimit", context.resolvePropertyPlaceholders("{{sidora.solr.page.limit}}"));
         exchange.getIn().setHeader("auth", context.resolvePropertyPlaceholders("{{si.fedora.password}}"));
         exchange.getIn().setHeader("testTimeout", TEST_COMPLETION_TIMEOUT);
 
         template.send("direct:solrReindexAll", exchange);
 
         String resultBody = resultEndpoint.getExchanges().get(0).getIn().getBody(String.class);
-        assertStringContains(resultBody, "Total inactive records solr: 0, Total inactive records sianct: 0\n" +
-                "Total active records solr index: " + TOTAL_BATCH_COUNT + ", Total active records sianct index: 0\n" +
-                "Combined Records Indexed: " + TOTAL_BATCH_COUNT);
+//        assertStringContains(resultBody, "Total inactive records solr: 0, Total inactive records sianct: 0\n" +
+//                "Total active records solr index: " + TOTAL_BATCH_COUNT + ", Total active records sianct index: 0\n" +
+//                "Combined Records Indexed: " + TOTAL_BATCH_COUNT);
+
+        log.info("===============[ Fedora DB Requests ]===============\n{}", jdbcTemplate.queryForList("select * from fedora3.doRegistry"));
+
+        log.info("===============[ Sidora DB Resource ]===============\n{}", jdbcTemplate.queryForList("select * from sidora.camelSolrReindexing"));
 
         assertMockEndpointsSatisfied();
     }

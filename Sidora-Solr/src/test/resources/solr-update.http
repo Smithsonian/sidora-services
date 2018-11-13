@@ -25,11 +25,37 @@ Content-Type: text/xml
 ### Reindex All
 GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
 
+//> scripts/my-script.js
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
 ### Delete ALL
 GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
 
 ### Delete By Query (Query with single PID)
 GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:test.pid\:123
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
 ### Delete By Query (Query with PID and wildcard)
 GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:PID:test.pid\:*
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

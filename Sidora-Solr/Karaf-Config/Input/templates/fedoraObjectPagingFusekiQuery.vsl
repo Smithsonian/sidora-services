@@ -8,5 +8,5 @@ WHERE {
 
 }
 ORDER BY ?pid
-LIMIT $camelContext.resolvePropertyPlaceholders('{{sidora.solr.fuseki.limit}}')
+LIMIT $camelContext.resolvePropertyPlaceholders('{{sidora.solr.page.limit}}')
 OFFSET $headers.offset
