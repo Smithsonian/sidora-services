@@ -32,13 +32,19 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.DeadLetterChannelBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.component.velocity.VelocityConstants;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.FilterDefinition;
+import org.apache.camel.model.OnExceptionDefinition;
+import org.apache.camel.model.SplitDefinition;
 import org.apache.cxf.endpoint.Server;
 import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.tools.generic.DateTool;
 import org.custommonkey.xmlunit.XMLAssert;
 import org.junit.*;
 import org.slf4j.Logger;
@@ -48,8 +54,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
+import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.camel.TestSupport.exchangeProperty;
 import static org.apache.commons.io.FileUtils.readFileToString;
 
 /**
@@ -73,6 +81,9 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     private static String TEST_IAMGE_ID = "testRaccoonAndFox";
     private static String TEST_TITLE = "Camera Trap Image Northern Raccoon, Red Fox";
     private static String TEST_TYPE = "emammal_image";
+
+    private static String CT_PID_NS;
+    private static String SI_FEDORA_USER;
 
     @Override
     protected String getBlueprintDescriptor() {
@@ -116,6 +127,8 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
         deploymentZip = new File(deploymentZipLoc);
         log.debug("Exchange_FILE_NAME = {}", deploymentZip.getName());
+        CT_PID_NS = context.resolvePropertyPlaceholders("{{si.ct.namespace}}") + ":";
+        SI_FEDORA_USER = context.resolvePropertyPlaceholders("{{si.fedora.user}}");
     }
 
     @Override
@@ -125,13 +138,27 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     public void ctIngestMessageTest() throws Exception {
-        String testDatastreamsXML = readFileToString(new File(KARAF_HOME + "/test-data/fedoraObjectDatastreams.xml"));
+        //String testDatastreamsXML = readFileToString(new File(KARAF_HOME + "/test-data/fedoraObjectDatastreams.xml"));
+        HashMap<String, Object> headers = new HashMap<>();
+        headers.put("testPID", CT_PID_NS +"test");
+        headers.put("testDsLabel", "testDeploymentIds1i1");
+        headers.put("testObjMimeType", "image/jpg");
 
-        MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
-        resultEndpoint.expectedMessageCount(6);
-        resultEndpoint.expectedHeaderReceived("imageid", "testDeploymentIds1i1");
-        resultEndpoint.expectedHeaderValuesReceivedInAnyOrder("pid", "test:004", "test:005", "test:006", "test:007", "test:008", "test:009");
-        resultEndpoint.setAssertPeriod(1500);
+        VelocityContext velocityContext = new VelocityContext();
+        velocityContext.put("date", new DateTool());
+        velocityContext.put("headers", headers);
+
+        headers.put(VelocityConstants.VELOCITY_CONTEXT, velocityContext);
+
+        String testDatastreamsXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl", "test body", headers, String.class);
+
+        log.debug(testDatastreamsXML);
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(6);
+        mockResult.expectedHeaderReceived("imageid", "testDeploymentIds1i1");
+        mockResult.expectedHeaderValuesReceivedInAnyOrder("pid", "test:004", "test:005", "test:006", "test:007", "test:008", "test:009");
+        mockResult.setAssertPeriod(1500);
 
         context.getRouteDefinition("EdanIdsProcessCtDeployment").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -161,24 +188,58 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     public void fedoraMessageTest() throws Exception {
-        String testFedoraMessageBody = readFileToString(new File(KARAF_HOME + "/JMS-test-data/otherUser-modifyDatastreamByValue.atom"));
+        //String testFedoraMessageBody = readFileToString(new File(KARAF_HOME + "/JMS-test-data/otherUser-modifyDatastreamByValue.atom"));
+        HashMap<String, Object> headers = new HashMap<>();
+        headers.put("origin", "otherUser");
+        headers.put("methodName", "modifyDatastreamByValue");
+        headers.put("testPID", CT_PID_NS+"1");
+        headers.put("testDsLabel", "testDeploymentIds1i1");
+        headers.put("testDsId", "OBJ");
+        headers.put("testObjMimeType", "image/jpg");
+        headers.put("testFedoraModel", "info:fedora/si:generalImageCModel");
+
+        VelocityContext velocityContext = new VelocityContext();
+        velocityContext.put("date", new DateTool());
+        velocityContext.put("headers", headers);
+
+        headers.put(VelocityConstants.VELOCITY_CONTEXT, velocityContext);
+
+        String jmsMsg = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_atom.vsl", "test body", headers, String.class);
+        String dsXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl", "test body", headers, String.class);
+        String rels_extXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_RELS-EXT.vsl", "test body", headers, String.class);
+
+        log.debug(jmsMsg);
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
+        //resultEndpoint.expectedBodiesReceived(jmsMsg);
+        mockResult.expectedHeaderReceived("origin", "otherUser");
+        mockResult.expectedHeaderReceived("methodName", "modifyDatastreamByValue");
+        mockResult.expectedHeaderReceived("pid", CT_PID_NS+"1");
+        mockResult.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
         mockResult.setAssertPeriod(1500);
 
-        context.getRouteDefinition("EdanIdsProcessFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
+        MockEndpoint mockFilter = getMockEndpoint("mock:filter");
+        mockFilter.expectedMessageCount(0);
+        mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
+        mockFilter.setAssertPeriod(1500);
+
+        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraEdanUpdate").replace().log(LoggingLevel.INFO, "Skipping Edan Update!!!");
-                weaveAddLast().to("mock:result");
+                weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
+                weaveById("processFedoraGetRELS-EXT").replace().setBody().simple(rels_extXML);
+                weaveById("logFilteredMessage").after().to("mock:filter");
+                weaveById("startProcessingFedoraMessage").replace()
+                        .log(LoggingLevel.INFO, "${body}")
+                        .to("mock:result");
             }
         });
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
-        exchange.getIn().setHeader("pid", getExtra().getProperty("si.ct.namespace") + ":test");
-        exchange.getIn().setBody(testFedoraMessageBody);
+        exchange.getIn().setHeader("pid", CT_PID_NS+"1");
+        exchange.getIn().setBody(jmsMsg);
 
         template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
 
@@ -187,9 +248,26 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     public void fedoraDeleteMessageTest() throws Exception {
-        String testManifestXML = readFileToString(testManifest);
-        String testDatastreamsXML = readFileToString(new File(KARAF_HOME + "/test-data/fedoraObjectDatastreams.xml"));
-        String testFedoraMessageBody = readFileToString(new File(KARAF_HOME + "/JMS-test-data/otherUser-purgeDatastream.atom"));
+        HashMap<String, Object> headers = new HashMap<>();
+        headers.put("origin", "otherUser");
+        headers.put("methodName", "purgeDatastream");
+        headers.put("testPID", "test:0001");
+        headers.put("testDsLabel", "test_label");
+        headers.put("testDsId", "OBJ");
+        headers.put("testObjMimeType", "image/jpg");
+        headers.put("testFedoraModel", "info:fedora/si:generalImageCModel");
+
+        VelocityContext velocityContext = new VelocityContext();
+        velocityContext.put("date", new DateTool());
+        velocityContext.put("headers", headers);
+
+        headers.put(VelocityConstants.VELOCITY_CONTEXT, velocityContext);
+
+        String jmsMsg = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_atom.vsl", "test body", headers, String.class);
+        String dsXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl", "test body", headers, String.class);
+        String rels_extXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_RELS-EXT.vsl", "test body", headers, String.class);
+
+        log.debug(jmsMsg);
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -198,6 +276,15 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         mockDelete.expectedMessageCount(2);
         mockDelete.expectedHeaderValuesReceivedInAnyOrder("imageid", "testDeploymentIds1i1000", "testRaccoonAndFox");
         mockDelete.setAssertPeriod(1500);
+
+        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
+                weaveById("processFedoraGetRELS-EXT").replace().setBody().simple(rels_extXML);
+                weaveById("logFilteredMessage").after().to("mock:filter");
+            }
+        });
 
         context.getRouteDefinition("EdanIdsProcessFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -210,7 +297,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
             @Override
             public void configure() throws Exception {
                 weaveById("deleteEdanSearchRequest").replace().setBody().simple(readFileToString(new File(KARAF_HOME + "/test-json-data/edanDeletePidSearch_response.json")));
-                weaveById("deleteEdanRecordRequest").replace().log(LoggingLevel.INFO, "Skipping Edan Delete HTTP Call!!!").to("mock:delete");
+                weaveById("deleteEdanRecordRequest").replace().log(LoggingLevel.INFO, "Skipping Edan Delete HTTP Call!!!").to("mock:delete").stop();
             }
         });
 
@@ -218,7 +305,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("methodName", "purgeDatastream");
         //exchange.getIn().setHeader("pid", getExtra().getProperty("si.ct.namespace") + ":test");
         exchange.getIn().setHeader("pid", "test:0001");
-        exchange.getIn().setBody(testFedoraMessageBody);
+        exchange.getIn().setBody(jmsMsg);
 
         template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
 
@@ -228,7 +315,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void filterSpeciesNameTest() throws Exception {
         String testManifestXML = readFileToString(testManifest);
-        String testFusekiObjectFoundXML = readFileToString(new File(KARAF_HOME + "/test-data/objectFoundFusekiResponse.xml"));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -237,8 +323,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraGetDatastreams").remove();
-                weaveById("setImageid").replace().setHeader("imageid").simple("${header.test_imageid}");
                 weaveById("processFedoraFindParentObject").remove();
                 weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
                 weaveByType(FilterDefinition.class).before().log("Checking imageid: ${header.imageid}...");
@@ -250,21 +334,21 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("ManifestXML", testManifestXML);
 
         // Double-identification set with raccoon and human:
-        exchange.getIn().setHeader("test_imageid", "testImageRaccoonAndMan");
+        exchange.getIn().setHeader("imageid", "testImageRaccoonAndMan");
         template.send("direct:edanUpdate", exchange);
 
         // Set with human:
-        exchange.getIn().setHeader("test_imageid", "testImageMan");
+        exchange.getIn().setHeader("imageid", "testImageMan");
         exchange.setProperty(Exchange.ROUTE_STOP, false);
         template.send("direct:edanUpdate", exchange);
 
         // Set with human and vehicle:
-        exchange.getIn().setHeader("test_imageid", "testImageRaccoonAndVehicleAndMan");
+        exchange.getIn().setHeader("imageid", "testImageRaccoonAndVehicleAndMan");
         exchange.setProperty(Exchange.ROUTE_STOP, false);
         template.send("direct:edanUpdate", exchange);
 
         // Double-identification set with Raccoon and Fox:
-        exchange.getIn().setHeader("test_imageid", "RaccoonAndFox");
+        exchange.getIn().setHeader("imageid", "RaccoonAndFox");
         exchange.setProperty(Exchange.ROUTE_STOP, false);
         template.send("direct:edanUpdate", exchange);
 
@@ -291,8 +375,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraGetDatastreams").remove();
-                weaveById("setImageid").replace().setHeader("imageid").simple("${header.test_imageid}");
                 weaveById("processFedoraFindParentObject").remove();
                 weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
 
@@ -319,7 +401,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", testManifestXML);
         exchange.getIn().setHeader("pid", "test:0001");
-        exchange.getIn().setHeader("test_imageid", "testRaccoonAndFox");
+        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
 
         template.send("direct:edanUpdate", exchange);
 
@@ -343,8 +425,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraGetDatastreams").remove();
-                weaveById("setImageid").replace().setHeader("imageid").simple("${header.test_imageid}");
                 weaveById("processFedoraFindParentObject").remove();
                 weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
 
@@ -384,7 +464,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", testManifestXML);
         exchange.getIn().setHeader("pid", "test:0001");
-        exchange.getIn().setHeader("test_imageid", "testRaccoonAndFox");
+        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
 
         template.send("direct:edanUpdate", exchange);
 
@@ -609,8 +689,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void edanIdsExceptionTest () throws Exception {
         String testManifestXML = readFileToString(testManifest);
-        String testDatastreamsXML = readFileToString(new File(KARAF_HOME + "/test-data/fedoraObjectDatastreams.xml"));
-        String testFusekiObjectFoundXML = readFileToString(new File(KARAF_HOME + "/test-data/objectFoundFusekiResponse.xml"));
         Integer minEdanRedelivery = Integer.valueOf(getExtra().getProperty("min.edan.redeliveries"));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -625,7 +703,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraGetDatastreams").replace().setBody().simple(testDatastreamsXML);
+                //weaveById("processFedoraGetDatastreams").replace().setBody().simple(testDatastreamsXML);
                 weaveById("processFedoraFindParentObject").replace().setHeader("parentPid").simple("test:0001");
                 weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
             }
@@ -654,9 +732,18 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                     }
                 };
 
+                context.getRouteDefinition("edanHttpRequest").onException(EdanIdsException.class)
+                        .useExponentialBackOff()
+                        .backOffMultiplier(2)
+                        .redeliveryDelay("{{si.ct.edanIds.redeliveryDelay}}")
+                        .maximumRedeliveries("{{min.edan.redeliveries}}")
+                        .retryAttemptedLogLevel(LoggingLevel.WARN)
+                        .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                        //.logExhausted(true)
+                        .log(LoggingLevel.ERROR, "************[ TEST edanHttpRequest ONEXCEPTION ]************")
+                        .to("mock:error");
 
                 weaveById("edanApiSendRequest").replace().process(processor);
-                weaveById("logEdanIdsException").after().to("mock:error");
                 weaveAddLast().to("mock:result").stop();
             }
         });
@@ -668,7 +755,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         template.send("direct:edanUpdate", exchange);
 
         assertMockEndpointsSatisfied();
-
     }
 
     @Test
@@ -715,6 +801,18 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("EdanIdsProcessCtDeployment").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                context.getRouteDefinition("EdanIdsProcessCtDeployment")
+                        .onException(Exception.class, HttpOperationFailedException.class, SocketException.class)
+                        .onWhen(exchangeProperty(Exchange.TO_ENDPOINT).regex("^(http|https|cxfrs?(:http|:https)|http4):.*"))
+                        .useExponentialBackOff()
+                        .backOffMultiplier(2)
+                        .redeliveryDelay("{{si.ct.edanIds.redeliveryDelay}}")
+                        .maximumRedeliveries("{{min.edan.http.redeliveries}}")
+                        .retryAttemptedLogLevel(LoggingLevel.WARN)
+                        .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                        .logNewException(true)
+                        .log(LoggingLevel.ERROR, "************[ TEST HTTP ONEXCEPTION ]************")
+                        .to("mock:error");
 
                 /**
                  * I have not been able to come up with a way of testing other exceptions (exception bar) being thrown
@@ -746,11 +844,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                     }
                 };
 
-                //this will not trigger the onWhen in the onException use interceptSendToEndpoint
-                //weaveById("ctProcessGetFedoraDatastream").replace().process(processor);
-
                 interceptSendToEndpoint("http4:*").skipSendToOriginalEndpoint().process(processor);
-                weaveById("logEdanIdsHTTPException").after().to("mock:error");
                 weaveById("ctProcessEdanUpdate").replace().to("mock:result").stop();
             }
         });
