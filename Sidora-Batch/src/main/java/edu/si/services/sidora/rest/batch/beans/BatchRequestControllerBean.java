@@ -198,6 +198,12 @@ public class BatchRequestControllerBean {
         out.setHeader("objDsLabelExtension", objDsLabelExtension);
     }
 
+    public void setPrimaryTitleLabel(Exchange exchange) {
+        out = exchange.getIn();
+        String primaryTitleLabel = FilenameUtils.getBaseName(out.getHeader("objDsLabel", String.class));
+        out.setHeader("primaryTitleLabel", primaryTitleLabel);
+    }
+
     /**
      * Check Status Response Codes
      * @param camelHttpResponseCode

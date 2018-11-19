@@ -27,7 +27,6 @@
 
 package edu.si.services.beans.edansidora;
 
-import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
@@ -106,8 +105,9 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
 
         from("activemq:queue:{{edanIds.queue}}").routeId("EdanIdsStartProcessing")
-
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting processing ...").id("logStart")
+                .setHeader("fedoraAtom").simple("${body}", String.class)
+                .log(LoggingLevel.DEBUG, "${id} EdanIds: JMS Body: ${body}")
 
                 //Set the Authorization header for Fedora HTTP calls
                 .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
@@ -129,18 +129,45 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .setHeader("dsID").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsID']/@term", String.class, ns)
                         .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
 
+                        //Grab the objects datastreams as xml
+                        .setHeader("CamelHttpMethod").constant("GET")
+                        .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
+                        .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+                        .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
+                        .choice()
+                            .when().simple("${body} != null || ${body} != ''")
+                                .setHeader("objLabel").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns).id("setImageid")
+                                .setHeader("mimeType").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@mimeType", String.class, ns).id("setMimeType")
+                            .endChoice()
+                        .end()
+                        .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/RELS-EXT/content")
+                        .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+                        .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetRELS-EXT")
+                        .choice()
+                            .when().simple("${body} != null || ${body} != ''")
+                                .setHeader("hasModel").xpath("string-join(//fs:hasModel/@rdf:resource, ',')", String.class, ns).id("setHasModel")
+                            .endChoice()
+                        .end()
+
                         .filter()
                             .simple("${header.origin} == '{{si.fedora.user}}' || " +
                                     " ${header.dsID} != 'OBJ' || " +
                                     " ${header.dsLabel} contains 'Observations' || " +
+                                    " ${header.objLabel} contains 'Observations' || " +
+                                    " ${header.dsLabel} == null || " +
+                                    " ${header.objLabel} == null || " +
+                                    " ${header.dsLabel} in ',null' || " +
+                                    " ${header.objLabel} in ',null' || " +
                                     " ${header.methodName} not in 'addDatastream,modifyDatastreamByValue,modifyDatastreamByReference,modifyObject,ingest,purgeDatastream' || " +
-                                    " ${header.pid} not contains '{{si.ct.namespace}}:'")
+                                    " ${header.pid} not contains '{{si.ct.namespace}}:' || " +
+                                    " ${header.mimeType} not contains 'image' || " +
+                                    " ${header.hasModel?.toLowerCase()} not contains 'image'")
 
-                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required.").id("logFilteredMessage")
+                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}, objLabel=${header.objLabel}, objMimeType=${header.mimeType}, hasModel=${header.hasModel} ] - No message processing required!").id("logFilteredMessage")
                             .stop()
                         .end()
 
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Fedora Message Found: Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Fedora Message Found: Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}, objLabel=${header.objLabel}, objMimeType=${header.mimeType}, hasModel= ${header.hasModel}")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Processing Body: ${body}")
                         .to("direct:processFedoraMessage").id("startProcessingFedoraMessage")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing EDAN and IDS record update for PID: ${header.pid}.")
@@ -164,17 +191,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
         from("direct:edanUpdate").routeId("edanUpdate")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Update...")
-
-                //Grab the objects datastreams as xml
-                .setHeader("CamelHttpMethod").constant("GET")
-                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
-                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
-
-                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
-
-                //Get the label so we know what the imageid for image we are working with
-                .setHeader("imageid").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns).id("setImageid")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: label: ${header.imageid}")
 
                 //Check to see if we already have the manifest
                 .choice()

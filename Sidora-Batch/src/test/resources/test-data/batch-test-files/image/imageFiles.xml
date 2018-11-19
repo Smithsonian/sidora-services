@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <batch>
     <batch_id>batchID123456</batch_id>
-    <file>image1.jpg</file>
-    <file>image2.jpg</file>
-    <file>image3.jpg</file>
+    <file originalname="image1.jpg">image1.jpg</file>
+    <file originalname="image2.jpg">image2.jpg</file>
+    <file originalname="image3.jpg">image3.jpg</file>
 </batch>
