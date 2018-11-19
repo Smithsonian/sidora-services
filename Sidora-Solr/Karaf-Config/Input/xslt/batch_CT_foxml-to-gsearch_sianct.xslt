@@ -96,7 +96,7 @@
 			<field name="datasetLabel">
 				<xsl:value-of select="$dsLabel"/>
 			</field>
-			<xsl:apply-templates select="/ri:sparql/ri:results/ri:result"/>
+			<xsl:apply-templates select="/ri:sparql/ri:results/ri:result[1]"/>
 
 			<!--<xsl:apply-templates select="$FUSEKI_RESPONSE/ri:sparql/ri:results/ri:result"/>-->
 
@@ -135,7 +135,7 @@
         </doc>
     </xsl:template>
 
-	<xsl:template match="/ri:sparql/ri:results/ri:result">
+	<xsl:template match="/ri:sparql/ri:results/ri:result[1]">
 		<field name="ctPID">
 			<xsl:value-of select="$ctPID"/>
 		</field>

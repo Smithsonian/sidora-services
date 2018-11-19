@@ -53,4 +53,32 @@ public class SidoraSolrService {
         return null;
     }
 
+    @GET
+    @Path(value = "/reindex")
+    @Produces("*/*")
+    public Response solrReindexAll(@QueryParam("gsearch_solr") String gsearch_solr,
+                                   @QueryParam("gsearch_sianct") String gsearch_sianct,
+                                   @QueryParam("auth") String auth) {
+        return null;
+    }
+
+    @GET
+    @Path(value = "/deleteAll")
+    @Produces({"text/xml","application/xml","application/json"})
+    public Response solrDeleteAll(@QueryParam("gsearch_solr") String gsearch_solr,
+                                  @QueryParam("gsearch_sianct") String gsearch_sianct,
+                                @QueryParam("auth") String auth) {
+        return null;
+    }
+
+    @GET
+    @Path(value = "/deleteByQuery")
+    @Produces({"text/xml","application/xml","application/json"})
+    public Response solrDeleteByQuery(@QueryParam("gsearch_solr") String gsearch_solr,
+                                  @QueryParam("gsearch_sianct") String gsearch_sianct,
+                                  @QueryParam("query") String query,
+                                  @QueryParam("auth") String auth) {
+        return null;
+    }
+
 }

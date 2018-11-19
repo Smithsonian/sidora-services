@@ -1,0 +1,61 @@
+# For a quick start check out our HTTP Requests collection (Tools|HTTP Client|Open HTTP Requests Collection).
+#
+# Following HTTP Request Live Templates are available:
+# * 'gtrp' and 'gtr' create a GET request with or without query parameters;
+# * 'ptr' and 'ptrp' create a POST request with a simple or parameter-like body;
+# * 'mptr' and 'fptr' create a POST request to submit a form with a text or file field (multipart/form-data);
+
+####################################
+# Generic Solr update requests
+####################################
+### Delete All using solr update endpoint
+POST {{solr_host_url}}/{{sidora_solr_default_index}}gsearch_solr_test/update
+Content-Type: text/xml
+<update><commit><delete><query>*:*</query></delete></commit></update>
+
+### Delete All using solr update endpoint
+POST {{solr_host_url}}/{{sidora_sianct_default_index}}/update
+Content-Type: text/xml
+
+<update><commit><delete><query>*:*</query></delete></commit></update>
+
+####################################
+# Sidora Solr Camel Endpoint Calls
+####################################
+### Reindex All
+GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
+
+//> scripts/my-script.js
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Delete ALL
+GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Delete By Query (Query with single PID)
+GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:test.pid\:123
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Delete By Query (Query with PID and wildcard)
+GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:PID:test.pid\:*
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

@@ -32,7 +32,7 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-all</artifactId>
-            <scope>test</scope>
+            <!--<scope>test</scope>-->
         </dependency>
 
         <!--  osgi -->
@@ -80,13 +80,38 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-velocity</artifactId>
+            <artifactId>camel-solr</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Database -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jdbc</artifactId>
+            <version>${camel.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-solr</artifactId>
+            <artifactId>camel-sql</artifactId>
+            <version>${camel.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.11.1.1</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- CXF -->
@@ -109,7 +134,7 @@
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-rs-extension-providers</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -157,15 +182,20 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Testing -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test-blueprint</artifactId>
@@ -181,7 +211,7 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-camel</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
             <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
             <!--<exclusions>
                 <exclusion>
@@ -223,7 +253,8 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
-            <version>7.4.0</version>
+            <!--<version>7.4.0</version>-->
+            <version>4.10.4</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -247,8 +278,9 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>7.4.0</version>
-            <scope>test</scope>
+            <!--<version>7.4.0</version>-->
+            <version>4.10.4</version>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -259,7 +291,8 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
-            <version>7.4.0</version>
+            <!--<version>7.4.0</version>-->
+            <version>4.10.4</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -285,6 +318,18 @@
             <artifactId>velocity-tools</artifactId>
             <version>2.0</version>
             <scope>test</scope>
+        </dependency>
+
+        <!--<dependency>
+            <groupId>org.codehaus.woodstox</groupId>
+            <artifactId>woodstox-core-asl</artifactId>
+            <scope>provided</scope>
+        </dependency>-->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient-osgi</artifactId>
+            <version>4.5.3</version>
+            <scope>provided</scope>
         </dependency>
 
     </dependencies>
@@ -319,7 +364,7 @@
 
             <testResource>
                 <directory>../</directory>
-                <targetPath>${karaf.home}</targetPath>
+                <targetPath>${karaf.home}/etc</targetPath>
                 <includes>
                     <include>test.properties</include>
                 </includes>
@@ -417,6 +462,16 @@
                 <artifactId>camel-maven-plugin</artifactId>
                 <configuration>
                     <useBlueprint>true</useBlueprint>
+                    <applicationContextUri>sidora-solr-route.xml</applicationContextUri>
+                    <!--<logClasspath>true</logClasspath>-->
+                    <configAdminFileName>${project.build.directory}/test-classes/etc/edu.si.sidora.solr.cfg</configAdminFileName>
+                    <configAdminPid>edu.si.sidora.solr</configAdminPid>
+                    <systemProperties>
+                        <property>
+                            <key>karaf.home</key>
+                            <value>${project.build.directory}/test-classes</value>
+                        </property>
+                    </systemProperties>
                 </configuration>
             </plugin>
 

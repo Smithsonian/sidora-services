@@ -56,7 +56,7 @@ public class Solr_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.solr.cfg", KARAF_HOME + "/test.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.solr.cfg", KARAF_HOME + "/etc/test.properties");
     }
 
     protected String[] preventRoutesFromStarting() {
@@ -112,6 +112,12 @@ public class Solr_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
         extra.setProperty("dynamic.test.port", String.valueOf(PORT));
 
         super.setUp();
+    }
+
+    @Override
+    protected String[] loadConfigAdminConfigurationFile() {
+        // which .cfg file to use, and the name of the persistence-id
+        return new String[]{KARAF_HOME + "/etc/test.properties", "edu.si.sidora.solr"};
     }
 
     @Override
