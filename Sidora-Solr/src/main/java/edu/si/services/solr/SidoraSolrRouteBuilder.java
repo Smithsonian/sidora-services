@@ -413,9 +413,13 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         }
                     })
 
-                .split().simple("${header.batchJobs}")
-                    .to("sql:{{sql.updateSolrReindexJob}}?dataSource=#dataSourceReIndex&noop=true").id("updateSianctReindexJob")
-                .end();
+                    .choice()
+                        .when().simple("${header.batchJobs[0].methodName} == 'solrReindexAll'")
+                            .split().simple("${header.batchJobs}")
+                                .to("sql:{{sql.updateSolrReindexJob}}?dataSource=#dataSourceReIndex&noop=true").id("updateSianctReindexJob")
+                            .end()
+                        .endChoice()
+                    .end();
 
         from("direct:createDoc").routeId("createSolrDoc")
                 .log(LoggingLevel.DEBUG, "${id} :: ${routeId} :: Starting CreateSolrDoc [ size = ${header.batchJobs.size} ]")
