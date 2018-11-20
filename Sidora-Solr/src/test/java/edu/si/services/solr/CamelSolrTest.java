@@ -273,27 +273,28 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
 
         COMPLETION_SIZE = Integer.valueOf(context.resolvePropertyPlaceholders("{{sidora.solr.batch.size}}"));
 
-        List<String> pidAgg = new ArrayList<>();
+        List<String> ctTestPids = new ArrayList<>();
         for (int i = 1; i <= MAX_DOC; i++) {
-            pidAgg.add(CT_NAMESPACE + ":" + i);
+            ctTestPids.add(CT_NAMESPACE + ":" + i);
         }
 
-        LOG.info("PIDAggregation list = {}", pidAgg);
+        LOG.info("PIDAggregation list = {}", ctTestPids);
 
-        List<String> projectStructure = pidAgg.subList(pidAgg.size()-4, pidAgg.size());
-        List<String> imageResources = pidAgg.subList(pidAgg.size()-6, pidAgg.size());
-        List<String> observationResources = pidAgg.subList(pidAgg.size()-2, pidAgg.size());
+        List<String> projectStructurePids = ctTestPids.subList(0, 4);
+        List<String> imageResourcesPids = ctTestPids.subList(4, ctTestPids.size()-2);
+        List<String> observationResourcesPids = ctTestPids.subList(ctTestPids.size()-2, ctTestPids.size());
 
-        //2 indexes for observations (3 if we include image observation)
-        TOTAL_BATCH_COUNT = pidAgg.size() + 2;
+        //2 indexes for observations
+        TOTAL_BATCH_COUNT = ctTestPids.size();
 
         LOG.debug("Total batch count = {}", TOTAL_BATCH_COUNT);
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult.expectedMessageCount(TOTAL_BATCH_COUNT/COMPLETION_SIZE+1);
+        mockResult.expectedMinimumMessageCount(TOTAL_BATCH_COUNT/COMPLETION_SIZE+1);
 
         MockEndpoint mockCreateDocResult = getMockEndpoint("mock:createDocResult");
-        mockCreateDocResult.expectedMessageCount(TOTAL_BATCH_COUNT+1);
+        mockCreateDocResult.expectedMessageCount(TOTAL_BATCH_COUNT+3); //add 2 observations and 1 ct root object
+        mockCreateDocResult.setAssertPeriod(1500);
 
         MockEndpoint mockEnd = getMockEndpoint("mock:end");
         mockEnd.expectedMessageCount(1);
@@ -308,7 +309,7 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
                             public void process(Exchange exchange) throws Exception {
                                 Message out = exchange.getIn();
                                 String pid = out.getHeader("pid", String.class);
-                                if (observationResources.contains(pid)) {
+                                if (observationResourcesPids.contains(pid)) {
                                     out.setHeader("dsLabel", "Observations");
                                 } else {
                                     out.setHeader("dsLabel", "testLabel");
@@ -316,13 +317,6 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
                             }
                         })
                         .to("velocity:file:{{karaf.home}}/fedora/foxml/test_foxml.vsl");
-            }
-        });
-
-        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("updateSianctReindexJob").replace().log(LoggingLevel.INFO, "Skipp updating db");
             }
         });
 
@@ -336,7 +330,7 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         context.getRouteDefinition("sidoraSolrUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("sendToSolr").replace().to("mock:result");
+                weaveById("sendToSolr").replace().setBody().simple("{responseHeader={status=0,QTime=20}}").to("mock:result");
             }
         });
 
@@ -352,29 +346,32 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         //Project (projectPID)
         exchange.getIn().setHeader("ProjectId", "testDeploymentId");
         exchange.getIn().setHeader("ProjectName", "testDeploymentId");
-        exchange.getIn().setHeader("ProjectPID", projectStructure.get(0));
+        exchange.getIn().setHeader("ProjectPID", projectStructurePids.get(0));
 
         //SubProject (parkPID)
         exchange.getIn().setHeader("SubProjectId", "testDeploymentId");
         exchange.getIn().setHeader("SubProjectName", "testDeploymentId");
-        exchange.getIn().setHeader("SubProjectPID", projectStructure.get(1));
+        exchange.getIn().setHeader("SubProjectPID", projectStructurePids.get(1));
 
         //Plot (sitePID)
         exchange.getIn().setHeader("PlotId", "testDeploymentId");
         exchange.getIn().setHeader("PlotName", "testDeploymentId");
-        exchange.getIn().setHeader("PlotPID", projectStructure.get(2));
+        exchange.getIn().setHeader("PlotPID", projectStructurePids.get(2));
 
         //Site (ctPID)
         exchange.getIn().setHeader("SiteId", "testDeploymentId");
         exchange.getIn().setHeader("SiteName", "testDeploymentId");
-        exchange.getIn().setHeader("SitePID", projectStructure.get(3));
+        exchange.getIn().setHeader("SitePID", projectStructurePids.get(3));
 
 
         //Observations
-        exchange.getIn().setHeader("ResearcherObservationPID", observationResources.get(0));
-        exchange.getIn().setHeader("VolunteerObservationPID", observationResources.get(1));
+        exchange.getIn().setHeader("ResearcherObservationPID", observationResourcesPids.get(0));
+        exchange.getIn().setHeader("VolunteerObservationPID", observationResourcesPids.get(1));
         //exchange.getIn().setHeader("ImageObservationPID", observations.get(2));
 
+        List<String> pidAgg = new ArrayList<>();
+        pidAgg.addAll(imageResourcesPids);
+        pidAgg.addAll(observationResourcesPids);
         //just for fun mix things up
         Collections.shuffle(pidAgg);
         exchange.getIn().setHeader("PIDAggregation", Arrays.toString(pidAgg.toArray()).replaceAll("[\\[\\ \\]]", ""));
@@ -536,7 +533,7 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("operationName", "solrReindexAll");
         exchange.getIn().setHeader("TOTAL_BATCH_COUNT", TOTAL_BATCH_COUNT);
         exchange.getIn().setHeader("testLimit", context.resolvePropertyPlaceholders("{{sidora.solr.page.limit}}"));
-        exchange.getIn().setHeader("auth", context.resolvePropertyPlaceholders("{{si.fedora.password}}"));
+        exchange.getIn().setHeader("auth", context.resolvePropertyPlaceholders("{{si.solr.password}}"));
         exchange.getIn().setHeader("testTimeout", TEST_COMPLETION_TIMEOUT);
 
         template.send("direct:solrReindexAll", exchange);

@@ -248,6 +248,10 @@
                 <directory>../Sidora-Solr/Karaf-Config/Input</directory>
                 <targetPath>${target-karaf-input-path}</targetPath>
             </resource>
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
+            </resource>
         </resources>
 
         <plugins>
