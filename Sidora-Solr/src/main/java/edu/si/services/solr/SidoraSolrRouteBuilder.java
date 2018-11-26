@@ -303,6 +303,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .log( LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: CT Solr Job RECEIVED, PID's: ${header.PIDAggregation}")
 
                 .split().tokenize(",", "PIDAggregation")
+                    .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
                     .setHeader("pid").simple("${body}")
 
                     .choice()
