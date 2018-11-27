@@ -51,6 +51,9 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "si.fedora.password")
     private String fedoraPasword;
 
+    @PropertyInject(value = "si.ct.edanIds.parallelProcessing", defaultValue = "true")
+    private String PARALLEL_PROCESSING;
+
     @Override
     public void configure() throws Exception {
         Namespaces ns = new Namespaces("atom", "http://www.w3.org/2005/Atom");
@@ -121,7 +124,9 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     .when().simple("${header.addEdanIds}")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Found: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
-                        .to("direct:processCtDeployment").id("startProcessCtDeployment")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: ***** Delaying for a moment before starting EdanIds CT processing *****")
+                        .delay(1500)
+                        .to("activemq:queue:{{edanIds.ct.queue}}").id("startProcessCtDeployment")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message")
                     .endChoice()
                     .otherwise()
@@ -222,6 +227,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setBody().simple("[\"p.emammal_image.image.id:${header.imageid}\"]")
                 .setHeader(Exchange.HTTP_QUERY).groovy("\"fqs=\" + URLEncoder.encode(request.getBody(String.class));")
                 .to("direct:edanHttpRequest").id("updateEdanSearchRequest")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EdanSearch result:\n${body}")
 
                 //Convert string JSON so we can access the data
                 .unmarshal().json(JsonLibrary.Gson, true) //converts json to LinkedTreeMap
@@ -281,6 +287,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 //Asset XML atributes indicating serve to IDS (pub)
                 .setHeader("isPublic").simple("Yes")
                 .setHeader("isInternal").simple("No")
+
+.log(LoggingLevel.INFO, "*******************************[ Calling idsAssetUpdate ]*******************************")
 
                 // add the asset and create/append the asset xml
                 .to("direct:idsAssetUpdate").id("fedoraUpdateIdsAssetUpdate")
@@ -439,11 +447,14 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
                         .removeHeader("CamelHttpQuery")
 
+.log(LoggingLevel.INFO, "###############################[ Get Image http uri = ${header.CamelHttpUri} ]###############################").stop()
+
                         .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAssetUpdateGetFedoraOBJDatastreamContent")
 
                         //Save the image asset to the file system alongside the asset xml
                         //TODO: we can get the filename with extension from the headers when getting the OBJ datastream from fedora
                         //.setHeader("CamelOverruleFileName", simple("emammal_image_${header.imageid}.JPG"))
+.log(LoggingLevel.INFO, "###############################[ Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.imageid}.JPG ]###############################").stop()
                         .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}?fileName=${header.idsAssetImagePrefix}${header.imageid}.JPG")
                         .delay(1500)
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
@@ -487,13 +498,33 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Parent PID: ${header.parentPid}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Find Parent Object...");
 
+        from("activemq:queue:{{edanIds.ct.queue}}").routeId("EdanIdsProcessCtMsg")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting processing ...").id("ctEdanIdsStart")
+                .setHeader("fedoraAtom").simple("${body}", String.class)
+                .log(LoggingLevel.DEBUG, "${id} EdanIds: CT Ingest JMS Body: ${body}")
+
+                //Set the Authorization header for Fedora HTTP calls
+                .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Fedora Authorization: ${header.Authorization}")
+
+                //Remove unneeded headers that may cause problems later on
+                .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders|CamelSchematronValidationReport|datastreamValidationXML")
+
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: ***** Delaying for a moment before starting EdanIds CT processing *****")
+                .delay(1500)
+                .to("direct:processCtDeployment").id("ctStartProcessCtDeployment")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message");
+
         from("direct:processCtDeployment").routeId("EdanIdsProcessCtDeployment")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Camera Trap Deployment processing...")
 
                 // use the list of pids that the ct ingest route created and we sent as part of the JMS message
                 // We could also get the deployment RELS-EXT and do the same thing or validate the pids in the
                 // PIDAggregation header created during the CT ingest against the deployment RELS-EXT pids
-                .split().tokenize(",", "PIDAggregation")
+                .split().tokenize(",", "PIDAggregation")//.parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING)).aggregationStrategy(new EdanIdsAggregationStrategy())
+
                     .setHeader("pid").simple("${body}")
                     .choice()
                         // Make sure the pid is not an observation object
