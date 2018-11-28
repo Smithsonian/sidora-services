@@ -121,13 +121,19 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     .when().simple("${header.addEdanIds}")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Found: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
-                        .to("direct:processCtDeployment").id("startProcessCtDeployment")
+                        .to("activemq:queue:{{edanIds.ct.queue}}").id("startProcessCtDeployment")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message")
                     .endChoice()
                     .otherwise()
                         .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
                         .setHeader("dsID").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsID']/@term", String.class, ns)
                         .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
+
+                        .filter()
+                            .simple("${header.origin} == '{{si.fedora.user}}'")
+                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered CT USER!! [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required!").id("logFilteredMessage")
+                            .stop()
+                        .end()
 
                         //Grab the objects datastreams as xml
                         .setHeader("CamelHttpMethod").constant("GET")
@@ -222,6 +228,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setBody().simple("[\"p.emammal_image.image.id:${header.imageid}\"]")
                 .setHeader(Exchange.HTTP_QUERY).groovy("\"fqs=\" + URLEncoder.encode(request.getBody(String.class));")
                 .to("direct:edanHttpRequest").id("updateEdanSearchRequest")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EdanSearch result:\n${body}")
 
                 //Convert string JSON so we can access the data
                 .unmarshal().json(JsonLibrary.Gson, true) //converts json to LinkedTreeMap
@@ -486,6 +493,25 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setHeader("parentPid").xpath("substring-after(/ri:sparql/ri:results/ri:result[1]/ri:binding/ri:uri, 'info:fedora/')", String.class, ns)
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Parent PID: ${header.parentPid}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Find Parent Object...");
+
+        from("activemq:queue:{{edanIds.ct.queue}}").routeId("EdanIdsProcessCtMsg")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting processing ...").id("ctEdanIdsStart")
+                .setHeader("fedoraAtom").simple("${body}", String.class)
+                .log(LoggingLevel.DEBUG, "${id} EdanIds: CT Ingest JMS Body: ${body}")
+
+                //Set the Authorization header for Fedora HTTP calls
+                .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Fedora Authorization: ${header.Authorization}")
+
+                //Remove unneeded headers that may cause problems later on
+                .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders|CamelSchematronValidationReport|datastreamValidationXML")
+
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: ***** Delaying for a moment before starting EdanIds CT processing *****")
+                .delay(1500)
+                .to("direct:processCtDeployment").id("ctStartProcessCtDeployment")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message");
 
         from("direct:processCtDeployment").routeId("EdanIdsProcessCtDeployment")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Camera Trap Deployment processing...")

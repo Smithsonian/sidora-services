@@ -366,7 +366,7 @@
                             <simple>true</simple>
                         </setHeader>
 
-                        <to uri="activemq:queue:{{edanIds.queue}}" id="edanIdsActiveMQ"/>
+                        <to uri="activemq:queue:{{edanIds.ct.queue}}" id="edanIdsActiveMQ"/>
 
                         <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
 
