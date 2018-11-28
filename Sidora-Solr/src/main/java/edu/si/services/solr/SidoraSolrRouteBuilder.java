@@ -60,7 +60,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
     private static final Logger LOG = LoggerFactory.getLogger(SidoraSolrRouteBuilder.class);
 
-    @PropertyInject(value = "edu.si.services.solr")
+    @PropertyInject(value = "edu.si.solr")
     static private String LOG_NAME;
 
     @PropertyInject(value = "si.fedora.user")
@@ -119,7 +119,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        /*errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
+        errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
                 //.useOriginalMessage()
                 .maximumRedeliveries(Integer.parseInt(redeliveryDelay))
                 .redeliveryDelay(Integer.parseInt(maximumRedeliveries))
@@ -132,7 +132,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .logExhaustedMessageHistory(true)
                 .logStackTrace(true)
                 .logHandled(true)
-                .log("${id} :: ${routeId} :: **** ERROR_HANDLER **** FAILURE_ROUTE_ID=${header.CamelFailureRouteId}, FAILURE_ENDPOINT=${header.CamelFailureEndpoint}, TO_ENDPOINT=${header.CamelToEndpoint}"));*/
+                .log("${id} :: ${routeId} :: **** ERROR_HANDLER **** FAILURE_ROUTE_ID=${header.CamelFailureRouteId}, FAILURE_ENDPOINT=${header.CamelFailureEndpoint}, TO_ENDPOINT=${header.CamelToEndpoint}"));
 
         Namespaces ns = new Namespaces("atom", "http://www.w3.org/2005/Atom");
         ns.add("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
@@ -303,6 +303,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .log( LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: CT Solr Job RECEIVED, PID's: ${header.PIDAggregation}")
 
                 .split().tokenize(",", "PIDAggregation")
+                    .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
                     .setHeader("pid").simple("${body}")
 
                     .choice()
