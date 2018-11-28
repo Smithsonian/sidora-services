@@ -51,9 +51,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "si.fedora.password")
     private String fedoraPasword;
 
-    @PropertyInject(value = "si.ct.edanIds.parallelProcessing", defaultValue = "true")
-    private String PARALLEL_PROCESSING;
-
     @Override
     public void configure() throws Exception {
         Namespaces ns = new Namespaces("atom", "http://www.w3.org/2005/Atom");
@@ -124,8 +121,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     .when().simple("${header.addEdanIds}")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Found: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: ***** Delaying for a moment before starting EdanIds CT processing *****")
-                        .delay(1500)
                         .to("activemq:queue:{{edanIds.ct.queue}}").id("startProcessCtDeployment")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message")
                     .endChoice()
@@ -133,6 +128,12 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
                         .setHeader("dsID").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsID']/@term", String.class, ns)
                         .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
+
+                        .filter()
+                            .simple("${header.origin} == '{{si.fedora.user}}'")
+                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered CT USER!! [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required!").id("logFilteredMessage")
+                            .stop()
+                        .end()
 
                         //Grab the objects datastreams as xml
                         .setHeader("CamelHttpMethod").constant("GET")
@@ -287,8 +288,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 //Asset XML atributes indicating serve to IDS (pub)
                 .setHeader("isPublic").simple("Yes")
                 .setHeader("isInternal").simple("No")
-
-.log(LoggingLevel.INFO, "*******************************[ Calling idsAssetUpdate ]*******************************")
 
                 // add the asset and create/append the asset xml
                 .to("direct:idsAssetUpdate").id("fedoraUpdateIdsAssetUpdate")
@@ -447,14 +446,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
                         .removeHeader("CamelHttpQuery")
 
-.log(LoggingLevel.INFO, "###############################[ Get Image http uri = ${header.CamelHttpUri} ]###############################").stop()
-
                         .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAssetUpdateGetFedoraOBJDatastreamContent")
 
                         //Save the image asset to the file system alongside the asset xml
                         //TODO: we can get the filename with extension from the headers when getting the OBJ datastream from fedora
                         //.setHeader("CamelOverruleFileName", simple("emammal_image_${header.imageid}.JPG"))
-.log(LoggingLevel.INFO, "###############################[ Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.imageid}.JPG ]###############################").stop()
                         .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}?fileName=${header.idsAssetImagePrefix}${header.imageid}.JPG")
                         .delay(1500)
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
@@ -523,8 +519,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 // use the list of pids that the ct ingest route created and we sent as part of the JMS message
                 // We could also get the deployment RELS-EXT and do the same thing or validate the pids in the
                 // PIDAggregation header created during the CT ingest against the deployment RELS-EXT pids
-                .split().tokenize(",", "PIDAggregation")//.parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING)).aggregationStrategy(new EdanIdsAggregationStrategy())
-
+                .split().tokenize(",", "PIDAggregation")
                     .setHeader("pid").simple("${body}")
                     .choice()
                         // Make sure the pid is not an observation object
