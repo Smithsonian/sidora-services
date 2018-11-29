@@ -142,7 +142,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
                         .choice()
                             .when().simple("${body} != null || ${body} != ''")
-                                .setHeader("objLabel").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns).id("setImageid")
+                                .setHeader("objLabel").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns).id("setobjLabel")
                                 .setHeader("mimeType").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@mimeType", String.class, ns).id("setMimeType")
                             .endChoice()
                         .end()
@@ -182,6 +182,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
         from("direct:processFedoraMessage").routeId("EdanIdsProcessFedoraMessage")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Fedora Message processing...")
+
+                .setHeader("imageid").simple("${header.dsLabel}").id("setImageid")
 
                 //Is this an Update or Delete
                 .choice()
