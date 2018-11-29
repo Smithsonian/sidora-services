@@ -264,6 +264,13 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: EDAN record not found for ImageId: ${header.imageid}")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Create Content...")
 
+                        //check for siteId header messages from edanIds.ct.update provides this edanIds.apim.update does not
+                        .choice().when().simple("${header.SiteId} == null")
+                                //Headers needed for IDS push
+                                .setHeader("SiteId").xpath("//CameraDeploymentID", String.class, ns, "ManifestXML")
+                        .endChoice()
+                        .end()
+
                         // create the EDAN content and encode
                         .to("direct:createEdanJsonContent")
 
