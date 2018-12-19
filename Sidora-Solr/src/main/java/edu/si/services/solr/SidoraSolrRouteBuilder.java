@@ -121,8 +121,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
         errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
                 //.useOriginalMessage()
-                .maximumRedeliveries(Integer.parseInt(redeliveryDelay))
-                .redeliveryDelay(Integer.parseInt(maximumRedeliveries))
+                .maximumRedeliveries(Integer.parseInt(maximumRedeliveries))
+                .redeliveryDelay(Integer.parseInt(redeliveryDelay))
                 .backOffMultiplier(Integer.parseInt(backOffMultiplier))
                 .useExponentialBackOff()
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
@@ -764,8 +764,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
         from("seda:storeReceived").routeId("storeReceivedJobs")
                 .aggregate(simple("${header.batch}"), new GroupedExchangeAggregationStrategy())
-                    .completionSize(simple("${header.TOTAL_BATCH_COUNT}"))
-                    .completionTimeout(new Expression() {
+                .completionSize(Integer.parseInt(BATCH_SIZE))
+                .completionTimeout(new Expression() {
                         @Override
                         public <T> T evaluate(Exchange exchange, Class<T> type) {
                             if (exchange.getIn().getHeader("testTimeout", long.class) != null && exchange.getIn().getHeader("testTimeout", long.class) > 0) {
