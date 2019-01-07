@@ -10,7 +10,10 @@
      
  -->
     
-    <xsl:template match="/">  
+    <xsl:param name="cameraMake"/>
+    <xsl:param name="cameraModel"/>
+
+    <xsl:template match="/">
         <xsl:apply-templates select="/CameraTrapDeployment"/> 
     </xsl:template>
  
@@ -139,6 +142,30 @@
                         <enttypd>Camera Settings for the Deployment.</enttypd>
                         <enttypds>Camera Trap Data Network</enttypds>
                     </enttyp>
+                    <attr>
+                        <attrlabl>Camera Make</attrlabl>
+                        <attrdef>The Digital Camera Manufacture</attrdef>
+                        <attrdefs>Camera Trap Data Network</attrdefs>
+                        <attrdomv>
+                            <edom>
+                                <edomv><xsl:value-of select="$cameraMake"></xsl:value-of></edomv>
+                                <edomvd>The Digital Camera Manufacture</edomvd>
+                                <edomvds>Camera Trap Data Network Standard</edomvds>
+                            </edom>
+                        </attrdomv>
+                    </attr>
+                    <attr>
+                        <attrlabl>Camera Model</attrlabl>
+                        <attrdef>The Digital Camera Model</attrdef>
+                        <attrdefs>Camera Trap Data Network</attrdefs>
+                        <attrdomv>
+                            <edom>
+                                <edomv><xsl:value-of select="$cameraModel"></xsl:value-of></edomv>
+                                <edomvd>The Digital Camera Model</edomvd>
+                                <edomvds>Camera Trap Data Network Standard</edomvds>
+                            </edom>
+                        </attrdomv>
+                    </attr>
                     <attr>
                         <attrlabl>Camera ID</attrlabl>
                         <attrdef>The Unique identifier for the camera.</attrdef>
