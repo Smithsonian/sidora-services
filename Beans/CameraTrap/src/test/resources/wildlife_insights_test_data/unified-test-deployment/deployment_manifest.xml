@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CameraTrapDeployment>
+    <ProjectId>testWildLifeInsightsProjectId</ProjectId>
+    <ProjectName>Sample Camera Trap Survey Project</ProjectName>
+    <ProjectObjectives>Sample Project Objectives</ProjectObjectives>
+    <PublishDate>2016-04-27</PublishDate>
+    <ProjectOwners>
+        <ProjectOwner>
+            <ProjectOwnerName>Sample Owner</ProjectOwnerName>
+            <ProjectOwnerEmail>owner@sample.org</ProjectOwnerEmail>
+        </ProjectOwner>
+    </ProjectOwners>
+    <PrincipalInvestigators>
+        <PrincipalInvestigator>
+            <PrincipalInvestigatorName>Sample Investigator</PrincipalInvestigatorName>
+            <PrincipalInvestigatorEmail>investigator@sample.org</PrincipalInvestigatorEmail>
+        </PrincipalInvestigator>
+    </PrincipalInvestigators>
+    <ProjectContacts>
+        <ProjectContact>
+            <ProjectContactName>Sample Project Contact</ProjectContactName>
+            <ProjectContactEmail>projectcontact@sample.org</ProjectContactEmail>
+        </ProjectContact>
+    </ProjectContacts>
+    <ProjectLatitude>8.000000</ProjectLatitude>
+    <ProjectLongitude>-67.000000</ProjectLongitude>
+    <CountryCode>EC</CountryCode>
+    <ProjectDataAccessandUseConstraints>None</ProjectDataAccessandUseConstraints>
+    <SubProjectId>testWildLifeInsightsSubprojectId</SubProjectId>
+    <SubProjectName>Test Camera Trap Survey Subproject</SubProjectName>
+    <SubProjectDesign></SubProjectDesign>
+    <PlotName></PlotName>
+    <PlotTreatment></PlotTreatment>
+    <CameraDeploymentID>testWildLifeInsightsDeploymentId</CameraDeploymentID>
+    <CameraSiteName>Test Deployment</CameraSiteName>
+    <Originators>
+        <Originator>
+            <OriginatorName>411</OriginatorName>
+        </Originator>
+    </Originators>
+    <ProposedCameraDeploymentBeginDate></ProposedCameraDeploymentBeginDate>
+    <ProposedCameraDeploymentEndDate></ProposedCameraDeploymentEndDate>
+    <ProposedLatitude>35.61963</ProposedLatitude>
+    <ProposedLongitude>-78.94040</ProposedLongitude>
+    <CameraDeploymentBeginDate>2016-02-13</CameraDeploymentBeginDate>
+    <CameraDeploymentEndDate>2016-03-02</CameraDeploymentEndDate>
+    <CameraDeploymentNotes><![CDATA[ Harris Lake County Park, Long Leaf Management Area #12 ]]></CameraDeploymentNotes>
+    <ActualLatitude>35.61964</ActualLatitude>
+    <ActualLongitude>-78.94040</ActualLongitude>
+    <CameraFailureDetails>Camera Functioning</CameraFailureDetails>
+    <Bait>No Bait</Bait>
+    <BaitDescription></BaitDescription>
+    <Feature>Not Entered</Feature>
+    <FeatureMethodology></FeatureMethodology>
+    <AccessConstraints>US</AccessConstraints>
+    <CameraID>NRC61</CameraID>
+    <DetectionDistance>22</DetectionDistance>
+    <QuietPeriodSetting></QuietPeriodSetting>
+    <ImageResolutionSetting></ImageResolutionSetting>
+    <SensitivitySetting></SensitivitySetting>
+    <ImageSequence>
+        <ImageSequenceId>testWildLifeInsightsDeploymentIds1</ImageSequenceId>
+        <ImageSequenceBeginTime>2016-02-13T12:11:26</ImageSequenceBeginTime>
+        <ImageSequenceEndTime>2016-02-13T12:11:43</ImageSequenceEndTime>
+        <VolunteerIdentifications>
+            <Identification>
+                <IUCNId>42394</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
+                <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
+                <Count>3</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+            <Identification>
+                <IUCNId>180604</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Homo sapiens</SpeciesScientificName>
+                <SpeciesCommonName>Human male</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </VolunteerIdentifications>
+        <ResearcherIdentifications>
+            <Identification>
+                <IUCNId>42394</IUCNId>
+                <TSNId>2</TSNId>
+                <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
+                <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
+                <Count>3</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+            <Identification>
+                <IUCNId>180604</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Homo sapiens</SpeciesScientificName>
+                <SpeciesCommonName>Human male</SpeciesCommonName>
+                <Count>2</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </ResearcherIdentifications>
+        <Image>
+            <ImageId>testWildLifeInsightsDeploymentIds1i1</ImageId>
+            <ImageFileName>testWildLifeInsightsDeploymentIds1i1.JPG</ImageFileName>
+            <ImageDateTime>2016-02-13 12:11:26</ImageDateTime>
+            <ImageOrder>1</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+        <Image>
+            <ImageId>testWildLifeInsightsDeploymentIds1i2</ImageId>
+            <ImageFileName>testWildLifeInsightsDeploymentIds1i2.JPG</ImageFileName>
+            <ImageDateTime>2016-02-13 12:11:41</ImageDateTime>
+            <ImageOrder>10</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+        <Image>
+            <ImageId>testWildLifeInsightsDeploymentIds1i3</ImageId>
+            <ImageFileName>testWildLifeInsightsDeploymentIds1i3.JPG</ImageFileName>
+            <ImageDateTime>2016-02-13 12:11:41</ImageDateTime>
+            <ImageOrder>10</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+        <Image>
+            <ImageId>testWildLifeInsightsDeploymentIds1i4</ImageId>
+            <ImageFileName>testWildLifeInsightsDeploymentIds1i4.JPG</ImageFileName>
+            <ImageDateTime>2016-02-13 12:11:41</ImageDateTime>
+            <ImageOrder>10</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+        <Image>
+            <ImageId>testWildLifeInsightsDeploymentIds1i5</ImageId>
+            <ImageFileName>testWildLifeInsightsDeploymentIds1i5.JPG</ImageFileName>
+            <ImageDateTime>2016-02-13 12:11:41</ImageDateTime>
+            <ImageOrder>10</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+        <Image>
+            <ImageId>testWildLifeInsightsDeploymentIds1i6</ImageId>
+            <ImageFileName>testWildLifeInsightsDeploymentIds1i6.JPG</ImageFileName>
+            <ImageDateTime>2016-02-13 12:11:41</ImageDateTime>
+            <ImageOrder>10</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+    </ImageSequence>
+    <ImageSequence>
+        <ImageSequenceId>testWildLifeInsightsDeploymentIds2</ImageSequenceId>
+        <ImageSequenceBeginTime>2016-02-13T12:11:26</ImageSequenceBeginTime>
+        <ImageSequenceEndTime>2016-02-13T12:11:43</ImageSequenceEndTime>
+        <VolunteerIdentifications>
+            <Identification>
+                <IUCNId>42394</IUCNId>
+                <TSNId>1</TSNId>
+                <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
+                <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
+                <Count>3</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </VolunteerIdentifications>
+        <ResearcherIdentifications>
+            <Identification>
+                <IUCNId>42394</IUCNId>
+                <TSNId>2</TSNId>
+                <SpeciesScientificName>Odocoileus virginianus</SpeciesScientificName>
+                <SpeciesCommonName>White-tailed Deer</SpeciesCommonName>
+                <Count>3</Count>
+                <Age></Age>
+                <Sex></Sex>
+                <IndividualId></IndividualId>
+                <AnimalRecognizable></AnimalRecognizable>
+                <IndividualAnimalNotes></IndividualAnimalNotes>
+            </Identification>
+        </ResearcherIdentifications>
+        <Image>
+            <ImageId>testWildLifeInsightsDeploymentIds2i1</ImageId>
+            <ImageFileName>testWildLifeInsightsDeploymentIds2i1.JPG</ImageFileName>
+            <ImageDateTime>2016-02-13 12:11:26</ImageDateTime>
+            <ImageOrder>1</ImageOrder>
+            <ImageInterestRanking>None</ImageInterestRanking>
+            <digitalOrigin>born digital</digitalOrigin>
+            <PhotoType>animal</PhotoType>
+            <PhotoTypeIdentifications>
+                <PhotoTypeIdentifiedBy></PhotoTypeIdentifiedBy>
+            </PhotoTypeIdentifications>
+            <RestrictionsonAccess></RestrictionsonAccess>
+            <EmbargoPeriodEndDate></EmbargoPeriodEndDate>
+            <ImageUseRestrictions></ImageUseRestrictions>
+            <ImageIdentifications>
+                <Identification>
+                    <IUCNId></IUCNId>
+                    <TSNId></TSNId>
+                    <SpeciesScientificName></SpeciesScientificName>
+                    <SpeciesCommonName></SpeciesCommonName>
+                    <Count></Count>
+                    <Age></Age>
+                    <Sex></Sex>
+                    <IndividualId></IndividualId>
+                    <AnimalRecognizable></AnimalRecognizable>
+                    <IndividualAnimalNotes></IndividualAnimalNotes>
+                </Identification>
+            </ImageIdentifications>
+        </Image>
+    </ImageSequence>
+</CameraTrapDeployment>

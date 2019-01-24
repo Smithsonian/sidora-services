@@ -149,7 +149,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
             public void configure() throws Exception {
 
                 //add the mock:result endpoint and stop the route after the headers we are testing have been created
-                weaveByToString(".*reader:file.*").before().to("mock:result").stop();
+                weaveById("readImageResource").before().to("mock:result").stop();
             }
         });
 

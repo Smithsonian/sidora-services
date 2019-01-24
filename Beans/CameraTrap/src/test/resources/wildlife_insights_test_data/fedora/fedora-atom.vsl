@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entry xmlns="http://www.w3.org/2005/Atom" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/">
+    <id>urn:uuid:d31cf283-03f6-4fad-9104-947e44f6a1ab</id>
+    <updated>2017-12-21T16:47:12.205Z</updated>
+    <author>
+        <name>$headers.testOrigin</name>
+        <uri>http://localhost:8080/fedora</uri>
+    </author>
+    <title type="text">$headers.testMethodName</title>
+    <category term="$headers.testPID" scheme="fedora-types:pid" label="xsd:string"></category>
+    <category term="$headers.testDsId" scheme="fedora-types:dsID" label="xsd:string"></category>
+    <category term="" scheme="fedora-types:altIDs" label="fedora-types:ArrayOfString"></category>
+    <category term="$headers.testDsLabel" scheme="fedora-types:dsLabel" label="xsd:string"></category>
+    <category term="" scheme="fedora-types:formatURI" label="xsd:string"></category>
+    <category term="$headers.testDsLocation" scheme="fedora-types:dsLocation" label="xsd:string"></category>
+    <category term="Disabled" scheme="fedora-types:checksumType" label="xsd:string"></category>
+    <category term="null" scheme="fedora-types:checksum" label="xsd:string"></category>
+    <category term="$headers.testLogMessage" scheme="fedora-types:logMessage" label="xsd:string"></category>
+    <summary type="text">$headers.testPID</summary>
+    #*<content type="text">2017-12-21T16:47:12.204Z</content>*#
+    <content type="text">$date</content>
+    <category term="3.8.1" scheme="info:fedora/fedora-system:def/view#version"></category>
+    <category term="info:fedora/fedora-system:ATOM-APIM-1.0" scheme="http://www.fedora.info/definitions/1/0/types/formatURI"></category>
+</entry>

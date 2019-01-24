@@ -29,8 +29,11 @@
 
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
            xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
            http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd">
+
+    <cm:property-placeholder id="sidora.karaf.derivatives.properties" persistent-id="edu.si.sidora.derivatives"/>
 
     <!-- <osgi:reference id="activemq" interface="org.apache.camel.Component"/> -->
 
@@ -44,7 +47,7 @@
 
     <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
     <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
-        <!-- <property name="brokerURL" value="${broker.url}"/> -->
+        <!--<property name="brokerURL" value="vm://localhost?broker.persistent=false&amp;broker.useJmx=false"/>-->
         <property name="brokerURL" value="tcp://localhost:61616"/>
         <property name="userName" value="smx"/>
         <property name="password" value="smx"/>
@@ -89,9 +92,16 @@
                   xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
+                  xmlns:sidora="http://oris.si.edu/2017/01/relations#"
+                  xmlns:objectProfile="http://www.fedora.info/definitions/1/0/access/"
                   trace="false"
                   streamCache="true"
                   useMDCLogging="true">
+
+        <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
+        <propertyPlaceholder id="properties"
+                             location="blueprint:sidora.karaf.derivatives.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.karaf.cfg,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
+
 
         <!--
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
@@ -137,7 +147,7 @@
             
             
             <setHeader headerName="origin">
-                <xpath>
+                <xpath resultType="java.lang.String">
                     /atom:entry/atom:author/atom:name/text()
                 </xpath>
             </setHeader>
@@ -180,6 +190,26 @@
                 <log message="${id} Derivatives: Filtered ${header.DSID} - No derivative processing required."/>
                 <stop/>
             </filter>
+
+            <setHeader headerName="dsLocation">
+                <xpath resultType="java.lang.String">
+                    /atom:entry/atom:category[@scheme="fedora-types:dsLocation"]/@term
+                </xpath>
+            </setHeader>
+            <setHeader headerName="logMessage">
+                <xpath resultType="java.lang.String">
+                    /atom:entry/atom:category[@scheme="fedora-types:logMessage"]/@term
+                </xpath>
+            </setHeader>
+            <!-- Filter CT Face Blurred OBJ images that have already been processed -->
+            <!-- Otherwise will cause a loop -->
+            <filter>
+                <simple>
+                    ${header.logMessage} == 'faceBlurred'
+                </simple>
+                <log message="${id} Derivatives: Filtered ${header.logMessage} - No derivative processing required."/>
+                <stop/>
+            </filter>
             
             <!-- Filter out Fedora API methods that do not need derivatives processing. -->
             <!-- This could be done with a JMS selector. -->
@@ -212,13 +242,20 @@
             </setHeader>
 
             <!-- Get the Content Models for the FDO and put them on a list. -->
-            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut" id="getContentModels"/>
             <convertBodyTo type="java.lang.String" charset="utf-8"/>
             <log message="${id} Derivatives: RELS-EXT: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+
+            <setHeader headerName="isAdministeredBy">
+                <xpath resultType="java.lang.String">
+                    substring-after(//sidora:isAdministeredBy/@rdf:resource, 'info:fedora/')
+                </xpath>
+            </setHeader>
+
             <split strategyRef="modelAggregator">
-                <xpath>
+                <xpath resultType="java.lang.String">
                     //fs:hasModel/@rdf:resource
                 </xpath>
                 <log message="${id} Derivatives: Split Content Model. BODY: ${body}"
@@ -305,7 +342,7 @@
             <!-- We really should only make new derivatives if the OBJ has changed. -->
 
             <!-- Get the MIME type from the datastream profile. -->
-            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut" id="getObjDs"/>
             <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
@@ -322,11 +359,20 @@
                 DGI has quite a bit more in their Python conversions so we need to improve this.
             -->
 
-            <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
-            <to uri="file://staging/"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut" id="getObjContent"/>
+            <to uri="file://staging/" id="saveToStaging"/>
             <log message="${id} Derivatives: Staged file Name: ${header.CamelFileNameProduced}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+
+            <!-- only check for uploads (note WB triggers several OBJ updates operating on all causes issues) -->
+            <filter>
+                <simple>
+                    ${header.dsLocation} contains 'uploaded' || ${header.dsLocation} contains 'http://'
+                </simple>
+                <!-- If this is a CT image that needs face blurred -->
+                <to uri="direct:isFaceBlur" id="isFaceBlur"/>
+            </filter>
 
             <choice>
                 <description>Filter content by image format.</description>
@@ -1551,6 +1597,82 @@
             <log message="${id} Finished Video Thumbnail processing."
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesIsFaceBlur">
+            <from uri="direct:isFaceBlur"/>
+            <setHeader headerName="CamelHttpMethod">
+                <simple>GET</simple>
+            </setHeader>
+            <!-- Get Parent Datastreams -->
+            <toD uri="{{si.fedora.host}}/objects/${header.isAdministeredBy}/datastreams?format=xml" id="getParentDs"/>
+            <choice>
+                <!-- see if the parent object has a ct manifest -->
+                <when>
+                    <xpath>
+                        boolean(//@dsid='MANIFEST')
+                    </xpath>
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>GET</simple>
+                    </setHeader>
+                    <!-- Get the object label from object profile xml -->
+                    <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}?format=xml" id="getObjectXMl"/>
+                    <setHeader headerName="dsLabel">
+                        <xpath resultType="java.lang.String">
+                            /objectProfile:objectProfile/objectProfile:objLabel/text()
+                        </xpath>
+                    </setHeader>
+                    <!-- Get the manifest to check SpeciesScientificName -->
+                    <toD uri="{{si.fedora.host}}/objects/${header.isAdministeredBy}/datastreams/MANIFEST/content" id="getParentManifest"/>
+                    <choice>
+                        <!-- filter images that have SpeciesScientificName's that require face blur processing -->
+                        <when>
+                            <xpath logNamespaces="false" resultType="java.util.Boolean">
+                                //ImageSequence[Image[ImageId/text() = $in:dsLabel]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
+                            </xpath>
+                            <log message="${id}: Found image that may contain a face... Face Processing Required..."
+                                 loggingLevel="INFO"
+                                 logName="edu.si.derivatives"/>
+                            <setBody>
+                                <simple>${header.CamelFileNameProduced}</simple>
+                            </setBody>
+                            <to uri="reader:file"/>
+
+                            <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+                            <choice>
+                                <when>
+                                    <simple>${header.CamelExecExitValue} == 0</simple>
+
+                                    <!-- replace the staged file -->
+                                    <to uri="file:staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
+
+                                    <setHeader headerName="CamelHttpMethod">
+                                        <simple>PUT</simple>
+                                    </setHeader>
+                                    <!-- use same fedora user as CT routes so jms msg will be filtered otherwise a loop will occur -->
+                                    <setHeader headerName="Authorization">
+                                        <groovy>"Basic " + "{{si.fedora.user}}:{{si.fedora.password}}".bytes.encodeBase64().toString()</groovy>
+                                    </setHeader>
+                                    <!-- replace the OBJ with the faceBlur image adding a log message -->
+                                    <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?mimeType=image/jpeg&amp;logMessage=faceBlurred" id="replaceOBJ"/>
+                                </when>
+                                <otherwise>
+                                    <log message="${id}: Face Blur Error!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                         loggingLevel="ERROR"
+                                         logName="edu.si.derivatives"/>
+                                </otherwise>
+                            </choice>
+                        </when>
+                    </choice>
+                </when>
+            </choice>
+
+            <setBody>
+                <simple>${header.CamelFileNameProduced}</simple>
+            </setBody>
+            <to uri="reader:file"/>
+
+            <removeHeader headerName="Authorization"/>
         </route>
 
     </camelContext>

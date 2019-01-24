@@ -1080,7 +1080,33 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="reader:file"/>
+            <to uri="reader:file" id="readImageResource"/>
+
+            <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
+            <choice>
+                <when>
+                    <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
+                    </xpath>
+                    <log message="${id}: Found image that may contain a face..."
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+
+                    <toD uri="exec:python3?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+                    <choice>
+                        <when>
+                            <simple>${header.CamelExecExitValue} != 0</simple>
+                            <log message="${id}: Face Blur Error!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                 loggingLevel="ERROR"
+                                 logName="{{si.ct.id}}"/>
+                            <setBody>
+                                <simple>${header.imageFileName}</simple>
+                            </setBody>
+                            <to uri="reader:file"/>
+                        </when>
+                    </choice>
+                </when>
+            </choice>
 
             <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
 
