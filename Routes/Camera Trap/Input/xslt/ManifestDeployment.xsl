@@ -148,7 +148,14 @@
                         <attrdefs>Camera Trap Data Network</attrdefs>
                         <attrdomv>
                             <edom>
-                                <edomv><xsl:value-of select="$cameraMake"></xsl:value-of></edomv>
+                                <edomv>
+                                    <xsl:choose>
+                                        <xsl:when test="$cameraMake != ''">
+                                            <xsl:value-of select="$cameraMake"></xsl:value-of>
+                                        </xsl:when>
+                                        <xsl:otherwise>None</xsl:otherwise>
+                                    </xsl:choose>
+                                </edomv>
                                 <edomvd>The Digital Camera Manufacture</edomvd>
                                 <edomvds>Camera Trap Data Network Standard</edomvds>
                             </edom>
@@ -160,7 +167,14 @@
                         <attrdefs>Camera Trap Data Network</attrdefs>
                         <attrdomv>
                             <edom>
-                                <edomv><xsl:value-of select="$cameraModel"></xsl:value-of></edomv>
+                                <edomv>
+                                    <xsl:choose>
+                                        <xsl:when test="$cameraModel != ''">
+                                            <xsl:value-of select="$cameraModel"></xsl:value-of>
+                                        </xsl:when>
+                                        <xsl:otherwise>None</xsl:otherwise>
+                                    </xsl:choose>
+                                </edomv>
                                 <edomvd>The Digital Camera Model</edomvd>
                                 <edomvds>Camera Trap Data Network Standard</edomvds>
                             </edom>
