@@ -1092,7 +1092,7 @@
                          loggingLevel="INFO"
                          logName="{{si.ct.id}}"/>
 
-                    <toD uri="exec:python3?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+                    <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
                     <choice>
                         <when>
                             <simple>${header.CamelExecExitValue} != 0</simple>
