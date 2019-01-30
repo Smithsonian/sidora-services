@@ -32,7 +32,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.velocity.VelocityConstants;
 import org.apache.camel.converter.stream.FileInputStreamCache;
@@ -41,11 +40,10 @@ import org.apache.camel.model.StopDefinition;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.DateTool;
 import org.junit.Test;
-import sun.rmi.runtime.Log;
 
 import java.io.File;
-import java.util.Base64;
 import java.util.HashMap;
+import java.util.Properties;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 
@@ -76,6 +74,12 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
         CT_OWNER = context.resolvePropertyPlaceholders("{{si.fedora.user}}");
         deleteDirectory(KARAF_HOME + "/output");
         deleteDirectory(KARAF_HOME + "/staging");
+    }
+
+    @Override
+    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
+        configAdmin.putAll(getExtra());
+        return "edu.si.sidora.derivatives";
     }
 
     public String createApimMessage(String pid, String origin, String methodName, String dsLabel, String dsID, String testDsLocation ,String logMessage) {

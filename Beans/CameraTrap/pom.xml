@@ -327,6 +327,11 @@
             <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <scope>test</scope>
+        </dependency>
 
 
     </dependencies>
@@ -381,6 +386,14 @@
                 <includes>
                     <include>FaceBlurrer.py</include>
                     <include>haarcascades/**</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Wildlife-Insights</directory>
+                <targetPath>${karaf.home}/Wildlife-Insights</targetPath>
+                <includes>
+                    <include>UpdateFGDC.py</include>
+                    <include>updateManifestDeployment.xsl</include>
                 </includes>
             </testResource>
 
