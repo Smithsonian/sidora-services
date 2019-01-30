@@ -12,6 +12,8 @@ cat testFaceBlur.jpg | python FaceBlurrer.py 99 ./haarcascades/haarcascade_front
 
 # Run UpdateFGDC.py
 
+> **NOTE: running with debug param will save updated FGDC to local file instead of updating the fedora FGDC datastream**
+
 ```
 python updateFGDC.sh <fedora-user> <fedora-password> <host> <debug-logging>
 
