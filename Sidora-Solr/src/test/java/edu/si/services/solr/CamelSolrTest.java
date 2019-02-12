@@ -37,11 +37,9 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.velocity.VelocityConstants;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.DateTool;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -552,79 +550,177 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
 
 
     /**
-     * TODO: finish test
+     * Testing deadletter
      * @throws Exception
      */
-    @Ignore
     @Test
-    public void testAggregateAndOnException() throws Exception {
-        context.addRoutes(new RouteBuilder() {
-            int count = 0;
+    public void testDeadLetter() throws Exception {
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+
+        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                errorHandler(deadLetterChannel("mock:error")
-                                //.useOriginalMessage()
-                                .maximumRedeliveries(3)
-                                .redeliveryDelay(0)
-                                .retryAttemptedLogLevel(LoggingLevel.ERROR)
-                                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-                                .logRetryStackTrace(true)
-                                .logExhausted(false)
-                                .logExhaustedMessageHistory(false)
-//                        .logRetryStackTrace(false)
-                                .log("${routeId} ERROR_HANDLER Body:${body}")
-                );
-
-                onException(IllegalArgumentException.class)
-//                        .maximumRedeliveries(3)
-//                        .redeliveryDelay(0)
-//                        .logRetryAttempted(true)
-//                        .retryAttemptedLogLevel(LoggingLevel.WARN)
-//                        .retriesExhaustedLogLevel(LoggingLevel.WARN)
-//                        .logExhausted(false)
-//                        .logExhaustedMessageHistory(false)
-                        //.logStackTrace(false)
-                        .log(LoggingLevel.WARN, "ON_EXCEPTION Body: ${body}")
-                        .to("mock:onException");
-
-                from("seda:start").routeId("start")
-                        .aggregate(header("id"),
-                                new AggregationStrategy() {
-                                    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-                                        count++;
-                                        if (count == 3) {
-                                            throw new IllegalArgumentException("Forced oldBody: " + oldExchange.getIn().getBody() + ", newBody: " + newExchange.getIn().getBody());
-                                        }
-                                        if (oldExchange == null) {
-                                            return newExchange;
-                                        } else {
-                                            String oldBody = oldExchange.getIn().getBody(String.class);
-                                            String newBody = newExchange.getIn().getBody(String.class);
-
-                                            oldExchange.getIn().setBody(oldBody + ", " + newBody);
-                                            return oldExchange;
-                                        }
-                                    }
-                                }).completionSize(4).completionTimeout(1000)
-                        .log(LoggingLevel.INFO, "${routeId} AGGREGATED Body:${body}")
-                        .to("mock:result");
+                weaveById("sedaStoreRecieved").remove();
             }
         });
 
-        MockEndpoint mock = getMockEndpoint("mock:result");
-        mock.expectedBodiesReceived("Hello World_1, Hello World_2, Hello World_3");
+        context.getRouteDefinition("solrDeadLetter").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("deadLetterProcessor").after().to("mock:error");
+            }
+        });
 
-        MockEndpoint mockError = getMockEndpoint("mock:error");
-        mockError.expectedMessageCount(0);
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("pid", "test:123");
 
-        MockEndpoint mockOnException = getMockEndpoint("mock:onException");
-        mockOnException.expectedMessageCount(1);
-
-        template.sendBodyAndHeader("seda:start", "Hello World_1", "id", 123);
-        template.sendBodyAndHeader("seda:start", "Hello World_2", "id", 123);
-        template.sendBodyAndHeader("seda:start", "Bye World", "id", 123);
-        template.sendBodyAndHeader("seda:start", "Hello World_3", "id", 123);
+        template.send("seda:createBatchJob", exchange);
 
         assertMockEndpointsSatisfied();
     }
+
+    /**
+     * Testing deadletter
+     * @throws Exception
+     */
+    @Test
+    public void testAggregateCorrelationIdException() throws Exception {
+        COMPLETION_SIZE = Integer.valueOf(context.resolvePropertyPlaceholders("{{sidora.solr.batch.size}}"));
+
+        List<String> ctTestPids = new ArrayList<>();
+        for (int i = 1; i <= MAX_DOC; i++) {
+            ctTestPids.add(CT_NAMESPACE + ":" + i);
+        }
+
+        LOG.info("PIDAggregation list = {}", ctTestPids);
+
+        List<String> projectStructurePids = ctTestPids.subList(0, 4);
+        List<String> imageResourcesPids = ctTestPids.subList(4, ctTestPids.size()-2);
+        List<String> observationResourcesPids = ctTestPids.subList(ctTestPids.size()-2, ctTestPids.size());
+
+        //2 indexes for observations
+        TOTAL_BATCH_COUNT = ctTestPids.size();
+
+        LOG.debug("Total batch count = {}", TOTAL_BATCH_COUNT);
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(0);
+
+        MockEndpoint mockCreateDocResult = getMockEndpoint("mock:createDocResult");
+        mockCreateDocResult.expectedMessageCount(0);
+        mockCreateDocResult.setAssertPeriod(1500);
+
+        MockEndpoint mockEnd = getMockEndpoint("mock:end");
+        mockEnd.expectedMessageCount(1);
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(TOTAL_BATCH_COUNT+3);
+
+        context.getRouteDefinition("cameraTrapSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("ctJobGetFoxml").replace()
+                        .setHeader("origin").simple(CT_OWNER)
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String pid = out.getHeader("pid", String.class);
+                                if (observationResourcesPids.contains(pid)) {
+                                    out.setHeader("dsLabel", "Observations");
+                                } else {
+                                    out.setHeader("dsLabel", "testLabel");
+                                }
+                            }
+                        })
+                        .to("velocity:file:{{karaf.home}}/fedora/foxml/test_foxml.vsl");
+
+                // Set solrJob index null to trigger the Invalid correlation key Exception
+                Processor test = new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        exchange.getIn().getHeader("solrJob", MySolrJob.class).setIndex(null);
+                    }
+                };
+
+                weaveById("createCtSianctSolrJob").before().process(test);
+                weaveById("createCTSolrJob").before().process(test);
+            }
+        });
+
+
+        context.getRouteDefinition("createSolrDoc").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("createSolrDocChoice").replace().to("mock:createDocResult");
+            }
+        });
+
+        context.getRouteDefinition("sidoraSolrUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("sendToSolr").replace().setBody().simple("{responseHeader={status=0,QTime=20}}").to("mock:result");
+            }
+        });
+
+        context.getRouteDefinition("storeReceivedJobs").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("printStoreReceivedJobs").replace().to("mock:end");
+            }
+        });
+
+        context.getRouteDefinition("solrDeadLetter").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("deadLetterProcessor").after().to("mock:error");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+
+        //Project (projectPID)
+        exchange.getIn().setHeader("ProjectId", "testDeploymentId");
+        exchange.getIn().setHeader("ProjectName", "testDeploymentId");
+        exchange.getIn().setHeader("ProjectPID", projectStructurePids.get(0));
+
+        //SubProject (parkPID)
+        exchange.getIn().setHeader("SubProjectId", "testDeploymentId");
+        exchange.getIn().setHeader("SubProjectName", "testDeploymentId");
+        exchange.getIn().setHeader("SubProjectPID", projectStructurePids.get(1));
+
+        //Plot (sitePID)
+        exchange.getIn().setHeader("PlotId", "testDeploymentId");
+        exchange.getIn().setHeader("PlotName", "testDeploymentId");
+        exchange.getIn().setHeader("PlotPID", projectStructurePids.get(2));
+
+        //Site (ctPID)
+        exchange.getIn().setHeader("SiteId", "testDeploymentId");
+        exchange.getIn().setHeader("SiteName", "testDeploymentId");
+        exchange.getIn().setHeader("SitePID", projectStructurePids.get(3));
+
+
+        //Observations
+        exchange.getIn().setHeader("ResearcherObservationPID", observationResourcesPids.get(0));
+        exchange.getIn().setHeader("VolunteerObservationPID", observationResourcesPids.get(1));
+        //exchange.getIn().setHeader("ImageObservationPID", observations.get(2));
+
+        List<String> pidAgg = new ArrayList<>();
+        pidAgg.addAll(imageResourcesPids);
+        pidAgg.addAll(observationResourcesPids);
+        //just for fun mix things up
+        Collections.shuffle(pidAgg);
+        exchange.getIn().setHeader("PIDAggregation", Arrays.toString(pidAgg.toArray()).replaceAll("[\\[\\ \\]]", ""));
+
+        exchange.getIn().setHeader("TOTAL_BATCH_COUNT", TOTAL_BATCH_COUNT);
+        exchange.getIn().setHeader("testTimeout", TEST_COMPLETION_TIMEOUT);
+
+        template.send("activemq:queue:{{sidoraCTSolr.queue}}", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+
 }

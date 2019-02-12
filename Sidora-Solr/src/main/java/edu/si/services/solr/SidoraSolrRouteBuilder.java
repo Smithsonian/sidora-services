@@ -33,7 +33,9 @@ import edu.si.services.solr.aggregationStrategy.MySolrUpdateStrategy;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
+import org.apache.camel.processor.DefaultExchangeFormatter;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
+import org.apache.camel.util.MessageHelper;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -41,17 +43,23 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-//import org.apache.solr.client.solrj.SolrClient;
-//import org.apache.solr.client.solrj.impl.HttpSolrClient;
-//import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
+
+//import org.apache.solr.client.solrj.SolrClient;
+//import org.apache.solr.client.solrj.impl.HttpSolrClient;
+//import org.apache.solr.client.solrj.request.DirectXmlRequest;
 
 /**
  * @author jbirkhimer
@@ -117,9 +125,31 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
         return offset;
     }
 
+    private void createSolrJob(Message out, String pid, String index, String method) throws SidoraSolrException {
+        if (index != null) {
+            MySolrJob solrJob = new MySolrJob();
+            solrJob.setPid(pid);
+            solrJob.setOrigin(out.getHeader("origin", String.class));
+            solrJob.setMethodName(out.getHeader("methodName", String.class));
+            solrJob.setDsLabel(out.getHeader("dsLabel", String.class));
+            solrJob.setState(out.getHeader("state", String.class));
+            solrJob.setSolrOperation(method);
+            solrJob.setIndex(index);
+            solrJob.indexes.add(index);
+            solrJob.setFoxml(out.getBody(String.class));
+
+            LOG.debug("******[1]*******\nNEW solrJob = {}", solrJob);
+
+            out.setHeader("solrJob", solrJob);
+        } else {
+            throw new SidoraSolrException("Cannot create Solr Job!!! index is null for pid: " + pid + "!!!");
+        }
+    }
+
     @Override
     public void configure() throws Exception {
-        errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
+        //errorHandler(deadLetterChannel("file:{{karaf.home}}/deadLetter?fileName=error-${routeId}&fileExist=append")
+        errorHandler(deadLetterChannel("direct:deadLetterChannel")
                 //.useOriginalMessage()
                 .maximumRedeliveries(Integer.parseInt(maximumRedeliveries))
                 .redeliveryDelay(Integer.parseInt(redeliveryDelay))
@@ -132,7 +162,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .logExhaustedMessageHistory(true)
                 .logStackTrace(true)
                 .logHandled(true)
-                .log("${id} :: ${routeId} :: **** ERROR_HANDLER **** FAILURE_ROUTE_ID=${header.CamelFailureRouteId}, FAILURE_ENDPOINT=${header.CamelFailureEndpoint}, TO_ENDPOINT=${header.CamelToEndpoint}"));
+        );
 
         Namespaces ns = new Namespaces("atom", "http://www.w3.org/2005/Atom");
         ns.add("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
@@ -148,6 +178,46 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
         ns.add("atom", "http://www.w3.org/2005/Atom");
         ns.add("sidora", "http://oris.si.edu/2017/01/relations#");
         ns.add("foxml", "info:fedora/fedora-system:def/foxml#");
+
+        from("direct:deadLetterChannel").routeId("solrDeadLetter")
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        StringBuilder sb = new StringBuilder();
+                        String pid = exchange.getIn().getHeader("pid", String.class);
+                        String routeID = exchange.getFromRouteId();
+
+                        sb.append("Failed PID: "+pid);
+                        sb.append("\nFailureRouteId: " + exchange.getProperty(Exchange.FAILURE_ROUTE_ID, String.class));
+                        sb.append("\nToEndpoint: " + exchange.getProperty(Exchange.TO_ENDPOINT, String.class));
+                        sb.append("\nFailureEndpoint: " + exchange.getProperty(Exchange.FAILURE_ENDPOINT, String.class));
+
+                        // setup exchange formatter to be used for message history dump
+                        DefaultExchangeFormatter formatter = new DefaultExchangeFormatter();
+                        formatter.setShowExchangeId(true);
+                        formatter.setMultiline(true);
+                        formatter.setShowHeaders(true);
+                        formatter.setStyle(DefaultExchangeFormatter.OutputStyle.Fixed);
+                        formatter.setMaxChars(1000000);
+                        formatter.setShowProperties(true);
+
+                        String routeStackTrace = MessageHelper.dumpMessageHistoryStacktrace(exchange, formatter, true);
+                        sb.append("\n" + routeStackTrace);
+
+                        Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+                        StringWriter sw = new StringWriter();
+                        exception.printStackTrace(new PrintWriter(sw));
+                        sb.append("\n"+sw.toString());
+
+                        sb.append("\n=======================================================================================================================================\n");
+
+                        getContext().createProducerTemplate().sendBody("file:{{karaf.home}}/deadLetter?fileName="+pid+"_error-"+routeID+"&fileExist=append", sb.toString());
+
+                        /*Message original = ExchangeHelper.getOriginalInMessage(exchange);
+                        sb.append("\nOriginal IN message: ");
+                        sb.append(original);*/
+                    }
+                }).id("deadLetterProcessor");
 
         from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer").routeId("SidoraSolrService")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Starting REST Service Request for: ${header.operationName} ... ")
@@ -263,7 +333,18 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                         .filter().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations' && ${header.gsearch_sianct} == 'true'")// && ${header.state} == 'Active'")
                             .log( LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: **** FOUND OBSERVATION ****")
-                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.sianct.default.index}}");
+                                    String method = "update";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             //header is used for http response only
                             .setHeader("reindex_sianct").simple("${header.solrJob}")
                             .to("seda:createBatchJob?waitForTaskToComplete=Never").id("reindexCreateSianctJob")
@@ -271,7 +352,18 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         .end()//end filter
 
                         .filter().simple("${header.gsearch_solr} == 'true'")// && ${header.state} == 'Active'")
-                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.solr.default.index}}");
+                                    String method = "update";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .setHeader("reindex_solr").simple("${header.solrJob}")
                             .to("seda:createBatchJob?waitForTaskToComplete=Never").id("reindexCreateSolrJob")
                             .to("sql:{{sql.insertSolrReindexJob}}?dataSource=#dataSourceReIndex&noop=true").id("insertSolrReindexJob")
@@ -302,6 +394,9 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                 .log( LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: CT Solr Job RECEIVED, PID's: ${header.PIDAggregation}")
 
+                //remove unnecessary large headers
+                .removeHeaders("CamelSchematronValidationReport|datastreamValidationXML|ManifestXML")
+
                 .split().tokenize(",", "PIDAggregation")
                     .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
                     .setHeader("pid").simple("${body}")
@@ -319,14 +414,36 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                             .filter().simple("${header.pid} in '${header.ResearcherObservationPID},${header.VolunteerObservationPID},${header.ImageObservationPID}'")
                                 .log( LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: FOUND OBSERVATION")
-                                .to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
+                                //.to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
+                                .process(new Processor() {
+                                    @Override
+                                    public void process(Exchange exchange) throws Exception {
+                                        Message out = exchange.getIn();
+                                        String pid = out.getHeader("pid", String.class);
+                                        String index = getContext().resolvePropertyPlaceholders("{{sidora.sianct.default.index}}");
+                                        String method = "update";
+
+                                        createSolrJob(out, pid, index, method);
+                                    }
+                                })
                                 .log( LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Send to createBatchJob:\n${header.solrJob}")
-                                .to("seda:createBatchJob")
+                                .to("seda:createBatchJob").id("createCtSianctSolrJob")
                             .end()
 
-                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.solr.default.index}}");
+                                    String method = "update";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .log( LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Send to createBatchJob:\n${header.solrJob}")
-                            .to("seda:createBatchJob")
+                            .to("seda:createBatchJob").id("createCTSolrJob")
                         .endChoice()
                     .end().id("ctSolrSplitEnd");
 
@@ -351,37 +468,103 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                     // Set the index we are operating and operation
                     .choice()
                         .when().simple("${header.methodName} in 'purge,purgeObject,purgeDatastream' && ${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
-                            .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.sianct.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, delete, {{sidora.sianct.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.sianct.default.index}}");
+                                    String method = "delete";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .to("seda:createBatchJob")
                             // Also create job for gsearch_solr
-                            .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.solr.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, delete, {{sidora.solr.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.solr.default.index}}");
+                                    String method = "delete";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .to("seda:createBatchJob")
                         .endChoice()
                         .when().simple("${header.pid} contains '{{si.ct.namespace}}:' && ${header.dsLabel} contains 'Observations'")
-                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, update, {{sidora.sianct.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.sianct.default.index}}");
+                                    String method = "update";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .to("seda:createBatchJob")
                             // Also create job for gsearch_solr
-                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.solr.default.index}}");
+                                    String method = "update";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .to("seda:createBatchJob")
                         .endChoice()
                         .when().simple("${header.methodName} in 'purgeObject,purgeDatastream' || ${header.methodName} contains 'purge'")
-                            .to("bean:MyBatchService?method=addJob(*, delete, {{sidora.solr.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, delete, {{sidora.solr.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.solr.default.index}}");
+                                    String method = "delete";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .to("seda:createBatchJob")
                         .endChoice()
                         .otherwise()
-                            .to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            //.to("bean:MyBatchService?method=addJob(*, update, {{sidora.solr.default.index}})")
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+                                    String pid = out.getHeader("pid", String.class);
+                                    String index = getContext().resolvePropertyPlaceholders("{{sidora.solr.default.index}}");
+                                    String method = "update";
+
+                                    createSolrJob(out, pid, index, method);
+                                }
+                            })
                             .to("seda:createBatchJob")
                         .endChoice()
                     .end();
 
         from("seda:createBatchJob").routeId("createBatchSolrJob")
-                .log( LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Received Job:\n${header.solrJob}\n")
+                .log( LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Received Job:\n${header.solrJob}\n")
 
                 .setHeader("batch").simple("jobsCreated")
-                .to("seda:storeReceived?waitForTaskToComplete=Never")
+                .to("seda:storeReceived?waitForTaskToComplete=Never").id("sedaStoreRecieved")
 
                 //Aggregate based on solr operations (add/update/delete) and index (gsearch_solr/gsearch_sianct)
-                .aggregate(simple("${header.solrJob.index}"), new MySolrBatchStrategy()).completionSize(Integer.parseInt(BATCH_SIZE)).completionTimeout(Integer.parseInt(COMPLETION_TIMEOUT))
+                .aggregate(simple("${header.solrJob.index}"), new MySolrBatchStrategy()).completionSize(Integer.parseInt(BATCH_SIZE)).completionTimeout(Integer.parseInt(COMPLETION_TIMEOUT)).id("aggregateSolrJob")
                     .log( LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: startBatchJob (size = ${header.batchJobs.size} | solrIndex = ${header.solrIndex}) ]\nBatch Jobs:\n${header.batchJobs}")
 
                     .setHeader("startTime").simple(String.valueOf(new Date().getTime()), long.class)
