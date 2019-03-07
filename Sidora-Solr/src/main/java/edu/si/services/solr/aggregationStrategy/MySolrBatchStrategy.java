@@ -31,9 +31,12 @@ import edu.si.services.solr.MySolrJob;
 import edu.si.services.solr.SidoraSolrException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.PropertyInject;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +47,9 @@ import java.util.List;
 public class MySolrBatchStrategy implements AggregationStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(MySolrBatchStrategy.class);
+    @PropertyInject(value = "edu.si.solr")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
 
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
         Message out = newExchange.getIn();

@@ -32,6 +32,8 @@ import org.apache.camel.Message;
 import org.apache.camel.PropertyInject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.util.*;
 
@@ -45,6 +47,10 @@ public class MyBatchService {
     @PropertyInject(value = "sidora.solr.default.index", defaultValue = "gsearch_solr")
     private static String DEFAULT_SOLR_INDEX;
 
+    @PropertyInject(value = "edu.si.solr")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
+
     MySolrJob solrJob;
 
     public void addJob(Exchange exchange, String solrOperation) throws SidoraSolrException {
@@ -55,8 +61,8 @@ public class MyBatchService {
         Message out = exchange.getIn();
         String pid = out.getHeader("pid", String.class);
 
-        LOG.error("solrOperation {}, index: {}", solrOperation, index);
-        LOG.error("Headers:\n", exchange.getIn().getHeaders());
+        LOG.error(logMarker, "solrOperation {}, index: {}", solrOperation, index);
+        LOG.error(logMarker, "Headers:\n", exchange.getIn().getHeaders());
 
         if (index != null) {
             solrJob = new MySolrJob();
@@ -70,7 +76,7 @@ public class MyBatchService {
             solrJob.indexes.add(index);
             solrJob.setFoxml(out.getBody(String.class));
 
-            LOG.debug("******[1]*******\nNEW solrJob = {}", solrJob);
+            LOG.debug(logMarker, "******[1]*******\nNEW solrJob = {}", solrJob);
 
             out.setHeader("solrJob", solrJob);
         }  else {
@@ -85,7 +91,7 @@ public class MyBatchService {
         //solrJob = getJobByPid(pid);
 
         solrJob.indexes.add(index);
-        LOG.info("Added Index:\nsolrJob = {}", solrJob);
+        LOG.info(logMarker, "Added Index:\nsolrJob = {}", solrJob);
     }
 
     /*public MySolrJob getJobByPid(String pid) {

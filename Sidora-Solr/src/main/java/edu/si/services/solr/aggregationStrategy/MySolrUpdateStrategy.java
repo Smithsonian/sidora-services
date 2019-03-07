@@ -29,9 +29,12 @@ package edu.si.services.solr.aggregationStrategy;
 
 import edu.si.services.solr.MySolrJob;
 import org.apache.camel.Exchange;
+import org.apache.camel.PropertyInject;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.util.List;
 
@@ -46,6 +49,10 @@ import java.util.List;
 public class MySolrUpdateStrategy implements AggregationStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(MySolrUpdateStrategy.class);
+
+    @PropertyInject(value = "edu.si.solr")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
 
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
         // put solr doc together in old exchange by adding the doc from new exchange
@@ -70,6 +77,10 @@ public class MySolrUpdateStrategy implements AggregationStrategy {
 
         String docs = oldExchange.getIn().getBody(String.class);
         String newDoc = newExchange.getIn().getBody(String.class);
+
+        if (!newDoc.startsWith("<doc>")) {
+            LOG.error(logMarker, "Found something other than a solr doc");
+        }
 
         oldExchange.getIn().setBody(docs + "\n" + newDoc);
 
