@@ -167,10 +167,54 @@
 
 	<xsl:template match="metadata">
 		<field name="cameraId"><xsl:value-of select="$FGDC//metadata/eainfo/detailed/attr[attrlabl = 'Camera ID']/attrdomv/edom/edomv"/></field>
-		<field name="cameraLongitude"><xsl:value-of select="$FGDC//metadata/eainfo/detailed/attr[attrlabl = 'Actual Longitude']/attrdomv/edom/edomv"/></field>
-		<field name="cameraLatitude"><xsl:value-of select="$FGDC//metadata/eainfo/detailed/attr[attrlabl = 'Actual Latitude']/attrdomv/edom/edomv"/></field>
-		<field name="cameraDeploymentBeginDate"><xsl:value-of select="$FGDC//metadata/idinfo/timeperd/timeinfo/rngdates/begdate"/></field>
-		<field name="cameraDeploymentEndDate"><xsl:value-of select="$FGDC//metadata/idinfo/timeperd/timeinfo/rngdates/enddate"/></field>
+		<field name="cameraLongitude">
+			<!--<xsl:value-of select="$FGDC//metadata/eainfo/detailed/attr[attrlabl = 'Actual Longitude']/attrdomv/edom/edomv"/>-->
+			<xsl:variable name="cameraLongitude" select="$FGDC//metadata/eainfo/detailed/attr[attrlabl = 'Actual Longitude']/attrdomv/edom/edomv"/>
+			<xsl:choose>
+				<xsl:when test="number($cameraLongitude)">
+					<xsl:value-of select="$cameraLongitude" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="0" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</field>
+		<field name="cameraLatitude">
+			<!--<xsl:value-of select="$FGDC//metadata/eainfo/detailed/attr[attrlabl = 'Actual Latitude']/attrdomv/edom/edomv"/>-->
+			<xsl:variable name="cameraLatitude" select="$FGDC//metadata/eainfo/detailed/attr[attrlabl = 'Actual Latitude']/attrdomv/edom/edomv"/>
+			<xsl:choose>
+				<xsl:when test="number($cameraLatitude)">
+					<xsl:value-of select="$cameraLatitude" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="0" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</field>
+		<field name="cameraDeploymentBeginDate">
+			<!--<xsl:value-of select="$FGDC//metadata/idinfo/timeperd/timeinfo/rngdates/begdate"/>-->
+			<xsl:variable name="cameraDeploymentBeginDate" select="$FGDC//metadata/idinfo/timeperd/timeinfo/rngdates/begdate"/>
+			<xsl:choose>
+				<xsl:when test="number($cameraDeploymentBeginDate)">
+					<xsl:value-of select="$cameraDeploymentBeginDate" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="0" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</field>
+		<field name="cameraDeploymentEndDate">
+			<!--<xsl:value-of select="$FGDC//metadata/idinfo/timeperd/timeinfo/rngdates/enddate"/>-->
+			<xsl:variable name="cameraDeploymentEndDate" select="$FGDC//metadata/idinfo/timeperd/timeinfo/rngdates/enddate"/>
+			<xsl:choose>
+				<xsl:when test="number($cameraDeploymentEndDate)">
+					<xsl:value-of select="$cameraDeploymentEndDate" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="0" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</field>
 		<field name="cameraCiteinfo"><xsl:value-of select="$FGDC//metadata/idinfo/citation/citeinfo/othercit/text()"/></field>
 
 		<xsl:for-each select="$FGDC//method[methtype='Feature']">

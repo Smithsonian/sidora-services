@@ -22,10 +22,8 @@ Content-Type: text/xml
 ####################################
 # Sidora Solr Camel Endpoint Calls
 ####################################
-### Reindex All
-GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
-
-//> scripts/my-script.js
+### Delete ALL
+GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
 
 > {%
     client.test("Request executed successfully", function() {
@@ -33,8 +31,10 @@ GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{pas
     });
 %}
 
-### Delete ALL
-GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
+### Reindex All
+GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
+
+//> scripts/my-script.js
 
 > {%
     client.test("Request executed successfully", function() {
@@ -59,3 +59,15 @@ GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth
         client.assert(response.status === 200, "Response status is not 200");
     });
 %}
+
+
+### Delete By Query (Query with PID and wildcard)
+GET {{sidora_solr_url}}/solrRequest
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###

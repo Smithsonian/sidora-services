@@ -28,6 +28,7 @@
 package edu.si.services.solr;
 
 import org.apache.camel.PropertyInject;
+import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
@@ -55,9 +56,10 @@ public class MySolrJob {
     ArrayList<String> indexes;
     long startTime;
     long endTime;
-    String solrdoc;
+    SolrInputDocument solrdoc;
     String solrStatus;
     String foxml;
+    private String elapsed;
 
     @PropertyInject(value = "sidora.solr.default.index", defaultValue = "gsearch_solr")
     private static String DEFAULT_SOLR_INDEX;
@@ -93,7 +95,7 @@ public class MySolrJob {
         this.state = state;
         this.solrOperation = solrOperation;
         this.index = index;
-        this.indexes.add(DEFAULT_SOLR_INDEX);
+        //this.indexes.add(DEFAULT_SOLR_INDEX);
 
         LOG.debug(logMarker, "MySolrJob :: DEFAULT_SOLR_INDEX = {} | {}", DEFAULT_SOLR_INDEX, this.toString());
     }
@@ -176,17 +178,22 @@ public class MySolrJob {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
+        this.elapsed = getElapsed();
     }
 
     public String getElapsed() {
         return String.format("%tT", (endTime - startTime) - TimeZone.getDefault().getRawOffset());
     }
 
-    public String getSolrdoc() {
+    public void setElapsed(String elapsed) {
+        this.elapsed = elapsed;
+    }
+
+    public SolrInputDocument getSolrdoc() {
         return solrdoc;
     }
 
-    public void setSolrdoc(String solrdoc) {
+    public void setSolrdoc(SolrInputDocument solrdoc) {
         this.solrdoc = solrdoc;
     }
 
