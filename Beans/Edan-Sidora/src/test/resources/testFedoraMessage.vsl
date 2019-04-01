@@ -1,0 +1,22 @@
+<entry xmlns="http://www.w3.org/2005/Atom" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/">
+    <id>urn:uuid:b0f79980-757b-4750-8b3e-72426843de6a</id>
+    <updated>2017-12-05T18:13:50.884Z</updated>
+    <author>
+        <name>${header.testName}</name>
+        <uri>http://localhost:8080/fedora</uri>
+    </author>
+    <title type="text">${header.testMethodName}</title>
+    <category term="${header.testPid}" scheme="fedora-types:pid" label="xsd:string"/>
+    <category term="${header.testDatastream}" scheme="fedora-types:dsID" label="xsd:string"/>
+    <category term="" scheme="fedora-types:altIDs" label="fedora-types:ArrayOfString"/>
+    <category term="${header.testLabel}" scheme="fedora-types:dsLabel" label="xsd:string"/>
+    <category term="null" scheme="fedora-types:formatURI" label="xsd:string"/>
+    <category term="[OMITTED]" scheme="fedora-types:dsContent" label="xsd:base64Binary"/>
+    <category term="null" scheme="fedora-types:checksumType" label="xsd:string"/>
+    <category term="null" scheme="fedora-types:checksum" label="xsd:string"/>
+    <category term="null" scheme="fedora-types:logMessage" label="xsd:string"/>
+    <summary type="text">${header.testPid}</summary>
+    <content type="text">2017-12-05T18:13:50.884Z</content>
+    <category term="3.8.1" scheme="info:fedora/fedora-system:def/view#version"/>
+    <category term="info:fedora/fedora-system:ATOM-APIM-1.0" scheme="http://www.fedora.info/definitions/1/0/types/formatURI"/>
+</entry>
