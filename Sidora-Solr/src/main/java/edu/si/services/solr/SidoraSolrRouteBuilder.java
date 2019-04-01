@@ -60,7 +60,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
     private static final Logger LOG = LoggerFactory.getLogger(SidoraSolrRouteBuilder.class);
 
-    @PropertyInject(value = "edu.si.services.solr")
+    @PropertyInject(value = "edu.si.solr")
     static private String LOG_NAME;
 
     @PropertyInject(value = "si.fedora.user")
