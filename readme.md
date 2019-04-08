@@ -439,6 +439,7 @@ Property, configuration, and resource files (steps 1 - 3) are only needed for ne
         cp <local-git-repo>/sidora-services/KAR/target/etc/edu.si.sidora.batch.cfg <SMX_HOME>/etc/
         cp <local-git-repo>/sidora-services/KAR/target/etc/edu.si.sidora.mci.cfg <SMX_HOME>/etc/
         cp <local-git-repo>/sidora-services/KAR/target/etc/edu.si.sidora.emammal.cfg <SMX_HOME>/etc/
+        cp <local-git-repo>/sidora-services/KAR/target/etc/edu.si.sidora.solr.cfg <SMX_HOME>/etc/
         ```
 
 4. (OPTIONAL) Update `org.ops4j.pax.logging.cfg` to format the ServiceMix log entries and/or enable MDC logging.  You may find additional information about Karaf MDC logging in [Camel and Servicemix / Karaf MDC logging](https://confluence.si.edu/pages/viewpage.action?pageId=7373291).  Our instances utilize MDC logging to differentiate Camel Context IDs from individual Camera Trap ingest pipelines in separate Camel Contexts.
