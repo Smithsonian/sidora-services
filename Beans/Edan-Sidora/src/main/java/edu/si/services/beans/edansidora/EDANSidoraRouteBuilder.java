@@ -586,7 +586,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setBody().simple("${header.idsAssetList}")
 
                 // add the asset and create/append the asset xml
-                .to("direct:idsAssetUpdate").id("fedoraUpdateIdsAssetUpdate")
+                .to("direct:idsAssetUpdate").id("processCtDeploymentIdsAsset")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Camera Trap Deployment processing...");
     }
