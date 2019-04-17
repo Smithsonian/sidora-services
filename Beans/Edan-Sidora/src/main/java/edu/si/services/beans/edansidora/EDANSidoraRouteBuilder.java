@@ -34,6 +34,10 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.XML;
 
 import java.io.File;
 import java.net.SocketException;
@@ -404,8 +408,59 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setHeader("CamelFedoraPid", simple("${header.pid}"))
                 .setHeader("extraJson").simple("{{si.ct.uscbi.extra_property}}")
                 .setBody(simple("${header.ManifestXML}"))
-                .to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true")
-                .setHeader("edanJson").groovy("URLEncoder.encode(request.body, 'UTF-8')")
+                //.to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true").id("transform2json")
+                .to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform_2_xml.xsl?saxon=true").id("transform2xml")
+
+                // convert xslt xml output to json and convert array elements to json array
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        Message out = exchange.getIn();
+                        String xmlBody = out.getBody(String.class);
+                        try {
+                            //JSONObject xmlJSONObj = XML.toJSONObject(xmlBody, true);
+                            JSONObject xmlJSONObj = XML.toJSONObject(xmlBody);
+                            log.debug("xml 2 json Output:\n{}", xmlJSONObj);
+
+                            JSONObject edan_content = xmlJSONObj.getJSONObject("xml").getJSONObject("content");
+                            log.debug("json edan_content Output:\n{}", edan_content.toString(4));
+
+                            //convert online_media to json array
+                            JSONObject image = edan_content.getJSONObject("image");
+                            JSONObject online_media = image.getJSONObject("online_media");
+                            Object online_media_array_element = online_media.get("online_media_array_element");
+                            if (online_media_array_element instanceof JSONObject) {
+                                JSONArray online_media_replace = new JSONArray();
+                                online_media_replace.put(online_media_array_element);
+                                edan_content.getJSONObject("image").put("online_media", online_media_replace);
+                            } else if (online_media_array_element instanceof JSONArray) {
+                                edan_content.getJSONObject("image").put("online_media", online_media_array_element);
+                            }
+
+                            log.debug("json edan_content after online_media fix:\n{}", edan_content.getJSONObject("image").getJSONArray("online_media").toString(4));
+
+                            //convert image_identifications to json array
+                            JSONObject image_identifications = edan_content.getJSONObject("image_identifications");
+                            Object image_identifications_array_element = image_identifications.get("image_identifications_array_element");
+                            if (image_identifications_array_element instanceof JSONObject) {
+                                JSONArray image_identifications_replace = new JSONArray();
+                                image_identifications_replace.put(image_identifications_array_element);
+                                edan_content.getJSONObject("image").put("image_identifications", image_identifications_replace);
+                            } else if (image_identifications_array_element instanceof JSONArray) {
+                                edan_content.put("image_identifications", image_identifications_array_element);
+                            }
+
+                            log.debug("json edan_content after image_identifications fix:\n{}", edan_content.getJSONArray("image_identifications").toString(4));
+
+                            log.debug("json final edan_content :\n{}", xmlJSONObj.getJSONObject("xml").toString(4));
+                            out.setBody(xmlJSONObj.getJSONObject("xml").toString());
+                        } catch (JSONException je) {
+                            throw new EdanIdsException("Error creating edan json", je);
+                        }
+                    }
+                }).id("edanConvertXml2Json")
+
+                .setHeader("edanJson").groovy("URLEncoder.encode(request.body, 'UTF-8')").id("encodeJson")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN JSON content created and encoded: ${header.edanJson}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Edan JSON Content creation...");
 

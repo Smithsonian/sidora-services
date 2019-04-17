@@ -27,10 +27,11 @@
 
 package edu.si.services.beans.edansidora;
 
-import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.properties.PropertiesComponent;
@@ -41,6 +42,9 @@ import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.endpoint.Server;
 import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.XML;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -407,7 +411,9 @@ public class EdanAPITest extends CamelTestSupport {
         assertEquals("The returned DeploymentId does not match", TEST_DEPLOYMENT_ID, result_deploymentId);
 
         for (int i = 0; i < json.getJSONArray("rows").length(); i++) {
-            LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            if (json.getJSONArray("rows").getJSONObject(i).has("image")) {
+                LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            }
         }
     }
 
@@ -447,7 +453,9 @@ public class EdanAPITest extends CamelTestSupport {
         assertEquals("The returned ProjectId does not match", TEST_PROJECT_ID, result_projectId);
 
         for (int i = 0; i < json.getJSONArray("rows").length(); i++) {
-            LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            if (json.getJSONArray("rows").getJSONObject(i).has("image")) {
+                LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            }
         }
     }
 
@@ -561,11 +569,15 @@ public class EdanAPITest extends CamelTestSupport {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
 
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("edanServiceEndpoint", "/content/v1.1/admincontent/releaseContent.htm");
-        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "id=p2b-1513178057393-1515183776910-0&type=" + TEST_TYPE);
+        List<String> delIdList = Arrays.asList("p2b-1527589878996-1527781471561-0", "p2b-1527589878996-1527718044046-0", "p2b-1527589878996-1527781554376-0", "p2b-1527589878996-1527781635832-0");
 
-        template.send("direct:edanTest", exchange);
+        for (String id : delIdList) {
+            Exchange exchange = new DefaultExchange(context);
+            exchange.getIn().setHeader("edanServiceEndpoint", "/content/v1.1/admincontent/releaseContent.htm");
+            exchange.getIn().setHeader(Exchange.HTTP_QUERY, "id=" + id + "&type=" + TEST_TYPE);
+
+            template.send("direct:edanTest", exchange);
+        }
 
         assertMockEndpointsSatisfied();
     }
@@ -614,7 +626,7 @@ public class EdanAPITest extends CamelTestSupport {
         exchange.getIn().setHeader("CamelHttpQuery", httpQuery);
         exchange.getIn().setHeader("uri", uri);
 
-        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
+        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN if you want this test to run!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
         template.send("direct:solrTest", exchange);
 
         assertMockEndpointsSatisfied();
@@ -650,7 +662,7 @@ public class EdanAPITest extends CamelTestSupport {
         exchange.getIn().setHeader("CamelHttpQuery", httpQuery);
         exchange.getIn().setHeader("uri", uri);
 
-        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
+        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN if you want this test to run!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
 
         template.send("direct:solrTest", exchange);
 
@@ -672,7 +684,12 @@ public class EdanAPITest extends CamelTestSupport {
 
     }
 
+    /**
+     * Solr 3.2 instances were deprecated and retired
+     * @throws Exception
+     */
     @Test
+    @Ignore
     public void solrIDSTest() throws Exception {
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -688,7 +705,7 @@ public class EdanAPITest extends CamelTestSupport {
         exchange.getIn().setHeader("CamelHttpQuery", httpQuery);
         exchange.getIn().setHeader("uri", uri);
 
-        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
+        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN if you want this test to run!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
 
         template.send("direct:solrTest", exchange);
 
@@ -752,7 +769,58 @@ public class EdanAPITest extends CamelTestSupport {
                         .setHeader("CamelFedoraPid", simple("${header.pid}"))
                         .setHeader("extraJson").simple("{{si.ct.uscbi.extra_property}}")
                         .setBody(simple("${header.manifestXML}"))
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true")
+                        //.to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true").id("transform2json")
+                        .to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform_2_xml.xsl?saxon=true").id("transform2xml")
+
+                        // convert xslt xml output to json and convert array elements to json array
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String xmlBody = out.getBody(String.class);
+                                try {
+                                    //JSONObject xmlJSONObj = XML.toJSONObject(xmlBody, true);
+                                    org.json.JSONObject xmlJSONObj = XML.toJSONObject(xmlBody);
+                                    log.debug("xml 2 json Output:\n{}", xmlJSONObj);
+
+                                    org.json.JSONObject edan_content = xmlJSONObj.getJSONObject("xml").getJSONObject("content");
+                                    log.debug("json edan_content Output:\n{}", edan_content.toString(4));
+
+                                    //convert online_media to json array
+                                    org.json.JSONObject image = edan_content.getJSONObject("image");
+                                    org.json.JSONObject online_media = image.getJSONObject("online_media");
+                                    Object online_media_array_element = online_media.get("online_media_array_element");
+                                    if (online_media_array_element instanceof org.json.JSONObject) {
+                                        JSONArray online_media_replace = new JSONArray();
+                                        online_media_replace.put(online_media_array_element);
+                                        edan_content.getJSONObject("image").put("online_media", online_media_replace);
+                                    } else if (online_media_array_element instanceof JSONArray) {
+                                        edan_content.getJSONObject("image").put("online_media", online_media_array_element);
+                                    }
+
+                                    log.debug("json edan_content after online_media fix:\n{}", edan_content.getJSONObject("image").getJSONArray("online_media").toString(4));
+
+                                    //convert image_identifications to json array
+                                    org.json.JSONObject image_identifications = edan_content.getJSONObject("image_identifications");
+                                    Object image_identifications_array_element = image_identifications.get("image_identifications_array_element");
+                                    if (image_identifications_array_element instanceof org.json.JSONObject) {
+                                        JSONArray image_identifications_replace = new JSONArray();
+                                        image_identifications_replace.put(image_identifications_array_element);
+                                        edan_content.getJSONObject("image").put("image_identifications", image_identifications_replace);
+                                    } else if (image_identifications_array_element instanceof JSONArray) {
+                                        edan_content.put("image_identifications", image_identifications_array_element);
+                                    }
+
+                                    log.debug("json edan_content after image_identifications fix:\n{}", edan_content.getJSONArray("image_identifications").toString(4));
+
+                                    log.debug("json final edan_content :\n{}", xmlJSONObj.getJSONObject("xml").toString(4));
+                                    out.setBody(xmlJSONObj.getJSONObject("xml").toString());
+                                } catch (JSONException je) {
+                                    throw new EdanIdsException("Error creating edan json", je);
+                                }
+                            }
+                        }).id("edanConvertXml2Json")
+
                         .log(LoggingLevel.INFO, "${id} EdanIds: EDAN JSON content before encoding: ${body}")
                         .setHeader("edanJson").groovy("URLEncoder.encode(request.body, 'UTF-8')")
                         .log(LoggingLevel.INFO, "${id} EdanIds: EDAN JSON content encoded: ${header.edanJson}")

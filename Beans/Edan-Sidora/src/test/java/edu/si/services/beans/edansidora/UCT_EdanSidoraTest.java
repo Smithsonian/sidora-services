@@ -288,31 +288,11 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
                 weaveById("processFedoraGetRELS-EXT").replace().setBody().simple(rels_extXML);
                 weaveById("logFilteredMessage").after().to("mock:filter");
-                weaveById("startProcessingFedoraMessage").replace().to("mock:result");
+                weaveById("startProcessingFedoraMessage").replace()
+                        .log(LoggingLevel.DEBUG, "${body}")
+                        .to("mock:result");
             }
         });
-
-        /*context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("processFedoraFindParentObject").remove();
-                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(readFileToString(testManifest));
-                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message out = exchange.getIn();
-                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_Exists.json";
-                                File resourceFile = new File(resourceFilePath);
-                                if (resourceFile.exists()) {
-                                    out.setBody(resourceFile, String.class);
-                                } else {
-                                    out.setBody(null);
-                                }
-                            }
-                        });
-            }
-        });*/
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");

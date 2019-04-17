@@ -380,6 +380,7 @@
                                         <file>${smx.home.path}/etc/edu.si.sidora.emammal.cfg</file>
                                         <file>${smx.home.path}/etc/edu.si.sidora.karaf.cfg</file>
                                         <file>${smx.home.path}/etc/edu.si.sidora.mci.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.solr.cfg</file>
                                         <file>${smx.home.path}/etc/system.properties</file>
                                     </files>
                                 </configuration>
