@@ -68,7 +68,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
     @PropertyInject(value = "edu.si.solr")
     static private String LOG_NAME;
-    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
+    static Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
 
     @PropertyInject(value = "si.fedora.user")
     private String fedoraUser;
@@ -105,8 +105,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "sidora.solr.concurrentConsumers", defaultValue = "20")
     private static String concurrentConsumers;
 
-    private static Integer sqlOffset = 9500000;
-//    private static Integer sqlOffset;
+//    private static Integer sqlOffset = 9500000;
+    private static Integer sqlOffset;
 
     //CloseableHttpClient client; // = HttpClientBuilder.create().build();
     //private static SolrClient client = new HttpSolrClient.Builder(solrHost).build();
@@ -139,7 +139,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
         return offset;
     }
 
-    public Processor createSolrJob() {
+    public static Processor createSolrJob() {
         Processor createSolrJobProcessor = new Processor() {
             @Override
             public void process(Exchange exchange) throws Exception {
@@ -206,8 +206,6 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                                 //HttpSolrClient$RemoteSolrException: Error from server at http://localhost:8090/solr: ERROR: [doc=si:2413718] Error adding field 'cameraLongitude'='' msg=empty String
                                 //HttpSolrClient$RemoteSolrException: Error from server at http://localhost:8090/solr: ERROR: [doc=si:242440] Error adding field 'cameraDeploymentBeginDate'='NaN' msg=For input string: "NaN"
                                 //.HttpSolrClient$RemoteSolrException: Error from server at http://localhost:8090/solr: ERROR: [doc=si:2746530] Error adding field 'cameraDeploymentBeginDate'='2014-08-09' msg=For input string: "2014-08-09"
-
-                                if (fieldName.)
 
                                 solrInputDoc.addField(fieldName, fieldValue);
                             }
@@ -575,7 +573,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
         from("seda:processSolrJob?concurrentConsumers=50").routeId("processSolrJob")
                 .setHeader("startTime").simple(String.valueOf(new Date().getTime()), long.class)
 
-                .to("seda:createDoc")
+                .to("seda:createDoc").id("createDoc")
 
                 //Set end time and solr status for jobs
                 .process(new Processor() {
