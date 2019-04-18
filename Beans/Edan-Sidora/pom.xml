@@ -63,7 +63,7 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-all</artifactId>
-            <scope>test</scope>
+            <!--<scope>test</scope>-->
         </dependency>
 
         <!--  osgi -->
@@ -157,47 +157,47 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-cxf</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-transports-http-jetty</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-csv</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-groovy</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-velocity</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.servicemix.bundles</groupId>
             <artifactId>org.apache.servicemix.bundles.velocity-tools</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-saxon</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-schematron</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-exec</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -217,7 +217,7 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-http</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -232,29 +232,29 @@
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core-asl</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Test Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
 
         <!-- edansidora -->
@@ -283,7 +283,7 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-camel</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
             <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
             <!--<exclusions>
                 <exclusion>
@@ -401,9 +401,16 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <instructions>
+                    <!--<instructions>
                         <Bundle-SymbolicName>edu.si.services.beans.edansidora</Bundle-SymbolicName>
                         <Export-Package>edu.si.services.beans.edansidora</Export-Package>
+                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
+                    </instructions>-->
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Description>${project.description}</Bundle-Description>
+                        <Private-Package>edu.si.services.*</Private-Package>
+                        <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
                         <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
                     </instructions>
                 </configuration>
@@ -442,6 +449,33 @@
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
                         <karaf.home>${karaf.home}</karaf.home>
                     </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <!-- to run the example using mvn camel:run -->
+            <plugin>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-maven-plugin</artifactId>
+                <configuration>
+                    <useBlueprint>true</useBlueprint>
+                    <applicationContextUri>edan-ids-sidora-route.xml</applicationContextUri>
+                    <!--<logClasspath>true</logClasspath>-->
+                    <configAdminFileName>${project.build.directory}/test-classes/camel-run-test.properties</configAdminFileName>
+                    <configAdminPid>edu.si.sidora.emammal</configAdminPid>
+                    <systemProperties>
+                        <property>
+                            <key>karaf.home</key>
+                            <value>${project.build.directory}/test-classes</value>
+                        </property>
+                        <!--<property>
+                            <key>broker.url</key>
+                            <value>tcp://localhost:61616</value>
+                        </property>-->
+                        <property>
+                            <key>test.server</key>
+                            <value>localhost</value>
+                        </property>
+                    </systemProperties>
                 </configuration>
             </plugin>
         </plugins>
