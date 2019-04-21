@@ -297,6 +297,10 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                         exchange.getIn().setHeader(Exchange.FILE_NAME, pid+"_error-"+routeID);
                         exchange.getIn().setBody(sb.toString());
+
+                        //Sometimes in exchange body does not get set ??? weird
+                        exchange.getOut().setHeader(Exchange.FILE_NAME, pid+"_error-"+routeID);
+                        exchange.getOut().setBody(sb.toString());
                     }
                 }).id("deadLetterProcessor")
                 .to("file:{{karaf.home}}/deadLetter?fileExist=append");
@@ -516,7 +520,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                     .log(LoggingLevel.INFO, LOG_NAME, "sql limit: {{sidora.solr.page.limit}}, offset: ${header.offset}")
 
                     .to("sql:{{sql.selectPidBatch}}").id("solrReindexAllPidBatch")
-                
+
                     .setHeader("resultSize").simple("${body.size}")
                     .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: resultCount =  ${header.resultSize}")
 
@@ -649,11 +653,10 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         .to("velocity:file:{{karaf.home}}/Input/templates/gsearch_sianct-sparql.vsl")
                         .to("seda:sianctFusekiQuery").id("createDocFusekiQuery")
 
-                        //TODO: check if fuseki result is empty.. causes retries look at ct:4050063 or ct:4050064 fuseki result
-
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Send to XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/batch_CT_foxml-to-gsearch_sianct.xslt").id("foxmlToGsearchSianctXSLT")
+                        .to("xslt:file:{{karaf.home}}/Input/xslt/batch_CT_foxml-to-gsearch_sianct.xslt?saxon=true").id("foxmlToGsearchSianctXSLT")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: batch_CT_foxml-to-gsearch_sianct output:\n${body}")
                         .process(createSolrInputDocumentProcessor())
                     .endChoice()
 
@@ -667,8 +670,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Send to batch_foxml-to-gsearch_solr XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/batch_foxml-to-gsearch_solr.xslt").id("foxmlToGsearchSolrXSLT")
-
+                        .to("xslt:file:{{karaf.home}}/Input/xslt/batch_foxml-to-gsearch_solr.xslt?saxon=true").id("foxmlToGsearchSolrXSLT")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: batch_foxml-to-gsearch_solr output:\n${body}")
                         .process(createSolrInputDocumentProcessor())
                     .endChoice()
@@ -813,6 +815,12 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .toD("http4://localhost:9080/fuseki/fedora3?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy").id("fusekiCall")
 
                 .convertBodyTo(String.class)
+
+                .choice()
+                    .when().xpath("boolean(not(//ri:results/*[normalize-space()]))", ns)
+                        .throwException(SidoraSolrException.class, "Empty Fuseki result for pid = ${header.pid}")
+                    .endChoice()
+                .end()
 
                 /**
                  * fetch foxml using HTTPClient
