@@ -62,7 +62,7 @@ public class SidoraEdanCamelRunTest extends CamelTestSupport {
     }
 
     @Test
-    public void testJVM_OOM_ERROR() throws Exception {
+    public void testMavenCamelRun() throws Exception {
         String manifest = readFileToString(testManifest);
 
         Exchange exchange = new DefaultExchange(context);
@@ -75,6 +75,6 @@ public class SidoraEdanCamelRunTest extends CamelTestSupport {
         exchange.getIn().setHeader("ResearcherObservationPID", "test.smx.home:22");
         exchange.getIn().setHeader("VolunteerObservationPID", "test.smx.home:23");
 
-        template.send("activemq:queue:edanIds.apim.update.test", exchange);
+        template.send("activemq:queue:edanIds.ct.update.test", exchange);
     }
 }

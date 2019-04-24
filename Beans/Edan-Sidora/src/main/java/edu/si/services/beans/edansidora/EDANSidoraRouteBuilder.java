@@ -56,7 +56,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "si.ct.edanIds.parallelProcessing", defaultValue = "true")
     private String PARALLEL_PROCESSING;
 
-    @PropertyInject(value = "si.ct.edanIds.concurrentConsumers", defaultValue = "true")
+    @PropertyInject(value = "si.ct.edanIds.concurrentConsumers", defaultValue = "20")
     private String CONCURRENT_CONSUMERS;
 
     @Override
@@ -124,69 +124,62 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 //Remove unneeded headers that may cause problems later on
                 .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders|CamelSchematronValidationReport|datastreamValidationXML")
 
-                //Route Messages to the correct destination
+                .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
+                .setHeader("dsID").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsID']/@term", String.class, ns)
+                .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
+
+                .filter()
+                    .simple("${header.origin} == '{{si.fedora.user}}'")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered CT USER!! [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required!").id("logFilteredMessage")
+                        .stop()
+                .end()
+
+                //Grab the objects datastreams as xml
+                .setHeader("CamelHttpMethod").constant("GET")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
+                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+
+                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
+
                 .choice()
-                    .when().simple("${header.addEdanIds}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Found: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
-                        .to("activemq:queue:{{edanIds.ct.queue}}").id("startProcessCtDeployment")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message")
+                    .when().simple("${body} != null || ${body} != ''")
+                        .setHeader("objLabel").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns).id("setobjLabel")
+                        .setHeader("mimeType").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@mimeType", String.class, ns).id("setMimeType")
                     .endChoice()
-                    .otherwise()
-                        .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
-                        .setHeader("dsID").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsID']/@term", String.class, ns)
-                        .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
+                .end()
 
-                        .filter()
-                            .simple("${header.origin} == '{{si.fedora.user}}'")
-                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered CT USER!! [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required!").id("logFilteredMessage")
-                            .stop()
-                        .end()
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/RELS-EXT/content")
+                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+                .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetRELS-EXT")
 
-                        //Grab the objects datastreams as xml
-                        .setHeader("CamelHttpMethod").constant("GET")
-                        .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
-                        .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
-                        .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
-                        .choice()
-                            .when().simple("${body} != null || ${body} != ''")
-                                .setHeader("objLabel").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@label", String.class, ns).id("setobjLabel")
-                                .setHeader("mimeType").xpath("/objDatastreams:objectDatastreams/objDatastreams:datastream[@dsid='OBJ']/@mimeType", String.class, ns).id("setMimeType")
-                            .endChoice()
-                        .end()
-                        .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/RELS-EXT/content")
-                        .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
-                        .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetRELS-EXT")
-                        .choice()
-                            .when().simple("${body} != null || ${body} != ''")
-                                .setHeader("hasModel").xpath("string-join(//fs:hasModel/@rdf:resource, ',')", String.class, ns).id("setHasModel")
-                            .endChoice()
-                        .end()
-
-                        .filter()
-                            .simple("${header.origin} == '{{si.fedora.user}}' || " +
-                                    " ${header.dsID} != 'OBJ' || " +
-                                    " ${header.dsLabel} contains 'Observations' || " +
-                                    " ${header.objLabel} contains 'Observations' || " +
-                                    " ${header.dsLabel} == null || " +
-                                    " ${header.objLabel} == null || " +
-                                    " ${header.dsLabel} in ',null' || " +
-                                    " ${header.objLabel} in ',null' || " +
-                                    " ${header.methodName} not in 'addDatastream,modifyDatastreamByValue,modifyDatastreamByReference,modifyObject,ingest,purgeDatastream' || " +
-                                    " ${header.pid} not contains '{{si.ct.namespace}}:' || " +
-                                    " ${header.mimeType} not contains 'image' || " +
-                                    " ${header.hasModel?.toLowerCase()} not contains 'image'")
-
-                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}, objLabel=${header.objLabel}, objMimeType=${header.mimeType}, hasModel=${header.hasModel} ] - No message processing required!").id("logFilteredMessage")
-                            .stop()
-                        .end()
-
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Fedora Message Found: Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}, objLabel=${header.objLabel}, objMimeType=${header.mimeType}, hasModel= ${header.hasModel}")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Processing Body: ${body}")
-                        .to("seda:processFedoraMessage?waitForTaskToComplete=Never").id("startProcessingFedoraMessage")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing EDAN and IDS record update for PID: ${header.pid}.")
+                .choice()
+                    .when().simple("${body} != null || ${body} != ''")
+                        .setHeader("hasModel").xpath("string-join(//fs:hasModel/@rdf:resource, ',')", String.class, ns).id("setHasModel")
                     .endChoice()
-                .end();
+                .end()
+
+                .filter()
+                    .simple("${header.origin} == '{{si.fedora.user}}' || " +
+                            " ${header.dsID} != 'OBJ' || " +
+                            " ${header.dsLabel} contains 'Observations' || " +
+                            " ${header.objLabel} contains 'Observations' || " +
+                            " ${header.dsLabel} == null || " +
+                            " ${header.objLabel} == null || " +
+                            " ${header.dsLabel} in ',null' || " +
+                            " ${header.objLabel} in ',null' || " +
+                            " ${header.methodName} not in 'addDatastream,modifyDatastreamByValue,modifyDatastreamByReference,modifyObject,ingest,purgeDatastream' || " +
+                            " ${header.pid} not contains '{{si.ct.namespace}}:' || " +
+                            " ${header.mimeType} not contains 'image' || " +
+                            " ${header.hasModel?.toLowerCase()} not contains 'image'")
+
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Filtered [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}, objLabel=${header.objLabel}, objMimeType=${header.mimeType}, hasModel=${header.hasModel} ] - No message processing required!").id("logFilteredMessage")
+                        .stop()
+                .end()
+
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Fedora Message Found: Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}, objLabel=${header.objLabel}, objMimeType=${header.mimeType}, hasModel= ${header.hasModel}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Processing Body: ${body}")
+                .to("seda:processFedoraMessage?waitForTaskToComplete=Never").id("startProcessingFedoraMessage")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing EDAN and IDS record update for PID: ${header.pid}.");
 
         from("seda:processFedoraMessage?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("EdanIdsProcessFedoraMessage")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Fedora Message processing...")
@@ -196,13 +189,13 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 //Is this an Update or Delete
                 .choice()
                     .when().simple("${headers.methodName} == 'purgeDatastream'")
-                        .to("seda:edanDelete").id("processFedoraEdanDelete")
+                        .to("seda:edanDelete?waitForTaskToComplete=Always").id("processFedoraEdanDelete")
                         //Asset XML atributes indicating serve to IDS (pub)
                         .setHeader("isPublic").simple("Yes")
                         .setHeader("isInternal").simple("No")
                     .endChoice()
                     .otherwise()
-                        .to("seda:edanUpdate").id("processFedoraEdanUpdate")
+                        .to("seda:edanUpdate?waitForTaskToComplete=Always").id("processFedoraEdanUpdate")
                         //Asset XML attributes indicating delete asset
                         .setHeader("isPublic").simple("No")
                         .setHeader("isInternal").simple("No")
@@ -223,10 +216,10 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     }
                 })
 
-                .log(LoggingLevel.INFO, "*******************************[ Calling idsAssetUpdate ]*******************************")
+                .log(LoggingLevel.INFO, "*******************************[ processFedoraMessage Calling idsAssetUpdate ]*******************************")
 
                 // add the asset and create/append the asset xml
-                .to("direct:idsAssetUpdate").id("fedoraUpdateIdsAssetUpdate")
+                .to("seda:idsAssetUpdate").id("fedoraUpdateIdsAssetUpdate")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Fedora Message processing...");
 
@@ -238,7 +231,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     .when().simple("${header.ManifestXML} == null")
                         /* Let check the speciesScientificName in the deployment manifest to see if we even need to continue processing */
                         //Find the parent so we can grab the manifest
-                        .to("seda:findParentObject").id("processFedoraFindParentObject")
+                        .to("seda:findParentObject?waitForTaskToComplete=Always").id("processFedoraFindParentObject")
 
                         //Grab the manifest from the parent
                         .setHeader("CamelHttpMethod").constant("GET")
@@ -262,8 +255,10 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setHeader("edanServiceEndpoint").simple("/metadata/v2.0/metadata/search.htm")
                 .setBody().simple("[\"p.emammal_image.image.id:${header.imageid}\"]")
                 .setHeader(Exchange.HTTP_QUERY).groovy("\"fqs=\" + URLEncoder.encode(request.getBody(String.class));")
-                .to("seda:edanHttpRequest").id("updateEdanSearchRequest")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EdanSearch result:\n${body}")
+                .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("updateEdanSearchRequest")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds:\nEdanSearch result:\n${body}")
+
+//.stop()
 
                 //Convert string JSON so we can access the data
                 .unmarshal().json(JsonLibrary.Gson, true) //converts json to LinkedTreeMap
@@ -286,12 +281,13 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         //.setHeader("idsId").simple("${body[rows].get(0)[content][image][online_media].get(0)[idsId]}")
 
                         // create the EDAN content and encode
-                        .to("seda:createEdanJsonContent")
+                        .to("seda:createEdanJsonContent?waitForTaskToComplete=Always")
 
                         // Set the EDAN endpoint and query params
                         .setHeader("edanServiceEndpoint", simple("/content/v1.1/admincontent/editContent.htm"))
                         .setHeader(Exchange.HTTP_QUERY).simple("id=${header.edanId}&content=${header.edanJson}")
-                        .to("seda:edanHttpRequest").id("edanUpdateEditContent")
+                        .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("edanUpdateEditContent")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EditContent result:\n${body}")
 
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Edit Content...")
                     .endChoice()
@@ -307,12 +303,13 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .end()
 
                         // create the EDAN content and encode
-                        .to("seda:createEdanJsonContent")
+                        .to("seda:createEdanJsonContent?waitForTaskToComplete=Always")
 
                         // Set the EDAN endpoint and query params
                         .setHeader("edanServiceEndpoint", simple("/content/v1.1/admincontent/createContent.htm"))
                         .setHeader(Exchange.HTTP_QUERY).simple("content=${header.edanJson}")
-                        .to("seda:edanHttpRequest").id("edanUpdateCreateContent")
+                        .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("edanUpdateCreateContent")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: CreateContent result:\n${body}")
 
                         //Convert string JSON so we can access the data
                         .unmarshal().json(JsonLibrary.Gson, true) //converts json to LinkedTreeMap
@@ -336,7 +333,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .setHeader("edanServiceEndpoint").simple("/metadata/v2.0/metadata/search.htm")
                 .setBody().simple("[\"p.emammal_image.image.online_media.sidorapid:${header.pid.replace(':', '?')}\"]")
                 .setHeader(Exchange.HTTP_QUERY).groovy("\"fqs=\" + URLEncoder.encode(request.getBody(String.class));")
-                .to("seda:edanHttpRequest").id("deleteEdanSearchRequest")
+                .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("deleteEdanSearchRequest")
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN metadata search Response Body:\n${body}")
 
@@ -373,7 +370,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                             // Set the EDAN endpoint and query params
                             .setHeader("edanServiceEndpoint").simple("/content/v1.1/admincontent/releaseContent.htm")
                             .setHeader(Exchange.HTTP_QUERY).simple("id=${header.edanId}&type=${header.edanType}")
-                            .to("seda:edanHttpRequest").id("deleteEdanRecordRequest")
+                            .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("deleteEdanRecordRequest")
 
                             .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Delete Record Response Body:\n${body}")
 
@@ -388,7 +385,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Delete Record...");
 
 
-        from("seda:edanHttpRequest?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("edanHttpRequest")
+        from("seda:edanHttpRequest?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("edanHttpRequest").errorHandler(noErrorHandler())
+        //from("direct:edanHttpRequest").routeId("edanHttpRequest")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Http Request...")
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request: HTTP_QUERY = ${header.CamelHttpQuery}")
@@ -396,7 +394,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 // Set the EDAN Authorization headers and preform the EDAN query request
                 .to("bean:edanApiBean?method=sendRequest").id("edanApiSendRequest")
                 .convertBodyTo(String.class)
-
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Http Request...");
 
@@ -414,7 +411,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
 
         //TODO: refactor asset xml creation for processCtDeployment and regular fedora jms processing
-        from("direct:idsAssetUpdate").routeId("idsAssetUpdate")
+        from("seda:idsAssetUpdate?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("idsAssetUpdate")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting IDS Asset Update...")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "si.ct.uscbi.idsPushLocation = {{si.ct.uscbi.idsPushLocation}}")
                 .log(LoggingLevel.INFO, LOG_NAME, "SiteId: ${header.SiteId}, imageid: ${header.imageid}")
@@ -540,11 +537,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .removeHeaders("User-Agent|CamelHttpCharacterEncoding|CamelHttpPath|CamelHttpQuery|connection|Content-Length|Content-Type|boundary|CamelCxfRsResponseGenericType|org.apache.cxf.request.uri|CamelCxfMessage|CamelHttpResponseCode|Host|accept-encoding|CamelAcceptContentType|CamelCxfRsOperationResourceInfoStack|CamelCxfRsResponseClass|CamelHttpMethod|incomingHeaders|CamelSchematronValidationReport|datastreamValidationXML")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
+                //.log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: ***** Delaying for a moment before starting EdanIds CT processing *****")
-                .delay(1500)
-                .to("seda:processCtDeployment?waitForTaskToComplete=Never").id("ctStartProcessCtDeployment")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message");
+                //.delay(1500)
+                .to("seda:processCtDeployment?waitForTaskToComplete=Never").id("ctStartProcessCtDeployment");
+                //.log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message");
 
         from("seda:processCtDeployment?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("EdanIdsProcessCtDeployment")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Camera Trap Deployment processing...")
@@ -556,7 +553,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
                     .aggregationStrategy(new EdanIdsAggregationStrategy())
 
-                //TODO: use the EdanIdsAggregationStrategy ^^^ to collect headers and body during split that are needed for idsAsset.xsl or ids_template.vsl
+                    //TODO: use the EdanIdsAggregationStrategy ^^^ to collect headers and body during split that are needed for idsAsset.xsl or ids_template.vsl
 
                     .setHeader("pid").simple("${body}")
                     .choice()
@@ -576,17 +573,31 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                             .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: label: ${header.imageid} for PID: ${header.pid}")
 
                             // edit/create the EDAN record
-                            .to("seda:edanUpdate").id("ctProcessEdanUpdate")
+                            .to("seda:edanUpdate?waitForTaskToComplete=Always").id("ctProcessEdanUpdate")
+
+                            //Asset XML atributes indicating serve to IDS (pub)
+                            .setHeader("isPublic").simple("Yes")
+                            .setHeader("isInternal").simple("No")
+                        .endChoice()
                     .end()
                 .end()
 
                 //TODO: call idsAssetUpdate to write once using idsAssetList header from split aggregator to create idsAsset xml
-                .log(LoggingLevel.INFO, "*******************************[ Calling idsAssetUpdate ]*******************************")
+                .log(LoggingLevel.INFO, "*******************************[ processCtDeployment Calling idsAssetUpdate ]*******************************")
 
                 .setBody().simple("${header.idsAssetList}")
 
+                .log(LoggingLevel.INFO, "idsAssertList:\n${header.idsAssetList}")
+
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        log.info("@@@@@@@@@@@@@@@@@[ seda:idsAssetUpdate STOP BEFORE ]@@@@@@@@@@@@@@@@@@");
+                    }
+                })
+
                 // add the asset and create/append the asset xml
-                .to("direct:idsAssetUpdate").id("processCtDeploymentIdsAsset")
+                .to("seda:idsAssetUpdate").id("processCtDeploymentIdsAsset")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Camera Trap Deployment processing...");
     }
