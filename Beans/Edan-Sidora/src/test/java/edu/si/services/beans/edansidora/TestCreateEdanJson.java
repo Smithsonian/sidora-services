@@ -40,6 +40,7 @@ import org.json.XML;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +54,7 @@ import java.io.File;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -144,7 +146,7 @@ public class TestCreateEdanJson extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void testTransform2XML_create() throws Exception {
         String deployment = readFileToString(testManifest); //has multiple researcher identifications !!!
-        String expected = URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_NoEdanId.txt")), "UTF-8");
+        String expected = URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_NoEdanId.json")), "UTF-8");
 
         TransformerFactory factory = TransformerFactory.newInstance();
         Source xslt = new StreamSource(new File(KARAF_HOME + "/Input/xslt/edan_Transform_2_xml.xsl"));
@@ -170,7 +172,7 @@ public class TestCreateEdanJson extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void testTransform2XML_update() throws Exception {
         String deployment = readFileToString(testManifest); //has multiple researcher identifications !!!
-        String expected = URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.txt")), "UTF-8");
+        String expected = URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.json")), "UTF-8");
 
         TransformerFactory factory = TransformerFactory.newInstance();
         Source xslt = new StreamSource(new File(KARAF_HOME + "/Input/xslt/edan_Transform_2_xml.xsl"));
@@ -196,7 +198,7 @@ public class TestCreateEdanJson extends EDAN_CT_BlueprintTestSupport {
     @Test
     public void testTransform2JSON_create() throws Exception {
         String deployment = readFileToString(testManifest); //has multiple researcher identifications !!!
-        String expected = URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_NoEdanId.txt")), "UTF-8");
+        JSONObject expected = new JSONObject(URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_NoEdanId.json")), "UTF-8"));
 
         TransformerFactory factory = TransformerFactory.newInstance();
         Source xslt = new StreamSource(new File(KARAF_HOME + "/Input/xslt/edan_Transform.xsl"));
@@ -210,17 +212,18 @@ public class TestCreateEdanJson extends EDAN_CT_BlueprintTestSupport {
         transformer.transform(xmlInSource, new StreamResult(xmlOutWriter));
         log.info("edan_transform_2_json xslt Output:\n{}", xmlOutWriter.toString());
 
-        String actual = xmlOutWriter.toString();
+        JSONObject resultJson = XML.toJSONObject(xmlOutWriter.toString(), true);
 
         log.info("expected json:\n{}", expected);
 
-        JSONAssert.assertEquals(expected, actual, false);
+        JSONAssert.assertNotEquals(expected, resultJson, JSONCompareMode.LENIENT);
+        JSONAssert.assertNotEquals(expected, resultJson, JSONCompareMode.STRICT);
     }
 
     @Test
     public void testTransform2JSON_update() throws Exception {
         String deployment = readFileToString(testManifest); //has multiple researcher identifications !!!
-        String expected = URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.txt")), "UTF-8");
+        JSONObject expected = new JSONObject(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.json")));
 
         TransformerFactory factory = TransformerFactory.newInstance();
         Source xslt = new StreamSource(new File(KARAF_HOME + "/Input/xslt/edan_Transform.xsl"));
@@ -235,21 +238,21 @@ public class TestCreateEdanJson extends EDAN_CT_BlueprintTestSupport {
         transformer.transform(xmlInSource, new StreamResult(xmlOutWriter));
         log.info("edan_transform_2_json xslt Output:\n{}", xmlOutWriter.toString());
 
-        String actual = xmlOutWriter.toString();
+        JSONObject resultJson = XML.toJSONObject(xmlOutWriter.toString(), true);
 
         log.info("expected json:\n{}", expected);
 
-        JSONAssert.assertEquals(expected, actual, false);
+        JSONAssert.assertNotEquals(expected, resultJson, JSONCompareMode.LENIENT);
+        JSONAssert.assertNotEquals(expected, resultJson, JSONCompareMode.STRICT);
     }
 
     @Test
     public void testCreateEdanJsonContentRoute() throws Exception {
         String testManifestXML = readFileToString(testManifest);
-        String expected = URLDecoder.decode(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.txt")), "UTF-8");
+        JSONObject expected = new JSONObject(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.json")));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMinimumMessageCount(1);
-        mockResult.expectedHeaderReceived("edanJson", expected);
 
         context.getRouteDefinition("createEdanJsonContent").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -268,6 +271,12 @@ public class TestCreateEdanJson extends EDAN_CT_BlueprintTestSupport {
         template.send("seda:createEdanJsonContent", exchange);
 
         assertMockEndpointsSatisfied();
+
+        String resultJson = URLDecoder.decode(mockResult.getReceivedExchanges().get(0).getIn().getHeader("edanJson", String.class), "UTF-8");
+        JSONObject result = new JSONObject(resultJson);
+
+        JSONAssert.assertEquals(expected, result, JSONCompareMode.LENIENT);
+        JSONAssert.assertEquals(expected, result, JSONCompareMode.STRICT);
     }
 
     @Test
@@ -379,72 +388,5 @@ public class TestCreateEdanJson extends EDAN_CT_BlueprintTestSupport {
 
         log.info("Expected ID = {}, Returned ID = {}", TEST_EDAN_ID, result);
         assertEquals("The returned ID does not match", TEST_EDAN_ID, result);
-    }
-
-    public String getXML() {
-        return "<xml>\n" +
-                "<content>\n" +
-                "      <deployment_id>d44271</deployment_id>\n" +
-                "      <deployment_name>Week_15_7.22.13_8.6.13_Camera_3_Schoolhouse_Part2</deployment_name>\n" +
-                "      <image>\n" +
-                "         <date_time>2013-07-25 22:29:17</date_time>\n" +
-                "         <id>d44271s1i1</id>\n" +
-                "         <interest_ranking>None</interest_ranking>\n" +
-                "         <online_media>\n" +
-                "            <array_element>\n" +
-                "               <caption>Camera Trap Image Coyote</caption>\n" +
-                "               <content>http://ids.si.edu/ids/deliveryService?id=emammal_image_d44271s1i1</content>\n" +
-                "               <idsId>emammal_image_d44271s1i1</idsId>\n" +
-                "               <sidoraPid>test:132465</sidoraPid>\n" +
-                "               <thumbnail>http://ids.si.edu/ids/deliveryService?id=emammal_image_d44271s1i1&amp;max=100</thumbnail>\n" +
-                "               <type>Images</type>\n" +
-                "            </array_element>\n" +
-                "            <array_element>\n" +
-                "               <caption>Camera Trap Image Cat</caption>\n" +
-                "               <content>http://ids.si.edu/ids/deliveryService?id=emammal_image_d44271s1i1</content>\n" +
-                "               <idsId>emammal_image_d44271s1i1</idsId>\n" +
-                "               <sidoraPid>test:132465</sidoraPid>\n" +
-                "               <thumbnail>http://ids.si.edu/ids/deliveryService?id=emammal_image_d44271s1i1&amp;max=100</thumbnail>\n" +
-                "               <type>Images</type>\n" +
-                "            </array_element>\n" +
-                "         </online_media>\n" +
-                "         <photo_type />\n" +
-                "         <photo_type_identified_by />\n" +
-                "      </image>\n" +
-                "      <image_identifications>\n" +
-                "         <array_element>\n" +
-                "            <iucn_id>18</iucn_id>\n" +
-                "            <species_scientific_name>Canis familiaris</species_scientific_name>\n" +
-                "            <individual_animal_notes/>\n" +
-                "            <species_common_name>Domestic Dog</species_common_name>\n" +
-                "            <count>1</count>\n" +
-                "            <age>Unknown</age>\n" +
-                "            <sex>Unknown</sex>\n" +
-                "            <individual_id/>\n" +
-                "            <animal_recognizable>N</animal_recognizable>\n" +
-                "         </array_element>\n" +
-                "         <array_element>\n" +
-                "            <iucn_id>3</iucn_id>\n" +
-                "            <species_scientific_name>Homo sapiens</species_scientific_name>\n" +
-                "            <individual_animal_notes/>\n" +
-                "            <species_common_name>Human non-staff</species_common_name>\n" +
-                "            <count>1</count>\n" +
-                "            <age>Unknown</age>\n" +
-                "            <sex>Unknown</sex>\n" +
-                "            <individual_id/>\n" +
-                "            <animal_recognizable>N</animal_recognizable>\n" +
-                "         </array_element>\n" +
-                "      </image_identifications>\n" +
-                "      <image_sequence_id>d44271s1</image_sequence_id>\n" +
-                "      <project_id>p229</project_id>\n" +
-                "      <project_name>Investigating \"Disgust\" in Raccoons</project_name>\n" +
-                "      <sub_project_id>sp1433</sub_project_id>\n" +
-                "      <sub_project_name>Camera_3_Outdoor_Classroom</sub_project_name>\n" +
-                "   </content>\n" +
-                "   <publicSearch>true</publicSearch>\n" +
-                "   <title>Camera Trap Image Coyote</title>\n" +
-                "   <type>emammal_image</type>\n" +
-                "   <url>d44271s1i1</url>\n" +
-                "</xml>";
     }
 }

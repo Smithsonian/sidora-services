@@ -72,8 +72,6 @@ public class EdanAPITest extends CamelTestSupport {
     private static final Logger LOG = LoggerFactory.getLogger(EdanAPITest.class);
     private static final boolean DEBUG = true;
 
-    protected static final boolean LOCAL_TEST = false;
-
     //EDAN and IDS Solr
     protected static String SOLR_SERVER;
     protected static int SOLR_PORT;
@@ -84,11 +82,8 @@ public class EdanAPITest extends CamelTestSupport {
 
     private static EdanApiBean edanApiBean = new EdanApiBean();
 
-    private static Server server;
-
-    //private static String TEST_EDAN_ID = "p2b-1515252134647-1515436502565-0"; //QUOTIENTPROD
     //private static String TEST_IMAGE_PREFIX = config.getString("si.edu.idsAssetImagePrefix");
-    private static String TEST_EDAN_ID = "p2b-1515252134647-1516215519247-0"; //QUOTIENTPROD
+    private static String TEST_EDAN_ID = "p1b-1553948738386-1556126611432-0"; //QUOTIENTPROD
     private static String TEST_PROJECT_ID = "testProjectId";
     private static String TEST_DEPLOYMENT_ID = "testDeploymentId";
     private static String TEST_IAMGE_ID = "testRaccoonAndFox";
@@ -123,13 +118,9 @@ public class EdanAPITest extends CamelTestSupport {
 
         edanApiBean.initIt();
 
-        if (LOCAL_TEST) {
-            startEdanTestServer();
-        } else {
-            EDAN_TEST_URI = props.getProperty("si.ct.uscbi.server");
-            LOG.info("===========[ EDAN_TEST_URI = {} ]============", EDAN_TEST_URI);
-            assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
-        }
+        EDAN_TEST_URI = props.getProperty("si.ct.uscbi.server");
+        LOG.info("===========[ EDAN_TEST_URI = {} ]============", EDAN_TEST_URI);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         if (DEBUG) {
             System.getProperties().list(System.out);
@@ -149,33 +140,11 @@ public class EdanAPITest extends CamelTestSupport {
         return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg", KARAF_HOME + "/test.properties");
     }
 
-    public static void startEdanTestServer() throws Exception {
-        assumeTrue("Dynamic Test Port is Null. To run tests locally run via maven using 'mvn clean test -Dtest=EdanAPITest' ", StringUtils.isNotEmpty(props.getProperty("dynamic.test.port")));
-
-        //EDAN test server host set via maven surefire/failsafe
-        EDAN_TEST_URI = "http://localhost:" + System.getProperty("dynamic.test.port");
-        props.setProperty("si.ct.uscbi.server", EDAN_TEST_URI);
-
-        LOG.info("===========[ EDAN_TEST_URI = " + EDAN_TEST_URI + " ]============");
-
-        // start a simple front service
-        JAXRSServerFactoryBean factory = new JAXRSServerFactoryBean();
-        factory.setAddress(EDAN_TEST_URI);
-        factory.setResourceClasses(EdanTestService.class);
-
-        server = factory.create();
-        server.start();
-    }
-
     /**
      * Stop the test EDAN Server
      */
     @AfterClass
-    public static void stopServer() throws Exception {
-        if (LOCAL_TEST) {
-            server.stop();
-        }
-
+    public static void cleanUp() throws Exception {
         edanApiBean.cleanUp();
     }
 
@@ -195,7 +164,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanGetContentIdParamTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -218,7 +187,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanGetAdminContentTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
         assumeTrue(props.getProperty("si.ct.uscbi.appId").equals(TEST_APP_ID));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -243,7 +212,7 @@ public class EdanAPITest extends CamelTestSupport {
     @Test
     @Ignore
     public void edanAdminContentEditContentTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
         assumeTrue(props.getProperty("si.ct.uscbi.appId").equals(TEST_APP_ID));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -279,7 +248,7 @@ public class EdanAPITest extends CamelTestSupport {
     @Test
     @Ignore
     public void edanAdminContentCreateContentTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
         assumeTrue(props.getProperty("si.ct.uscbi.appId").equals(TEST_APP_ID));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -314,7 +283,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -337,7 +306,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -360,7 +329,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryCtProjectIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -383,7 +352,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryCtDeploymentIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -419,7 +388,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryCtProjectAndDeploymentIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -461,7 +430,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryImageIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -494,7 +463,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryIdsIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);

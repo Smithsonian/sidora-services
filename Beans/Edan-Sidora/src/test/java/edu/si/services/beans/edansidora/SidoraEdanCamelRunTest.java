@@ -39,7 +39,7 @@ import java.io.File;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 
-/**
+/** Only for testing locally against test server
  * @author jbirkhimer
  */
 @Ignore

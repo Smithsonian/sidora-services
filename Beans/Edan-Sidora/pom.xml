@@ -48,9 +48,6 @@
     <properties>
         <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
         <servlet.port>8080</servlet.port>
-        <!--<solr.host>http://${edan.ids.solr.host}</solr.host>-->
-        <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep fedora and fuseki up -->
-        <!--<dynamic.test.port>40994</dynamic.test.port>-->
         <fedora.home>${project.build.directory}/fedora-home</fedora.home>
         <fuseki.base>${project.build.directory}/fuseki-base</fuseki.base>
 
@@ -112,24 +109,12 @@
             <artifactId>camel-test-blueprint</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>edu.si.services.beans</groupId>
-            <artifactId>CameraTrap</artifactId>
-            <version>1.0</version>
-            <scope>test</scope>
-        </dependency>-->
         <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
             <version>1.0</version>
             <scope>provided</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>edu.si.services.camel</groupId>
-            <artifactId>FcrepoRest</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
-        </dependency>-->
         <dependency>
             <groupId>edu.si.services.beans</groupId>
             <artifactId>VelocityToolsHandler</artifactId>
@@ -154,16 +139,6 @@
             <version>1.0</version>
             <scope>test</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-cxf</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-rt-transports-http-jetty</artifactId>
-            <scope>provided</scope>
-        </dependency>-->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-csv</artifactId>
@@ -284,13 +259,6 @@
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-camel</artifactId>
             <scope>provided</scope>
-            <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
-            <!--<exclusions>
-                <exclusion>
-                    <groupId>org.apache.camel</groupId>
-                    <artifactId>camel-jms</artifactId>
-                </exclusion>
-            </exclusions>-->
         </dependency>
 
         <dependency>
@@ -479,10 +447,6 @@
                             <key>karaf.home</key>
                             <value>${project.build.directory}/test-classes</value>
                         </property>
-                        <!--<property>
-                            <key>broker.url</key>
-                            <value>tcp://localhost:61616</value>
-                        </property>-->
                         <property>
                             <key>test.server</key>
                             <value>localhost</value>
