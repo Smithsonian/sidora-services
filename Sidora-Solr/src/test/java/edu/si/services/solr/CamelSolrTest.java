@@ -37,6 +37,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.velocity.VelocityConstants;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
+import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.DateTool;
 import org.junit.After;
@@ -48,8 +49,11 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.commons.io.FileUtils.readFileToString;
 
 /**
  * @author jbirkhimer
@@ -216,12 +220,12 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
             }
         });
 
-        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+        /*context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("updateSianctReindexJob").replace().log(LoggingLevel.INFO, "Skipp updating db");
             }
-        });
+        });*/
 
         context.getRouteDefinition("createSolrDoc").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -485,9 +489,9 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         context.getRouteDefinition("solrReindexAll").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("clearSianctReindexTable").remove();
-                weaveById("insertSianctReindexJob").remove();
-                weaveById("insertSolrReindexJob").remove();
+                //weaveById("clearSianctReindexTable").remove();
+                //weaveById("insertSianctReindexJob").remove();
+                //weaveById("insertSolrReindexJob").remove();
                 weaveById("solrReindexAllPidCount").replace().setHeader("pidCount").simple(TOTAL_BATCH_COUNT + "");
                 weaveById("solrReindexAllPidBatch").replace().process(new Processor() {
                     @Override
@@ -514,16 +518,16 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
 
                 weaveById("reindexCreateSianctJob").remove();
                 weaveById("reindexCreateSolrJob").remove();
-                weaveById("printReindexJobs").after().log("${body}").to("mock:result");
+                //weaveById("printReindexJobs").after().log("${body}").to("mock:result");
             }
         });
 
-        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+        /*context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("updateSianctReindexJob").replace().log(LoggingLevel.INFO, "Skipp updating db");
             }
-        });
+        });*/
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("gsearch_solr", true);
@@ -559,12 +563,12 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         MockEndpoint mockError = getMockEndpoint("mock:error");
         mockError.expectedMessageCount(1);
 
-        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("sedaStoreRecieved").remove();
-            }
-        });
+//        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+//            @Override
+//            public void configure() throws Exception {
+//                weaveById("sedaStoreRecieved").remove();
+//            }
+//        });
 
         context.getRouteDefinition("solrDeadLetter").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -580,6 +584,83 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
 
         assertMockEndpointsSatisfied();
     }
+
+    /**
+     * Testing deadletter
+     * @throws Exception
+     */
+    @Test
+    public void testAggregateAndOnException() throws Exception {
+        context.addRoutes(new RouteBuilder() {
+            int count = 0;
+            @Override
+            public void configure() throws Exception {
+                errorHandler(deadLetterChannel("mock:error")
+                                //.useOriginalMessage()
+                                .maximumRedeliveries(3)
+                                .redeliveryDelay(0)
+                                .retryAttemptedLogLevel(LoggingLevel.ERROR)
+                                .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                                .logRetryStackTrace(true)
+                                .logExhausted(false)
+                                .logExhaustedMessageHistory(false)
+//                        .logRetryStackTrace(false)
+                                .log("${routeId} ERROR_HANDLER Body:${body}")
+                );
+
+                onException(IllegalArgumentException.class)
+//                        .maximumRedeliveries(3)
+//                        .redeliveryDelay(0)
+//                        .logRetryAttempted(true)
+//                        .retryAttemptedLogLevel(LoggingLevel.WARN)
+//                        .retriesExhaustedLogLevel(LoggingLevel.WARN)
+//                        .logExhausted(false)
+//                        .logExhaustedMessageHistory(false)
+                        //.logStackTrace(false)
+                        .log(LoggingLevel.WARN, "ON_EXCEPTION Body: ${body}")
+                        .to("mock:onException");
+
+                from("seda:start").routeId("start")
+                        .aggregate(header("id"),
+                                new AggregationStrategy() {
+                                    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+                                        count++;
+                                        if (count == 3) {
+                                            throw new IllegalArgumentException("Forced oldBody: " + oldExchange.getIn().getBody() + ", newBody: " + newExchange.getIn().getBody());
+                                        }
+                                        if (oldExchange == null) {
+                                            return newExchange;
+                                        } else {
+                                            String oldBody = oldExchange.getIn().getBody(String.class);
+                                            String newBody = newExchange.getIn().getBody(String.class);
+
+                                            oldExchange.getIn().setBody(oldBody + ", " + newBody);
+                                            return oldExchange;
+                                        }
+                                    }
+                                }).completionSize(4).completionTimeout(1000)
+                        .log(LoggingLevel.INFO, "${routeId} AGGREGATED Body:${body}")
+                        .to("mock:result");
+            }
+        });
+
+        MockEndpoint mock = getMockEndpoint("mock:result");
+        mock.expectedBodiesReceived("Hello World_1, Hello World_2, Hello World_3");
+
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(0);
+
+        MockEndpoint mockOnException = getMockEndpoint("mock:onException");
+        mockOnException.expectedMessageCount(1);
+
+        template.sendBodyAndHeader("seda:start", "Hello World_1", "id", 123);
+        template.sendBodyAndHeader("seda:start", "Hello World_2", "id", 123);
+        template.sendBodyAndHeader("seda:start", "Bye World", "id", 123);
+        template.sendBodyAndHeader("seda:start", "Hello World_3", "id", 123);
+
+        assertMockEndpointsSatisfied();
+    }
+
 
     /**
      * Testing deadletter
@@ -718,6 +799,105 @@ public class CamelSolrTest extends Solr_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("testTimeout", TEST_COMPLETION_TIMEOUT);
 
         template.send("activemq:queue:{{sidoraCTSolr.queue}}", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testXSLTNaN() throws Exception {
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+
+        String sianct_fuskei_response = "<?xml version=\"1.0\"?><sparql xmlns=\"http://www.w3.org/2005/sparql-results#\"><head><variable name=\"ctPID\"/><variable name=\"ctLabel\"/><variable name=\"sitePID\"/><variable name=\"siteLabel\"/><variable name=\"parkPID\"/><variable name=\"parkLabel\"/><variable name=\"projectPID\"/><variable name=\"projectLabel\"/></head><results><result><binding name=\"ctPID\"><uri>info:fedora/si:241181</uri></binding><binding name=\"ctLabel\"><literal datatype=\"http://www.w3.org/2001/XMLSchema#string\">South Mountains Gameland 21 200m off</literal></binding><binding name=\"sitePID\"><uri>info:fedora/si:186767</uri></binding><binding name=\"siteLabel\"><literal datatype=\"http://www.w3.org/2001/XMLSchema#string\">South Mountains Game Land:200m from Trail</literal></binding><binding name=\"parkPID\"><uri>info:fedora/si:178504</uri></binding><binding name=\"parkLabel\"><literal datatype=\"http://www.w3.org/2001/XMLSchema#string\">South Mountains Game Land</literal></binding><binding name=\"projectPID\"><uri>info:fedora/si:138915</uri></binding><binding name=\"projectLabel\"><literal datatype=\"http://www.w3.org/2001/XMLSchema#string\">Recreation Effects on mid-Atlantic Wildlife</literal></binding></result></results></sparql>";
+
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                from("direct:test").routeId("testingNaN")
+                        .setHeader("method").simple("update")
+                        .setHeader("solrIndex").simple("{{sidora.sianct.default.index}}")
+                        .process(SidoraSolrRouteBuilder.createSolrJob())
+                        .to("seda:processSolrJob").id("createCtSianctSolrJob");
+            }
+        });
+
+        context.getRouteDefinition("processSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("createDoc").after().log("${header.solrJob}").to("mock:result").stop();
+            }
+        });
+
+        context.getRouteDefinition("createSolrDoc").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("createDocFusekiQuery").replace().setBody().simple(sianct_fuskei_response);
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("pid", "si:242440");
+        exchange.getIn().setHeader("origin", context.resolvePropertyPlaceholders("{{si.ct.owner}}"));
+        exchange.getIn().setHeader("dsLabel", "researcher_observation.csv");
+        exchange.getIn().setHeader("state", "A");
+        exchange.getIn().setHeader("methodName", "testing");
+        exchange.getIn().setHeader("hasModel", "datasetCModel");
+
+        template.send("direct:test", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testXSLTExceptions() throws Exception {
+        MockEndpoint mockError = getMockEndpoint("mock:error");
+        mockError.expectedMessageCount(1);
+
+//        context.getRouteDefinition("createBatchSolrJob").adviceWith(context, new AdviceWithRouteBuilder() {
+//            @Override
+//            public void configure() throws Exception {
+//                weaveById("sedaStoreRecieved").remove();
+//            }
+//        });
+
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                errorHandler(deadLetterChannel("direct:deadLetterChannel")
+                        //.useOriginalMessage()
+                        .maximumRedeliveries(5)
+                        .redeliveryDelay(0)
+                        .backOffMultiplier(2)
+                        .useExponentialBackOff()
+                        .retryAttemptedLogLevel(LoggingLevel.WARN)
+                        //.logRetryStackTrace(true)
+                        .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                        .logExhausted(true)
+                        .logExhaustedMessageHistory(true)
+                        .logStackTrace(true)
+                        .logHandled(true)
+                );
+
+                from("direct:testXslt")
+                        .to("xslt:file:/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-Solr/Karaf-Config/Input/xslt/batch_foxml-to-gsearch_solr.xslt")//?saxon=true")
+                        .log("xslt output:\n${body}")
+                        .to("mock:result");
+            }
+        });
+
+        context.getRouteDefinition("solrDeadLetter").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("deadLetterProcessor").after().to("mock:error");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("pid", "test:123");
+        exchange.getIn().setBody(readFileToString(new File("/home/jbirkhimer/IdeaProjects/sidora-services/Sidora-Solr/crash_stuff/log/smx-ran-2-completion/deadLetter/foxml-errors/ID-oris-srv03-si-edu-33892-1555073939680-0-118243889")));
+
+        template.send("direct:testXslt", exchange);
 
         assertMockEndpointsSatisfied();
     }

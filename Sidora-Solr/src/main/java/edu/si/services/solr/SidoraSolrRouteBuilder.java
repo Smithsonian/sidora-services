@@ -78,15 +78,19 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
     @PropertyInject(value = "sidora.solr.batch.size", defaultValue ="1000")
     private String BATCH_SIZE;
+
     @PropertyInject(value = "sidora.solr.batch.completionTimeout", defaultValue = "1000")
     private String COMPLETION_TIMEOUT;
+
     @PropertyInject(value = "sidora.solr.createDoc.parallelProcessing", defaultValue = "true")
     private String PARALLEL_PROCESSING;
 
     @PropertyInject(value = "sidoraSolr.redeliveryDelay", defaultValue = "0")
     private String redeliveryDelay;
+
     @PropertyInject(value = "sidoraSolr.maximumRedeliveries", defaultValue = "5")
     private String maximumRedeliveries;
+
     @PropertyInject(value = "sidoraSolr.backOffMultiplier", defaultValue = "2")
     private String backOffMultiplier;
 
@@ -105,7 +109,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     @PropertyInject(value = "sidora.solr.concurrentConsumers", defaultValue = "20")
     private static String concurrentConsumers;
 
-//    private static Integer sqlOffset = 9500000;
+    //private static Integer sqlOffset = 9500000;
     private static Integer sqlOffset;
 
     //CloseableHttpClient client; // = HttpClientBuilder.create().build();
@@ -226,7 +230,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
 
         PoolingHttpClientConnectionManager httpConnectionManager = new PoolingHttpClientConnectionManager();
-        httpConnectionManager.setDefaultMaxPerRoute(20);
+        httpConnectionManager.setDefaultMaxPerRoute(50);
         httpConnectionManager.setMaxTotal(200);
         getContext().getComponent("http4", HttpComponent.class).setClientConnectionManager(httpConnectionManager);
         //client = HttpClients.custom().setConnectionManager(httpConnectionManager).build();
@@ -395,7 +399,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                     .choice()
                         .when().simple("${body} != ''") //incase there is not plotPID
-                            .to("direct:getFoxml").id("ctJobGetFoxml")
+                            .to("seda:getFoxml").id("ctJobGetFoxml")
 
                             .setHeader("origin").xpath("/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#ownerId']/@VALUE", String.class, ns)
                             .setHeader("dsLabel").xpath("/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#label']/@VALUE", String.class, ns)
@@ -560,7 +564,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                             .to("seda:processSolrJob?waitForTaskToComplete=Never").id("reindexCreateSolrJob")
                             //.to("sql:{{sql.insertSolrReindexJob}}?dataSource=#dataSourceReIndex&noop=true").id("insertSolrReindexJob")
                         .end()//end filter
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Processing page ( ${header.CamelLoopIndex}++ of ${header.totalBatch} ), adding: ${header.CamelSplitIndex}++ of ${header.resultSize} from page. REINDEX [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel}, ${header.state} ]")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Processing page ( ${header.CamelLoopIndex}++ of ${header.totalBatch} ), adding: ${header.CamelSplitIndex}++ of ${header.resultSize} from page. REINDEX [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel}, ${header.state}, ${header.index} ]")
                     .end().id("reindexAllSplitEnd")//end split
 
                     .process(new Processor() {
@@ -733,18 +737,19 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .setHeader("CamelHttpQuery").simple("context=public&format=info:fedora/fedora-system:FOXML-1.1")
+                .setHeader("CamelHttpUri", simple("{{si.fedora.host}}/objects/${header.pid}/export"))
                 .setBody().simple("")
 
                 .setHeader("Authorization").simple("Basic " + Base64.getEncoder().encodeToString((fedoraUser + ":" + fedoraPasword).getBytes("UTF-8")), String.class)
 
-                //.toD("{{si.fedora.host}}/objects/${header.pid}/export?copyHeaders=false&mapHttpMessageHeaders=false&headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
-                .toD("http4://localhost:8080/fedora/objects/${header.pid}/export?headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
+                .toD("http4:CamelHttpUri?headerFilterStrategy=#dropHeadersStrategy&authMethod=Basic&authUsername="+fedoraUser+"&authPassword="+fedoraPasword).id("getFoxml")
+                //.toD("http4://localhost:8080/fedora/objects/${header.pid}/export?headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
                 //.toD("jetty://localhost:8080/fedora/objects/${header.pid}/export?copyHeaders=false&mapHttpMessageHeaders=false&headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
                 //.toD("fcrepo:objects/${header.pid}/export?context=public&format=info:fedora/fedora-system:FOXML-1.1").id("getFoxml")
 
                 .convertBodyTo(String.class)
 
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Fedora Response - ${body}");
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Fedora Response:\n${body}");
 
                 /**
                  * fetch foxml using HTTPClient
@@ -811,11 +816,16 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .setHeader("CamelHttpMethod", constant("GET"))
                 .setHeader("CamelHttpQuery").simple("output=xml&${body}")
-                //.toD("{{si.fuseki.endpoint}}?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy").id("fusekiCall")
-                .toD("http4://localhost:9080/fuseki/fedora3?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy").id("fusekiCall")
+                .setHeader("CamelHttpUri", constant("{{si.fuseki.endpoint}}"))
+
+                .toD("http4:CamelHttpUri?headerFilterStrategy=#dropHeadersStrategy").id("fusekiCall")
+                //.toD("http4://localhost:9080/fuseki/fedora3?output=xml&${body}&headerFilterStrategy=#dropHeadersStrategy").id("fusekiCall")
 
                 .convertBodyTo(String.class)
 
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${routeId} :: Fuseki Result:\n${body}")
+
+                //check the response
                 .choice()
                     .when().xpath("boolean(not(//ri:results/*[normalize-space()]))", ns)
                         .throwException(SidoraSolrException.class, "Empty Fuseki result for pid = ${header.pid}")

@@ -54,6 +54,7 @@
 
     <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
     <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
+        <!--<property name="brokerURL" value="vm://localhost?broker.persistent=false&amp;broker.useJmx=false"/>-->
         <property name="brokerURL" value="${broker.url}"/>
         <property name="userName" value="smx"/>
         <property name="password" value="smx"/>
@@ -96,7 +97,7 @@
 
     <bean id="dataSourceReIndex" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
         <property name="driverClassName" value="${mysql.solr.db.driverClassName}"/>
-        <property name="url" value="jdbc:mysql://${mysql.solr.host}:${mysql.solr.port}/${mysql.solr.reindex.database}?zeroDateTimeBehavior=convertToNull"/>
+        <property name="url" value="jdbc:mysql://${mysql.solr.reindex.host}:${mysql.solr.reindex.port}/${mysql.solr.reindex.database}?zeroDateTimeBehavior=convertToNull"/>
         <property name="username" value="${mysql.solr.reindex.username}"/>
         <property name="password" value="${mysql.solr.reindex.password}"/>
     </bean>
