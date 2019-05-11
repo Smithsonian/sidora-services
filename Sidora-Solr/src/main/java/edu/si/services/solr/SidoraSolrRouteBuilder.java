@@ -425,15 +425,14 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .end();
 
         from("activemq:queue:{{sidoraCTSolr.queue}}").routeId("cameraTrapSolrJob")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: RECEIVED JMS\nHeaders:\n${headers}\nBody:${body}")
+                //remove unnecessary large headers
+                .removeHeaders("CamelSchematronValidationReport|datastreamValidationXML|ManifestXML")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: RECEIVED JMS\nHeaders:\n${headers}\nBody:${body}")
 
                 //Add the project pids to resource pid list
                 .setHeader("PIDAggregation").simple("{{si.ct.root}},${header.PIDAggregation},${header.ProjectPID},${header.SubProjectPID},${header.SitePID},${header.PlotPID}")
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: CT Solr Job RECEIVED, PID's: ${header.PIDAggregation}")
-
-                //remove unnecessary large headers
-                .removeHeaders("CamelSchematronValidationReport|datastreamValidationXML|ManifestXML")
 
                 .split().tokenize(",", "PIDAggregation")
                 .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
@@ -472,26 +471,36 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .end().id("ctSolrSplitEnd");
 
         from("activemq:queue:{{solr.apim.update.queue}}").routeId("fedoraApimUpdateSolrJob")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: RECEIVED JMS\nHeaders:\n${headers}\nBody:${body}")
+
                 .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
                 .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
                 .setBody().simple("${header.pid}")
-                .setHeader("methodName").simple("fedoraApim")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Fedora Solr Job RECEIVED [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
 
                 //filter out fedora messages from CT ingest we have a separate pipeline for that
-                .filter().simple("${header.origin} != '{{si.fedora.user}}' || ${header.pid} not contains '{{si.ct.namespace}}:'")
+                .filter().simple("${header.origin} == '{{si.fedora.user}}' && ${header.pid} contains '{{si.ct.namespace}}:'")
+                //.filter().simple("${header.origin} == '{{si.fedora.user}}'")
+                    .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Filtered CT User!")
+                    .stop()
+                .end()
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: After ctUser Filter! methodName = ${header.methodName}")
 
                 .filter().simple("${header.methodName} in 'purge,purgeObject,purgeDatastream'")
+                    .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: IN DELETE Filter!")
                     .to("seda:processDelete?waitForTaskToComplete=Never")
                     .stop()
                 .end()
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: After DELETE Filter!")
 
                 .to("seda:processUpdate?waitForTaskToComplete=Never");
 
         from("seda:processUpdate").id("processUpdate")
 
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: After ctUser Filter [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Update [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
 
                 .to("seda:getFoxml?waitForTaskToComplete=Always").id("fedoraApimGetFoxml")
 
@@ -526,6 +535,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .end();
 
         from("seda:processDelete").id("processDelete")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Delete [ ${header.origin}, ${header.pid}, ${header.methodName}, ${header.dsLabel} ]")
+
                 .setHeader("solrIndex").simple("{{sidora.sianct.default.index}}")
                 .process(new Processor() {
                     @Override
@@ -761,7 +772,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .end().id("createDocEndChoice");
 
 
-        from("seda:solr?concurrentConsumers=25").routeId("sidoraSolrUpdate")
+        from("seda:solr?concurrentConsumers=25").errorHandler(noErrorHandler()).routeId("sidoraSolrUpdate")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Send Request (solrIndex = ${header.solrIndex})\nHeaders: ${headers}\nBody:\n${body}")
 
                 /**
@@ -809,7 +820,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Solr Response - ${body}");
 
 
-        from("seda:getFoxml?concurrentConsumers=20").id("getFoxml")
+        from("seda:getFoxml?concurrentConsumers=20").errorHandler(noErrorHandler()).id("getFoxml")
                 /**
                  * fetch foxml using camel http component
                  * (NOTE: causes ConcurrentModificationException b/c the camel component is iterating over headers)
@@ -887,7 +898,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                     }
                 }).id("getFoxml");*/
 
-        from("seda:sianctFusekiQuery?concurrentConsumers=5").routeId("sianctFusekiQuery")
+        from("seda:sianctFusekiQuery?concurrentConsumers=5").errorHandler(noErrorHandler()).routeId("sianctFusekiQuery")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Fuseki Query - ${body}")
 
                 //TODO: Watch for ConcurrentModificationException may need to use HTTPClient instead
