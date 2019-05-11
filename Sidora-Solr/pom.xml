@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>services</artifactId>
         <groupId>edu.si.services</groupId>
@@ -8,18 +9,24 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <modelVersion>4.0.0</modelVersion>
+    <!--<parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        &lt;!&ndash;<version>1.5.20.RELEASE</version>&ndash;&gt;
+        &lt;!&ndash;<version>1.2.8.RELEASE</version>&ndash;&gt;
+        <version>1.3.0.RELEASE</version>
+        <relativePath/> &lt;!&ndash; lookup parent from repository &ndash;&gt;
+    </parent>-->
 
-    <artifactId>sidora-solr</artifactId>
-    <packaging>bundle</packaging>
+    <artifactId>sidora-solr-spring-boot</artifactId>
 
-    <name>SI :: Services :: Sidora :: Solr</name>
-
+    <name>SI :: Services :: Sidora :: Solr (spring-boot)</name>
     <description>Sidora Solr provides event driven create, update, and delete operation to Solr Indexes via Fedora Messaging or REST</description>
 
     <properties>
-        <http-components.version>4.4</http-components.version>
-        <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
+        <java.version>1.8</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- Unit Test Properties-->
         <karaf.home>${project.build.directory}/test-classes</karaf.home>
         <!--<solr.host>http://${test.solr.host}</solr.host>-->
@@ -27,15 +34,28 @@
         <fuseki.base>${project.build.directory}/fuseki-base</fuseki.base>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot-version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- must be first to avoid library conflict, Only needed during testing so scope is test -->
-        <dependency>
+        <!--<dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-all</artifactId>
-            <!--<scope>test</scope>-->
+            &lt;!&ndash;<scope>test</scope>&ndash;&gt;
         </dependency>
 
-        <!--  osgi -->
+        &lt;!&ndash;  osgi &ndash;&gt;
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.core</artifactId>
@@ -45,178 +65,125 @@
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.compendium</artifactId>
             <scope>runtime</scope>
+        </dependency>-->
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>4.2.3.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-spring-boot</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-context</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--<dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-spring-boot-starter-jaxrs</artifactId>
+            <version>3.2.5</version>
+        </dependency>-->
+        <!--<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-activemq</artifactId>
+        </dependency>-->
 
         <!-- Camel -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-blueprint</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <!--<dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http</artifactId>
-            <scope>provided</scope>
-        </dependency>-->
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http4</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-saxon</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-groovy</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-velocity</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <!--<dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-solr</artifactId>
-            <scope>provided</scope>
-        </dependency>-->
-
-        <!-- Database -->
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-jdbc</artifactId>
-            <version>${camel.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-sql</artifactId>
-            <version>${camel.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-dbcp</groupId>
-            <artifactId>commons-dbcp</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>10.11.1.1</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- CXF -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-cxf</artifactId>
-            <scope>provided</scope>
         </dependency>
         <!-- Will pull other CXF modules such cxf-core and cxf-rt-transports-http, check the pom for more information -->
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-transports-http-jetty</artifactId>
-            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-rs-extension-providers</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-cxf-transport</artifactId>
-            <scope>provided</scope>
         </dependency>
 
-        <!-- Databinding -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jettison</groupId>
-            <artifactId>jettison</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!--<dependency>
-            <groupId>edu.si.services.camel</groupId>
-            <artifactId>FedoraRepo</artifactId>
-            <version>1.0</version>
-            <scope>provided</scope>
-        </dependency>-->
-        <!--<dependency>
-            <groupId>edu.si.services.camel</groupId>
-            <artifactId>FcrepoRest</artifactId>
-            <version>1.0.0</version>
-            <scope>provided</scope>
-        </dependency>-->
-
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <!-- Test Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Testing -->
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-test</artifactId>
-            <scope>test</scope>
+            <artifactId>camel-http4</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.geronimo.specs</groupId>
+                    <artifactId>geronimo-servlet_3.0_spec</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--<dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http4-starter</artifactId>
+            <version>2.18.0</version>
+            &lt;!&ndash; use the same version as your Camel core version &ndash;&gt;
+        </dependency>-->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-test-blueprint</artifactId>
-            <scope>test</scope>
+            <artifactId>camel-saxon</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <scope>test</scope>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-groovy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-velocity</artifactId>
+        </dependency>
+
+        <!-- Database -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jdbc</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-sql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
         </dependency>
 
         <!-- ActiveMQ test gear -->
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-camel</artifactId>
-            <scope>provided</scope>
             <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
             <!--<exclusions>
                 <exclusion>
@@ -226,6 +193,106 @@
             </exclusions>-->
         </dependency>
 
+        <!-- Databinding -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jettison</groupId>
+            <artifactId>jettison</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-solrj</artifactId>
+            <!--<version>7.4.0</version>-->
+            <version>7.6.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--solrj has this scoped as test ???-->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!--<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-solr</artifactId>
+        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-actuator-docs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Logging -->
+        <!--<dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        &lt;!&ndash; Test Logging &ndash;&gt;
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>-->
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test-spring</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.skyscreamer</groupId>
             <artifactId>jsonassert</artifactId>
@@ -280,19 +347,7 @@
                 </exclusion>
             </exclusions>
         </dependency>-->
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-solrj</artifactId>
-            <!--<version>7.4.0</version>-->
-            <version>7.6.0</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
         <!--<dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
@@ -330,53 +385,74 @@
             <artifactId>woodstox-core-asl</artifactId>
             <scope>provided</scope>
         </dependency>-->
+
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient-osgi</artifactId>
-            <version>4.5.3</version>
-            <scope>provided</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.servicemix.bundles/org.apache.servicemix.bundles.solr-solrj -->
-        <dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.solr-solrj</artifactId>
-            <version>7.6.0_1</version>
-            <scope>provided</scope>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.11.1.1</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
 
     <build>
-        <defaultGoal>install</defaultGoal>
 
         <!--The properties file that will be used for tests and token replacement during resource filtering-->
         <!--<filters>
             <filter>${test.properties}</filter>
         </filters>-->
 
+        <resources>
+            <!-- don't forget to specify the default test resources directory -->
+            <!--<resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>-->
+
+            <resource>
+                <directory>src/main/resources</directory>
+                <targetPath>${project.build.outputDirectory}</targetPath>
+                <includes>
+                    <include>camel/**</include>
+                </includes>
+            </resource>
+            <!-- copy the system properties file to target dir -->
+            <resource>
+                <directory>SpringBoot-Config</directory>
+                <targetPath>${project.build.directory}/config</targetPath>
+                <filtering>true</filtering>
+                <!--<excludes>
+                    <exclude>camel/**</exclude>
+                </excludes>-->
+            </resource>
+        </resources>
+
         <!-- Copy test resources to output folder target/test-classes -->
         <testResources>
             <!-- don't forget to specify the default test resources directory -->
             <testResource>
                 <directory>src/test/resources</directory>
+                <!--<includes>
+                    <include>camel/**</include>
+                </includes>-->
             </testResource>
 
             <!-- add the Sidora-Solr Karaf-config directories -->
             <testResource>
-                <directory>Karaf-Config</directory>
-                <targetPath>${karaf.home}</targetPath>
+                <directory>SpringBoot-Config</directory>
+                <targetPath>${karaf.home}/config</targetPath>
                 <filtering>true</filtering>
             </testResource>
             <!-- add the Camera Trap Route directory as resources -->
             <testResource>
                 <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
-                <targetPath>${karaf.home}/etc</targetPath>
+                <targetPath>${karaf.home}/config/etc</targetPath>
                 <filtering>true</filtering>
             </testResource>
 
             <testResource>
                 <directory>../</directory>
-                <targetPath>${karaf.home}/etc</targetPath>
+                <targetPath>${karaf.home}/config/etc</targetPath>
                 <includes>
                     <include>test.properties</include>
                 </includes>
@@ -384,29 +460,35 @@
         </testResources>
 
         <plugins>
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
+                &lt;!&ndash;<configuration>
+                    <delimiters>
+                        <delimiter>@</delimiter>
+                    </delimiters>
+                    <useDefaultDelimiters>true</useDefaultDelimiters>
+                </configuration>&ndash;&gt;
+            </plugin>-->
 
-            <!-- to generate the MANIFEST-FILE of the bundle -->
             <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring.boot-version}</version>
                 <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <Bundle-Description>${project.description}</Bundle-Description>
-                        <Private-Package>edu.si.services.*</Private-Package>
-                        <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
-                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
-                    </instructions>
+                    <addResources>false</addResources>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- reserve network ports for integration testing -->
@@ -489,5 +571,78 @@
 
         </plugins>
     </build>
+
+    <!-- Profile configuration -->
+    <profiles>
+        <!-- The configuration of the testing profile -->
+        <profile>
+            <id>test</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <executions>
+                            <!-- supply properties to generate new config files -->
+                            <execution>
+                                <id>loadTestProperties</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>read-project-properties</goal>
+                                </goals>
+                                <configuration>
+                                    <files combine.self="append">
+                                        <!--<file>${project.root.basedir}/test.properties</file>-->
+                                        <file>${project.root.basedir}/test.properties</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- The configuration of the production profile -->
+        <!-- The profile will be activated when the system property "smx.home.path" is specified with any value -->
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>smx.home.path</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <executions>
+                            <!-- use production properties to generate new config files -->
+                            <execution>
+                                <id>loadSMXProperties</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>read-project-properties</goal>
+                                </goals>
+                                <configuration>
+                                    <files combine.self="append">
+                                        <file>${smx.home.path}/etc/edu.si.sidora.batch.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.emammal.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.karaf.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.mci.cfg</file>
+                                        <file>${smx.home.path}/etc/system.properties</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

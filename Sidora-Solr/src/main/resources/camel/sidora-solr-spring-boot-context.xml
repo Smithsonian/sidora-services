@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<blueprint xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
-           xmlns:cxf="http://cxf.apache.org/blueprint/core"
-           xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
-           xmlns:camel-cxf="http://camel.apache.org/schema/blueprint/cxf"
-           xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-           xsi:schemaLocation="
-         http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
-         http://camel.apache.org/schema/blueprint/cxf http://camel.apache.org/schema/blueprint/cxf/camel-cxf.xsd
-         http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd
-         http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
-         http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0 http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd">
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xmlns:cxf="http://cxf.apache.org/core"
+       xmlns:camel-cxf="http://camel.apache.org/schema/cxf"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://cxf.apache.org/core http://cxf.apache.org/schemas/core.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
 
-    <cm:property-placeholder id="sidora.karaf.solr.properties" persistent-id="edu.si.sidora.solr"
-                             update-strategy="none">
-        <cm:default-properties>
-            <cm:property name="edu.si.solr" value="edu.si.solr"/>
-        </cm:default-properties>
-    </cm:property-placeholder>
+    <context:property-placeholder location="file:${karaf.home}/config/etc/edu.si.sidora.solr.cfg,file:${karaf.home}/config/sql/sidora.solr.sql.properties"/>
 
     <cxf:bus>
         <cxf:features>
@@ -30,8 +24,8 @@
                         serviceClass="edu.si.services.solr.rest.SidoraSolrService"
                         loggingFeatureEnabled="true">
         <camel-cxf:providers>
-            <ref component-id="jaxbProvider"/>
-            <ref component-id="jsonProvider"/>
+            <ref bean="jaxbProvider"/>
+            <ref bean="jsonProvider"/>
         </camel-cxf:providers>
     </camel-cxf:rsServer>
 
@@ -115,9 +109,7 @@
         <property name="dataSource" ref="dataSource"/>
     </bean>
 
-    <!-- Provides the Camel routing setup -->
-    <camelContext id="SidoraSolrCamelContext"
-                  xmlns="http://camel.apache.org/schema/blueprint"
+    <camelContext id="SidoraSolrCamelContext" xmlns="http://camel.apache.org/schema/spring"
                   xmlns:atom="http://www.w3.org/2005/Atom"
                   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                   xmlns:fs="info:fedora/fedora-system:def/model#"
@@ -128,12 +120,11 @@
                   streamCache="true"
                   useMDCLogging="true">
 
-        <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
+        <!-- also define Camel properties placeholder where we can configure it as well -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:sidora.karaf.solr.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.solr.cfg,file:${karaf.home}/etc/edu.si.sidora.karaf.cfg,file:${karaf.home}/sql/sidora.solr.sql.properties"/>
+                             location="file:${karaf.home}/config/etc/edu.si.sidora.solr.cfg,file:${karaf.home}/config/sql/sidora.solr.sql.properties"/>
 
         <routeBuilder ref="sidoraSolrRoutes"/>
-
     </camelContext>
 
-</blueprint>
+</beans>

@@ -23,7 +23,7 @@ Content-Type: text/xml
 # Sidora Solr Camel Endpoint Calls
 ####################################
 ### Delete ALL
-GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
+GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true
 
 > {%
     client.test("Request executed successfully", function() {
@@ -32,7 +32,7 @@ GET {{sidora_solr_url}}/deleteAll?gsearch_solr=true&gsearch_sianct=true&auth={{p
 %}
 
 ### Reindex All
-GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{password}}
+GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true
 
 //> scripts/my-script.js
 
@@ -43,7 +43,7 @@ GET {{sidora_solr_url}}/reindex?gsearch_solr=true&gsearch_sianct=true&auth={{pas
 %}
 
 ### Delete By Query (Query with single PID)
-GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:test.pid\:123
+GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&query=PID:test.pid\:123
 
 > {%
     client.test("Request executed successfully", function() {
@@ -52,7 +52,7 @@ GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth
 %}
 
 ### Delete By Query (Query with PID and wildcard)
-GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&auth={{password}}&query=PID:PID:test.pid\:*
+GET {{sidora_solr_url}}/deleteByQuery?gsearch_solr=true&gsearch_sianct=true&query=PID:PID:test.pid\:*
 
 > {%
     client.test("Request executed successfully", function() {

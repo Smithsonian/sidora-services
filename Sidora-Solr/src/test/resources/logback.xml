@@ -1,0 +1,25 @@
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <!--<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+      <!--<pattern>[%-5p] [%c{1}.%M\(\):%L] | - %m%n</pattern>-->
+      <pattern>%highlight([%-5p]) | %m%n</pattern>
+      <!--<pattern>%d{ISO8601} | %-5.5p | %-16.16t | %-32.32c{1} | %-32.32C %4L | %m%n</pattern>-->
+    </encoder>
+  </appender>
+
+  <logger name="edu.si" level="INFO" />
+  <logger name="edu.si.solr" level="INFO"/>
+  <logger name="edu.si.services.solr" level="INFO"/>
+  <logger name="org.apache.camel.component.http" level="INFO"/>
+  <logger name="org.apache.http" level="INFO"/>
+  <logger name="org.apache.commons.httpclient" level="INFO"/>
+  <logger name="httpclient.wire.header" level="INFO"/>
+  <logger name="org.apache.camel" level="INFO"/>
+  <logger name="org.springframework" level="INFO" />
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT" />
+  </root>
+
+</configuration>

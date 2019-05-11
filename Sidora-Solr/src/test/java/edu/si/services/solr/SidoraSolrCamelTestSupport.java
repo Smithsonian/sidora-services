@@ -30,7 +30,9 @@ package edu.si.services.solr;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
+import org.apache.camel.test.spring.CamelSpringTestSupport;
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -42,7 +44,7 @@ import java.util.Properties;
 /**
  * @author jbirkhimer
  */
-public class Solr_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
+public class SidoraSolrCamelTestSupport extends CamelSpringTestSupport {
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
     private static Properties extra = new Properties();
@@ -54,11 +56,16 @@ public class Solr_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.solr.cfg", KARAF_HOME + "/etc/test.properties");
+        return Arrays.asList(KARAF_HOME + "/config/etc/system.properties", KARAF_HOME + "/config/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/config/etc/edu.si.sidora.solr.cfg", KARAF_HOME + "/config/etc/test.properties");
     }
 
     protected String[] preventRoutesFromStarting() {
         return null;
+    }
+
+    @Override
+    protected AbstractApplicationContext createApplicationContext() {
+        return new ClassPathXmlApplicationContext("camel/sidora-solr-spring-boot-context.xml");
     }
 
     @Override
@@ -106,6 +113,11 @@ public class Solr_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     }
 
     @Override
+    protected Properties useOverridePropertiesWithPropertiesComponent() {
+        return extra;
+    }
+
+    /*@Override
     protected String[] loadConfigAdminConfigurationFile() {
         // which .cfg file to use, and the name of the persistence-id
         return new String[]{KARAF_HOME + "/etc/test.properties", "edu.si.sidora.solr"};
@@ -115,7 +127,7 @@ public class Solr_CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
         configAdmin.putAll(extra);
         return "edu.si.sidora.solr";
-    }
+    }*/
 
     @Override
     protected JndiRegistry createRegistry() throws Exception {

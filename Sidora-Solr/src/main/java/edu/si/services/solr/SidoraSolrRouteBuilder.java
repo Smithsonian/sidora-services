@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -57,10 +58,12 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author jbirkhimer
  */
+@Component
 public class SidoraSolrRouteBuilder extends RouteBuilder {
 
     private static final Logger LOG = LoggerFactory.getLogger(SidoraSolrRouteBuilder.class);
@@ -115,6 +118,27 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
     //CloseableHttpClient client; // = HttpClientBuilder.create().build();
     //private static SolrClient client = new HttpSolrClient.Builder(solrHost).build();
 
+    private static final AtomicBoolean readyToProcess = new AtomicBoolean(true);
+    public static ReindexInfo reindexInfo = new ReindexInfo();
+
+    public static boolean readyToProcess() {
+        boolean readyToProcess = SidoraSolrRouteBuilder.readyToProcess.get();
+        if (readyToProcess) {
+            SidoraSolrRouteBuilder.readyToProcess.set(false);
+        }
+        return readyToProcess;
+    }
+
+    public Processor reindexInfoProcessor(String msg) {
+        Processor reindexInfoProcessor = new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                exchange.getIn().setBody(msg + "\n" + reindexInfo);
+            }
+        };
+        return reindexInfoProcessor;
+    }
+
     //TODO: used by .loopDoWhile(stopLoopPredicate()) which is only in camel 2.17 and up :(
     /*public Predicate stopLoopPredicate() {
         Predicate stopLoop = new Predicate() {
@@ -138,6 +162,14 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                     sqlOffset += limit;
                 }
                 exchange.getIn().setHeader("offset", sqlOffset);
+                int page;
+                if (exchange.getProperty("CamelLoopIndex", String.class) != null) {
+                    page = Integer.valueOf(exchange.getProperty("CamelLoopIndex", String.class));
+                    page++;
+                } else {
+                    page = 0;
+                }
+                reindexInfo.setPage(String.valueOf(page++));
             }
         };
         return offset;
@@ -312,73 +344,71 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
         from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer").routeId("SidoraSolrService")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: Starting REST Service Request for: ${header.operationName} ... ")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: REST Request headers: ${headers}")
-                .choice()
-                    .when().simple("${header.operationName} == 'solrReindexAll'")
-                        .toD("seda:${header.operationName}?waitForTaskToComplete=Never")
-                    .endChoice()
-                    .otherwise()
-                        .toD("direct:${header.operationName}")
-                    .endChoice()
-                .end()
-                .setHeader(Exchange.CONTENT_TYPE, constant("text/xml"))
+                .toD("direct:${header.operationName}")
                 .removeHeaders("*")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: SidoraSolr: Finished REST Service Request for: ${header.operationName} ... ");
 
         from("direct:solrRequest").routeId("SidoraSolrRequest")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: SidoraSolr: Request: Starting processing ...")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: SidoraSolr: Request: PID = ${header.pid}, Index = ${header.solrIndex}, Solr Operation = ${header.solrOperation}")
-                .setBody().simple("Hello World From Sidora Solr [ path = ${header.operationName} ]: pid = ${header.pid}, solrIndex = ${header.solrIndex}, solrOperation = ${header.solrOperation}")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: SidoraSolr: Request: Finished processing ...");
+                .choice()
+                    .when(method(SidoraSolrRouteBuilder.class, "readyToProcess"))
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: SidoraSolr: Request: Starting processing ...")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: SidoraSolr: Request: PID = ${header.pid}, Index = ${header.solrIndex}, Solr Operation = ${header.solrOperation}")
+                        .process(exchange -> readyToProcess.set(true))
+                        .setBody().simple("Hello World From Sidora Solr [ path = ${header.operationName} ]: pid = ${header.pid}, solrIndex = ${header.solrIndex}, solrOperation = ${header.solrOperation}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: SidoraSolr: Request: Finished processing ...")
+                    .endChoice()
+                    .otherwise()
+                        .process(reindexInfoProcessor("Can't Complete Request Reindex Running..."))
+                    .endChoice()
+                .end();
 
         from("direct:solrDeleteAll").routeId("solrDeleteAll")
-                .filter().groovy("request.headers.auth != camelContext.resolvePropertyPlaceholders('{{si.solr.password}}')")
-                    .setBody().simple("You Are Not Authorized To Preform This Operation!!!")
-                    .stop()
-                .end()
-
                 .setHeader("query").simple("*:*")
                 .to("direct:solrDeleteByQuery");
 
         from("direct:solrDeleteByQuery").routeId("solrDeleteByQuery")
-                .filter().groovy("request.headers.auth != camelContext.resolvePropertyPlaceholders('{{si.solr.password}}')")
-                    .setBody().simple("You Are Not Authorized To Preform This Operation!!!")
-                    .stop()
-                .end()
+                .choice()
+                    .when(method(SidoraSolrRouteBuilder.class, "readyToProcess"))
+                        .filter().simple("${header.gsearch_sianct} == 'true'")
+                        .setHeader("solrIndex").simple("{{sidora.sianct.default.index}}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Delete from {{sidora.sianct.default.index}}. BODY = ${body}")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                UpdateRequest updateRequest = new UpdateRequest();
+                                updateRequest.deleteByQuery(out.getHeader("query", String.class));
+                                out.setHeader("solrUpdateRequest", updateRequest);
+                                out.setBody(null);
+                            }
+                        })
+                        .to("seda:solr")
+                        .setHeader("solrResponse").simple("Delete from {{sidora.sianct.default.index}}\nQuery:\n${header.query}\nResponse:\n${body}")
+                        .end()
 
-                .filter().simple("${header.gsearch_sianct} == 'true'")
-                    .setHeader("solrIndex").simple("{{sidora.sianct.default.index}}")
-                    .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Delete from {{sidora.sianct.default.index}}. BODY = ${body}")
-                    .process(new Processor() {
-                        @Override
-                        public void process(Exchange exchange) throws Exception {
-                            Message out = exchange.getIn();
-                            UpdateRequest updateRequest = new UpdateRequest();
-                            updateRequest.deleteByQuery(out.getHeader("query", String.class));
-                            out.setHeader("solrUpdateRequest", updateRequest);
-                            out.setBody(null);
-                        }
-                    })
-                    .to("seda:solr")
-                    .setHeader("solrResponse").simple("Delete from {{sidora.sianct.default.index}}\nQuery:\n${header.query}\nResponse:\n${body}")
-                .end()
-
-                .filter().simple("${header.gsearch_solr} == 'true'")
-                    .setHeader("solrIndex").simple("{{sidora.solr.default.index}}")
-                    .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Delete from {{sidora.solr.default.index}}. BODY = ${body}")
-                    .process(new Processor() {
-                        @Override
-                        public void process(Exchange exchange) throws Exception {
-                            Message out = exchange.getIn();
-                            UpdateRequest updateRequest = new UpdateRequest();
-                            updateRequest.deleteByQuery(out.getHeader("query", String.class));
-                            out.setHeader("solrUpdateRequest", updateRequest);
-                            out.setBody(null);
-                        }
-                    })
-                    .to("seda:solr")
-                    .setHeader("solrResponse").simple("${header.solrResponse}\nDelete from {{sidora.solr.default.index}}\nQuery:\n${header.query}\nResponse:\n${body}")
-                .end()
-                .setBody().simple("${header.solrResponse}");
+                        .filter().simple("${header.gsearch_solr} == 'true'")
+                        .setHeader("solrIndex").simple("{{sidora.solr.default.index}}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Delete from {{sidora.solr.default.index}}. BODY = ${body}")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                UpdateRequest updateRequest = new UpdateRequest();
+                                updateRequest.deleteByQuery(out.getHeader("query", String.class));
+                                out.setHeader("solrUpdateRequest", updateRequest);
+                                out.setBody(null);
+                            }
+                        })
+                        .to("seda:solr")
+                        .setHeader("solrResponse").simple("${header.solrResponse}\nDelete from {{sidora.solr.default.index}}\nQuery:\n${header.query}\nResponse:\n${body}")
+                        .end()
+                        .process(exchange -> readyToProcess.set(true))
+                        .setBody().simple("${header.solrResponse}")
+                    .endChoice()
+                    .otherwise()
+                        .process(reindexInfoProcessor("Can't Complete Request Reindex Running..."))
+                    .endChoice()
+                .end();
 
         from("activemq:queue:{{sidoraCTSolr.queue}}").routeId("cameraTrapSolrJob")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: RECEIVED JMS\nHeaders:\n${headers}\nBody:${body}")
@@ -491,31 +521,46 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                     .endChoice()
                 .end();
 
-        from("seda:solrReindexAll").routeId("solrReindexAll")
-                .filter().groovy("request.headers.auth != camelContext.resolvePropertyPlaceholders('{{si.solr.password}}')")
-                    .setBody().simple("You Are Not Authorized To Preform This Operation!!!")
-                    .stop()
-                .end()
+        from("direct:solrReindexAll").routeId("solrReindexAll")
+                .choice()
+                    .when(method(SidoraSolrRouteBuilder.class, "readyToProcess"))
+                        .to("sql:{{sql.clearSolrReindexTable}}?dataSource=#dataSourceReIndex&noop=true").id("clearSianctReindexTable")
 
-                .to("sql:{{sql.clearSolrReindexTable}}?dataSource=#dataSourceReIndex&noop=true").id("clearSianctReindexTable")
+                        //get count for pagination
+                        .to("sql:{{sql.solrPidCount}}?outputType=SelectOne&outputHeader=pidCount").id("solrReindexAllPidCount")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: pidCount = ${header.pidCount}")
+                        .setHeader("reindexCount").simple("0", Integer.class)
 
-                //get count for pagination
-                .to("sql:{{sql.solrPidCount}}?outputType=SelectOne&outputHeader=pidCount").id("solrReindexAllPidCount")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} :: ${routeId} :: pidCount = ${header.pidCount}")
-                .setHeader("reindexCount").simple("0", Integer.class)
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                Integer pidCount = out.getHeader("pidCount", Integer.class);
+                                Integer limit = Integer.valueOf(exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.page.limit}}"));
+                                Integer totalBatch = (pidCount + limit - 1) / limit;
+                                out.setHeader("totalBatch", totalBatch);
+                                exchange.getIn().setHeader("limit", limit);
 
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        Message out = exchange.getIn();
-                        Integer pidCount = out.getHeader("pidCount", Integer.class);
-                        Integer limit = Integer.valueOf(exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.page.limit}}"));
-                        Integer totalBatch = (pidCount + limit - 1) / limit;
-                        out.setHeader("totalBatch", totalBatch);
-                        exchange.getIn().setHeader("limit", limit);
-                    }
-                })
+                                reindexInfo.setStartTime(new Date().getTime());
+                                reindexInfo.setPidCount(pidCount.toString());
+                                reindexInfo.setLimit(limit.toString());
+                                reindexInfo.setTotalBatch(totalBatch.toString());
+                                reindexInfo.setBatchSize(exchange.getContext().resolvePropertyPlaceholders("{{sidora.solr.batch.size}}"));
+                                reindexInfo.setSolrIndex(out.getHeader("gsearch_solr", String.class));
+                                reindexInfo.setSianctIndex(out.getHeader("gsearch_sianct", String.class));
+                                reindexInfo.setPage("0");
+                                log.debug("ReindexInfo: {}", reindexInfo);
+                            }
+                        })
+                        .to("seda:reindex?waitForTaskToComplete=Never")
+                        .process(reindexInfoProcessor("Reindex Started..."))
+                    .endChoice()
+                    .otherwise()
+                        .process(reindexInfoProcessor("Can't Complete Request Reindex Already Running..."))
+                    .endChoice()
+                .end();
 
+        from("seda:reindex").routeId("reindex")
                 //paging over pids from fedora dB using offset and limit
                 //.loopDoWhile(stopLoopPredicate()) //TODO: only in camel 2.17 and up :(
                 .loop().simple("${header.totalBatch}").copy()
@@ -575,7 +620,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         }
                     })
                     .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Reindex Processed page ( ${header.CamelLoopIndex}++ of ${header.totalBatch} ), pids added: ( ${header.reindexCount} of ${header.pidCount} )")
-                .end().id("reindexAllLoopEnd");//end loop
+                .end().id("reindexAllLoopEnd")//end loop
+                .process(exchange -> readyToProcess.set(true));
 
 
         from("seda:processSolrJob?concurrentConsumers=50").routeId("processSolrJob")
@@ -654,12 +700,12 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                         .setHeader("pid").simple("${body.pid}", String.class)
                         .setHeader("state").simple("${body.state}")
 
-                        .to("velocity:file:{{karaf.home}}/Input/templates/gsearch_sianct-sparql.vsl")
+                        .to("velocity:file:{{karaf.home}}/config/Input/templates/gsearch_sianct-sparql.vsl")
                         .to("seda:sianctFusekiQuery").id("createDocFusekiQuery")
 
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Send to XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/batch_CT_foxml-to-gsearch_sianct.xslt?saxon=true").id("foxmlToGsearchSianctXSLT")
+                        .to("xslt:file:{{karaf.home}}/config/Input/xslt/batch_CT_foxml-to-gsearch_sianct.xslt?saxon=true").id("foxmlToGsearchSianctXSLT")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: batch_CT_foxml-to-gsearch_sianct output:\n${body}")
                         .process(createSolrInputDocumentProcessor())
                     .endChoice()
@@ -674,7 +720,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: Send to batch_foxml-to-gsearch_solr XSLT\nHeaders:\n${headers}\nBody:\n${body}")
 
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/batch_foxml-to-gsearch_solr.xslt?saxon=true").id("foxmlToGsearchSolrXSLT")
+                        .to("xslt:file:{{karaf.home}}/config/Input/xslt/batch_foxml-to-gsearch_solr.xslt?saxon=true").id("foxmlToGsearchSolrXSLT")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} :: ${routeId} :: batch_foxml-to-gsearch_solr output:\n${body}")
                         .process(createSolrInputDocumentProcessor())
                     .endChoice()
@@ -744,6 +790,7 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
 
                 .toD("http4:CamelHttpUri?headerFilterStrategy=#dropHeadersStrategy&authMethod=Basic&authUsername="+fedoraUser+"&authPassword="+fedoraPasword).id("getFoxml")
                 //.toD("http4://localhost:8080/fedora/objects/${header.pid}/export?headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
+
                 //.toD("jetty://localhost:8080/fedora/objects/${header.pid}/export?copyHeaders=false&mapHttpMessageHeaders=false&headerFilterStrategy=#dropHeadersStrategy").id("getFoxml")
                 //.toD("fcrepo:objects/${header.pid}/export?context=public&format=info:fedora/fedora-system:FOXML-1.1").id("getFoxml")
 
