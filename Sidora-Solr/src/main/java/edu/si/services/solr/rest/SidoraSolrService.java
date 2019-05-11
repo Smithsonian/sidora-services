@@ -40,17 +40,15 @@ public class SidoraSolrService {
     /**
      *
      * @param pid
-     * @param solrIndex
      * @param solrOperation
      * @return
      */
     @GET
-    @Path(value = "/{solrIndex}/{pid}")
+    @Path(value = "/{solrOperation}")
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes("application/xml")
-    public Response solrRequest(@PathParam("pid") String pid,
-                                @PathParam("solrIndex") String solrIndex,
-                                @QueryParam("solrOperation") String solrOperation) {
+    public Response solrRequest(@QueryParam("pid") String pid,
+                                @PathParam("solrOperation") String solrOperation) {
         return null;
     }
 
