@@ -790,7 +790,8 @@ public class SidoraSolrRouteBuilder extends RouteBuilder {
                             log.warn(logMarker, "Solr Update Request less than Batch Count!!!: Sending docs to {} count: {}", solrIndex, docList.size());
                         }
 
-                        try (SolrClient client = new HttpSolrClient.Builder(solrHost).build()) {
+                        //try (SolrClient client = new HttpSolrClient.Builder(solrHost).build()) {
+                        try (SolrClient client = new HttpSolrClient(solrHost)) {
                             UpdateResponse result = updateRequest.process(client, solrIndex);
                             LOG.debug(logMarker, "Result: " + result);
                             Integer statusCode = result.getStatus();

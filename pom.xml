@@ -146,7 +146,7 @@
         <!--<spring.version>3.2.14.RELEASE_1</spring.version> &lt;!&ndash; Servicemix Version &ndash;&gt;-->
         <spring4-version>4.1.9.RELEASE</spring4-version>
 
-        <logback-classic-version>1.1.7</logback-classic-version>
+        <logback-classic-version>1.1.11</logback-classic-version>
         <jackson-jaxrs-version>1.9.13</jackson-jaxrs-version>
         <totallylazy-version>1.55</totallylazy-version>
         <joda-time-version>2.8.2</joda-time-version>
@@ -167,8 +167,8 @@
         <FITSservlet.version>fits-1.1.3</FITSservlet.version>
         <solr.version>7.6.0</solr.version>
         <servicemix.bundles.solrj.version>${solr.version}_1</servicemix.bundles.solrj.version>
-        <!--<spring.boot-version>1.5.20.RELEASE</spring.boot-version>-->
-        <spring.boot-version>1.3.0.RELEASE</spring.boot-version>
+        <spring.boot-version>1.5.20.RELEASE</spring.boot-version>
+        <!--<spring.boot-version>1.3.0.RELEASE</spring.boot-version>-->
     </properties>
 
     <dependencyManagement>
