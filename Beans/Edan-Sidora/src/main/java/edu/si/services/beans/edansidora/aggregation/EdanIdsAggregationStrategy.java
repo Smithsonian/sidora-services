@@ -53,6 +53,7 @@ public class EdanIdsAggregationStrategy implements AggregationStrategy {
         asset.setSiteId(out.getHeader("SiteId", String.class));
         asset.setIsPublic(out.getHeader("isPublic", String.class));
         asset.setIsInternal(out.getHeader("isInternal", String.class));
+        asset.setPid(out.getHeader("pid", String.class));
 
         if (oldExchange == null) {
             idsAssetList = new ArrayList<>();

@@ -38,6 +38,7 @@ import org.apache.camel.component.velocity.VelocityConstants;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.FilterDefinition;
+import org.apache.camel.model.SplitDefinition;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.DateTool;
 import org.custommonkey.xmlunit.XMLAssert;
@@ -51,8 +52,11 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import edu.si.services.beans.edansidora.model.IdsAsset;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 
@@ -616,26 +620,94 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         deleteDirectory(expectedAssetDir_2);
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult.expectedMessageCount(4);
+        mockResult.expectedMessageCount(6);
 
-        context.getRouteDefinition("idsAssetUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("idsAssetImageUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                /*weaveById("idsAssetSplitter").replace()
+                        .split(body())
+                        .parallelProcessing(false)
+                        .setHeader("idsAssetName", simple("{{si.edu.idsAssetFilePrefix}}${header.SiteId}"))
+                        //Only copy images files if this is not a delete asset
+                        .choice()
+                            .when().simple("${body.isPublic} == 'Yes' && ${header.isInternal} == 'No'")
+                                .setHeader("CamelOverruleFileName", simple("{{si.edu.idsAssetImagePrefix}}${body.imageid}.JPG"))
+                                //Grab the OBJ datastream of the image asset from fedora
+                                .setHeader("CamelHttpMethod").constant("GET")
+                                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
+                                .removeHeader("CamelHttpQuery")
+
+
+                                .log(LoggingLevel.INFO, "###############################[ Get Image http uri = ${header.CamelHttpUri} ]###############################")//.stop()
+                                .process(new Processor() {
+                                    @Override
+                                    public void process(Exchange exchange) throws Exception {
+                                        Message out = exchange.getIn();
+                                        String resourceFilePath = KARAF_HOME + "/unified-test-deployment/" + out.getBody(IdsAsset.class).getImageid() + ".JPG";
+                                        File resourceFile = new File(resourceFilePath);
+                                        if (resourceFile.exists()) {
+                                            out.setBody(resourceFile, String.class);
+                                        } else {
+                                            out.setBody(null);
+                                        }
+                                    }
+                                })
+
+                                //.toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAssetUpdateGetFedoraOBJDatastreamContent")
+
+                                //Save the image asset to the file system alongside the asset xml
+                                //TODO: (optional) we can get the filename with extension from the headers when getting the OBJ datastream from fedora
+                                //.setHeader("CamelOverruleFileName", simple("emammal_image_${header.imageid}.JPG"))
+                                .log(LoggingLevel.INFO, "###############################[ Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.imageId}.JPG ]###############################")//.stop()
+                                //.setHeader("fileName").simple("${body.imageId}.JPG")
+                                .toD("file:{{si.ct.uscbi.idsPushLocation}}/${body.imageId}?fileName=${header.idsAssetImagePrefix}${body.imageId}.JPG")
+                                .log(LoggingLevel.INFO, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
+                            .endChoice()
+                        .end()
+                .end()
+                .stop();*/
                 weaveById("idsAssetUpdateGetFedoraOBJDatastreamContent").replace()
                         .process(new Processor() {
                             @Override
                             public void process(Exchange exchange) throws Exception {
                                 Message out = exchange.getIn();
-                                String resourceFilePath = KARAF_HOME + "/unified-test-deployment/" + out.getHeader("testImage");
+                                String resourceFilePath = KARAF_HOME + "/unified-test-deployment/" + out.getBody(IdsAsset.class).getImageid() + ".JPG";
                                 File resourceFile = new File(resourceFilePath);
                                 if (resourceFile.exists()) {
-                                    out.setBody(resourceFile, String.class);
+                                    out.setBody(resourceFile, File.class);
                                 } else {
                                     out.setBody(null);
                                 }
                             }
                         });
                 //.to("log:test.edanIds?showAll=true&multiline=true&maxChars=100000");
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+       context.getRouteDefinition("idsAssetXMLWriter").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("XMLWriterBreakPoint").after().to("mock:result");
+                /*weaveById("idsAssetXMLEndpointXSLT").replace()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("replacement endpoint xslt");
+                            }
+                        })
+                        .toD("xslt:file:/Users/rbeall/Documents/Projects/Current/sidora/sidora-services/Beans/Edan-Sidora/Karaf-config/Input/xslt/idsAssets.xsl");
+                weaveById("idsAssetXMLEndpointVelocity").replace()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("replacement endpoint velocity");
+                            }
+                        })
+                        .toD("velocity:file:/Users/rbeall/Documents/Projects/Current/sidora/sidora-services/Beans/Edan-Sidora/Karaf-config/Input/templates/ids_template.vsl");*/
                 weaveAddLast().to("mock:result");
             }
         });
@@ -647,6 +719,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("isPublic", "Yes");
         exchange.getIn().setHeader("isInternal", "No");
 
+        /*
         // Will create a new asset Xml file and directory
         exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
         exchange.getIn().setHeader("testImage", "testDeploymentIds1i1.JPG");
@@ -673,10 +746,56 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("testImage", "testImageMan.JPG");
         template.send("seda:idsAssetUpdate", exchange);
 
-        Thread.sleep(2500);
+        Thread.sleep(2500);*/
+
+        ArrayList<IdsAsset> cttestArray = new ArrayList<IdsAsset>();
+        IdsAsset testAsset1 = new IdsAsset();
+        IdsAsset testAsset2 = new IdsAsset();
+        IdsAsset testAsset3 = new IdsAsset();
+        IdsAsset testAsset4 = new IdsAsset();
+        IdsAsset testAsset5 = new IdsAsset();
+
+        testAsset1.setImageid("testDeploymentIds1i1");
+        testAsset1.setSiteId(testDeployment1);
+        testAsset1.setIsInternal("No");
+        testAsset1.setIsPublic("Yes");
+        testAsset1.setPid("test:0001");
+
+        testAsset2.setImageid("testDeploymentIds1i2");
+        testAsset2.setSiteId(testDeployment1);
+        testAsset2.setIsInternal("No");
+        testAsset2.setIsPublic("Yes");
+        testAsset2.setPid("test:0002");
+
+        testAsset3.setImageid("testDeploymentIds1i3");
+        testAsset3.setSiteId(testDeployment1);
+        testAsset3.setIsInternal("No");
+        testAsset3.setIsPublic("Yes");
+        testAsset3.setPid("test:0003");
+
+        testAsset4.setImageid("testImageMan");
+        testAsset4.setSiteId(testDeployment2);
+        testAsset4.setIsInternal("No");
+        testAsset4.setIsPublic("Yes");
+        testAsset4.setPid("test:0004");
+
+        testAsset5.setImageid("testImageRaccoonAndMan");
+        testAsset5.setSiteId(testDeployment2);
+        testAsset5.setIsInternal("No");
+        testAsset5.setIsPublic("Yes");
+        testAsset5.setPid("test:0005");
+
+        cttestArray.add(testAsset1);
+        cttestArray.add(testAsset2);
+        cttestArray.add(testAsset3);
+        cttestArray.add(testAsset4);
+        cttestArray.add(testAsset5);
+
+        exchange.getIn().setHeader("idsAssetList", cttestArray);
+        template.send("seda:idsAssetImageUpdate", exchange);
 
         assertMockEndpointsSatisfied();
-
+        /*
         //Asserts for the first test deployment
         assertFileExists(expectedAssetXmlFile_1);
         assertFileExists(expectedAssetDir_1 + "/" + idsAssetImagePrefix + "testDeploymentIds1i1.JPG");
@@ -717,7 +836,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         XMLAssert.assertXpathEvaluatesTo("Yes", "string(/Assets/Asset[1]/@IsPublic)", assetXml_2);
         XMLAssert.assertXpathEvaluatesTo("No", "string(/Assets/Asset[1]/@IsInternal)", assetXml_2);
         XMLAssert.assertXpathEvaluatesTo("3000", "string(/Assets/Asset[1]/@MaxSize)", assetXml_2);
-        XMLAssert.assertXpathEvaluatesTo("4000", "string(/Assets/Asset[1]/@InternalMaxSize)", assetXml_2);
+        XMLAssert.assertXpathEvaluatesTo("4000", "string(/Assets/Asset[1]/@InternalMaxSize)", assetXml_2);*/
     }
 
     @Test

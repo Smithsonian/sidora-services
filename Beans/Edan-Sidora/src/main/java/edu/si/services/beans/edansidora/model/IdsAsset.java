@@ -36,6 +36,7 @@ public class IdsAsset {
     String siteId;
     String isPublic;
     String isInternal;
+    String pid;
 
     public String getImageid() {
         return imageid;
@@ -67,5 +68,15 @@ public class IdsAsset {
 
     public void setIsInternal(String isInternal) {
         this.isInternal = isInternal;
+    }
+
+    public String getPid()
+    {
+        return pid;
+    }
+
+    public void setPid(String pid)
+    {
+        this.pid = pid;
     }
 }
