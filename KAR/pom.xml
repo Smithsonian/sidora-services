@@ -246,7 +246,7 @@
                     <include>FaceBlurrer.py</include>
                     <include>haarcascades/**</include>
                 </includes>
-            <resource>
+            </resource>
               
             <!-- Sidora-Solr -->
             <resource>
