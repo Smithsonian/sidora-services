@@ -1,6 +1,6 @@
 <batch>
  <batch_id>batchID123456</batch_id>
- <file>video.avi</file>
- <file>video.mkv</file>
- <file>video.mp4</file>
+ <file originalname="video1.avi">video1.avi</file>
+ <file originalname="video2.mkv">video2.mkv</file>
+ <file originalname="video3.mp4">video3.mp4</file>
  </batch>

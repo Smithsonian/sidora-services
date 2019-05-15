@@ -28,9 +28,14 @@
 package edu.si.services.sidora.rest.batch;
 
 import edu.si.services.sidora.rest.batch.model.response.BatchRequestResponse;
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.builder.xml.XPathBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.sql.SqlComponent;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 import org.apache.commons.dbcp.BasicDataSource;
@@ -44,7 +49,9 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
@@ -91,6 +98,7 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
     @Test
     public void newBatchRequest_addResourceObjects_Test() throws Exception {
 
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/association.xml"));
         String resourceListXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/audioFiles.xml"));
 
         String expectedHTTPResponseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
@@ -106,6 +114,11 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedMessageCount(1);
 
+        MockEndpoint mockSqlInsertResourcesHeaders = getMockEndpoint("mock:sqlInsertResourcesHeaders");
+        mockSqlInsertResourcesHeaders.expectedMessageCount(2);
+        mockSqlInsertResourcesHeaders.expectedHeaderValuesReceivedInAnyOrder("resourceFile", "audio1.mp3", "audio2.wav");
+        mockSqlInsertResourcesHeaders.expectedHeaderValuesReceivedInAnyOrder("objDsLabel", "audio1.mp3", "audio2.wav");
+
         context.getComponent("sql", SqlComponent.class).setDataSource(db);
         context.getRouteDefinition("BatchProcessResources").autoStartup(false);
 
@@ -113,7 +126,10 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         context.getRouteDefinition("BatchProcessAddResourceObjects").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                weaveById("httpGetAssociationDuringRequest").replace().setBody(simple(associationXML));
                 weaveById("httpGetResourceList").replace().setBody(simple(resourceListXML));
+                weaveById("sqlInsertResources").replace().log(LoggingLevel.INFO, "Skipping sqlInsertResources").to("mock:sqlInsertResourcesHeaders");
+                weaveById("sqlInsertNewBatchRequest").replace().log(LoggingLevel.INFO, "Skipping sqlInsertNewBatchRequest");
 
                 weaveByToString(".*bean:batchRequestControllerBean.*").replace().setHeader("correlationId", simple(correlationId));
 
@@ -204,6 +220,65 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         log.info("===============[ DB Requests ]===============\n{}", jdbcTemplate.queryForList("select * from sidora.camelBatchRequests where (\"correlationId\" = '" + correlationId + "' AND \"parentId\" = '" + parentPid + "')"));
 
         log.info("===============[ DB Resource ]===============\n{}", jdbcTemplate.queryForList("select * from sidora.camelBatchResources where (\"correlationId\" = '" + correlationId + "' AND \"parentId\" = '" + parentPid + "')"));
+    }
+
+    @Test
+    public void testTitleAndObjLabel() throws Exception {
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/association.xml"));
+        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/metadata.xml"));
+        String metadataNoTitleXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/metadata_no_title.xml"));
+
+        String titlePath = template.requestBody("xslt:file:{{karaf.home}}/Input/xslt/BatchAssociationTitlePath.xsl?saxon=true", associationXML, String.class);
+        String objDsLabel = XPathBuilder.xpath("string(//file/@originalname)", String.class).evaluate(context, "<batch>\n" +
+                        "    <file originalname=\"audio1.mp3\">audio1.mp3</file>\n" +
+                        "</batch>");
+
+        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint.expectedMessageCount(1);
+        mockEndpoint.expectedHeaderReceived("titleLabel","batch-audio-test(1)");
+
+        MockEndpoint mockEndpointNoTitle = getMockEndpoint("mock:resultNoTitle");
+        mockEndpointNoTitle.expectedMessageCount(1);
+        mockEndpointNoTitle.expectedHeaderReceived("titleLabel","audio1");
+        mockEndpointNoTitle.expectedHeaderReceived("objDsLabel","audio1.mp3");
+
+        context.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                from("direct:start")
+                        .to("bean:batchRequestControllerBean?method=setPrimaryTitleLabel")
+                        .to("xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
+                        .to("bean:batchRequestControllerBean?method=setTitleLabel")
+                        .log(LoggingLevel.INFO, "primaryTitleLabel: ${header.primaryTitleLabel}, titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
+                        .to("mock:result");
+
+                from("direct:startNoTitleInfo")
+                        .to("bean:batchRequestControllerBean?method=setPrimaryTitleLabel")
+                        .to("xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
+                        .to("bean:batchRequestControllerBean?method=setTitleLabel")
+                        .log(LoggingLevel.INFO, "primaryTitleLabel: ${header.primaryTitleLabel}, titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
+                        .to("mock:resultNoTitle");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("titlePath", titlePath);
+        exchange.getIn().setHeader("objDsLabel", objDsLabel);
+        exchange.getIn().setHeader("CamelSplitIndex", 0);
+        exchange.getIn().setBody(metadataXML);
+
+        template.send("direct:start", exchange);
+
+        Exchange exchange2 = new DefaultExchange(context);
+        exchange2.getIn().setHeader("titlePath", titlePath);
+        exchange2.getIn().setHeader("objDsLabel", objDsLabel);
+        exchange2.getIn().setHeader("CamelSplitIndex", 0);
+        exchange2.getIn().setBody(metadataNoTitleXML);
+        template.send("direct:startNoTitleInfo", exchange2);
+
+        assertMockEndpointsSatisfied();
+
+
     }
 
     @Override

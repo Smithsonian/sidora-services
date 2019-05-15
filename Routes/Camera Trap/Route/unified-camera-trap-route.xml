@@ -366,7 +366,9 @@
                             <simple>true</simple>
                         </setHeader>
 
-                        <to uri="activemq:queue:{{edanIds.queue}}" id="edanIdsActiveMQ"/>
+                        <to uri="activemq:queue:{{edanIds.ct.queue}}" id="edanIdsActiveMQ"/>
+
+                        <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
 
                     </otherwise>
                 </choice>
@@ -1876,6 +1878,16 @@
             <setHeader headerName="PlotPID">
                 <simple>
                     ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+            <setHeader headerName="PlotId">
+                <simple>
+                    ${header.DeploymentCorrelationId}
+                </simple>
+            </setHeader>
+            <setHeader headerName="PlotName">
+                <simple>
+                    ${header.CamelFedoraLabel}
                 </simple>
             </setHeader>
 

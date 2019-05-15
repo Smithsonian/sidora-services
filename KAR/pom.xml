@@ -145,6 +145,13 @@
             <type>xml</type>
         </dependency>-->
 
+        <!-- Sidora Solr -->
+        <dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-solr</artifactId>
+            <version>1.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -239,6 +246,21 @@
                     <include>FaceBlurrer.py</include>
                     <include>haarcascades/**</include>
                 </includes>
+            <resource>
+              
+            <!-- Sidora-Solr -->
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
             </resource>
         </resources>
 

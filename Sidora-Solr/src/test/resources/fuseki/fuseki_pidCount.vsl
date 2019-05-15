@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">
+    <head>
+        <variable name="total"/>
+    </head>
+    <results>
+        <result>
+            <binding name="total">
+                <literal datatype="http://www.w3.org/2001/XMLSchema#integer">$headers.TOTAL_BATCH_COUNT</literal>
+            </binding>
+        </result>
+    </results>
+</sparql>
