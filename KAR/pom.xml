@@ -50,6 +50,7 @@
         <target-karaf-input-path>${basedir}/target/classes/resources/Input</target-karaf-input-path>
         <target-karaf-deploy-path>${basedir}/target/classes/resources/deploy</target-karaf-deploy-path>
         <target-karaf-sql-path>${basedir}/target/classes/resources/sql</target-karaf-sql-path>
+        <target-karaf-faceblur-path>${basedir}/target/classes/resources/FaceBlurrer</target-karaf-faceblur-path>
     </properties>
 
     <dependencies>
@@ -238,6 +239,15 @@
                 <targetPath>${target-karaf-sql-path}</targetPath>
             </resource>
 
+            <resource>
+                <directory>../Routes/Wildlife-Insights/FaceBlurrer</directory>
+                <targetPath>${target-karaf-faceblur-path}</targetPath>
+                <includes>
+                    <include>FaceBlurrer.py</include>
+                    <include>haarcascades/**</include>
+                </includes>
+            <resource>
+              
             <!-- Sidora-Solr -->
             <resource>
                 <directory>../Sidora-Solr/Karaf-Config/etc</directory>

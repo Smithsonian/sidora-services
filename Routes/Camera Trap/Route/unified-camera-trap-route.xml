@@ -828,6 +828,8 @@
 
             <to uri="direct:workbenchReloadPid" id="siteWorkbenchReloadPid"/>
 
+            <to uri="direct:getCameraMakeModel"/>
+
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -840,6 +842,86 @@
             </multicast>
 
             <log message="${id}: Finished Site processing."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="UnifiedCameraTrapGetCameraMakeModel">
+            <from uri="direct:getCameraMakeModel"/>
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.socketEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="getCameraMakeModelFitsServiceException"/>
+            </onException>
+
+            <setHeader headerName="imageName">
+                <xpath headerName="ManifestXML" resultType="java.lang.String">
+                    //ImageSequence[1]/Image[1]/ImageFileName/text()
+                </xpath>
+            </setHeader>
+
+            <log message="${id}: Getting CameraMakeModel from image: ${header.imageName}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="CamelHttpMethod">
+                <constant>GET</constant>
+            </setHeader>
+            <setHeader headerName="CamelHttpQuery">
+                <simple>
+                    file=${header.deploymentDataDir}/${header.imageName}
+                </simple>
+            </setHeader>
+            <removeHeader headerName="CamelHttpResponseCode"/>
+
+            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="getCameraMakeModel_fitsHttpRequest"/>
+
+            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+
+            <log message="${id} FITS Output:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <choice>
+                <when>
+                    <simple>
+                        ${header.CamelHttpResponseCode} == 200
+                    </simple>
+                    <setHeader headerName="cameraMake">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:metadata/fits:image/fits:digitalCameraManufacturer/text()</xpath>
+                    </setHeader>
+                    <setHeader headerName="cameraModel">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:metadata/fits:image/fits:digitalCameraModelName/text()</xpath>
+                    </setHeader>
+
+                    <log message="${id}: Site FGDC Camera Make: ${header.cameraMake}, Model: ${header.cameraModel}"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </when>
+                <otherwise>
+                    <log message="${id}: FITS processing failed for ${routeId}"
+                         loggingLevel="ERROR"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
+
+            <removeHeader headerName="imageName"/>
+
+            <log message="${id}: Finished Getting Camera Make/Model..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -1000,7 +1082,33 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="reader:file"/>
+            <to uri="reader:file" id="readImageResource"/>
+
+            <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
+            <choice>
+                <when>
+                    <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
+                    </xpath>
+                    <log message="${id}: Found image that may contain a face..."
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+
+                    <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+                    <choice>
+                        <when>
+                            <simple>${header.CamelExecExitValue} != 0</simple>
+                            <log message="${id}: Face Blur Error!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                 loggingLevel="ERROR"
+                                 logName="{{si.ct.id}}"/>
+                            <setBody>
+                                <simple>${header.imageFileName}</simple>
+                            </setBody>
+                            <to uri="reader:file"/>
+                        </when>
+                    </choice>
+                </when>
+            </choice>
 
             <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
 
