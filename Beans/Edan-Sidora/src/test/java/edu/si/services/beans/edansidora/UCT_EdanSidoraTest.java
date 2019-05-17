@@ -49,14 +49,28 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import edu.si.services.beans.edansidora.model.IdsAsset;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 
@@ -625,48 +639,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("idsAssetImageUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                /*weaveById("idsAssetSplitter").replace()
-                        .split(body())
-                        .parallelProcessing(false)
-                        .setHeader("idsAssetName", simple("{{si.edu.idsAssetFilePrefix}}${header.SiteId}"))
-                        //Only copy images files if this is not a delete asset
-                        .choice()
-                            .when().simple("${body.isPublic} == 'Yes' && ${header.isInternal} == 'No'")
-                                .setHeader("CamelOverruleFileName", simple("{{si.edu.idsAssetImagePrefix}}${body.imageid}.JPG"))
-                                //Grab the OBJ datastream of the image asset from fedora
-                                .setHeader("CamelHttpMethod").constant("GET")
-                                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
-                                .removeHeader("CamelHttpQuery")
-
-
-                                .log(LoggingLevel.INFO, "###############################[ Get Image http uri = ${header.CamelHttpUri} ]###############################")//.stop()
-                                .process(new Processor() {
-                                    @Override
-                                    public void process(Exchange exchange) throws Exception {
-                                        Message out = exchange.getIn();
-                                        String resourceFilePath = KARAF_HOME + "/unified-test-deployment/" + out.getBody(IdsAsset.class).getImageid() + ".JPG";
-                                        File resourceFile = new File(resourceFilePath);
-                                        if (resourceFile.exists()) {
-                                            out.setBody(resourceFile, String.class);
-                                        } else {
-                                            out.setBody(null);
-                                        }
-                                    }
-                                })
-
-                                //.toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAssetUpdateGetFedoraOBJDatastreamContent")
-
-                                //Save the image asset to the file system alongside the asset xml
-                                //TODO: (optional) we can get the filename with extension from the headers when getting the OBJ datastream from fedora
-                                //.setHeader("CamelOverruleFileName", simple("emammal_image_${header.imageid}.JPG"))
-                                .log(LoggingLevel.INFO, "###############################[ Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.imageId}.JPG ]###############################")//.stop()
-                                //.setHeader("fileName").simple("${body.imageId}.JPG")
-                                .toD("file:{{si.ct.uscbi.idsPushLocation}}/${body.imageId}?fileName=${header.idsAssetImagePrefix}${body.imageId}.JPG")
-                                .log(LoggingLevel.INFO, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
-                            .endChoice()
-                        .end()
-                .end()
-                .stop();*/
                 weaveById("idsAssetUpdateGetFedoraOBJDatastreamContent").replace()
                         .process(new Processor() {
                             @Override
@@ -681,33 +653,27 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                                 }
                             }
                         });
-                //.to("log:test.edanIds?showAll=true&multiline=true&maxChars=100000");
-                weaveAddLast().to("mock:result");
             }
         });
 
        context.getRouteDefinition("idsAssetXMLWriter").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("XMLWriterBreakPoint").after().to("mock:result");
-                /*weaveById("idsAssetXMLEndpointXSLT").replace()
+                weaveById("getAssetXml").replace()
                         .process(new Processor() {
                             @Override
                             public void process(Exchange exchange) throws Exception {
                                 Message out = exchange.getIn();
-                                log.info("replacement endpoint xslt");
+                                String resourceFilePath = KARAF_HOME + "/test_assetXML.xml";
+                                File resourceFile = new File(resourceFilePath);
+                                if (resourceFile.exists()) {
+                                    out.setBody(resourceFile, File.class);
+                                } else {
+                                    out.setBody(null);
+                                }
                             }
-                        })
-                        .toD("xslt:file:/Users/rbeall/Documents/Projects/Current/sidora/sidora-services/Beans/Edan-Sidora/Karaf-config/Input/xslt/idsAssets.xsl");
-                weaveById("idsAssetXMLEndpointVelocity").replace()
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message out = exchange.getIn();
-                                log.info("replacement endpoint velocity");
-                            }
-                        })
-                        .toD("velocity:file:/Users/rbeall/Documents/Projects/Current/sidora/sidora-services/Beans/Edan-Sidora/Karaf-config/Input/templates/ids_template.vsl");*/
+                        });
+                weaveById("saveFile").after().to("mock:result");
                 weaveAddLast().to("mock:result");
             }
         });
@@ -718,35 +684,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("SiteId", testDeployment1);
         exchange.getIn().setHeader("isPublic", "Yes");
         exchange.getIn().setHeader("isInternal", "No");
-
-        /*
-        // Will create a new asset Xml file and directory
-        exchange.getIn().setHeader("imageid", "testDeploymentIds1i1");
-        exchange.getIn().setHeader("testImage", "testDeploymentIds1i1.JPG");
-        template.send("seda:idsAssetUpdate", exchange);
-
-        Thread.sleep(2500);
-
-        // will update the existing asset xml adding the new idsId
-        exchange.getIn().setHeader("imageid", "testDeploymentIds1i2");
-        exchange.getIn().setHeader("testImage", "testDeploymentIds1i2.JPG");
-        template.send("seda:idsAssetUpdate", exchange);
-
-        Thread.sleep(2500);
-
-        // will update the existing asset xml adding the new idsId
-        exchange.getIn().setHeader("imageid", "testDeploymentIds1i3");
-        exchange.getIn().setHeader("testImage", "testDeploymentIds1i3.JPG");
-        template.send("seda:idsAssetUpdate", exchange);
-
-        Thread.sleep(2500);
-
-        exchange.getIn().setHeader("SiteId", testDeployment2);
-        exchange.getIn().setHeader("imageid", "testImageMan");
-        exchange.getIn().setHeader("testImage", "testImageMan.JPG");
-        template.send("seda:idsAssetUpdate", exchange);
-
-        Thread.sleep(2500);*/
 
         ArrayList<IdsAsset> cttestArray = new ArrayList<IdsAsset>();
         IdsAsset testAsset1 = new IdsAsset();

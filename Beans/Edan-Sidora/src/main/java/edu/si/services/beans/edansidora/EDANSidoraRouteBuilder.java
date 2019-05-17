@@ -40,11 +40,25 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -496,7 +510,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         @Override
                         public void process(Exchange exchange) throws Exception {
                             Message out = exchange.getIn();
-                            log.info("see if xml is here");
+                            log.info("Header idsAssetName: " + out.getHeader("idsAssetName"));
                         }
                     })
                     //Only copy images files if this is not a delete asset
@@ -526,66 +540,20 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         //.setHeader("CamelOverruleFileName", simple("emammal_image_${header.imageid}.JPG"))
                         .log(LoggingLevel.INFO, "###############################[ Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.CamelOverruleFileName}.JPG ]###############################")//.stop()
                         //.setHeader("fileName").simple("${body.imageId}.JPG")
-                        .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.assetName}")
+                        .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
                         .endChoice()
                     .end()
-                .end();
-                /*.process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        Message out = exchange.getIn();
-
-                        String idsPushLoc = getContext().resolvePropertyPlaceholders("{{si.ct.uscbi.idsPushLocation}}");
-
-                        ArrayList<File> resourceFiles = new ArrayList<File>();
-
-                        ArrayList<IdsAsset> idsAssets = out.getHeader("idsAssetList", ArrayList.class);
-
-                        for(int i = 0; i <= idsAssetNames.size(); i++)
-                        {
-                            String resourceFilePath = idsPushLoc + idsAssetNames.get(i).getImageid() + "/" + idsAssets.get(i).getImageid() + ".xml";
-                            log.debug("*****[ Resource File" + i + ": {} ]*****", resourceFilePath);
-                            File resourceFile = new File(resourceFilePath);
-
-                            if (resourceFile.exists())
-                            {
-                                out.setBody(resourceFiles, File.class);
-                                getContext().createProducerTemplate().send(idsPushLoc+"/"+idsAssetNames.get(i)+"?fileName=${header.idsAssetImagePrefix}"+idsAssetNames.get(i).getImageid(), exchange);
-                                //resourceFiles.add(resourceFile);
-                            }
-                            else{
-                                out.setBody(null);
-                            }
-                        }
-
-
-
-                        /*String idsAssetName = out.getHeader("idsAssetName", String.class);
-
-                        String resourceFilePath = idsPushLoc + idsAssetName + "/" + idsAssetName + ".xml";
-                        log.debug("*****[ Resource File: {} ]*****", resourceFilePath);
-                        File resourceFile = new File(resourceFilePath);
-                        if (resourceFile.exists()) {
-                            out.setBody(resourceFile, String.class);
-                        } else {
-                            out.setBody(null);
-                        }
-                    }
-                })*/
-                //.stop();
-            from("seda:idsAssetXMLWriter").routeId("idsAssetXMLWriter")
+                .end()
+                .setHeader(Exchange.AGGREGATION_COMPLETE_ALL_GROUPS, simple("true", boolean.class))
+                .to("seda:idsAssetXMLWriter");
+            from("seda:idsAssetXMLWriter?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("idsAssetXMLWriter")
                 .log("idsAssetXMLWriter has been hit!")
-                .aggregate(simple("${header.idsAssetName}"), new IdsBatchAggregationStrategy()).completionPredicate(simple("${exchangeProperty.CamelSplitComplete} == true"))
+                .aggregate(simple("${header.idsAssetName}"), new IdsBatchAggregationStrategy())
+                //.completionPredicate(simple("${exchangeProperty.CamelSplitComplete} == true"))
+                .completionTimeout(1000)
+                .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
                 .log("completion predicate reached.")
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        Message out = exchange.getIn();
-                        log.info("Finished aggregation");
-                    }
-                }).id("XMLWriterBreakPoint")
-
                 .process(new Processor(){
                     @Override
                     public void process(Exchange exchange) throws Exception
@@ -598,7 +566,9 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         String resourceFilePath = idsPushLoc + idsAssetName + "/" + idsAssetName + ".xml";
                         log.debug("*****[ Resource File: {} ]*****", resourceFilePath);
                         File resourceFile = new File(resourceFilePath);
-                        if (resourceFile.exists()) {
+                        //if (resourceFile.exists())
+                        if (true)
+                        {
                             out.setBody(resourceFile, File.class);
                         }
                         else
@@ -606,7 +576,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                             out.setBody(null);
                         }
                     }
-                })
+                }).id("getAssetXml")
 
                 // TODO: (optional) we can get the filename with extension from the headers when getting the OBJ datastream
                 // from fedora but we would need to do that before updating the Asset XML.
@@ -617,48 +587,81 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                             @Override
                             public void process(Exchange exchange) throws Exception {
                                 Message out = exchange.getIn();
+
+                                List<IdsAsset> idsAssetList = out.getHeader("idsAssetXMLList", List.class);
+
+                                Document doc = out.getBody(Document.class);
+                                Element root = doc.getDocumentElement();
+                                NodeList assetsList = root.getElementsByTagName("Asset");
+
+                                for(IdsAsset asset: idsAssetList)
+                                {
+                                    boolean inXML = true;
+
+                                    for(int i = 0; i < assetsList.getLength(); i++)
+                                    {
+                                        Node currentAsset = assetsList.item(i);
+
+                                        String assetValue = asset.getImageid().trim();
+                                        String nodeValue  = currentAsset.getFirstChild().getTextContent().replace(out.getHeader("idsAssetImagePrefix", String.class), "").trim();
+
+                                        boolean testV = "emammal_image_testImageRaccoonAndMan" == "emammal_image_testImageRaccoonAndMan";
+
+                                        if(assetValue.equals(nodeValue))
+                                        {
+                                            inXML = false;
+                                            log.info(assetValue + " does not equal " + nodeValue);
+                                        }
+                                        else
+                                        {
+                                            log.info(assetValue + " does not equal " + nodeValue);
+                                        }
+                                    }
+
+                                    if(inXML)
+                                    {
+                                        Element newAsset = doc.createElement("Asset");
+                                        newAsset.setAttribute("Name", out.getHeader("idsAssetImagePrefix") + asset.getImageid() + ".JPG");
+                                        newAsset.setAttribute("IsPublic", asset.getIsPublic());
+                                        newAsset.setAttribute("IsInternal", asset.getIsInternal());
+                                        newAsset.setAttribute("MaxSize", "3000");
+                                        newAsset.setAttribute("InternalMaxSize", "4000");
+                                        newAsset.appendChild(doc.createTextNode(out.getHeader("idsAssetImagePrefix") + asset.getImageid()));
+
+                                        root.appendChild(newAsset);
+                                    }
+                                }
+
+                                out.setBody(doc, String.class);
+
                                 log.info("body isn't null");
                             }
                         })
                         //IDS Asset XML exists so append
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Pre Appended Asset XML Body:\n${body}")
-                        .toD("xslt:file:{{karaf.home}}/Input/xslt/idsAssets.xsl").id("idsAssetXMLEndpointXSLT")
+                        //.toD("xslt:file:{{karaf.home}}/Input/xslt/idsAssets.xsl").id("idsAssetXMLEndpointXSLT")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Post Appended Asset XML Body:\n${body}")
                     .endChoice()
                     .otherwise()
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML file does not exists and will be created.")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message out = exchange.getIn();
-                                log.info("ids asset xml file missing");
-                            }
-                        })
                         //IDS Asset XML does not exist so create it
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Pre Create Asset XML Body:\n${body}")
                         .convertBodyTo(String.class)
-                        .toD("velocity:file:{{karaf.home}}/Input/templates/ids_template.vsl").id("idsAssetXMLEndpointVelocity")
+                        .toD("velocity:file:{{karaf.home}}/Input/templates/ids_template.vsl")
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Post Create Asset XML Body:\n${body}")
                     .endChoice()
                 .end()
 
                 //Save the IDS Asset XML to file system
-                //.setHeader("CamelOverruleFileName", simple("${header.idsAssetName}.xml"))
+                .setHeader("CamelOverruleFileName", simple("${header.idsAssetName}.xml"))
+                .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}?fileName=${header.idsAssetName}.xml").id("saveFile")
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
                         Message out = exchange.getIn();
-                        log.info("finished finding templates");
+                        log.info("wrote file to push location");
                     }
-                })
-                .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}?fileName=${header.idsAssetName}.xml")
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        Message out = exchange.getIn();
-                        log.info("wrote file!");
-                    }
-                })
+                }).id("XMLWriterBreakPoint")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML saved to CamelFileNameProduced:${header.CamelFileNameProduced}")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished IDS Asset Update...");
