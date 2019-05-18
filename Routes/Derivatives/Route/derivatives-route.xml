@@ -47,8 +47,8 @@
 
     <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
     <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
-        <property name="brokerURL" value="${broker.url}"/>
-        <!--<property name="brokerURL" value="tcp://localhost:61616"/>-->
+        <!-- <property name="brokerURL" value="${broker.url}"/> -->
+        <property name="brokerURL" value="tcp://localhost:61616"/>
         <property name="userName" value="smx"/>
         <property name="password" value="smx"/>
     </bean>
@@ -147,7 +147,7 @@
             
             
             <setHeader headerName="origin">
-                <xpath resultType="java.lang.String">
+                <xpath>
                     /atom:entry/atom:author/atom:name/text()
                 </xpath>
             </setHeader>
@@ -197,7 +197,7 @@
                 </xpath>
             </setHeader>
             <setHeader headerName="logMessage">
-                <xpath resultType="java.lang.String">
+                <xpath>
                     /atom:entry/atom:category[@scheme="fedora-types:logMessage"]/@term
                 </xpath>
             </setHeader>
@@ -255,7 +255,7 @@
             </setHeader>
 
             <split strategyRef="modelAggregator">
-                <xpath resultType="java.lang.String">
+                <xpath>
                     //fs:hasModel/@rdf:resource
                 </xpath>
                 <log message="${id} Derivatives: Split Content Model. BODY: ${body}"
@@ -321,7 +321,7 @@
                 </when>
 
                 <otherwise> <!-- No supported content model was found. -->
-                    <log message="${id} Derivatives: No message processing required."/>
+                    <log message="${id} Derivatives: No supported content model was found. No message processing required."/>
                 </otherwise>
             </choice>
             
@@ -515,6 +515,21 @@
                          loggingLevel="WARN"/>
                 </when>
             </choice>
+
+            <!-- Delete the temporary file. Note: This approach is Unix specific. -->
+            <toD uri="exec:rm?args=-f ${header.BlurSourceFile}"/>
+
+            <choice>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} != 0
+                    </simple>
+                    <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}"
+                         loggingLevel="WARN"/>
+                </when>
+            </choice>
+
+            <removeHeader headerName="BlurSourceFile"/>
 
             <log message="${id} Derivatives: Finished Image processing."
                  loggingLevel="DEBUG"
@@ -1637,35 +1652,56 @@
                             <setBody>
                                 <simple>${header.CamelFileNameProduced}</simple>
                             </setBody>
+                            <setHeader headerName="BlurSourceFile">
+                                <simple>${header.CamelFileNameProduced}</simple>
+                            </setHeader>
+
                             <to uri="reader:file"/>
 
                             <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+
+                            <convertBodyTo type="byte[]"/>
+
                             <choice>
                                 <when>
-                                    <simple>${header.CamelExecExitValue} == 0</simple>
-
-                                    <!-- replace the staged file -->
-                                    <to uri="file:staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
-
-                                    <setHeader headerName="CamelHttpMethod">
-                                        <simple>PUT</simple>
-                                    </setHeader>
-                                    <!-- use same fedora user as CT routes so jms msg will be filtered otherwise a loop will occur -->
-                                    <setHeader headerName="Authorization">
-                                        <groovy>"Basic " + "{{si.fedora.user}}:{{si.fedora.password}}".bytes.encodeBase64().toString()</groovy>
-                                    </setHeader>
-                                    <!-- replace the OBJ with the faceBlur image adding a log message -->
-                                    <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?mimeType=image/jpeg&amp;logMessage=faceBlurred" id="replaceOBJ"/>
-                                </when>
-                                <otherwise>
+                                    <simple>${header.CamelExecExitValue} != '0'</simple>
                                     <log message="${id}: Face Blur Error!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
                                          loggingLevel="ERROR"
                                          logName="edu.si.derivatives"/>
+                                </when>
+                                <otherwise>
+                                    <!-- Save the blurred image to staging -->
+                                    <toD uri="file:staging?fileName=${header.CamelFileName}_blur" id="saveBlurImage"/>
+
+                                    <!-- copy exif tags from the original image to the blurred image in staging-->
+                                    <toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -TagsFromFile ${header.BlurSourceFile} ${header.CamelFileNameProduced} -overwrite_original" id="exiftool"/>
                                 </otherwise>
                             </choice>
+
+                            <setBody>
+                                <simple>${header.CamelFileNameProduced}</simple>
+                            </setBody>
+
+                            <!-- put the blurred image with copied exif tags back on body -->
+                            <to uri="reader:file" id="readExifBlurImageResource"/>
+
+                            <setHeader headerName="CamelHttpMethod">
+                                <simple>PUT</simple>
+                            </setHeader>
+                            <!-- use same fedora user as CT routes so jms msg will be filtered otherwise a loop will occur -->
+                            <setHeader headerName="Authorization">
+                                <groovy>"Basic " + "{{si.fedora.user}}:{{si.fedora.password}}".bytes.encodeBase64().toString()</groovy>
+                            </setHeader>
+                            <!-- replace the OBJ with the faceBlur image adding a log message -->
+                            <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?mimeType=image/jpeg&amp;logMessage=faceBlurred" id="replaceOBJ"/>
                         </when>
                     </choice>
                 </when>
+                <otherwise>
+                    <log message="${id}: No Face Blur Processing Required."
+                         loggingLevel="INFO"
+                         logName="edu.si.derivatives"/>
+                </otherwise>
             </choice>
 
             <setBody>
