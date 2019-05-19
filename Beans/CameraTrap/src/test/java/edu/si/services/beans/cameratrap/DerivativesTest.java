@@ -79,7 +79,7 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
     @Override
     protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
         configAdmin.putAll(getExtra());
-        return "edu.si.sidora.derivatives";
+        return "edu.si.sidora.karaf";
     }
 
     public String createApimMessage(String pid, String origin, String methodName, String dsLabel, String dsID, String testDsLocation ,String logMessage) {
