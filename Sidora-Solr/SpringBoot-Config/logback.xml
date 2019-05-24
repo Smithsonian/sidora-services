@@ -1,10 +1,10 @@
 <configuration>
   <include resource="org/springframework/boot/logging/logback/base.xml"/>
   <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/camel-solr-spring-boot.log</file>
+    <file>@karaf.home@/logs/camel-solr-spring-boot.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
       <!-- rollover daily -->
-      <fileNamePattern>logs/camel-solr-spring-boot-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <fileNamePattern>@karaf.home@/logs/camel-solr-spring-boot-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
       <maxFileSize>100MB</maxFileSize>
       <maxHistory>100</maxHistory>
       <totalSizeCap>10GB</totalSizeCap>

@@ -1,0 +1,21 @@
+version: "3.7"
+
+services:
+  sidora-solr:
+    image: smithsonian:sidora-springboot-solr
+    labels:
+      edu.si.sidora.description: "Spring Boot Camel Solr Indexing"
+    container_name: sidora-springboot-solr
+    build:
+      context: ./
+      dockerfile: ./Sidora-Solr/Dockerfile
+    ports:
+      - "8282:8282"
+    network_mode: "host"
+    volumes:
+      - sidora-springboot-solr-data:/app
+      - sidora-springboot-solr-tmp:/tmp
+
+volumes:
+  sidora-springboot-solr-data:
+  sidora-springboot-solr-tmp:
