@@ -1,0 +1,46 @@
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/base.xml"/>
+  <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logs/camel-solr-spring-boot.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <!-- rollover daily -->
+      <fileNamePattern>logs/camel-solr-spring-boot-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <maxFileSize>100MB</maxFileSize>
+      <maxHistory>100</maxHistory>
+      <totalSizeCap>10GB</totalSizeCap>
+    </rollingPolicy>
+    <encoder>
+      <!--<pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n </pattern>-->
+      <!--<pattern>%d{ISO8601} | %highlight(%-5.5p) | %-16.16t | %-32.32c{1} | %-32.32C %4L | %m%n</pattern>-->
+      <!--<pattern>%highlight(%d{ISO8601} | %-5.5p | %-16.16t | %-32.32c{1} | %-32.32C %4L | ContextID: %X{camel.contextId} | RouteId: %X{camel.routeId} | %m%n)</pattern>-->
+      <pattern>%d{ISO8601} | %highlight(%-5.5p) | %-16.16t | %-32.32c{1} | %-32.32C %4L | ContextID: %X{camel.contextId} | RouteId: %X{camel.routeId} | %m%n</pattern>
+      <!--<pattern>[%-5p] | - %m%n</pattern>-->
+    </encoder>
+  </appender>
+
+  <!--<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      &lt;!&ndash;<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>&ndash;&gt;
+      &lt;!&ndash;<pattern>[%-5p] [%c{1}.%M\(\):%L] | - %m%n</pattern>&ndash;&gt;
+      <pattern>[%-5p] | - %m%n</pattern>
+      &lt;!&ndash;<pattern>%d{ISO8601} | %-5.5p | %-16.16t | %-32.32c{1} | %-32.32C %4L | %m%n</pattern>&ndash;&gt;
+      &lt;!&ndash;<pattern>%d{ISO8601} | %highlight(%-5.5p) | %-16.16t | %-32.32c{1} | %-32.32C %4L | ContextID: %X{camel.contextId} | RouteId: %X{camel.routeId} | %m%n</pattern>&ndash;&gt;
+    </encoder>
+  </appender>-->
+
+  <logger name="edu.si" level="INFO" />
+  <logger name="edu.si.solr" level="INFO"/>
+  <logger name="edu.si.services.solr" level="INFO"/>
+  <logger name="org.apache.camel.component.http" level="INFO"/>
+  <logger name="org.apache.http" level="INFO"/>
+  <logger name="org.apache.commons.httpclient" level="INFO"/>
+  <logger name="httpclient.wire.header" level="INFO"/>
+  <logger name="org.apache.camel" level="INFO"/>
+  <logger name="org.springframework" level="INFO" />
+
+  <root level="INFO">
+    <!--<appender-ref ref="STDOUT" />-->
+    <appender-ref ref="ROLLING" />
+  </root>
+
+</configuration>

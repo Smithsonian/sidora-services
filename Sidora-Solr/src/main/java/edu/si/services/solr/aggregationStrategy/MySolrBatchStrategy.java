@@ -28,9 +28,7 @@
 package edu.si.services.solr.aggregationStrategy;
 
 import edu.si.services.solr.MySolrJob;
-import edu.si.services.solr.SidoraSolrException;
 import org.apache.camel.Exchange;
-import org.apache.camel.Message;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;

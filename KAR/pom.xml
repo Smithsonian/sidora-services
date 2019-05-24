@@ -144,13 +144,6 @@
             <type>xml</type>
         </dependency>-->
 
-        <!-- Sidora Solr -->
-        <dependency>
-            <groupId>edu.si.services</groupId>
-            <artifactId>sidora-solr</artifactId>
-            <version>1.0</version>
-        </dependency>
-
     </dependencies>
 
     <build>

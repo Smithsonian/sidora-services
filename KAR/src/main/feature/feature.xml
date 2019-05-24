@@ -44,7 +44,6 @@
         <bundle dependency="true">mvn:commons-dbcp/commons-dbcp/${commons-dbcp.version}</bundle>
         <bundle dependency="true">wrap:mvn:mysql/mysql-connector-java/${mysql-connector.version}</bundle>
         <bundle dependency="true">mvn:org.apache.tika/tika-core/${apache-tika.version}</bundle>
-        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.solr-solrj/${servicemix.bundles.solrj.version}</bundle>
 
         <!--
             When using 'configfile' element in the karaf feature.xml a maven url is required
@@ -82,7 +81,6 @@
         <feature version="${camel.version}">camel-sql</feature>
         <feature version="${camel.version}">camel-gson</feature>
         <feature version="${camel.version}">camel-http4</feature>
-        <!--<feature version="${camel.version}">camel-solr</feature>-->
         <feature>hawtio-core</feature>
         <feature>webconsole</feature>
         <feature>activemq-web-console</feature>

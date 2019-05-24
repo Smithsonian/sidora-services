@@ -337,7 +337,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Delete Record...");
 
 
-        from("direct:edanHttpRequest").routeId("edanHttpRequest")
+        from("direct:edanHttpRequest").routeId("edanHttpRequest").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Http Request...")
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request: HTTP_QUERY = ${header.CamelHttpQuery}")
