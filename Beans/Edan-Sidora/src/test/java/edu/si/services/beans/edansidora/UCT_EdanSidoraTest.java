@@ -27,6 +27,7 @@
 
 package edu.si.services.beans.edansidora;
 
+import edu.si.services.beans.edansidora.aggregation.EdanBulkAggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
@@ -447,13 +448,76 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     }
 
     /**
+     * Testing the updateEdan route when there is an existing edan record and an EDAN editRecord request is needed.
+     * @throws Exception
+     */
+    @Test
+    public void updateEdanBatchEditContentTest() throws Exception {
+        String testManifestXML = readFileToString(testManifest);
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("edanId", "p2b-1515252134647-1516215519247-0");
+        mockResult.expectedHeaderReceived("edanTitle", "Camera Trap Image Northern Raccoon, Red Fox");
+        mockResult.expectedHeaderReceived("edanType", "emammal_image");
+        mockResult.expectedHeaderReceived("SiteId", "testDeploymentId");
+
+        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("processFedoraFindParentObject").remove();
+                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
+
+                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_Exists.json";
+                                File resourceFile = new File(resourceFilePath);
+                                if (resourceFile.exists()) {
+                                    out.setBody(resourceFile, String.class);
+                                } else {
+                                    out.setBody(null);
+                                }
+                            }
+                        });
+                //weaveById("edanUpdateEditContent").replace().log(LoggingLevel.INFO, "Skipping Edan Edit Content!!!");
+                weaveById("edanUpdateEditContent").replace().log(LoggingLevel.INFO, "Skipping Edan Edit Content!!!")
+                        .aggregate(simple("${header.edanServiceEndpoint}"), new EdanBulkAggregationStrategy())
+                        .completionTimeout(1000)
+                        .parallelProcessing(Boolean.parseBoolean("true"))
+                        .setHeader(Exchange.HTTP_QUERY).groovy("\"content=\" + URLEncoder.encode(request.headers.get('edanBulkRequests'));")
+                        .to("bean:edanApiBean?method=sendRequest")
+                        .convertBodyTo(String.class);
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("ManifestXML", testManifestXML);
+        exchange.getIn().setHeader("pid", "test:0001");
+        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
+
+        template.send("seda:edanUpdate", exchange);
+
+        assertMockEndpointsSatisfied();
+
+        String resultJson = URLDecoder.decode(mockResult.getReceivedExchanges().get(0).getIn().getHeader("edanJson", String.class), "UTF-8");
+        JSONObject result = new JSONObject(resultJson);
+
+        JSONObject expected = new JSONObject(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.json")));
+        JSONAssert.assertEquals(expected, result, JSONCompareMode.LENIENT);
+        JSONAssert.assertEquals(expected, result, JSONCompareMode.STRICT);
+    }
+
+    /**
      * Testing the updateEdan route when there is no existing edan record and an EDAN createRecord request is needed.
      * @throws Exception
      */
     @Test
     public void updateEdanCreateContentTest() throws Exception {
         String testManifestXML = readFileToString(testManifest);
-
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
         mockResult.expectedHeaderReceived("edanId", "p2b-1515252134647-1516215519247-0");
@@ -484,6 +548,58 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                             public void process(Exchange exchange) throws Exception {
                                 Message out = exchange.getIn();
                                 String resourceFilePath = KARAF_HOME + "/test-json-data/edanCreateContent_Response.json";
+                                File resourceFile = new File(resourceFilePath);
+                                if (resourceFile.exists()) {
+                                    out.setBody(resourceFile, String.class);
+                                } else {
+                                    out.setBody(null);
+                                }
+                            }
+                        });
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("ManifestXML", testManifestXML);
+        exchange.getIn().setHeader("pid", "test:0001");
+        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
+
+        template.send("seda:edanUpdate", exchange);
+
+        assertMockEndpointsSatisfied();
+
+        String resultJson = URLDecoder.decode(mockResult.getReceivedExchanges().get(0).getIn().getHeader("edanJson", String.class), "UTF-8");
+        JSONObject result = new JSONObject(resultJson);
+
+        JSONObject expected = new JSONObject(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_NoEdanId.json")));
+        JSONAssert.assertEquals(expected, result, JSONCompareMode.LENIENT);
+        JSONAssert.assertEquals(expected, result, JSONCompareMode.STRICT);
+    }
+
+    /**
+     * Testing the updateEdan route when there is no existing edan record and an EDAN createRecord request is needed.
+     * @throws Exception
+     */
+    @Test
+    public void updateEdanCreateContentBatchTest() throws Exception {
+        String testManifestXML = readFileToString(testManifest);
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("edanId", "p2b-1515252134647-1516215519247-0");
+
+        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("processFedoraFindParentObject").remove();
+                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
+
+                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_NotExist.json";
                                 File resourceFile = new File(resourceFilePath);
                                 if (resourceFile.exists()) {
                                     out.setBody(resourceFile, String.class);

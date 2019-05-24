@@ -27,6 +27,7 @@
 
 package edu.si.services.beans.edansidora;
 
+import edu.si.services.beans.edansidora.aggregation.EdanBulkAggregationStrategy;
 import edu.si.services.beans.edansidora.aggregation.EdanIdsAggregationStrategy;
 import edu.si.services.beans.edansidora.aggregation.IdsBatchAggregationStrategy;
 import edu.si.services.beans.edansidora.model.IdsAsset;
@@ -83,6 +84,9 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
     @PropertyInject(value = "si.ct.edanIds.concurrentConsumers", defaultValue = "20")
     private String CONCURRENT_CONSUMERS;
+
+    @PropertyInject(value = "si.ct.batchEnabled", defaultValue = "false")
+    private String batchEnabled;
 
     @Override
     public void configure() throws Exception {
@@ -412,18 +416,28 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Delete Record...");
 
-
-        from("seda:edanHttpRequest?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("edanHttpRequest").errorHandler(noErrorHandler())
-        //from("direct:edanHttpRequest").routeId("edanHttpRequest")
+        from("seda:edanHttpRequest?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("edanHttpRequest")
+                .errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Http Request...")
-
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request: HTTP_QUERY = ${header.CamelHttpQuery}")
-
-                // Set the EDAN Authorization headers and preform the EDAN query request
-                .to("bean:edanApiBean?method=sendRequest").id("edanApiSendRequest")
-                .convertBodyTo(String.class)
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Http Request...");
+                .choice()
+                    .when().simple(batchEnabled + " == 'true' && ${header.edanServiceEndpoint} not contains 'search'")
+                        .aggregate(simple("${header.edanServiceEndpoint}"), new EdanBulkAggregationStrategy())
+                        .completionTimeout(1000)
+                        .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
+                        .setHeader(Exchange.HTTP_QUERY).groovy("\"content=\" + URLEncoder.encode(request.headers.get('edanBulkRequests'));")
+                        .to("bean:edanApiBean?method=sendRequest").id("edanApiSendBulkRequest")
+                        .convertBodyTo(String.class)
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Http Request...")
+                    .endChoice()
+                    . otherwise()
+                        .to("bean:edanApiBean?method=sendRequest").id("edanApiSendSingleRequest")
+                        .convertBodyTo(String.class)
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Http Request...")
+                    . endChoice()
+                .end();
 
         from("seda:createEdanJsonContent?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("createEdanJsonContent")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Edan JSON Content creation...")
