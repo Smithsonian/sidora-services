@@ -28,6 +28,7 @@
 package edu.si.services.solr.rest;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 /**
@@ -39,45 +40,40 @@ public class SidoraSolrService {
     /**
      *
      * @param pid
-     * @param solrIndex
      * @param solrOperation
      * @return
      */
     @GET
-    @Path(value = "/{solrIndex}/{pid}")
-    @Produces({"application/xml","application/json"})
+    @Path(value = "/{solrOperation}")
+    @Produces(MediaType.TEXT_PLAIN)
     @Consumes("application/xml")
-    public Response solrRequest(@PathParam("pid") String pid,
-                                @PathParam("solrIndex") String solrIndex,
-                                @QueryParam("solrOperation") String solrOperation) {
+    public Response solrRequest(@QueryParam("pid") String pid,
+                                @PathParam("solrOperation") String solrOperation) {
         return null;
     }
 
     @GET
     @Path(value = "/reindex")
-    @Produces("*/*")
+    @Produces(MediaType.TEXT_PLAIN)
     public Response solrReindexAll(@QueryParam("gsearch_solr") String gsearch_solr,
-                                   @QueryParam("gsearch_sianct") String gsearch_sianct,
-                                   @QueryParam("auth") String auth) {
+                                   @QueryParam("gsearch_sianct") String gsearch_sianct) {
         return null;
     }
 
     @GET
     @Path(value = "/deleteAll")
-    @Produces({"text/xml","application/xml","application/json"})
+    @Produces(MediaType.TEXT_PLAIN)
     public Response solrDeleteAll(@QueryParam("gsearch_solr") String gsearch_solr,
-                                  @QueryParam("gsearch_sianct") String gsearch_sianct,
-                                @QueryParam("auth") String auth) {
+                                  @QueryParam("gsearch_sianct") String gsearch_sianct) {
         return null;
     }
 
     @GET
     @Path(value = "/deleteByQuery")
-    @Produces({"text/xml","application/xml","application/json"})
+    @Produces(MediaType.TEXT_PLAIN)
     public Response solrDeleteByQuery(@QueryParam("gsearch_solr") String gsearch_solr,
                                   @QueryParam("gsearch_sianct") String gsearch_sianct,
-                                  @QueryParam("query") String query,
-                                  @QueryParam("auth") String auth) {
+                                  @QueryParam("query") String query) {
         return null;
     }
 

@@ -29,11 +29,13 @@ package edu.si.services.solr.aggregationStrategy;
 
 import edu.si.services.solr.MySolrJob;
 import org.apache.camel.Exchange;
+import org.apache.camel.PropertyInject;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 /**
  * This is our own solr batch aggregation strategy where we can control
@@ -47,32 +49,42 @@ public class MySolrUpdateStrategy implements AggregationStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(MySolrUpdateStrategy.class);
 
+    @PropertyInject(value = "edu.si.solr")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
+
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
         // put solr doc together in old exchange by adding the doc from new exchange
-        List<MySolrJob> batchJobsList = null;
+        UpdateRequest solrUpdateRequest = null;
+        MySolrJob solrJob = newExchange.getIn().getBody(MySolrJob.class);
 
         if (oldExchange == null) {
             // the first time we aggregate we only have the new exchange,
             // so we just return it
+            solrUpdateRequest = new UpdateRequest();
 
-            //add solr doc to the job
-            batchJobsList = newExchange.getIn().getHeader("batchJobs", List.class);
-            MySolrJob solrJob = newExchange.getIn().getHeader("solrJob", MySolrJob.class);
-            batchJobsList.get(batchJobsList.indexOf(solrJob)).setSolrdoc(newExchange.getIn().getBody(String.class));
+            if(solrJob.getSolrOperation().equals("delete")) {
+                solrUpdateRequest.deleteById(newExchange.getIn().getHeader("pid", String.class));
+            } else if(solrJob.getSolrOperation().equals("update")) {
+                solrUpdateRequest.add(solrJob.getSolrdoc());
+            }
+
+            newExchange.getIn().setHeader("solrUpdateRequest", solrUpdateRequest);
 
             return newExchange;
         }
 
-        //add solr doc to the job
-        batchJobsList = oldExchange.getIn().getHeader("batchJobs", List.class);
-        MySolrJob solrJob = newExchange.getIn().getHeader("solrJob", MySolrJob.class);
-        batchJobsList.get(batchJobsList.indexOf(solrJob)).setSolrdoc(newExchange.getIn().getBody(String.class));
+        solrUpdateRequest = oldExchange.getIn().getHeader("solrUpdateRequest", UpdateRequest.class);
+        oldExchange.getIn().removeHeader("solrUpdateRequest");
 
-        String docs = oldExchange.getIn().getBody(String.class);
-        String newDoc = newExchange.getIn().getBody(String.class);
+        if(solrJob.getSolrOperation().equals("delete")) {
+            solrUpdateRequest.deleteById(newExchange.getIn().getHeader("pid", String.class));
+        } else if(solrJob.getSolrOperation().equals("update")) {
+            solrUpdateRequest.add(solrJob.getSolrdoc());
+        }
 
-        oldExchange.getIn().setBody(docs + "\n" + newDoc);
+        newExchange.getIn().setHeader("solrUpdateRequest", solrUpdateRequest);
 
-        return oldExchange;
+        return newExchange;
     }
 }

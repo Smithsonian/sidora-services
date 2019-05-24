@@ -28,12 +28,13 @@
 package edu.si.services.solr.aggregationStrategy;
 
 import edu.si.services.solr.MySolrJob;
-import edu.si.services.solr.SidoraSolrException;
 import org.apache.camel.Exchange;
-import org.apache.camel.Message;
+import org.apache.camel.PropertyInject;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,34 +45,25 @@ import java.util.List;
 public class MySolrBatchStrategy implements AggregationStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(MySolrBatchStrategy.class);
+    @PropertyInject(value = "edu.si.solr")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
 
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-        Message out = newExchange.getIn();
         List<MySolrJob> batchJobs = null;
-        MySolrJob solrJob = out.getHeader("solrJob", MySolrJob.class);
+        MySolrJob solrJob = newExchange.getIn().getHeader("solrJob", MySolrJob.class);
 
         if (oldExchange == null) {
             batchJobs = new ArrayList<>();
             batchJobs.add(solrJob);
 
             newExchange.getIn().setHeader("batchJobs", batchJobs);
-            newExchange.getIn().setHeader("solrIndex", solrJob.getIndex());
 
             return newExchange;
         } else {
-            String expectedIndex = oldExchange.getIn().getHeader("solrIndex", String.class);
-            if (solrJob.getIndex().equalsIgnoreCase(expectedIndex)) {
-                batchJobs = oldExchange.getIn().getHeader("batchJobs", List.class);
-                batchJobs.add(out.getHeader("solrJob", MySolrJob.class));
-                return oldExchange;
-            } else {
-                /*
-                TODO: create unit test for this what happens to the already aggregated jobs?
-                They should still be processed and the error job should be sent to deadLetter
-                 */
-                oldExchange.setException(new SidoraSolrException("Batch Solr Aggregation Failed!!! Found a different solr index than expected. expected: " + expectedIndex + ", found: " + solrJob.getIndex()));
-                return oldExchange;
-            }
+            batchJobs = oldExchange.getIn().getHeader("batchJobs", List.class);
+            batchJobs.add(newExchange.getIn().getHeader("solrJob", MySolrJob.class));
+            return oldExchange;
         }
     }
 }

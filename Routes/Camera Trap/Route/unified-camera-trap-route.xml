@@ -368,6 +368,7 @@
 
                         <to uri="activemq:queue:{{edanIds.queue}}" id="edanIdsActiveMQ"/>
 
+                        <removeHeaders pattern="CamelSchematronValidationReport|datastreamValidationXML|ManifestXML"/>
                         <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
 
                     </otherwise>

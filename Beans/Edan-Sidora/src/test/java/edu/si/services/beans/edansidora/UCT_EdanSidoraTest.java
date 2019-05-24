@@ -625,6 +625,16 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                context.getRouteDefinition("edanUpdate").onException(EdanIdsException.class)
+                        .useExponentialBackOff()
+                        .backOffMultiplier(2)
+                        .redeliveryDelay("{{si.ct.edanIds.redeliveryDelay}}")
+                        .maximumRedeliveries("{{min.edan.redeliveries}}")
+                        .retryAttemptedLogLevel(LoggingLevel.WARN)
+                        .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                        //.logExhausted(true)
+                        .log(LoggingLevel.ERROR, "************[ TEST edanHttpRequest ONEXCEPTION ]************")
+                        .to("mock:error");
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(testDatastreamsXML);
                 weaveById("processFedoraFindParentObject").replace().setHeader("parentPid").simple("test:0001");
                 weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
@@ -634,7 +644,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("edanHttpRequest").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                //processor used to replace sql query to test onException and retries
+                //processor used to test onException and retries
                 final Processor processor = new Processor() {
                     public void process(Exchange exchange) throws Exception {
                         Message in = exchange.getIn();
@@ -656,7 +666,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
 
                 weaveById("edanApiSendRequest").replace().process(processor);
-                weaveById("logEdanIdsException").after().to("mock:error");
+                //weaveById("logEdanIdsException").after().to("mock:error");
                 weaveAddLast().to("mock:result").stop();
             }
         });
@@ -715,6 +725,18 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("EdanIdsProcessCtDeployment").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                context.getRouteDefinition("EdanIdsProcessCtDeployment")
+                        .onException(Exception.class, HttpOperationFailedException.class, SocketException.class)
+                        .onWhen(exchangeProperty(Exchange.TO_ENDPOINT).regex("^(http|https|cxfrs?(:http|:https)|http4):.*"))
+                        .useExponentialBackOff()
+                        .backOffMultiplier(2)
+                        .redeliveryDelay("{{si.ct.edanIds.redeliveryDelay}}")
+                        .maximumRedeliveries("{{min.edan.http.redeliveries}}")
+                        .retryAttemptedLogLevel(LoggingLevel.WARN)
+                        .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+                        .logNewException(true)
+                        .log(LoggingLevel.ERROR, "************[ TEST HTTP ONEXCEPTION ]************")
+                        .to("mock:error");
 
                 /**
                  * I have not been able to come up with a way of testing other exceptions (exception bar) being thrown
@@ -750,7 +772,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                 //weaveById("ctProcessGetFedoraDatastream").replace().process(processor);
 
                 interceptSendToEndpoint("http4:*").skipSendToOriginalEndpoint().process(processor);
-                weaveById("logEdanIdsHTTPException").after().to("mock:error");
+                //weaveById("logEdanIdsHTTPException").after().to("mock:error");
                 weaveById("ctProcessEdanUpdate").replace().to("mock:result").stop();
             }
         });

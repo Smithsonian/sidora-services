@@ -32,8 +32,8 @@ import org.apache.camel.Message;
 import org.apache.camel.PropertyInject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 /**
  * @author jbirkhimer
@@ -45,29 +45,41 @@ public class MyBatchService {
     @PropertyInject(value = "sidora.solr.default.index", defaultValue = "gsearch_solr")
     private static String DEFAULT_SOLR_INDEX;
 
+    @PropertyInject(value = "edu.si.solr")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
+
     MySolrJob solrJob;
 
-    public void addJob(Exchange exchange, String solrOperation) {
+    public void addJob(Exchange exchange, String solrOperation) throws SidoraSolrException {
         addJob(exchange, solrOperation, DEFAULT_SOLR_INDEX);
     }
 
-    public void addJob(Exchange exchange, String solrOperation, String index) {
+    public void addJob(Exchange exchange, String solrOperation, String index) throws SidoraSolrException {
         Message out = exchange.getIn();
+        String pid = out.getHeader("pid", String.class);
 
-        solrJob = new MySolrJob();
-        solrJob.setPid(out.getHeader("pid", String.class));
-        solrJob.setOrigin(out.getHeader("origin", String.class));
-        solrJob.setMethodName(out.getHeader("methodName", String.class));
-        solrJob.setDsLabel(out.getHeader("dsLabel", String.class));
-        solrJob.setState(out.getHeader("state", String.class));
-        solrJob.setSolrOperation(solrOperation);
-        solrJob.setIndex(index);
-        solrJob.indexes.add(index);
-        solrJob.setFoxml(out.getBody(String.class));
+        LOG.error(logMarker, "solrOperation {}, index: {}", solrOperation, index);
+        LOG.error(logMarker, "Headers:\n", exchange.getIn().getHeaders());
 
-        LOG.debug("******[1]*******\nNEW solrJob = {}", solrJob);
+        if (index != null) {
+            solrJob = new MySolrJob();
+            solrJob.setPid(pid);
+            solrJob.setOrigin(out.getHeader("origin", String.class));
+            solrJob.setMethodName(out.getHeader("methodName", String.class));
+            solrJob.setDsLabel(out.getHeader("dsLabel", String.class));
+            solrJob.setState(out.getHeader("state", String.class));
+            solrJob.setSolrOperation(solrOperation);
+            solrJob.setIndex(index);
+            solrJob.indexes.add(index);
+            solrJob.setFoxml(out.getBody(String.class));
 
-        out.setHeader("solrJob", solrJob);
+            LOG.debug(logMarker, "******[1]*******\nNEW solrJob = {}", solrJob);
+
+            out.setHeader("solrJob", solrJob);
+        }  else {
+            throw new SidoraSolrException("Cannot create Solr Job!!! index is null for pid: " + pid + "!!!");
+        }
     }
 
     public void addIndex(Exchange exchange, String index) {
@@ -77,7 +89,7 @@ public class MyBatchService {
         //solrJob = getJobByPid(pid);
 
         solrJob.indexes.add(index);
-        LOG.info("Added Index:\nsolrJob = {}", solrJob);
+        LOG.info(logMarker, "Added Index:\nsolrJob = {}", solrJob);
     }
 
     /*public MySolrJob getJobByPid(String pid) {

@@ -29,8 +29,11 @@ package edu.si.services.solr;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.PropertyInject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -44,24 +47,28 @@ public class MyDocService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MyDocService.class);
 
+    @PropertyInject(value = "edu.si.solr")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.solr");
+
     /**
      * We just handle the pid by returning a solr doc for the pid
      */
     public String handleDoc_gsearch_solr(Exchange exchange) throws InterruptedException {
         String response = doc(exchange);
-        LOG.debug("handleDoc_gsearch_solr Doc :\n{}", response);
+        LOG.debug(logMarker, "handleDoc_gsearch_solr Doc :\n{}", response);
         return response;
     }
 
     public String handleDoc_gsearch_sianct(Exchange exchange) {
         String response = doc(exchange);
-        LOG.debug("handleDoc_gsearch_sianct Doc :\n{}", response);
+        LOG.debug(logMarker, "handleDoc_gsearch_sianct Doc :\n{}", response);
         return response;
     }
 
     public String handleDeleteDoc(Exchange exchange) {
         String response = delete(exchange);
-        LOG.debug("handleDeleteDoc Doc :\n{}", response);
+        LOG.debug(logMarker, "handleDeleteDoc Doc :\n{}", response);
         return response;
     }
 
@@ -75,7 +82,7 @@ public class MyDocService {
         String solrOperation = out.getHeader("methodName", String.class);
 
         String response = "<update>\n" + doc + "\n</update>";
-        LOG.info("BuildCombinedResponse:\n" + response);
+        LOG.info(logMarker, "BuildCombinedResponse:\n" + response);
 
         return response;
     }
@@ -108,10 +115,10 @@ public class MyDocService {
             aggHeader = e.getIn().getHeader("batch", String.class);
         }
 
-        LOG.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        LOG.info(logMarker, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
         for(MySolrJob msj : r) {
-            LOG.info("Received END {} ({} of {}): {}", aggHeader, r.indexOf(msj) + 1,r.size(), msj);
+            LOG.info(logMarker, "Received END {} ({} of {}): {}", aggHeader, r.indexOf(msj) + 1,r.size(), msj);
         }
     }
 
