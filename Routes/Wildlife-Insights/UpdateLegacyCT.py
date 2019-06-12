@@ -97,7 +97,6 @@ def doGet(pid, ds, content):
 
 
 def doPost(pid, data, ds, params):
-    pid = "test.smx.home:16"
     if params:
         FEDORA_PARAMS = params
     else:
