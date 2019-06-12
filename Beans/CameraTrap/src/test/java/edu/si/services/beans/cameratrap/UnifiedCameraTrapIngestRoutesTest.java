@@ -44,6 +44,8 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.commons.io.FileUtils.readFileToString;
+
 /**
  * Tests for the Unified Camera Trap Ingest Pipeline
  * TODO: Add more tests
@@ -95,7 +97,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         disableJMX();
 
         //Store the Deployment Manifest as string to set the camel ManifestXML header
-        manifest = FileUtils.readFileToString(manifestFile);
+        manifest = readFileToString(manifestFile);
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
@@ -192,7 +194,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
 
         File MODS_DatastreamTestFile = new File(testDataDir + "/DatastreamTestFiles/MODS/valid_MODS.xml");
 
-        String MODS_DatastreamExpected = FileUtils.readFileToString(MODS_DatastreamTestFile);
+        String MODS_DatastreamExpected = readFileToString(MODS_DatastreamTestFile);
 
         //the header thats used for the Unified_ManifestImage.xsl param
         headers.put("imageid", "d18981s1i1");
@@ -329,6 +331,94 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         //exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/d18981s1i1.JPG");
 
         template.send("direct:start", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testImageResourceFaceBlur() throws Exception {
+        String manifest = readFileToString(new File(KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"));
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+        mockResult.expectedFileExists(KARAF_HOME + "/output/testWildLifeInsightsDeploymentIds1i3.JPG");
+        mockResult.expectedFileExists(KARAF_HOME + "/staging/testWildLifeInsightsDeploymentIds1i3.JPG");
+
+        context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("createResourcePID").before()
+                        .to("file:{{karaf.home}}/output")
+                        .to("mock:result").stop();
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("ManifestXML", manifest);
+        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment");
+        exchange.getIn().setBody("testWildLifeInsightsDeploymentIds1i3.JPG");
+
+        template.send("direct:addImageResource", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testImageResourceFaceBlurUseOriginalOnFail() throws Exception {
+        String manifest = readFileToString(new File(KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"));
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+        mockResult.expectedFileExists(KARAF_HOME + "/output/testWildLifeInsightsDeploymentIds1i3.JPG");
+
+        context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("execPythonFaceblur").after()
+                        .setHeader("CamelExecExitValue").simple("1");
+                weaveById("createResourcePID").before()
+                        .to("file:{{karaf.home}}/output")
+                        .to("mock:result").stop();
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("ManifestXML", manifest);
+        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment");
+        exchange.getIn().setBody("testWildLifeInsightsDeploymentIds1i3.JPG");
+
+        template.send("direct:addImageResource", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testImageResourceExiftoolUseOriginalOnFail() throws Exception {
+        String manifest = readFileToString(new File(KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"));
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+        mockResult.expectedFileExists(KARAF_HOME + "/output/testWildLifeInsightsDeploymentIds1i3.JPG");
+        mockResult.expectedFileExists(KARAF_HOME + "/staging/testWildLifeInsightsDeploymentIds1i3.JPG");
+
+        context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("execExiftool").after()
+                        .setHeader("CamelExecStderr").simple("Simulating Exiftool error!!!")
+                        .setHeader("CamelExecExitValue").simple("1");
+                weaveById("createResourcePID").before()
+                        .to("file:{{karaf.home}}/output")
+                        .to("mock:result").stop();
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("ManifestXML", manifest);
+        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment");
+        exchange.getIn().setBody("testWildLifeInsightsDeploymentIds1i3.JPG");
+
+        template.send("direct:addImageResource", exchange);
 
         assertMockEndpointsSatisfied();
     }

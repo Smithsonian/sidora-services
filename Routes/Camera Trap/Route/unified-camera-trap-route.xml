@@ -1085,7 +1085,8 @@
             <to uri="reader:file" id="readImageResource"/>
 
             <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
-            <choice>
+            <!-- Any failure during Face Blur will revert back to the original image -->
+            <choice id="speciesScientificNameFaceBlurChoice">
                 <when>
                     <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
                         //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
@@ -1101,34 +1102,43 @@
                     <choice>
                         <when>
                             <simple>${header.CamelExecExitValue} != 0</simple>
-                            <log message="${id}: Face Blur Error!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                            <log message="${id}: Face Blur Error on ${header.imageid}!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
                                  loggingLevel="ERROR"
                                  logName="{{si.ct.id}}"/>
                             <setBody>
                                 <simple>${header.CamelFileAbsolutePath}</simple>
                             </setBody>
-                            <to uri="reader:file"/>
+                            <to uri="reader:file" id="blurErrorUseOriginalImage"/>
                         </when>
                         <otherwise>
                             <!-- Save the blurred image to staging -->
-                            <toD uri="file:staging?fileName=${header.CamelFileName}"/>
+                            <toD uri="file:{{karaf.home}}/staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
 
                             <!-- copy exif tags from the original image to the blurred image in staging-->
-                            <toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -TagsFromFile ${header.CamelFileAbsolutePath} ${header.CamelFileNameProduced} -overwrite_original"/>
+                            <toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args=-TagsFromFile ${header.CamelFileAbsolutePath} ${header.CamelFileNameProduced} -overwrite_original" id="execExiftool"/>
+
+                            <choice>
+                                <when>
+                                    <simple>${header.CamelExecExitValue} != 0</simple>
+                                    <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                         loggingLevel="ERROR"
+                                         logName="{{si.ct.id}}"/>
+                                </when>
+                            </choice>
 
                             <setBody>
                                 <simple>${header.CamelFileNameProduced}</simple>
                             </setBody>
-
                             <!-- put the blurred image with copied exif tags back on body -->
                             <to uri="reader:file" id="readOrigBlurImageResource"/>
+                            <!--<to uri="reader:file" id="readImageMetadataCopyFile"/>-->
 
                         </otherwise>
                     </choice>
                 </when>
             </choice>
 
-            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
+            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
 
             <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true"/>
 
