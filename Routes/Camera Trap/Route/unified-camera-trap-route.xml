@@ -1084,6 +1084,12 @@
 
             <to uri="reader:file" id="readImageResource"/>
 
+            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceOriginalVersion"/>
+
+
+
             <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
             <!-- Any failure during Face Blur will revert back to the original image -->
             <choice id="speciesScientificNameFaceBlurChoice">
@@ -1120,7 +1126,7 @@
                             <choice>
                                 <when>
                                     <simple>${header.CamelExecExitValue} != 0</simple>
-                                    <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                    <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!!\nCamelExecStderr:\n${header.CamelExecStderr}"
                                          loggingLevel="ERROR"
                                          logName="{{si.ct.id}}"/>
                                 </when>
@@ -1133,14 +1139,12 @@
                             <to uri="reader:file" id="readOrigBlurImageResource"/>
                             <!--<to uri="reader:file" id="readImageMetadataCopyFile"/>-->
 
+                            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceBlurVersion"/>
+
                         </otherwise>
                     </choice>
                 </when>
             </choice>
-
-            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
-
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true"/>
 
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
