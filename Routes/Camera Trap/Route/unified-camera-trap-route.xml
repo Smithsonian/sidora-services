@@ -1084,6 +1084,17 @@
 
             <to uri="reader:file" id="readImageResource"/>
 
+            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
+
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceOriginalVersion"/>
+
+            <setHeader headerName="blurRequired">
+                <simple>false</simple>
+            </setHeader>
+            <setHeader headerName="isBlurred">
+                <simple>false</simple>
+            </setHeader>
+
             <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
             <!-- Any failure during Face Blur will revert back to the original image -->
             <choice id="speciesScientificNameFaceBlurChoice">
@@ -1094,6 +1105,10 @@
                     <log message="${id}: Found image that may contain a face..."
                          loggingLevel="INFO"
                          logName="{{si.ct.id}}"/>
+
+                    <setHeader headerName="blurRequired">
+                        <simple>true</simple>
+                    </setHeader>
 
                     <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
 
@@ -1111,6 +1126,9 @@
                             <to uri="reader:file" id="blurErrorUseOriginalImage"/>
                         </when>
                         <otherwise>
+                            <setHeader headerName="isBlurred">
+                                <simple>true</simple>
+                            </setHeader>
                             <!-- Save the blurred image to staging -->
                             <toD uri="file:{{karaf.home}}/staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
 
@@ -1120,7 +1138,7 @@
                             <choice>
                                 <when>
                                     <simple>${header.CamelExecExitValue} != 0</simple>
-                                    <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                    <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!!\nCamelExecStderr:\n${header.CamelExecStderr}"
                                          loggingLevel="ERROR"
                                          logName="{{si.ct.id}}"/>
                                 </when>
@@ -1133,14 +1151,12 @@
                             <to uri="reader:file" id="readOrigBlurImageResource"/>
                             <!--<to uri="reader:file" id="readImageMetadataCopyFile"/>-->
 
+                            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceBlurVersion"/>
+
                         </otherwise>
                     </choice>
                 </when>
             </choice>
-
-            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
-
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true"/>
 
             <!--<multicast>-->
             <to uri="direct:createThumbnail"/>
@@ -1151,6 +1167,9 @@
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
+
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/WI-SidoraTemplate.vsl"/>
+            <to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA&amp;versionable=true" id="addSidoraDS"/>
 
             <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in
                 the processResources calling the addMODSDatastream to get the PID for the first MODS datastream being created -->
