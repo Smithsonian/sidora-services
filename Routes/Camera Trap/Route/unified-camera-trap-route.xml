@@ -1159,7 +1159,7 @@
             </choice>
 
             <!--<multicast>-->
-            <to uri="direct:createThumbnail"/>
+            <to uri="direct:createThumbnail" id="addResourceCreateThumbnail"/>
             <!-- <to uri="direct:createArchivalImage" /> -->
             <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
