@@ -395,8 +395,8 @@
                          logName="edu.si.derivatives"/>
                     <multicast>
                         <description>Add a thumbnail from the JPEG.</description>
-                        <to uri="direct://processDerivativesThumbnailator"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesThumbnailator"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -410,8 +410,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesTIFFImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesTIFFImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -425,8 +425,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesJP2Image"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesJP2Image"/>
+                        <to uri="direct:processDerivativesFITS"/>
                     </multicast>
                 </when>
 
@@ -439,8 +439,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesBGPImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesBGPImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -454,8 +454,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesNEFImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesNEFImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -483,8 +483,8 @@
                     <to uri="file://?fileName=${header.CamelFileNameProduced}.dng"/>
 
                     <multicast>
-                        <to uri="direct://processDerivativesDNGImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesDNGImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                     <!-- Delete the temporary file created for DNG processing. Note: This approach is Unix specific. -->
@@ -783,7 +783,7 @@
                     </setBody>
                     <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
-                    <to uri="direct://processDerivativesThumbnailator"/>
+                    <to uri="direct:processDerivativesThumbnailator"/>
 
                     <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
                     <recipientList>

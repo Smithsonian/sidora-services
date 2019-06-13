@@ -255,11 +255,13 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .log(LoggingLevel.DEBUG, "Test Manifest:\n${body}");
 
                 weaveById("saveFaceBlurOutputToStaging").replace()
-                        .to("file://target/staging?fileName=${header.CamelFileName}");
+                        .to("file://target/staging?fileName=${header.CamelFileName}_output.JPG");
 
                 weaveById("replaceOBJ").replace()
                         .log(LoggingLevel.INFO, "Body Type: ${body.class.name}")
-                        .to("file:target/output?fileName=${header.dsLabel}.JPG");
+                        .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
+                        .to("file:target/output?fileName=${header.dsLabel}.JPG")
+                        .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
             }
         });
 
@@ -348,11 +350,13 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .log(LoggingLevel.DEBUG, "Test Manifest:\n${body}");
 
                 weaveById("saveFaceBlurOutputToStaging").replace()
-                        .to("file://target/staging?fileName=${header.CamelFileName}");
+                        .to("file://target/staging?fileName=${header.CamelFileName}_output.JPG");
 
                 weaveById("replaceOBJ").replace()
                         .log(LoggingLevel.INFO, "Body Type: ${body.class.name}")
-                        .to("file:target/output?fileName=${header.dsLabel}.JPG");
+                        .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
+                        .to("file:target/output?fileName=${header.dsLabel}.JPG")
+                        .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
             }
         });
 
@@ -441,11 +445,13 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .log(LoggingLevel.DEBUG, "Test Manifest:\n${body}");
 
                 weaveById("saveFaceBlurOutputToStaging").replace()
-                        .to("file://target/staging?fileName=${header.CamelFileName}");
+                        .to("file://target/staging?fileName=${header.CamelFileName}_output.JPG");
 
                 weaveById("replaceOBJ").replace()
                         .log(LoggingLevel.INFO, "Body Type: ${body.class.name}")
-                        .to("file:target/output?fileName=${header.dsLabel}.JPG");
+                        .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
+                        .to("file:target/output?fileName=${header.dsLabel}.JPG")
+                        .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
             }
         });
 
@@ -534,11 +540,13 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .log(LoggingLevel.DEBUG, "Test Manifest:\n${body}");
 
                 weaveById("saveFaceBlurOutputToStaging").replace()
-                        .to("file://target/staging?fileName=${header.CamelFileName}");
+                        .to("file://target/staging?fileName=${header.CamelFileName}_output.JPG");
 
                 weaveById("replaceOBJ").replace()
                         .log(LoggingLevel.INFO, "Body Type: ${body.class.name}")
-                        .to("file:target/output?fileName=${header.dsLabel}.JPG");
+                        .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
+                        .to("file:target/output?fileName=${header.dsLabel}.JPG")
+                        .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
             }
         });
 
