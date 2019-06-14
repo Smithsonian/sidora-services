@@ -188,6 +188,8 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
     public void testWorkbenchCTImageWithFace() throws Exception {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("isBlurred", "true");
+        mockResult.expectedHeaderReceived("blurRequired", "true");
 
         String pid = CT_NAMESPACE + ":001", origin = "someUser", methodName = "modifyDatastreamByReference", dsLabel = "testWildLifeInsightsDeploymentIds1i4", dsID = "OBJ", dsLocation = "uploaded", logMessage = "";
 
@@ -262,6 +264,8 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
                         .to("file:target/output?fileName=${header.dsLabel}.JPG")
                         .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
+
+                weaveById("addSidoraDS").replace().log("Skipping fedora addDatastream SIDORA!!!");
             }
         });
 
@@ -283,6 +287,8 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
     public void testWorkbenchCTImageWithFaceHTTP() throws Exception {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("isBlurred", "true");
+        mockResult.expectedHeaderReceived("blurRequired", "true");
 
         String pid = CT_NAMESPACE + ":001", origin = "someUser", methodName = "modifyDatastreamByReference", dsLabel = "testWildLifeInsightsDeploymentIds1i4", dsID = "OBJ", dsLocation = "http://test.com", logMessage = "";
 
@@ -357,6 +363,8 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
                         .to("file:target/output?fileName=${header.dsLabel}.JPG")
                         .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
+
+                weaveById("addSidoraDS").replace().log("Skipping fedora addDatastream SIDORA!!!");
             }
         });
 
@@ -378,6 +386,8 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
     public void testWorkbenchCTImageNoFace() throws Exception {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("isBlurred", "false");
+        mockResult.expectedHeaderReceived("blurRequired", "false");
 
         String pid = CT_NAMESPACE + ":001", origin = "someUser", methodName = "modifyDatastreamByReference", dsLabel = "testWildLifeInsightsDeploymentIds2i1", dsID = "OBJ", dsLocation = "uploaded", logMessage = "";
 
@@ -444,14 +454,7 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .setBody().simple(manifest)
                         .log(LoggingLevel.DEBUG, "Test Manifest:\n${body}");
 
-                weaveById("saveFaceBlurOutputToStaging").replace()
-                        .to("file://target/staging?fileName=${header.CamelFileName}_output.JPG");
-
-                weaveById("replaceOBJ").replace()
-                        .log(LoggingLevel.INFO, "Body Type: ${body.class.name}")
-                        .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
-                        .to("file:target/output?fileName=${header.dsLabel}.JPG")
-                        .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
+                weaveById("addSidoraDS").replace().log("Skipping fedora addDatastream SIDORA!!!");
             }
         });
 
@@ -529,24 +532,6 @@ public class DerivativesTest extends CT_BlueprintTestSupport {
                         .setHeader("testDsID").simple("TEST")
                         .to("velocity:file:{{karaf.home}}/wildlife_insights_test_data/fedora/fedora_datastreams.vsl")
                         .log(LoggingLevel.DEBUG, "Test Parent Datastreams:\n${body}");
-
-                weaveById("getObjectXMl").replace()
-                        .setHeader("testObjLabel").simple(dsLabel)
-                        .to("velocity:file:{{karaf.home}}/wildlife_insights_test_data/fedora/fedora-objectProfile.vsl")
-                        .log(LoggingLevel.DEBUG, "Test OBJ Profile:\n${body}");
-
-                weaveById("getParentManifest").replace()
-                        .setBody().simple(manifest)
-                        .log(LoggingLevel.DEBUG, "Test Manifest:\n${body}");
-
-                weaveById("saveFaceBlurOutputToStaging").replace()
-                        .to("file://target/staging?fileName=${header.CamelFileName}_output.JPG");
-
-                weaveById("replaceOBJ").replace()
-                        .log(LoggingLevel.INFO, "Body Type: ${body.class.name}")
-                        .setHeader("tmpCamelFileNameProduced").simple("${header.CamelFileNameProduced}")
-                        .to("file:target/output?fileName=${header.dsLabel}.JPG")
-                        .setHeader("CamelFileNameProduced").simple("${header.tmpCamelFileNameProduced}");
             }
         });
 
