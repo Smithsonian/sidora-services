@@ -1649,6 +1649,19 @@
                     </setHeader>
                     <!-- Get the manifest to check SpeciesScientificName -->
                     <toD uri="{{si.fedora.host}}/objects/${header.isAdministeredBy}/datastreams/MANIFEST/content" id="getParentManifest"/>
+
+                    <setHeader headerName="blurRequired">
+                        <simple>false</simple>
+                    </setHeader>
+                    <setHeader headerName="isBlurred">
+                        <simple>false</simple>
+                    </setHeader>
+
+                    <!-- use same fedora user as CT routes so jms msg will be filtered otherwise a loop will occur -->
+                    <setHeader headerName="Authorization">
+                        <groovy>"Basic " + "{{si.fedora.user}}:{{si.fedora.password}}".bytes.encodeBase64().toString()</groovy>
+                    </setHeader>
+
                     <choice>
                         <!-- filter images that have SpeciesScientificName's that require face blur processing -->
                         <when>
@@ -1658,6 +1671,9 @@
                             <log message="${id}: Found image that may contain a face... Face Processing Required..."
                                  loggingLevel="INFO"
                                  logName="edu.si.derivatives"/>
+                            <setHeader headerName="blurRequired">
+                                <simple>true</simple>
+                            </setHeader>
                             <setBody>
                                 <simple>${header.CamelFileNameProduced}</simple>
                             </setBody>
@@ -1679,6 +1695,9 @@
                                          logName="edu.si.derivatives"/>
                                 </when>
                                 <otherwise>
+                                    <setHeader headerName="isBlurred">
+                                        <simple>true</simple>
+                                    </setHeader>
                                     <!-- Save the blurred image to staging -->
                                     <toD uri="file:staging?fileName=${header.CamelFileName}_blur" id="saveFaceBlurOutputToStaging"/>
 
@@ -1697,14 +1716,18 @@
                             <setHeader headerName="CamelHttpMethod">
                                 <simple>PUT</simple>
                             </setHeader>
-                            <!-- use same fedora user as CT routes so jms msg will be filtered otherwise a loop will occur -->
-                            <setHeader headerName="Authorization">
-                                <groovy>"Basic " + "{{si.fedora.user}}:{{si.fedora.password}}".bytes.encodeBase64().toString()</groovy>
-                            </setHeader>
                             <!-- replace the OBJ with the faceBlur image adding a log message -->
                             <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?mimeType=image/jpeg&amp;logMessage=faceBlurred" id="replaceOBJ"/>
                         </when>
                     </choice>
+                    <setHeader headerName="SitePID">
+                        <simple>${header.isAdministeredBy}</simple>
+                    </setHeader>
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/WI-SidoraTemplate.vsl"/>
+                    <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/SIDORA?mimeType=text/xml&amp;dsLabel=SIDORA&amp;group=X" id="addSidoraDS"/>
                 </when>
                 <otherwise>
                     <log message="${id}: No Face Blur Processing Required."

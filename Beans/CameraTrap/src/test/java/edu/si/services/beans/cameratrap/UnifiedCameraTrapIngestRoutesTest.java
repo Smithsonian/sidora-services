@@ -347,7 +347,12 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("createResourcePID").before()
+                weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
+                weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
+                weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
+                weaveById("addSidoraDS").replace().log("Skipping fedora addSidoraDS OBJ");
+
+                weaveById("addResourceBlurVersion").before()
                         .to("file:{{karaf.home}}/output")
                         .to("mock:result").stop();
             }
@@ -374,9 +379,14 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
+                weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
+                weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
+                weaveById("addSidoraDS").replace().log("Skipping fedora addSidoraDS OBJ");
+
                 weaveById("execPythonFaceblur").after()
                         .setHeader("CamelExecExitValue").simple("1");
-                weaveById("createResourcePID").before()
+                weaveById("addResourceCreateThumbnail").before()
                         .to("file:{{karaf.home}}/output")
                         .to("mock:result").stop();
             }
@@ -404,10 +414,14 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
+                weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
+                weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
+                weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
+
                 weaveById("execExiftool").after()
                         .setHeader("CamelExecStderr").simple("Simulating Exiftool error!!!")
                         .setHeader("CamelExecExitValue").simple("1");
-                weaveById("createResourcePID").before()
+                weaveById("addResourceCreateThumbnail").before()
                         .to("file:{{karaf.home}}/output")
                         .to("mock:result").stop();
             }
