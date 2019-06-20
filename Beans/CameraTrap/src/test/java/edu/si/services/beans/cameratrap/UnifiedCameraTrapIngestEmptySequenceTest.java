@@ -38,7 +38,11 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
+import org.w3c.dom.Document;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.net.SocketException;
 import java.util.HashMap;
@@ -105,6 +109,7 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
         headers.put("ValidationErrors", "ValidationErrors");
         headers.put("ProjectPID", "test:0000");
         headers.put("SitePID", "test:0000");
+        headers.put("CamelFedoraPid", "test:1");
 
         super.setUp();
 
@@ -138,7 +143,7 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
         String routeURI = "direct:addImageResource";
 
         //The expected header values
-        String purgedImageCountHeaderExpected = "1";
+        String purgedImageCountHeaderExpected = "true";
 
         //Configure and use adviceWith to mock for testing purpose
         context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
@@ -154,13 +159,13 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
-        mockEndpoint.expectedHeaderReceived("purgedImageCount", 1);
+        mockEndpoint.expectedHeaderReceived("imagePurged", "true");
 
 
 
         template.sendBodyAndHeaders(routeURI, "2970s1i1.JPG", headers);
 
-        String purgedImageCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("purgedImageCount", String.class);
+        String purgedImageCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("imagePurged", String.class);
 
         //Assertions
         assertEquals("imageid header assertEquals failed!", purgedImageCountHeaderExpected, purgedImageCountHeaderResult);
@@ -168,4 +173,70 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
 
         assertMockEndpointsSatisfied();
     }
+
+    /**
+     * Testing UnifiedCameraTrapProcessResources route
+     * @throws Exception
+     * TODO: Add more test coverage for this route
+     */
+    /*@Test
+    public void addMultipleImageResourceEmptySequence_Test() throws Exception {
+        //RouteId and endpoint uri
+        String routeId = "UnifiedCameraTrapProcessResources";
+        String routeURI = "direct:processResources";
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        DocumentBuilder builder = factory.newDocumentBuilder();
+
+        Document manifestDoc =  builder.parse(new ByteArrayInputStream(manifest.getBytes()));
+
+        //The expected header values
+        //String purgedImageCountHeaderExpected = "2";
+
+        //Configure and use adviceWith to mock for testing purpose
+        context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                //add the mock:result endpoint and stop the route after the headers we are testing have been created
+                /*weaveByToString(".*reader:file.*").before().to("mock:result").stop();
+                weaveById("emptySequenceFilter").replace().to("mock:result").stop();
+                weaveByToString(".*reader:file.*").before().stop();
+                weaveById("emptySequenceFilter").replace().stop();
+            }
+        });
+
+        context.getRouteDefinition("UnifiedCameraTrapProcessResources").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                //weaveById("toAddResearcherObservationsResource").replace().to("mock:result").stop();
+                weaveById("toAddResearcherObservationsResource").replace().log("Skipping AddResearcherObservationsResource route");
+                weaveById("velocityCall").replace().log("Skipping Velocity Call");
+                weaveById("fedoraCall").replace().setBody(simple("${header.purgedImageCount}")).log("Skipping Fedora Call").to("mock:result");
+            }
+        });
+
+        mockEndpoint = getMockEndpoint("mock:result");
+        MockEndpoint countEndpoint = getMockEndpoint("mock:count");
+
+        // set mock expectations
+        mockEndpoint.expectedMessageCount(2);
+        //mockEndpoint.expectedHeaderReceived("purgedImageCount", 1);
+
+        mockEndpoint.expectedMessageCount(2);
+        mockEndpoint.expectedHeaderReceived("purgedImageCount", 2);
+
+        //template.sendBodyAndHeaders(routeURI, "2970s1i1.JPG", headers);
+        template.sendBodyAndHeaders(routeURI, manifestDoc, headers);
+        //template.sendBodyAndHeaders(routeURI, manifest, headers);
+
+        String purgedImageCountHeaderResult =  mockEndpoint.getExchanges().get(0).getIn().getHeader("purgedImageCount", String.class);
+
+        //Assertions
+        assertEquals("imageid header assertEquals failed!", 2, purgedImageCountHeaderResult);
+
+
+        assertMockEndpointsSatisfied();
+    }*/
 }

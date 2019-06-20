@@ -958,19 +958,9 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <choice>
-                <when>
-                    <simple>${header.purgedImageCount} == null</simple>
-
-                    <setHeader headerName="purgedImageCount">
-                        <simple resultType="java.lang.Integer">0</simple>
-                    </setHeader>
-
-                    <log message="purgedImageCount is null"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                </when>
-            </choice>
+            <setHeader headerName="imagePurged">
+                <simple resultType="java.lang.Boolean">false</simple>
+            </setHeader>
 
             <!-- Spelled this way for the MODS XSLT parameter. -->
             <setHeader headerName="imageid">
@@ -1020,11 +1010,11 @@
 
             <filter>
                 <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
-                    //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = 'No Animal'
+                    //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = 'No Animal' or 'Blank' or 'Camera Misfire' or 'False trigger' or 'Time Lapse'
                 </xpath>
 
-                <setHeader headerName="purgedImageCount">
-                    <simple resultType="java.lang.Integer">${header.purgedImageCount}++</simple>
+                <setHeader headerName="imagePurged">
+                    <simple resultType="java.lang.Boolean">true</simple>
                 </setHeader>
 
                 <log message="Empty Image Sequence, Image Not Added"
@@ -1032,7 +1022,8 @@
                      logName="{{si.ct.id}}"/>
             </filter>
 
-            <log message="Purged Image Count After Filter: ${header.purgedImageCount}"
+            <log id="emptySequenceFilter"
+                 message="Purged Image Count After Filter: ${header.purgedImageCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 

@@ -40,8 +40,12 @@ public class PidAggregationStrategy implements AggregationStrategy
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
-        
+
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
+        if(oldExchange!=null)
+        {
+            String PIDAgg = oldExchange.getIn().getHeader("PIDAggregation", String.class);
+        }
 
         if (pid == null)
         {
@@ -50,7 +54,19 @@ public class PidAggregationStrategy implements AggregationStrategy
             return oldExchange;
         }//end if
 
-        if ((oldExchange == null) || (oldExchange.getIn().getHeader("PIDAggregation") == null))
+        if(oldExchange == null)
+        {
+            if(newExchange.getIn().getHeader("imagePurged", Boolean.class) == true)
+            {
+                newExchange.getIn().setHeader("purgedImageCount", 1);
+            }
+            else
+            {
+                newExchange.getIn().setHeader("purgedImageCount", 0);
+            }
+        }
+
+        if (oldExchange == null || (oldExchange.getIn().getHeader("PIDAggregation") == null))
         {
             newExchange.getIn().setHeader("PIDAggregation", pid);
             return newExchange;
@@ -58,6 +74,12 @@ public class PidAggregationStrategy implements AggregationStrategy
 
         String aggregation = oldExchange.getIn().getHeader("PIDAggregation", String.class);
         oldExchange.getIn().setHeader("PIDAggregation", String.format("%s,%s", aggregation, pid));
+
+        if(newExchange.getIn().getHeader("imagePurged", Boolean.class) == true)
+        {
+            int count = oldExchange.getIn().getHeader("purgedImageCount", Integer.class);
+            oldExchange.getIn().setHeader("purgedImageCount", count+1);
+        }
 
         return oldExchange;
     }
