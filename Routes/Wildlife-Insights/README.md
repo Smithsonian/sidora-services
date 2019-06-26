@@ -73,7 +73,7 @@ To configure various settings edit the `update.properties` file.
 python3 UpdateLegacyCT.py -h
 
 usage: UpdateLegacyCT.py [-h] [-i INFILE] [-o OUTFILE]
-                         [-ds {FGDC,OBJ,FITS} [{FGDC,OBJ,FITS} ...]] [-d]
+                         [-ds {FGDC,OBJ,FITS,SIDORA} [{FGDC,OBJ,FITS,SIDORA} ...]] [-d]
                          [-dr]
 
 Update Legacy CameraTrap Data for WildLife Insights
@@ -84,8 +84,8 @@ optional arguments:
                         file name containing list of deployment pids
   -o OUTFILE, --outfile OUTFILE
                         output file name for list of deployment pids
-  -ds {FGDC,OBJ,FITS} [{FGDC,OBJ,FITS} ...], --datastreams {FGDC,OBJ,FITS} [{FGDC,OBJ,FITS} ...]
-                        datastreams to update i.e. FGDC, FITS, OBJ
+  -ds {FGDC,OBJ,FITS} [{FGDC,OBJ,FITS} ...], --datastreams {FGDC,OBJ,FITS,SIDORA} [{FGDC,OBJ,FITS,SIDORA} ...]
+                        datastreams to update i.e. FGDC, FITS, OBJ, SIDORA
   -d, --debug           increase output verbosity
   -dr, --dry-run        Store datastream changes to local file system instead of
                         updating Fedora datastreams (default dir ./output)
@@ -99,7 +99,7 @@ optional arguments:
 > Datastreams must be provided 
 
 ```
-python3 UpdateLegacyCT.py -ds FGDC FITS OBJ
+python3 UpdateLegacyCT.py -ds FGDC FITS OBJ SIDORA
 ```
 
 #### Generate A List Of Deployments:
@@ -117,7 +117,7 @@ python3 UpdateLegacyCT.py --dry-run -o deploymentPids.txt
 ```
 python3 UpdateLegacyCT.sh -i <deployment-pid-file> -ds <datastreams-2-update>
 
-ex. python3 UpdateLegacyCT.sh -d -i pidList.txt -ds FGDC OBJ FITS
+ex. python3 UpdateLegacyCT.sh -d -i pidList.txt -ds FGDC OBJ FITS SIDORA
 ```
 
 

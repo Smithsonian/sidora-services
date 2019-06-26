@@ -1,0 +1,10 @@
+<sidora>
+    <model>si:generalImageCModel</model>
+    <form>General Image Description</form>
+    <ontology_location_id>GeneralImage_GeneralImage</ontology_location_id>
+    <meta_requirements_fulfilled>FALSE</meta_requirements_fulfilled>
+    <initial_dsid>OBJ</initial_dsid>
+    <blurRequired>$blurRequired</blurRequired>
+    <isBlurred>$isBlurred</isBlurred>
+    <parent>$sitePID</parent>
+</sidora>

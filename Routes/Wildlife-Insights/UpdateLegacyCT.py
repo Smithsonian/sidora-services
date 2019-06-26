@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ALL_COMPLETED
+from string import Template
 
 import cv2
 import requests
@@ -25,7 +26,8 @@ ns = {"fsmgmt": "http://www.fedora.info/definitions/1/0/management/",
       "fedora": "info:fedora/fedora-system:def/relations-external#",
       "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
       "ri": "http://www.w3.org/2005/sparql-results#",
-      "fits": "http://hul.harvard.edu/ois/xml/ns/fits/fits_output"}
+      "fits": "http://hul.harvard.edu/ois/xml/ns/fits/fits_output",
+      "fs": "info:fedora/fedora-system:def/model#"}
 
 global FEDORA_URL
 global FUSEKI_URL
@@ -151,6 +153,7 @@ def getFITS(fileName):
 def getOBJ(pid):
 
     objLabel = None
+    objVersion = None
     fileName = None
 
     if pid not in (None, ''):
@@ -159,6 +162,7 @@ def getOBJ(pid):
 
         objMIME = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()", namespaces=ns)[0]
         objLabel = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsLabel/text()", namespaces=ns)[0]
+        objVersion = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsVersionID/text()", namespaces=ns)[0]
         log.debug("OBJ mimeType: %s label: %s", objMIME, objLabel)
 
         if "image" in objMIME:
@@ -172,9 +176,9 @@ def getOBJ(pid):
             problemList[pid] = "resource is not an image. mimeType=" + objMIME
     else:
         log.error("no resources %s", pid)
-        problemList[pid] = "no resources"
+        problemList[pid] = "resources pid is null"
 
-    return fileName, objLabel
+    return fileName, objLabel, objVersion
 
 
 def updateFGDC(deploymentPid, cameraMake, cameraModel):
@@ -221,13 +225,27 @@ def updateFITS(resourcePid, fits):
 
 def updateOBJ(resourcePid, img, blurFileName):
     if dryrun:
-        log.debug("Skipping OBJ fedora update!!! Saving to file: %s", blurFileName)
+        log.info("Skipping OBJ fedora update!!! Saving to file: %s", blurFileName)
     else:
         imgEncoded = cv2.imencode('.jpg', img)[1]
         result = doPost(resourcePid, imgEncoded.tostring(), "OBJ", {'mimeType': 'image/jpeg', 'versionable': "false"})
         log.debug("http POST, OBJ update, pid: %s response:\n%s", resourcePid, tostring(result, pretty_print=True).decode())
 
     log.info("Finished updateOBJ for resource %s", resourcePid)
+
+
+def updateSidora(resourcePid, sidoraDs):
+    if dryrun:
+        sidoraFileName = output_dir + "/" + resourcePid + "_SIDORA_output.xml"
+        f = open(sidoraFileName, "w")
+        f.write(sidoraDs)
+        f.close()
+        log.info("Skipping SIDORA fedora update!!! Saving to file: %s", sidoraFileName)
+    else:
+        result = doPost(resourcePid, sidoraDs, "SIDORA", {'mimeType': 'text/xml', 'versionable': "true"})
+        log.debug("http POST, SIDORA update, pid: %s response:\n%s", resourcePid, tostring(result, pretty_print=True).decode())
+
+    log.info("Finished updateSidora for resource %s", resourcePid)
 
 
 def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manifest):
@@ -237,6 +255,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
     cameraMake = None
     cameraModel = None
     fits = None
+    isBlurred = False
 
     log.debug("Starting update for deployment %s, resource: %s, datastreams %s", deploymentPid, resourcePid, args.datastreams)
 
@@ -248,7 +267,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
             hasFGDC = datastreamList.xpath("boolean(.//*[@dsid='FGDC'])", namespaces=ns)
 
             if hasFGDC:
-                filename, label = getOBJ(resourcePid)
+                filename, label, objVersion = getOBJ(resourcePid)
                 if label not in (None, '', "Observation") and filename not in (None, ''):
                     cameraMake, cameraModel, fits = getFITS(filename)
                     log.debug("deployment: %s, resource: %s, cameraMake: %s, cameraModel: %s", deploymentPid, resourcePid, cameraMake, cameraModel)
@@ -268,41 +287,49 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
         try:
             # TODO: check manifest
             if filename in (None, ''):
-                filename, label = getOBJ(resourcePid)
+                filename, label, objVersion = getOBJ(resourcePid)
 
-            if label in ('Researcher Observations', 'Volunteer Observations', 'Image Observations'):
-                log.debug("Found Observation!!! Skipping OBJ update for resource %s", resourcePid)
-            elif label not in (None, '') and filename not in (None, ''):
-                imageId = os.path.splitext(label)[0]
-                log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
-                xpath = str("boolean(.//ImageSequence[Image[ImageId/text() = '" + imageId + "']]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('" + filterList + "', text())])")
-                hasFace = manifest.xpath(xpath)
+            log.debug("OBJ version: %s, pid: %s", objVersion, resourcePid)
 
-                if hasFace:
-                    log.debug("resource: %s, label: %s, hasFace: %s", resourcePid, label, hasFace)
-                    img = cv2.imread(filename, cv2.IMREAD_COLOR)
-                    blurArgs = [None, blurValue, classifier]
+            if args.validate and "OBJ.0" in objVersion:
+                if label in ('Researcher Observations', 'Volunteer Observations', 'Image Observations'):
+                    log.debug("Found Observation!!! Skipping OBJ update for resource %s", resourcePid)
+                elif label not in (None, '') and filename not in (None, ''):
+                    imageId = os.path.splitext(label)[0]
+                    log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
+                    xpath = str("boolean(.//ImageSequence[Image[ImageId/text() = '" + imageId + "']]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('" + filterList + "', text())])")
+                    hasFace = manifest.xpath(xpath)
 
-                    # imgBlur = FaceBlurrer.faceBlur(img, blurArgs)
-                    imgBlur = FaceBlurrer.blur(img, (blurValue, blurValue))
-                    blurFileName = output_dir + "/" + resourcePid + "_blur_output.jpg"
-                    cv2.imwrite(blurFileName, imgBlur)
+                    if hasFace:
+                        log.debug("resource: %s, label: %s, hasFace: %s", resourcePid, label, hasFace)
+                        img = cv2.imread(filename, cv2.IMREAD_COLOR)
+                        blurArgs = [None, blurValue, classifier]
 
-                    # exiftool_cmd = [exiftool_path, '-all=', '-TagsFromFile', "'" + filename + "'", '-exif:all', "'" + output_dir + "/" + resourcePid + "_OBJ_output.jpg'"], shell=True)]
-                    exiftool_cmd = [exiftool_path, '-TagsFromFile', os.path.abspath(filename), os.path.abspath(blurFileName), '-overwrite_original']
-                    log.debug("exiftool cmd %s", exiftool_cmd)
+                        # imgBlur = FaceBlurrer.faceBlur(img, blurArgs)
+                        imgBlur = FaceBlurrer.blur(img, (blurValue, blurValue))
 
-                    try:
-                        subprocess.check_call(exiftool_cmd)
-                    except subprocess.CalledProcessError as e:
-                        output = e.output.decode()
-                        log.error("exiftool error:\n", output)
+                        blurFileName = output_dir + "/" + resourcePid + "_blur_output.jpg"
+                        cv2.imwrite(blurFileName, imgBlur)
 
-                    updateOBJ(resourcePid, imgBlur, blurFileName)
-                    filename = blurFileName
+                        # exiftool_cmd = [exiftool_path, '-all=', '-TagsFromFile', "'" + filename + "'", '-exif:all', "'" + output_dir + "/" + resourcePid + "_OBJ_output.jpg'"], shell=True)]
+                        exiftool_cmd = [exiftool_path, '-TagsFromFile', os.path.abspath(filename), os.path.abspath(blurFileName), '-overwrite_original', '-q']
+                        log.debug("exiftool cmd %s", exiftool_cmd)
+
+                        try:
+                            subprocess.check_call(exiftool_cmd)
+                        except subprocess.CalledProcessError as e:
+                            output = e.output.decode()
+                            log.error("exiftool error:\n", output)
+
+                        updateOBJ(resourcePid, imgBlur, blurFileName)
+                        filename = blurFileName
+                        isBlurred = True
+                else:
+                    log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
+                    problemList[resourcePid] = "Problem with resource could not update OBJ"
             else:
-                log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
-                problemList[resourcePid] = "Problem with resource could not update OBJ"
+                log.error("multiple OBJ versions, pid: %s", resourcePid)
+                problemList[resourcePid] = "multiple OBJ versions"
         except:
             log.error("Error updating OBJ: pid = %s", resourcePid)
             problemList[resourcePid] = "Error updating OBJ"
@@ -312,7 +339,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
         try:
             # if fits in (None, ''):
             if label in (None, '') and filename in (None, ''):
-                filename, label = getOBJ(resourcePid)
+                filename, label, objVersion = getOBJ(resourcePid)
 
             if label in ('Researcher Observations', 'Volunteer Observations', 'Image Observations'):
                 log.debug("Found Observation!!! Skipping FITS update for resource %s", resourcePid)
@@ -325,6 +352,28 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
         except:
             log.error("Problem with resource could not update FITS: pid = %s", resourcePid)
             problemList[resourcePid] = "Problem with resource could not update FITS"
+
+    if "SIDORA" in args.datastreams:
+        try:
+            if label in (None, '') and filename in (None, ''):
+                filename, label, objVersion = getOBJ(resourcePid)
+
+            if label in ('Researcher Observations', 'Volunteer Observations', 'Image Observations'):
+                log.debug("Found Observation!!! Skipping SIDORA update for resource %s", resourcePid)
+            elif label not in (None, '') and filename not in (None, ''):
+                imageId = os.path.splitext(label)[0]
+                log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
+                xpath = str("boolean(.//ImageSequence[Image[ImageId/text() = '" + imageId + "']]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('" + filterList + "', text())])")
+                hasFace = manifest.xpath(xpath)
+
+                sidoraDs = Template(sidoraTemplate).substitute(blurRequired=str(hasFace).lower(), isBlurred=str(isBlurred).lower(), sitePID=deploymentPid)
+                updateSidora(resourcePid, sidoraDs)
+            else:
+                log.error("Problem with resource could not update SIDORA: pid = %s", resourcePid)
+                problemList[resourcePid] = "Problem with resource could not update SIDORA"
+        except:
+            log.error("Problem with resource could not update SIDORA: pid = %s", resourcePid)
+            problemList[resourcePid] = "Problem with resource could not update SIDORA"
 
 
     if not dryrun:
@@ -345,37 +394,52 @@ def updateDeployment(pid):
 
     log.debug("deployment: %s, hasMANIFEST: %s, hasRELS_EXT: %s", pid, hasMANIFEST, hasRELS_EXT)
 
+    ## We can also check for deployment models: ['info:fedora/si:cameraTrapCModel', 'info:fedora/si:conceptCModel']
+    # if hasRELS_EXT:
+    #     deploymentRelsExt = doGet(pid, ds, True)
+    #     deploymentModels = deploymentRelsExt.xpath(".//fs:hasModel/@rdf:resource", namespaces=ns)
+    #     log.debug("deployment models: %s, pid: %s", deploymentModels, pid)
+    #     hasDeploymentModels = "info:fedora/si:cameraTrapCModel" in deploymentModels and "info:fedora/si:conceptCModel" in deploymentModels
+    #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
+
     if hasMANIFEST:
         manifest = doGet(pid, "MANIFEST", True)
         # log.debug("update deployment manifest:\n%s", tostring(manifest, pretty_print=True).decode())
 
-    if hasRELS_EXT:
-        deploymentRelsExt = doGet(pid, "RELS-EXT", True)
-        # log.debug(tostring(deploymentRelsExt, pretty_print=True).decode())
+        if hasRELS_EXT:
+            deploymentRelsExt = doGet(pid, "RELS-EXT", True)
+            # log.debug(tostring(deploymentRelsExt, pretty_print=True).decode())
 
-        # pid used for getting camera make and model
-        cameraInfoResourcePid = deploymentRelsExt.xpath("substring-after(.//fedora:hasResource[1]/@rdf:resource, 'info:fedora/')", namespaces=ns)
-        log.debug("deployment: %s, resource pid for camera make and model: %s", pid, cameraInfoResourcePid)
+            # pid used for getting camera make and model
+            cameraInfoResourcePid = deploymentRelsExt.xpath("substring-after(.//fedora:hasResource[1]/@rdf:resource, 'info:fedora/')", namespaces=ns)
 
-        resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
+            log.debug("deployment: %s, resource pid for camera make and model: %s", pid, cameraInfoResourcePid)
 
-    resourceList = [p.split("info:fedora/")[1] for p in resourceList]
+            resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
+            resourceList = [p.split("info:fedora/")[1] for p in resourceList]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-        futures = [executor.submit(doUpdate, pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest) for resourcePid in resourceList]
-        concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+                futures = [executor.submit(doUpdate, pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest) for resourcePid in resourceList]
+                concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
 
-    # for resourcePid in resourceList:
-    #     doUpdate(pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest)
+            # for resourcePid in resourceList:
+            #     doUpdate(pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest)
 
-    log.info("Finished Updating FGDC and Resources for Deployment %s", pid)
+            log.info("Finished Updating FGDC and Resources for Deployment %s", pid)
+
+        else:
+            log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
+            problemList[pid] = "Deployment has no RELS-EXT datastream"
+    else:
+        log.error("Deployment has no MANIFEST datastream: pid = %s", pid)
+        problemList[pid] = "Deployment has no MANIFEST datastream"
 
 
 def createDeploymentPidFile():
     start = time.time() # let's see how long this takes
 
     findDeployments(ct_root, "RELS-EXT")  # fuseki found 18284 deployments
-    # findDeployments("si:139944", "RELS-EXT/content")  # should find 61 deployments
+    # findDeployments("si:139944", "RELS-EXT")  # should find 61 deployments
 
     finish = time.time()
     log.debug("time by parallelizing %s:", (finish-start))
@@ -399,6 +463,14 @@ def findDeployments(pid, ds):
     isDeployment = objectDatastreams.xpath(".//*[@dsid='FGDC'] and .//*[@dsid='MANIFEST']", namespaces=ns)
     log.debug("pid: %s, isDeployment: %s", pid, isDeployment)
     hasRelsExt = objectDatastreams.xpath("boolean(.//*[@dsid='RELS-EXT'])", namespaces=ns)
+
+    ## We can also look for deployment models: ['info:fedora/si:cameraTrapCModel', 'info:fedora/si:conceptCModel']
+    # if hasRelsExt:
+    #     deploymentRelsExt = doGet(pid, ds, True)
+    #     deploymentModels = deploymentRelsExt.xpath(".//fs:hasModel/@rdf:resource", namespaces=ns)
+    #     log.debug("deployment models: %s, pid: %s", deploymentModels, pid)
+    #     hasDeploymentModels = "info:fedora/si:cameraTrapCModel" in deploymentModels and "info:fedora/si:conceptCModel" in deploymentModels
+    #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
 
     if not isDeployment and hasRelsExt:
         relsExtDs = doGet(pid, ds, True)
@@ -479,7 +551,15 @@ def main():
         log.error("Problem pid list\n%s", problemList)
 
 
-
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 # TODO: Update FGDC
 #  get FGDC and RELS-EXT
@@ -501,21 +581,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Update Legacy CameraTrap Data for WildLife Insights')
     parser.add_argument("-i", "--infile", help="file name containing list of deployment pids", action="store")
     parser.add_argument("-o", "--outfile", help="output file name for list of deployment pids (default is deploymentList.csv)", action="store", default="deploymentList.csv")
-    parser.add_argument("-ds", "--datastreams", help="datastreams to update i.e. FGDC, FITS, OBJ", nargs='+', action=required_length(1,3), choices={'FGDC', 'FITS', 'OBJ'})
-    parser.add_argument("-d", "--debug", help="increase output verbosity", action="store_true")
-    parser.add_argument("-dr", "--dry-run", help="Store datastream changes to local file system instead of updating Fedora datastreams (default dir ./output)", action="store_true")
+    parser.add_argument("-ds", "--datastreams", help="datastreams to update i.e. FGDC, FITS, OBJ, SIDORA", nargs='+', action=required_length(1,4), choices={'FGDC', 'FITS', 'OBJ', 'SIDORA'})
+    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+    parser.add_argument("-dr", "--dry-run", help="Store datastream changes to local file system instead of updating Fedora datastreams (default dir ./output)", type=str2bool, nargs='?', const=True, default=True)
+    parser.add_argument("-V", "--validate", help="Enable Validation", type=str2bool, nargs='?', const=True, default=True)
+
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='[%(levelname)s] %(message)s')
     log = logging.getLogger(__name__)
 
-    log.debug(args)
-
-    if args.debug:
+    if args.verbose:
         log.setLevel(logging.DEBUG)
-        log.debug("verbosity enabled: %s", str(args.debug))
+        log.debug("verbosity enabled: %s", str(args.verbose))
     else:
         log.setLevel(logging.INFO)
+
+    log.info(args)
+
 
     # initialize
     if os.path.exists('update.properties'):
@@ -548,6 +631,7 @@ if __name__ == "__main__":
         log.info("pool_block = %s", pool_block)
         pooled_connections = config.get("defaults", "pooled.connections")
         polled_maxsize = config.get("defaults", "polled.maxsize")
+        sidoraTemplate = open(config.get("defaults", "sidora.template"), "r+").read()
     else:
         sys.exit("missing config properties file!!!")
 
