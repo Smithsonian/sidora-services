@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -56,7 +57,7 @@ def getDeploymentsFromFuseki():
 
 
 # https://www.peterbe.com/plog/best-practice-with-retries-with-requests
-def doGet(pid, ds, content):
+def doGet(pid, ds, content, deploymentPid):
     FEDORA_PARAMS = {'format': 'xml'}
     if ds is None:
         URL = FEDORA_URL + "/objects/" + pid + "/datastreams"
@@ -78,8 +79,16 @@ def doGet(pid, ds, content):
         if len(fname) == 0:
             return None
 
-        fileName = output_dir + "/" + pid + "_" + fname[0] + ".jpg"
+        if args.group_resources:
+            fileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + pid.replace(":", "_") + "/" + pid + "_" + fname[0] + ".jpg"
+        else:
+            fileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + pid.replace(":", "_") + "_" + fname[0] + ".jpg"
+
         log.debug("filename: %s", fileName)
+
+        if not os.path.exists(os.path.dirname(fileName)):
+            os.makedirs(os.path.dirname(fileName))
+
         with open(fileName, "wb") as f:
             for chunk in req.iter_content(chunk_size=1024):
                 # writing one chunk at a time to jpg file
@@ -150,14 +159,14 @@ def getFITS(fileName):
         return None, None, None
 
 
-def getOBJ(pid):
+def getOBJ(pid, deploymentPid):
 
     objLabel = None
     objVersion = None
     fileName = None
 
     if pid not in (None, ''):
-        objDatastreamProfile = doGet(pid, "OBJ", False)
+        objDatastreamProfile = doGet(pid, "OBJ", False, None)
         # log.debug(tostring(objDatastreamProfile, pretty_print=True).decode())
 
         objMIME = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()", namespaces=ns)[0]
@@ -168,7 +177,7 @@ def getOBJ(pid):
         if "image" in objMIME:
             log.debug("downloading %s OBJ...", pid)
             # Save OBJ to tmp file
-            fileName = doGet(pid, "OBJ", True)
+            fileName = doGet(pid, "OBJ", True, deploymentPid)
         elif "csv" in objMIME:
             log.debug("Found Observation!!! Skipping Downloading Resource %s", pid)
         else:
@@ -182,7 +191,7 @@ def getOBJ(pid):
 
 
 def updateFGDC(deploymentPid, cameraMake, cameraModel):
-    deploymentFGDC = doGet(deploymentPid, "FGDC", True)
+    deploymentFGDC = doGet(deploymentPid, "FGDC", True, None)
     # log.debug(tostring(deploymentFGDC, pretty_print=True).decode())
     hasMakeModel = deploymentFGDC.xpath("//attrlabl/text() = 'Camera Make' and //attrlabl/text() = 'Camera Model'")
 
@@ -194,7 +203,9 @@ def updateFGDC(deploymentPid, cameraMake, cameraModel):
         log.debug("Updating deployment: %s, FGDC with Camera Make: %s, Model: %s\nFGDC:\n%s", deploymentPid, cameraMake, cameraModel, tostring(newFGDC, pretty_print=True).decode())
 
         if dryrun:
-            fgdcFileName = output_dir + "/" + deploymentPid + "_FGDC_output.xml"
+            fgdcFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + deploymentPid + "_FGDC_output.xml"
+            if not os.path.exists(os.path.dirname(fgdcFileName)):
+                os.makedirs(os.path.dirname(fgdcFileName))
             f = open(fgdcFileName, "w")
             f.write(tostring(newFGDC, pretty_print=True).decode())
             f.close()
@@ -209,9 +220,15 @@ def updateFGDC(deploymentPid, cameraMake, cameraModel):
     log.info("Finished updateFGDC for deployment %s", deploymentPid)
 
 
-def updateFITS(resourcePid, fits):
+def updateFITS(resourcePid, fits, deploymentPid):
     if dryrun:
-        fitsFileName = output_dir + "/" + resourcePid + "_FITS_output.xml"
+        if args.group_resources:
+            fitsFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + resourcePid.replace(":", "_") + "/" + resourcePid + "_FITS_output.xml"
+        else:
+            fitsFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + resourcePid.replace(":", "_") + "_FITS_output.xml"
+
+        if not os.path.exists(os.path.dirname(fitsFileName)):
+            os.makedirs(os.path.dirname(fitsFileName))
         f = open(fitsFileName, "w")
         f.write(tostring(fits, pretty_print=True).decode())
         f.close()
@@ -234,9 +251,16 @@ def updateOBJ(resourcePid, img, blurFileName):
     log.info("Finished updateOBJ for resource %s", resourcePid)
 
 
-def updateSidora(resourcePid, sidoraDs):
+def updateSidora(resourcePid, sidoraDs, deploymentPid):
     if dryrun:
-        sidoraFileName = output_dir + "/" + resourcePid + "_SIDORA_output.xml"
+        if args.group_resources:
+            sidoraFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + resourcePid.replace(":", "_") + "/" + resourcePid + "_SIDORA_output.xml"
+        else:
+            sidoraFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + resourcePid.replace(":", "_") + "_SIDORA_output.xml"
+
+        if not os.path.exists(os.path.dirname(sidoraFileName)):
+            os.makedirs(os.path.dirname(sidoraFileName))
+
         f = open(sidoraFileName, "w")
         f.write(sidoraDs)
         f.close()
@@ -267,7 +291,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
             hasFGDC = datastreamList.xpath("boolean(.//*[@dsid='FGDC'])", namespaces=ns)
 
             if hasFGDC:
-                filename, label, objVersion = getOBJ(resourcePid)
+                filename, label, objVersion = getOBJ(resourcePid, deploymentPid)
                 if label not in (None, '', "Observation") and filename not in (None, ''):
                     cameraMake, cameraModel, fits = getFITS(filename)
                     log.debug("deployment: %s, resource: %s, cameraMake: %s, cameraModel: %s", deploymentPid, resourcePid, cameraMake, cameraModel)
@@ -287,7 +311,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
         try:
             # TODO: check manifest
             if filename in (None, ''):
-                filename, label, objVersion = getOBJ(resourcePid)
+                filename, label, objVersion = getOBJ(resourcePid, deploymentPid)
 
             log.debug("OBJ version: %s, pid: %s", objVersion, resourcePid)
 
@@ -308,7 +332,11 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
                         # imgBlur = FaceBlurrer.faceBlur(img, blurArgs)
                         imgBlur = FaceBlurrer.blur(img, (blurValue, blurValue))
 
-                        blurFileName = output_dir + "/" + resourcePid + "_blur_output.jpg"
+                        if args.group_resources:
+                            blurFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + resourcePid.replace(":", "_") + "/" + resourcePid + "_blur_output.jpg"
+                        else:
+                            blurFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + resourcePid.replace(":", "_") + "_blur_output.jpg"
+
                         cv2.imwrite(blurFileName, imgBlur)
 
                         # exiftool_cmd = [exiftool_path, '-all=', '-TagsFromFile', "'" + filename + "'", '-exif:all', "'" + output_dir + "/" + resourcePid + "_OBJ_output.jpg'"], shell=True)]
@@ -339,13 +367,13 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
         try:
             # if fits in (None, ''):
             if label in (None, '') and filename in (None, ''):
-                filename, label, objVersion = getOBJ(resourcePid)
+                filename, label, objVersion = getOBJ(resourcePid, deploymentPid)
 
             if label in ('Researcher Observations', 'Volunteer Observations', 'Image Observations'):
                 log.debug("Found Observation!!! Skipping FITS update for resource %s", resourcePid)
             elif label not in (None, '') and filename not in (None, ''):
                 cameraMake, cameraModel, fits = getFITS(filename)
-                updateFITS(resourcePid, fits)
+                updateFITS(resourcePid, fits, deploymentPid)
             else:
                 log.error("Problem with resource could not update FITS: pid = %s", resourcePid)
                 problemList[resourcePid] = "Problem with resource could not update FITS"
@@ -356,7 +384,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
     if "SIDORA" in args.datastreams:
         try:
             if label in (None, '') and filename in (None, ''):
-                filename, label, objVersion = getOBJ(resourcePid)
+                filename, label, objVersion = getOBJ(resourcePid, deploymentPid)
 
             if label in ('Researcher Observations', 'Volunteer Observations', 'Image Observations'):
                 log.debug("Found Observation!!! Skipping SIDORA update for resource %s", resourcePid)
@@ -367,7 +395,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
                 hasFace = manifest.xpath(xpath)
 
                 sidoraDs = Template(sidoraTemplate).substitute(blurRequired=str(hasFace).lower(), isBlurred=str(isBlurred).lower(), sitePID=deploymentPid)
-                updateSidora(resourcePid, sidoraDs)
+                updateSidora(resourcePid, sidoraDs, deploymentPid)
             else:
                 log.error("Problem with resource could not update SIDORA: pid = %s", resourcePid)
                 problemList[resourcePid] = "Problem with resource could not update SIDORA"
@@ -385,7 +413,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
 def updateDeployment(pid):
     log.info("Processing deployment: %s, updating datastreams %s", pid, args.datastreams)
 
-    deploymentDatastreams = doGet(pid, None, False)
+    deploymentDatastreams = doGet(pid, None, False, None)
 
     log.debug("deployment objectDatastreams:\n%s", tostring(deploymentDatastreams, pretty_print=True).decode())
 
@@ -396,18 +424,18 @@ def updateDeployment(pid):
 
     ## We can also check for deployment models: ['info:fedora/si:cameraTrapCModel', 'info:fedora/si:conceptCModel']
     # if hasRELS_EXT:
-    #     deploymentRelsExt = doGet(pid, ds, True)
+    #     deploymentRelsExt = doGet(pid, ds, True, None)
     #     deploymentModels = deploymentRelsExt.xpath(".//fs:hasModel/@rdf:resource", namespaces=ns)
     #     log.debug("deployment models: %s, pid: %s", deploymentModels, pid)
     #     hasDeploymentModels = "info:fedora/si:cameraTrapCModel" in deploymentModels and "info:fedora/si:conceptCModel" in deploymentModels
     #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
 
     if hasMANIFEST:
-        manifest = doGet(pid, "MANIFEST", True)
+        manifest = doGet(pid, "MANIFEST", True, None)
         # log.debug("update deployment manifest:\n%s", tostring(manifest, pretty_print=True).decode())
 
         if hasRELS_EXT:
-            deploymentRelsExt = doGet(pid, "RELS-EXT", True)
+            deploymentRelsExt = doGet(pid, "RELS-EXT", True, None)
             # log.debug(tostring(deploymentRelsExt, pretty_print=True).decode())
 
             # pid used for getting camera make and model
@@ -458,7 +486,7 @@ def createDeploymentPidFile():
 
 def findDeployments(pid, ds):
 
-    objectDatastreams = doGet(pid, None, False)
+    objectDatastreams = doGet(pid, None, False, None)
 
     isDeployment = objectDatastreams.xpath(".//*[@dsid='FGDC'] and .//*[@dsid='MANIFEST']", namespaces=ns)
     log.debug("pid: %s, isDeployment: %s", pid, isDeployment)
@@ -466,14 +494,14 @@ def findDeployments(pid, ds):
 
     ## We can also look for deployment models: ['info:fedora/si:cameraTrapCModel', 'info:fedora/si:conceptCModel']
     # if hasRelsExt:
-    #     deploymentRelsExt = doGet(pid, ds, True)
+    #     deploymentRelsExt = doGet(pid, ds, True, None)
     #     deploymentModels = deploymentRelsExt.xpath(".//fs:hasModel/@rdf:resource", namespaces=ns)
     #     log.debug("deployment models: %s, pid: %s", deploymentModels, pid)
     #     hasDeploymentModels = "info:fedora/si:cameraTrapCModel" in deploymentModels and "info:fedora/si:conceptCModel" in deploymentModels
     #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
 
     if not isDeployment and hasRelsExt:
-        relsExtDs = doGet(pid, ds, True)
+        relsExtDs = doGet(pid, ds, True, None)
         resourceList = relsExtDs.xpath(".//fedora:hasConcept/@rdf:resource", namespaces=ns)
 
         resourceList = [p.split("info:fedora/")[1] for p in resourceList]
@@ -518,15 +546,34 @@ def initHttp():
     r.mount('http://', HTTPAdapter(pool_connections=100,
                                    pool_maxsize=250, pool_block=True, max_retries=retry))
 
+def yes_or_no(question):
+    while "the answer is invalid":
+        reply = str(input(question+' (y/n): ')).lower().strip()
+        if reply[:1] == 'y':
+            return True
+        if reply[:1] == 'n':
+            return False
+
 
 def main():
     if deploymentList is not None:
         log.info("Start processing")
 
-        log.warning("Removing any existing files from output directory!!!")
-        for f in os.listdir(output_dir):
-            # print("remove = " + f)
-            os.remove(output_dir + "/" + f)
+        if args.deleteAll:
+            delete = True
+        else:
+            delete = yes_or_no("Removing any existing files from '" + output_dir + "' y directory!!!")
+
+        if delete:
+            for f in os.listdir(output_dir):
+                log.warning("deleting dry-run file = %s/%s", output_dir, f)
+                if os.path.isfile(output_dir + "/" + f):
+                    os.remove(output_dir + "/" + f)
+                elif os.path.isdir(output_dir + "/" + f):
+                    shutil.rmtree(output_dir + "/" + f)
+        else:
+            log.warning("Existing will be overwritten!!!!!")
+            time.sleep(15)
 
         start = time.time()  # let's see how long this takes
 
@@ -585,6 +632,8 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("-dr", "--dry-run", help="Store datastream changes to local file system instead of updating Fedora datastreams (default dir ./output)", type=str2bool, nargs='?', const=True, default=True)
     parser.add_argument("-V", "--validate", help="Enable Validation", type=str2bool, nargs='?', const=True, default=True)
+    parser.add_argument("-dA", "--deleteAll", help="Remove all existing files from output dir.", type=str2bool, nargs='?', const=True, default=False)
+    parser.add_argument("-G", "--group_resources", help="Group dry-run datastream output to individual directories", type=str2bool, nargs='?', const=True, default=False)
 
     args = parser.parse_args()
 
@@ -598,7 +647,6 @@ if __name__ == "__main__":
         log.setLevel(logging.INFO)
 
     log.info(args)
-
 
     # initialize
     if os.path.exists('update.properties'):

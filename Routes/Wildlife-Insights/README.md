@@ -57,6 +57,19 @@ There is also a property for the GaussianBlur value `si.ct.wi.faceBlur.blur_valu
 
 ## Legacy Data Update Script:
 
+### Deploy the Update Script:
+
+The update script can be run from a clone of sidora-services git repo or by copying `<git-home>/sidora-services/Routes/Wildlife-Insights` directory. Python and python packages will need to be installed see [Install Python and Modules](#install-python-and-modules)
+
+> NOTE: If using dry-run, datastream changes will be saved locally so adequate disk space is needed. 
+ 
+```
+cp <git-home>/sidora-services/Routes/Wildlife-Insights <some-install-path>
+
+mkdir -p <some-install-path>/Wildlife-Insights/output 
+```
+
+
 ### Properties File:
 
 To configure various settings edit the `update.properties` file.
@@ -68,13 +81,14 @@ To configure various settings edit the `update.properties` file.
 
 > **:warning: running with `-dr` or `--dry-run` param will save updated datastreams to local file system under `output` directory instead of updating the fedora datastreams**
 
+
 #### Usage:
 ```
 python3 UpdateLegacyCT.py -h
-
 usage: UpdateLegacyCT.py [-h] [-i INFILE] [-o OUTFILE]
-                         [-ds {FGDC,OBJ,FITS,SIDORA} [{FGDC,OBJ,FITS,SIDORA} ...]] [-d]
-                         [-dr]
+                         [-ds {FGDC,OBJ,FITS,SIDORA} [{FGDC,OBJ,FITS,SIDORA} ...]]
+                         [-v] [-dr [DRY_RUN]] [-V [VALIDATE]]
+                         [-dA [DELETEALL]] [-G [GROUP_RESOURCES]]
 
 Update Legacy CameraTrap Data for WildLife Insights
 
@@ -83,12 +97,21 @@ optional arguments:
   -i INFILE, --infile INFILE
                         file name containing list of deployment pids
   -o OUTFILE, --outfile OUTFILE
-                        output file name for list of deployment pids
-  -ds {FGDC,OBJ,FITS} [{FGDC,OBJ,FITS} ...], --datastreams {FGDC,OBJ,FITS,SIDORA} [{FGDC,OBJ,FITS,SIDORA} ...]
+                        output file name for list of deployment pids (default
+                        is deploymentList.csv)
+  -ds {FGDC,OBJ,FITS,SIDORA} [{FGDC,OBJ,FITS,SIDORA} ...], --datastreams {FGDC,OBJ,FITS,SIDORA} [{FGDC,OBJ,FITS,SIDORA} ...]
                         datastreams to update i.e. FGDC, FITS, OBJ, SIDORA
-  -d, --debug           increase output verbosity
-  -dr, --dry-run        Store datastream changes to local file system instead of
-                        updating Fedora datastreams (default dir ./output)
+  -v, --verbose         increase output verbosity
+  -dr [DRY_RUN], --dry-run [DRY_RUN]
+                        Store datastream changes to local file system instead
+                        of updating Fedora datastreams (default dir ./output)
+  -V [VALIDATE], --validate [VALIDATE]
+                        Enable Validation
+  -dA [DELETEALL], --deleteAll [DELETEALL]
+                        Remove all existing files from output dir.
+  -G [GROUP_RESOURCES], --group_resources [GROUP_RESOURCES]
+                        Group dry-run datastream output to individual
+                        directories
 ```
 
 #### Running An Update:
