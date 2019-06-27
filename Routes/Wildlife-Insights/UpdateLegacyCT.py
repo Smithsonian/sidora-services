@@ -203,7 +203,7 @@ def updateFGDC(deploymentPid, cameraMake, cameraModel):
         log.debug("Updating deployment: %s, FGDC with Camera Make: %s, Model: %s\nFGDC:\n%s", deploymentPid, cameraMake, cameraModel, tostring(newFGDC, pretty_print=True).decode())
 
         if dryrun:
-            fgdcFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + deploymentPid + "_FGDC_output.xml"
+            fgdcFileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + deploymentPid.replace(":", "_") + "_FGDC_output.xml"
             if not os.path.exists(os.path.dirname(fgdcFileName)):
                 os.makedirs(os.path.dirname(fgdcFileName))
             f = open(fgdcFileName, "w")
