@@ -28,7 +28,7 @@
 ### Install Python and Modules
 
 ```
-sudo yum install python36 opencv-python python3-configparser python36-requests python36-pip python36-devel
+sudo yum install python36 opencv-python python36-requests python36-pip python36-devel
 
 # run as fedora user
 pip3 install opencv-python lxml --user
@@ -138,9 +138,9 @@ python3 UpdateLegacyCT.py --dry-run -o deploymentPids.txt
 #### Update Deployments From file: 
 
 ```
-python3 UpdateLegacyCT.sh -i <deployment-pid-file> -ds <datastreams-2-update>
+python3 UpdateLegacyCT.py -i <deployment-pid-file> -ds <datastreams-2-update>
 
-ex. python3 UpdateLegacyCT.sh -d -i pidList.txt -ds FGDC OBJ FITS SIDORA
+ex. python3 UpdateLegacyCT.py -v -i pidList.txt -ds FGDC OBJ FITS SIDORA
 ```
 
 

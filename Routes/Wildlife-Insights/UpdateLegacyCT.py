@@ -304,7 +304,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
                 log.error("Problem deployment has no FGDC datastream: pid = %s", deploymentPid)
                 problemList[deploymentPid] = "deployment has no FGDC"
         except:
-            log.error("Error Updating FGDC datastream for deployment: pid = %s", deploymentPid)
+            log.exception("Error Updating FGDC datastream for deployment: pid = %s", deploymentPid)
             problemList[deploymentPid] = "Error Updating FGDC datastream"
 
     if "OBJ" in args.datastreams:
@@ -347,7 +347,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
                             subprocess.check_call(exiftool_cmd)
                         except subprocess.CalledProcessError as e:
                             output = e.output.decode()
-                            log.error("exiftool error:\n", output)
+                            log.exception("exiftool error:\n", output)
 
                         updateOBJ(resourcePid, imgBlur, blurFileName)
                         filename = blurFileName
@@ -359,7 +359,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
                 log.error("multiple OBJ versions, pid: %s", resourcePid)
                 problemList[resourcePid] = "multiple OBJ versions"
         except:
-            log.error("Error updating OBJ: pid = %s", resourcePid)
+            log.exception("Error updating OBJ: pid = %s", resourcePid)
             problemList[resourcePid] = "Error updating OBJ"
 
     if "FITS" in args.datastreams:
@@ -378,7 +378,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
                 log.error("Problem with resource could not update FITS: pid = %s", resourcePid)
                 problemList[resourcePid] = "Problem with resource could not update FITS"
         except:
-            log.error("Problem with resource could not update FITS: pid = %s", resourcePid)
+            log.exception("Problem with resource could not update FITS: pid = %s", resourcePid)
             problemList[resourcePid] = "Problem with resource could not update FITS"
 
     if "SIDORA" in args.datastreams:
@@ -400,7 +400,7 @@ def doUpdate(deploymentPid, resourcePid, fgdcResourcePid, datastreamList, manife
                 log.error("Problem with resource could not update SIDORA: pid = %s", resourcePid)
                 problemList[resourcePid] = "Problem with resource could not update SIDORA"
         except:
-            log.error("Problem with resource could not update SIDORA: pid = %s", resourcePid)
+            log.exception("Problem with resource could not update SIDORA: pid = %s", resourcePid)
             problemList[resourcePid] = "Problem with resource could not update SIDORA"
 
 
@@ -637,7 +637,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='[%(levelname)s] %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]  %(message)s",
+                        handlers=[
+                            logging.FileHandler("updateLegacyCT.log"),
+                            logging.StreamHandler(sys.stdout)
+                        ])
     log = logging.getLogger(__name__)
 
     if args.verbose:
