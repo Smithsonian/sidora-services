@@ -127,6 +127,18 @@ def doPost(pid, data, ds, params):
     return response
 
 
+def doPut(pid, data, ds, params):
+    FEDORA_PARAMS = params
+
+    URL = FEDORA_URL + "/objects/" + pid + "/datastreams/" + ds
+
+    req = r.put(url=URL, params=FEDORA_PARAMS, auth=HTTPBasicAuth(fedora_user, fedora_pass))
+    log.info("pid: %s, url: %s", pid, req.url + "<--------------------")
+    response = fromstring(req.content)
+    log.debug("put to url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
+    return response
+
+
 def getFITS(fileName):
     if os.path.exists(str(fileName)):
         # log.debug("deployment: %s, getting %s FITS...", pid, pid)
@@ -211,7 +223,7 @@ def updateFGDC(deploymentPid, cameraMake, cameraModel):
             f.close()
             log.info("Skipping FGDC fedora update!!! Saving to file: %s", fgdcFileName)
         else:
-            response = doPost(deploymentPid, tostring(newFGDC, pretty_print=True).decode(), "FGDC")
+            response = doPost(deploymentPid, tostring(newFGDC, pretty_print=True).decode(), "FGDC", {'type': 'text/xml', 'group': 'X', 'dsLabel': 'FGDC-CTPlot%20Record', 'versionable': 'true'})
             log.debug("http POST, FGDC update pid: %s, response:\n%s", deploymentPid, tostring(response, pretty_print=True).decode())
 
     else:
@@ -234,7 +246,7 @@ def updateFITS(resourcePid, fits, deploymentPid):
         f.close()
         log.info("Skipping post FITS update!!! Saving to file: %s", fitsFileName)
     else:
-        result = doPost(resourcePid, tostring(fits, pretty_print=True).decode(), "FITS")
+        result = doPost(resourcePid, tostring(fits, pretty_print=True).decode(), "FITS", {'dsLabel': 'FITS%20Generated%20Image%20Metadata', 'mimeType': 'text/xml', 'versionable': 'false', 'group': 'X'})
         log.debug("http POST, FITS update, pid: %s response:\n%s", resourcePid, tostring(result, pretty_print=True).decode())
 
     log.info("Finished updateFITS for resource %s", resourcePid)
@@ -244,9 +256,12 @@ def updateOBJ(resourcePid, img, blurFileName):
     if dryrun:
         log.info("Skipping OBJ fedora update!!! Saving to file: %s", blurFileName)
     else:
+        resultPut = doPut(resourcePid, None, "OBJ", {'versionable': 'true'})
+        log.debug("http POST, OBJ update, pid: %s response:\n%s", resourcePid, tostring(resultPut, pretty_print=True).decode())
+
         imgEncoded = cv2.imencode('.jpg', img)[1]
-        result = doPost(resourcePid, imgEncoded.tostring(), "OBJ", {'mimeType': 'image/jpeg', 'versionable': "false"})
-        log.debug("http POST, OBJ update, pid: %s response:\n%s", resourcePid, tostring(result, pretty_print=True).decode())
+        resultPost = doPost(resourcePid, imgEncoded.tostring(), "OBJ", {'mimeType': 'image/jpeg', 'versionable': "true"})
+        log.debug("http POST, OBJ update, pid: %s response:\n%s", resourcePid, tostring(resultPost, pretty_print=True).decode())
 
     log.info("Finished updateOBJ for resource %s", resourcePid)
 
