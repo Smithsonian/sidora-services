@@ -32,7 +32,7 @@ import javax.xml.bind.annotation.*;
 /** POJO for Batch Requests
  * @author jbirkhimer
  */
-public class BatchRequest {
+public class  BatchRequest {
 
     private String correlationId;
     private String parentId;
