@@ -135,7 +135,13 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                             .stop()
                         .end()
 
-                        //Grab the objects datastreams as xml
+                        .filter()
+                            .simple("${header.methodName} == 'purgeObject'")
+                            .to("direct:edanDelete")
+                            .stop()
+                        .end()
+
+                //Grab the objects datastreams as xml
                         .setHeader("CamelHttpMethod").constant("GET")
                         .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
                         .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
