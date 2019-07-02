@@ -128,7 +128,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .setHeader("origin").xpath("/atom:entry/atom:author/atom:name", String.class, ns)
                         .setHeader("dsID").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsID']/@term", String.class, ns)
                         .setHeader("dsLabel").xpath("/atom:entry/atom:category[@scheme='fedora-types:dsLabel']/@term", String.class, ns)
-                        .setHeader("operation").xpath("/atom:entry/atom:title", String.class, ns)
 
                         .filter()
                             .simple("${header.origin} == '{{si.fedora.user}}'")
@@ -137,8 +136,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .end()
 
                         .filter()
-                            .simple("${header.operation} == 'purgeObject'")
-                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Unsupported Purge Operation Found!! [ Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel} ] - No message processing required!").id("logFilteredMessage")
+                            .simple("${header.methodName} == 'purgeObject'")
+                            .to("direct:edanDelete")
                             .stop()
                         .end()
 
