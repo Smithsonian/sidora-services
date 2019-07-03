@@ -148,7 +148,7 @@ def doDelete(pid, data, ds, params):
     req = r.delete(url=URL, params=FEDORA_PARAMS, auth=HTTPBasicAuth(fedora_user, fedora_pass))
     log.info("pid: %s, url: %s", pid, req.url + "<--------------------")
     response = fromstring(req.content)
-    log.debug("put to url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
+    log.debug("delete at url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
     return response
 
 def getOBJ(pid, deploymentPid):
@@ -181,29 +181,16 @@ def getOBJ(pid, deploymentPid):
 
     return fileName, objLabel, objVersion
 
-def updateOBJ(resourcePid, img, blurFileName):
-    if dryrun:
-        log.info("Skipping OBJ fedora update!!! Saving to file: %s", blurFileName)
-    else:
-        resultPut = doPut(resourcePid, None, "OBJ", {'versionable': 'true'})
-        log.debug("http POST, OBJ update, pid: %s response:\n%s", resourcePid, tostring(resultPut, pretty_print=True).decode())
-
-        imgEncoded = cv2.imencode('.jpg', img)[1]
-        resultPost = doPost(resourcePid, imgEncoded.tostring(), "OBJ", {'mimeType': 'image/jpeg', 'versionable': "true"})
-        log.debug("http POST, OBJ update, pid: %s response:\n%s", resourcePid, tostring(resultPost, pretty_print=True).decode())
-
-    log.info("Finished updateOBJ for resource %s", resourcePid)
 
 def removeOBJ(resourcePid, filename):
     if dryrun:
         log.info("%s is an empty sequence image resource. Saving to file", filename)
-        removeList.append(filename)
+        removeList.append(resourcePid)
     else:
         resultDelete = doDelete(resourcePid, None, "OBJ", {'versionable': 'true'})
         log.debug("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultPut, pretty_print=True).decode())
 
     log.info("Finished removeOBJ for resource %s", resourcePid)
-
 
 
 def doUpdate(deploymentPid, resourcePid, manifest):
@@ -230,9 +217,9 @@ def doUpdate(deploymentPid, resourcePid, manifest):
 
                 if isEmpty:
                     log.debug("resource: %s, label: %s, isEmpty: %s", resourcePid, label, isEmpty)
-
-                    fileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + resourcePid.replace(":", "_") + "/" + resourcePid + ".jpg"
-                    removeOBJ(resourcePid, fileName)
+                    removeOBJ(resourcePid)
+                else:
+                    return resourcePid
             else:
                 log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
                 problemList[resourcePid] = "Problem with resource could not update OBJ"
@@ -281,10 +268,31 @@ def updateDeployment(pid):
                 futures = [executor.submit(doUpdate, pid, resourcePid, manifest) for resourcePid in resourceList]
                 concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
 
+            vslPids = list()
+            if not dryrun:
+                for future in concurrent.futures.as_completed(futures):
+                    pid = futures[future]
+                    try:
+                        data = future.result()
+                    except Exception as exc:
+                        print('%r generated an exception: %s' % (pid, exc))
+                    else:
+                        print('adding good pid to RELS-EXT list %s, data)
+                        if data not in (None, ''):
+                            vslPids.append(data)
+
+                    velocityString = ''
+
+                    for pid in vslPids:
+                        velocityString += "<fedora:hasResource rdf:resource=\"info:fedora/" + pid + "\"/>"
+
+                    RELS_EXT_DS = Template(relsExtTemplate).substitute(resourcePidObjects=velocityString, parentDeploymentPid=str(pid))
+                    updateRELS_EXT(resourcePid, RELS_EXT_DS, deploymentPid)
+
             # for resourcePid in resourceList:
             #     doUpdate(pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest)
 
-            log.info("Finished Updating FGDC and Resources for Deployment %s", pid)
+            log.info("Finished Updating Resources for Deployment %s", pid)
 
         else:
             log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
@@ -293,6 +301,14 @@ def updateDeployment(pid):
         log.error("Deployment has no MANIFEST datastream: pid = %s", pid)
         problemList[pid] = "Deployment has no MANIFEST datastream"
 
+def updateRELS_EXT(ds, RELS_EXT_DS, deploymentPid):
+    if dryrun:
+        log.info("Skipping deployment RELS_EXT update!!!")
+    else:
+        result = doPut(deploymentPid, RELS_EXT_DS, "RELS-EXT", {'mimeType': 'text/xml', 'versionable': "true"})
+        log.debug("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
+
+    log.info("Finished updateRELS_EXT for deployment %s", deploymentPid)
 
 def createDeploymentPidFile():
     start = time.time() # let's see how long this takes
@@ -418,9 +434,15 @@ def main():
         # updateDeployment("test.smx.home:74")
 
         finish = time.time()
-        with open('removeList.txt', 'w') as f:
-            for item in removeList:
-                f.write("%s\n" % item)
+
+        emptiesFileName = output_dir + "/emptySequences.csv"
+
+        if not os.path.exists(os.path.dirname(fileName)):
+            os.makedirs(os.path.dirname(fileName))
+
+        w = csv.writer(open(output_dir + "/emptySequences.csv", "w"))
+        for pid in removeList:
+            w.writerow(pid)
 
         log.info("Finished Updating all Deployments... elapsed time: %s:", (finish-start))
     else:
@@ -519,7 +541,7 @@ if __name__ == "__main__":
         log.info("pool_block = %s", pool_block)
         pooled_connections = config.get("defaults", "pooled.connections")
         polled_maxsize = config.get("defaults", "polled.maxsize")
-        sidoraTemplate = open(config.get("defaults", "sidora.template"), "r+").read()
+        relsExtTemplate = open(config.get("defaults", "relsext.template "), "r+").read()
     else:
         sys.exit("missing config properties file!!!")
 
