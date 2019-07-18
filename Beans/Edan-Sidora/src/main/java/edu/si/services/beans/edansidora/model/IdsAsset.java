@@ -25,13 +25,58 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.beans.edansidora;
+package edu.si.services.beans.edansidora.model;
 
-/** Empty Class used for testing camel routes that define this class in a bean definition only.
- * The reason for this class is because the edansidora pom already has cameratrap as a dependency
- * and adding edansidora as a dependency to the cameratrap pom will cause a cyclic maven error.
- *
+/**
  * @author jbirkhimer
  */
-public class IdsPushBean {
+public class IdsAsset {
+
+    String imageid;
+    String siteId;
+    String isPublic;
+    String isInternal;
+    String pid;
+
+    public String getImageid() {
+        return imageid;
+    }
+
+    public void setImageid(String imageid) {
+        this.imageid = imageid;
+    }
+
+    public String getSiteId() {
+        return siteId;
+    }
+
+    public void setSiteId(String siteId) {
+        this.siteId = siteId;
+    }
+
+    public String getIsPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(String isPublic) {
+        this.isPublic = isPublic;
+    }
+
+    public String getIsInternal() {
+        return isInternal;
+    }
+
+    public void setIsInternal(String isInternal) {
+        this.isInternal = isInternal;
+    }
+
+    public String getPid()
+    {
+        return pid;
+    }
+
+    public void setPid(String pid)
+    {
+        this.pid = pid;
+    }
 }

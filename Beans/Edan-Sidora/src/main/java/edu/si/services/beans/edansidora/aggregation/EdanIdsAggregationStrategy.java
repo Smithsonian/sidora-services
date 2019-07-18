@@ -25,19 +25,47 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.beans.edansidora;
+package edu.si.services.beans.edansidora.aggregation;
 
-/** Empty Class used for testing camel routes that define this class in a bean definition only.
- * The reason for this class is because the edansidora module already has cameratrap as a dependency
- * and adding edansidora as a dependency to the cameratrap pom will cause a cyclic maven error.
- *
+import edu.si.services.beans.edansidora.model.IdsAsset;
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.processor.aggregate.AggregationStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
  * @author jbirkhimer
  */
-public class EdanApiBean {
+public class EdanIdsAggregationStrategy implements AggregationStrategy {
 
-    public void initIt() throws Exception {
-    }
+    private static final Logger log = LoggerFactory.getLogger(EdanIdsAggregationStrategy.class);
 
-    public void cleanUp() throws Exception {
+    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+        Message out = newExchange.getIn();
+        List<IdsAsset> idsAssetList = null;
+
+        IdsAsset asset = new IdsAsset();
+        asset.setImageid(out.getHeader("imageid", String.class));
+        asset.setSiteId(out.getHeader("SiteId", String.class));
+        asset.setIsPublic(out.getHeader("isPublic", String.class));
+        asset.setIsInternal(out.getHeader("isInternal", String.class));
+        asset.setPid(out.getHeader("pid", String.class));
+
+        if (oldExchange == null) {
+            idsAssetList = new ArrayList<>();
+            idsAssetList.add(asset);
+
+            newExchange.getIn().setHeader("idsAssetList", idsAssetList);
+
+            return newExchange;
+        } else {
+            idsAssetList = oldExchange.getIn().getHeader("idsAssetList", List.class);
+            idsAssetList.add(asset);
+            return oldExchange;
+        }
     }
 }

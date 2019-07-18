@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <Assets>
-  <Asset Name="${headers.idsAssetImagePrefix}${headers.imageid}.JPG" IsPublic="${headers.isPublic}" IsInternal="${headers.isInternal}" MaxSize="3000" InternalMaxSize="4000">${headers.idsAssetImagePrefix}${headers.imageid}</Asset>
+  #foreach( $asset in ${headers.idsAssetXMLList} )
+    <Asset Name="${headers.idsAssetImagePrefix}${asset.imageid}.JPG" IsPublic="$asset.isPublic" IsInternal="$asset.isInternal" MaxSize="3000" InternalMaxSize="4000">${headers.idsAssetImagePrefix}$asset.imageid</Asset>
+   #end
 </Assets>

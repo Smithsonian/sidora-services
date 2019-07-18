@@ -109,7 +109,7 @@
 
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
-                             location="blueprint:sidora.karaf.emammal.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.karaf.cfg"/>
+                             location="blueprint:sidora.karaf.emammal.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.karaf.cfg,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
 
         <routeBuilder ref="edanIdsRoutes"/>
 
