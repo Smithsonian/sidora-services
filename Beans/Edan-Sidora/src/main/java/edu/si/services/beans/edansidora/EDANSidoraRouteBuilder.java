@@ -46,18 +46,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -225,9 +215,9 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .end()
 
                 //Grab the objects datastreams as xml
-                        .setHeader("CamelHttpMethod").constant("GET")
-                        .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
-                        .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
+                .setHeader("CamelHttpMethod").constant("GET")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams")
+                .setHeader(Exchange.HTTP_QUERY).simple("format=xml")
 
                 .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("processFedoraGetDatastreams")
 
@@ -268,8 +258,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Fedora Message Found: Origin=${header.origin}, PID=${header.pid}, Method Name=${header.methodName}, dsID=${header.dsID}, dsLabel=${header.dsLabel}, objLabel=${header.objLabel}, objMimeType=${header.mimeType}, hasModel= ${header.hasModel}")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Processing Body: ${body}")
+
                 .to("seda:processFedoraMessage?waitForTaskToComplete=Never").id("startProcessingFedoraMessage")
+
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing EDAN and IDS record update for PID: ${header.pid}.");
+
 
         from("seda:processFedoraMessage?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("EdanIdsProcessFedoraMessage")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Fedora Message processing...")
@@ -306,7 +299,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     }
                 })
 
-                .log(LoggingLevel.INFO, "*******************************[ processFedoraMessage Calling idsAssetUpdate ]*******************************")
+                .log(LoggingLevel.DEBUG, "*******************************[ processFedoraMessage Calling idsAssetUpdate ]*******************************")
 
                 // add the asset and create/append the asset xml
                 .to("seda:idsAssetImageUpdate").id("fedoraUpdateIdsAssetUpdate")
@@ -348,8 +341,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("updateEdanSearchRequest")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds:\nEdanSearch result:\n${body}")
 
-//.stop()
-
                 //Convert string JSON so we can access the data
                 .unmarshal().json(JsonLibrary.Gson, true) //converts json to LinkedTreeMap
                 //.unmarshal().json(JsonLibrary.Jackson, EdanSearch.class) //converts json to EdanSearch java object
@@ -386,10 +377,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Create Content...")
 
                         //check for siteId header messages from edanIds.ct.update provides this edanIds.apim.update does not
-                        .choice().when().simple("${header.SiteId} == null")
+                        .choice()
+                            .when().simple("${header.SiteId} == null")
                                 //Headers needed for IDS push
                                 .setHeader("SiteId").xpath("//CameraDeploymentID", String.class, ns, "ManifestXML")
-                        .endChoice()
+                            .endChoice()
                         .end()
 
                         // create the EDAN content and encode
@@ -476,20 +468,22 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
         from("seda:edanHttpRequest?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("edanHttpRequest")
                 .errorHandler(noErrorHandler())
+
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Http Request...")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request: HTTP_QUERY = ${header.CamelHttpQuery}")
+
                 .choice()
                     .when().simple(batchEnabled + " == 'true' && ${header.edanServiceEndpoint} not contains 'search'")
                         .aggregate(simple("${header.edanServiceEndpoint}"), new EdanBulkAggregationStrategy())
-                        .completionTimeout(1000)
-                        .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
-                        .setHeader(Exchange.HTTP_QUERY).groovy("\"content=\" + URLEncoder.encode(request.headers.get('edanBulkRequests'));")
-                        .to("bean:edanApiBean?method=sendRequest").id("edanApiSendBulkRequest")
-                        .convertBodyTo(String.class)
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Http Request...")
+                            .completionTimeout(1000)
+                            .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
+                                .setHeader(Exchange.HTTP_QUERY).groovy("\"content=\" + URLEncoder.encode(request.headers.get('edanBulkRequests'));")
+                                .to("bean:edanApiBean?method=sendRequest").id("edanApiSendBulkRequest")
+                                .convertBodyTo(String.class)
+                                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
+                                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Http Request...")
                     .endChoice()
-                    . otherwise()
+                    .otherwise()
                         .to("bean:edanApiBean?method=sendRequest").id("edanApiSendSingleRequest")
                         .convertBodyTo(String.class)
                         .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
@@ -515,7 +509,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Edan JSON Content creation...");
 
 
-        //TODO: refactor asset xml creation for processCtDeployment and regular fedora jms processing
         from("seda:idsAssetImageUpdate?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("idsAssetImageUpdate")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting IDS Asset Update...")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "si.ct.uscbi.idsPushLocation = {{si.ct.uscbi.idsPushLocation}}")
@@ -531,166 +524,134 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .split(header("idsAssetList"))
                     .executorService(customThreadPoolExecutor)
                     .id("idsAssetSplitter")
+
                     .setHeader("idsAssetName", simple("{{si.edu.idsAssetFilePrefix}}${body.siteId}"))
-                    .process(new Processor() {
-                        @Override
-                        public void process(Exchange exchange) throws Exception {
-                            Message out = exchange.getIn();
-                            log.info("Header idsAssetName: " + out.getHeader("idsAssetName"));
-                        }
-                    })
+
                     //Only copy images files if this is not a delete asset
                     .choice()
-                    .when().simple("${body.isPublic} == 'Yes' && ${body.isInternal} == 'No'")
-                        .setHeader("CamelOverruleFileName", simple("{{si.edu.idsAssetImagePrefix}}${body.imageid}.JPG"))
-                        .to("seda:idsAssetXMLWriter")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message out = exchange.getIn();
-                                log.info("stop here");
-                            }
-                        })
-                        //Grab the OBJ datastream of the image asset from fedora
-                        .setHeader("CamelHttpMethod").constant("GET")
-                        //.setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
-                        .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${body.pid}/datastreams/OBJ/content")
-                        .removeHeader("CamelHttpQuery")
+                        .when().simple("${body.isPublic} == 'Yes' && ${body.isInternal} == 'No'")
+                            .setHeader("CamelOverruleFileName", simple("{{si.edu.idsAssetImagePrefix}}${body.imageid}.JPG"))
+                            .to("seda:idsAssetXMLWriter")
 
-                        .log(LoggingLevel.INFO, "HELLO WORLD###############################[ Get Image http uri = ${header.CamelHttpUri} ]###############################")//.stop()
+                            //Grab the OBJ datastream of the image asset from fedora
+                            .setHeader("CamelHttpMethod").constant("GET")
+                            //.setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${header.pid}/datastreams/OBJ/content")
+                            .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${body.pid}/datastreams/OBJ/content")
+                            .removeHeader("CamelHttpQuery")
 
-                        .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAssetUpdateGetFedoraOBJDatastreamContent")
+                            .log(LoggingLevel.DEBUG, "###############################[ Get Image http uri = ${header.CamelHttpUri} ]###############################")//.stop()
 
-                        //Save the image asset to the file system alongside the asset xml
-                        //TODO: (optional) we can get the filename with extension from the headers when getting the OBJ datastream from fedora
-                        //.setHeader("CamelOverruleFileName", simple("emammal_image_${header.imageid}.JPG"))
-                        .log(LoggingLevel.INFO, "###############################[ Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.CamelOverruleFileName}.JPG ]###############################")//.stop()
-                        //.setHeader("fileName").simple("${body.imageId}.JPG")
-                        .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
+                            .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAssetUpdateGetFedoraOBJDatastreamContent")
+
+                            //Save the image asset to the file system alongside the asset xml
+                            //TODO: (optional) we can get the filename with extension from the headers when getting the OBJ datastream from fedora
+                            //.setHeader("CamelOverruleFileName", simple("emammal_image_${header.imageid}.JPG"))
+                            .log(LoggingLevel.DEBUG, "###############################[ Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.CamelOverruleFileName}.JPG ]###############################")//.stop()
+                            //.setHeader("fileName").simple("${body.imageId}.JPG")
+                            .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}")
+                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
                         .endChoice()
                     .end()
                 .end()
                 .setHeader(Exchange.AGGREGATION_COMPLETE_ALL_GROUPS, simple("true", boolean.class))
                 .to("seda:idsAssetXMLWriter");
-            from("seda:idsAssetXMLWriter?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("idsAssetXMLWriter")
-                .log("idsAssetXMLWriter has been hit!")
+
+
+        from("seda:idsAssetXMLWriter?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("idsAssetXMLWriter")
+
                 .aggregate(simple("${header.idsAssetName}"), new IdsBatchAggregationStrategy())
                 //.completionPredicate(simple("${exchangeProperty.CamelSplitComplete} == true"))
                 .completionTimeout(1000)
                 .parallelProcessing(Boolean.parseBoolean(PARALLEL_PROCESSING))
-                .log("completion predicate reached.")
-                .process(new Processor(){
-                    @Override
-                    public void process(Exchange exchange) throws Exception
-                    {
-                        Message out = exchange.getIn();
 
-                        String idsPushLoc = getContext().resolvePropertyPlaceholders("{{si.ct.uscbi.idsPushLocation}}");
-                        String idsAssetName = out.getHeader("idsAssetName", String.class);
+                    .process(new Processor() {
+                        @Override
+                        public void process(Exchange exchange) throws Exception {
+                            Message out = exchange.getIn();
 
-                        String resourceFilePath = idsPushLoc + idsAssetName + "/" + idsAssetName + ".xml";
-                        log.debug("*****[ Resource File: {} ]*****", resourceFilePath);
-                        File resourceFile = new File(resourceFilePath);
-                        //if (resourceFile.exists())
-                        if (true)
-                        {
-                            out.setBody(resourceFile, File.class);
-                        }
-                        else
-                        {
-                            out.setBody(null);
-                        }
-                    }
-                }).id("getAssetXml")
+                            String idsPushLoc = getContext().resolvePropertyPlaceholders("{{si.ct.uscbi.idsPushLocation}}");
+                            String idsAssetName = out.getHeader("idsAssetName", String.class);
 
-                // TODO: (optional) we can get the filename with extension from the headers when getting the OBJ datastream
-                // from fedora but we would need to do that before updating the Asset XML.
-                .choice()
-                    .when().simple("${body} != null") // the asset xml should be in the body if it exists already
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML file exists and will be appended.")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message out = exchange.getIn();
-
-                                List<IdsAsset> idsAssetList = out.getHeader("idsAssetXMLList", List.class);
-
-                                Document doc = out.getBody(Document.class);
-                                Element root = doc.getDocumentElement();
-                                NodeList assetsList = root.getElementsByTagName("Asset");
-
-                                for(IdsAsset asset: idsAssetList)
-                                {
-                                    boolean inXML = true;
-
-                                    for(int i = 0; i < assetsList.getLength(); i++)
-                                    {
-                                        Node currentAsset = assetsList.item(i);
-
-                                        String assetValue = asset.getImageid().trim();
-                                        String nodeValue  = currentAsset.getFirstChild().getTextContent().replace(out.getHeader("idsAssetImagePrefix", String.class), "").trim();
-
-                                        boolean testV = "emammal_image_testImageRaccoonAndMan" == "emammal_image_testImageRaccoonAndMan";
-
-                                        if(assetValue.equals(nodeValue))
-                                        {
-                                            inXML = false;
-                                            log.info(assetValue + " does not equal " + nodeValue);
-                                        }
-                                        else
-                                        {
-                                            log.info(assetValue + " does not equal " + nodeValue);
-                                        }
-                                    }
-
-                                    if(inXML)
-                                    {
-                                        Element newAsset = doc.createElement("Asset");
-                                        newAsset.setAttribute("Name", out.getHeader("idsAssetImagePrefix") + asset.getImageid() + ".JPG");
-                                        newAsset.setAttribute("IsPublic", asset.getIsPublic());
-                                        newAsset.setAttribute("IsInternal", asset.getIsInternal());
-                                        newAsset.setAttribute("MaxSize", "3000");
-                                        newAsset.setAttribute("InternalMaxSize", "4000");
-                                        newAsset.appendChild(doc.createTextNode(out.getHeader("idsAssetImagePrefix") + asset.getImageid()));
-
-                                        root.appendChild(newAsset);
-                                    }
-                                }
-
-                                out.setBody(doc, String.class);
-
-                                log.info("body isn't null");
+                            String resourceFilePath = idsPushLoc + idsAssetName + "/" + idsAssetName + ".xml";
+                            log.debug("*****[ Resource File: {} ]*****", resourceFilePath);
+                            File resourceFile = new File(resourceFilePath);
+                            if (resourceFile.exists()) {
+                                out.setBody(resourceFile, File.class);
+                            } else {
+                                out.setBody(null);
                             }
-                        })
-                        //IDS Asset XML exists so append
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Pre Appended Asset XML Body:\n${body}")
-                        //.toD("xslt:file:{{karaf.home}}/Input/xslt/idsAssets.xsl").id("idsAssetXMLEndpointXSLT")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Post Appended Asset XML Body:\n${body}")
-                    .endChoice()
-                    .otherwise()
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML file does not exists and will be created.")
-                        //IDS Asset XML does not exist so create it
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Pre Create Asset XML Body:\n${body}")
-                        .convertBodyTo(String.class)
-                        .toD("velocity:file:{{karaf.home}}/Input/templates/ids_template.vsl")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Post Create Asset XML Body:\n${body}")
-                    .endChoice()
-                .end()
+                        }
+                    }).id("getAssetXml")
 
-                //Save the IDS Asset XML to file system
-                .setHeader("CamelOverruleFileName", simple("${header.idsAssetName}.xml"))
-                .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}?fileName=${header.idsAssetName}.xml").id("saveFile")
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        Message out = exchange.getIn();
-                        log.info("wrote file to push location");
-                    }
-                }).id("XMLWriterBreakPoint")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML saved to CamelFileNameProduced:${header.CamelFileNameProduced}")
+                    // TODO: (optional) we can get the filename with extension from the headers when getting the OBJ datastream
+                    // from fedora but we would need to do that before updating the Asset XML.
+                    .choice()
+                        .when().simple("${body} != null") // the asset xml should be in the body if it exists already
+                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML file exists and will be appended.")
 
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished IDS Asset Update...");
+                            //IDS Asset XML exists so append
+                            .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Pre Appended Asset XML Body:\n${body}")
+                            //.toD("xslt:file:{{karaf.home}}/Input/xslt/idsAssets.xsl").id("idsAssetXMLEndpointXSLT")
+
+                            .process(new Processor() {
+                                @Override
+                                public void process(Exchange exchange) throws Exception {
+                                    Message out = exchange.getIn();
+
+                                    List<IdsAsset> idsAssetList = out.getHeader("idsAssetXMLList", List.class);
+
+                                    Document doc = out.getBody(Document.class);
+                                    Element root = doc.getDocumentElement();
+                                    NodeList assetsList = root.getElementsByTagName("Asset");
+
+                                    for (IdsAsset asset : idsAssetList) {
+                                        boolean inXML = true;
+
+                                        for (int i = 0; i < assetsList.getLength(); i++) {
+                                            Node currentAsset = assetsList.item(i);
+                                            String assetValue = asset.getImageid().trim();
+                                            String nodeValue = currentAsset.getFirstChild().getTextContent().replace(out.getHeader("idsAssetImagePrefix", String.class), "").trim();
+
+                                            if (assetValue.equals(nodeValue)) {
+                                                inXML = false;
+                                                log.info(assetValue + " does not equal " + nodeValue);
+                                            } else {
+                                                log.info(assetValue + " does not equal " + nodeValue);
+                                            }
+                                        }
+
+                                        if (inXML) {
+                                            Element newAsset = doc.createElement("Asset");
+                                            newAsset.setAttribute("Name", out.getHeader("idsAssetImagePrefix") + asset.getImageid() + ".JPG");
+                                            newAsset.setAttribute("IsPublic", asset.getIsPublic());
+                                            newAsset.setAttribute("IsInternal", asset.getIsInternal());
+                                            newAsset.setAttribute("MaxSize", "3000");
+                                            newAsset.setAttribute("InternalMaxSize", "4000");
+                                            newAsset.appendChild(doc.createTextNode(out.getHeader("idsAssetImagePrefix") + asset.getImageid()));
+                                            root.appendChild(newAsset);
+                                        }
+                                    }
+                                    out.setBody(doc, String.class);
+                                }
+                            })
+                            .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Post Appended Asset XML Body:\n${body}")
+                        .endChoice()
+                        .otherwise()
+                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML file does not exists and will be created.")
+                            //IDS Asset XML does not exist so create it
+                            .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Pre Create Asset XML Body:\n${body}")
+                            .convertBodyTo(String.class)
+                            .toD("velocity:file:{{karaf.home}}/Input/templates/ids_template.vsl")
+                            .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Post Create Asset XML Body:\n${body}")
+                        .endChoice()
+                    .end()
+
+                    //Save the IDS Asset XML to file system
+                    .setHeader("CamelOverruleFileName", simple("${header.idsAssetName}.xml"))
+                    .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}?fileName=${header.idsAssetName}.xml").id("saveFile")
+                    .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML saved to CamelFileNameProduced:${header.CamelFileNameProduced}")
+
+                    .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished IDS Asset Update...");
 
         from("seda:findParentObject?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("EdanIdsFindParentObject").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Find Parent Object...")
@@ -742,7 +703,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message: ProjectId: ${header.ProjectId}, SiteId: ${header.SiteId}, SitePID: ${header.SitePID}")
                 //.log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Camera Trap Ingest Message Headers: ${headers}")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: ***** Delaying for a moment before starting EdanIds CT processing *****")
-                //.delay(1500)
+                .delay(1500)
                 .to("seda:processCtDeployment?waitForTaskToComplete=Never").id("ctStartProcessCtDeployment");
                 //.log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished processing Camera Trap Ingest Message");
 
@@ -786,18 +747,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .end()
 
                 //TODO: call idsAssetUpdate to write once using idsAssetList header from split aggregator to create idsAsset xml
-                .log(LoggingLevel.INFO, "*******************************[ processCtDeployment Calling idsAssetUpdate ]*******************************")
+                .log(LoggingLevel.DEBUG, "*******************************[ processCtDeployment Calling idsAssetUpdate ]*******************************")
 
                 .setBody().simple("${header.idsAssetList}")
 
-                .log(LoggingLevel.INFO, "idsAssertList:\n${header.idsAssetList}")
-
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        log.info("@@@@@@@@@@@@@@@@@[ seda:idsAssetImageUpdate STOP BEFORE ]@@@@@@@@@@@@@@@@@@");
-                    }
-                })
+                .log(LoggingLevel.DEBUG, "idsAssertList:\n${header.idsAssetList}")
 
                 // add the asset and create/append the asset xml
                 .to("seda:idsAssetImageUpdate").id("processCtDeploymentIdsAsset")
