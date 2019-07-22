@@ -332,7 +332,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     public void fedoraDeleteMessageTest() throws Exception {
         HashMap<String, Object> headers = new HashMap<>();
         headers.put("origin", "otherUser");
-        headers.put("methodName", "purgeDatastream");
+        headers.put("methodName", "purgeObject");
         headers.put("testPID", "test:0001");
         headers.put("testDsLabel", "test_label");
         headers.put("testDsId", "OBJ");
@@ -361,16 +361,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
-                weaveById("processFedoraGetRELS-EXT").replace().setBody().simple(rels_extXML);
-                weaveById("logFilteredMessage").after().to("mock:filter");
-            }
-        });
-
-        context.getRouteDefinition("EdanIdsProcessFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveAddLast().to("mock:result");
+                weaveById("processFedoraEdanDelete").after().to("mock:result").stop();
             }
         });
 
@@ -383,7 +374,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         });
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("methodName", "purgeDatastream");
+        exchange.getIn().setHeader("methodName", "purgeObject");
         //exchange.getIn().setHeader("pid", getExtra().getProperty("si.ct.namespace") + ":test");
         exchange.getIn().setHeader("pid", "test:0001");
         exchange.getIn().setBody(jmsMsg);
@@ -623,10 +614,12 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     }
 
     /**
+     * TODO: REWORK THIS test
      * Testing the updateEdan route when there is no existing edan record and an EDAN createRecord request is needed.
      * @throws Exception
      */
     @Test
+    @Ignore
     public void updateEdanCreateContentBatchTest() throws Exception {
         String testManifestXML = readFileToString(testManifest);
         MockEndpoint mockResult = getMockEndpoint("mock:result");

@@ -207,11 +207,33 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         .stop()
                 .end()
 
-                        .filter()
-                            .simple("${header.methodName} == 'purgeObject'")
-                            .to("direct:edanDelete")
-                            .stop()
-                        .end()
+                .filter()
+                    .simple("${header.methodName} == 'purgeObject'")
+
+                        .to("seda:edanDelete?waitForTaskToComplete=Always").id("processFedoraEdanDelete")
+
+                        //Asset XML atributes indicating serve to IDS (pub)
+                        .setHeader("isPublic").simple("Yes")
+                        .setHeader("isInternal").simple("No")
+
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+
+                                IdsAsset asset = new IdsAsset();
+                                asset.setImageid(out.getHeader("imageid", String.class));
+                                asset.setIsPublic(out.getHeader("isPublic", String.class));
+                                asset.setIsInternal(out.getHeader("isInternal", String.class));
+
+                                out.setBody(asset);
+                            }
+                        })
+
+                        // add the asset and create/append the asset xml
+                        .to("seda:idsAssetImageUpdate").id("fedoraDeleteIdsAssetUpdate")
+                        .stop()
+                .end()
 
                 //Grab the objects datastreams as xml
                 .setHeader("CamelHttpMethod").constant("GET")
@@ -268,21 +290,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 .setHeader("imageid").simple("${header.dsLabel}").id("setImageid")
 
-                //Is this an Update or Delete
-                .choice()
-                    .when().simple("${headers.methodName} == 'purgeDatastream'")
-                        .to("seda:edanDelete?waitForTaskToComplete=Always").id("processFedoraEdanDelete")
-                        //Asset XML atributes indicating serve to IDS (pub)
-                        .setHeader("isPublic").simple("Yes")
-                        .setHeader("isInternal").simple("No")
-                    .endChoice()
-                    .otherwise()
-                        .to("seda:edanUpdate?waitForTaskToComplete=Always").id("processFedoraEdanUpdate")
-                        //Asset XML attributes indicating delete asset
-                        .setHeader("isPublic").simple("No")
-                        .setHeader("isInternal").simple("No")
-                    .endChoice()
-                .end()
+                .to("seda:edanUpdate?waitForTaskToComplete=Always").id("processFedoraEdanUpdate")
+
+                //Asset XML attributes indicating delete asset
+                .setHeader("isPublic").simple("No")
+                .setHeader("isInternal").simple("No")
 
                 .process(new Processor() {
                     @Override
