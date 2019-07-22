@@ -27,14 +27,15 @@
 
 package edu.si.services.beans.edansidora;
 
-import edu.si.services.fedorarepo.FedoraComponent;
-import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.CamelContext;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author jbirkhimer

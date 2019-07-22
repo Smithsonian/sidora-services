@@ -79,4 +79,15 @@ public class IdsAsset {
     {
         this.pid = pid;
     }
+
+    @Override
+    public String toString() {
+        return "IdsAsset{" +
+                "imageid='" + imageid + '\'' +
+                ", siteId='" + siteId + '\'' +
+                ", isPublic='" + isPublic + '\'' +
+                ", isInternal='" + isInternal + '\'' +
+                ", pid='" + pid + '\'' +
+                '}';
+    }
 }

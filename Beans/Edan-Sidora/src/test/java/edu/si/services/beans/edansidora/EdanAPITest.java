@@ -27,7 +27,6 @@
 
 package edu.si.services.beans.edansidora;
 
-import com.amazonaws.util.json.JSONObject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
@@ -40,10 +39,9 @@ import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.cxf.endpoint.Server;
-import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.XML;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -52,7 +50,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -61,7 +61,6 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -83,12 +82,12 @@ public class EdanAPITest extends CamelTestSupport {
     private static EdanApiBean edanApiBean = new EdanApiBean();
 
     //private static String TEST_IMAGE_PREFIX = config.getString("si.edu.idsAssetImagePrefix");
-    private static String TEST_EDAN_ID = "p1b-1553948738386-1556126611432-0"; //QUOTIENTPROD
+    private static String TEST_EDAN_ID = "p1b-1562599618948-1563542629068-0"; //QUOTIENTPROD
     private static String TEST_PROJECT_ID = "testProjectId";
     private static String TEST_DEPLOYMENT_ID = "testDeploymentId";
     private static String TEST_IAMGE_ID = "testRaccoonAndFox";
     private static String TEST_TITLE = "Camera Trap Image Northern Raccoon, Red Fox";
-    private static String TEST_SIDORA_PID = "test:0001";
+    private static String TEST_SIDORA_PID = "test:001";
     private static String TEST_TYPE = "emammal_image";
     private static String TEST_APP_ID = "QUOTIENTPROD";
 
@@ -749,17 +748,17 @@ public class EdanAPITest extends CamelTestSupport {
                                 String xmlBody = out.getBody(String.class);
                                 try {
                                     //JSONObject xmlJSONObj = XML.toJSONObject(xmlBody, true);
-                                    org.json.JSONObject xmlJSONObj = XML.toJSONObject(xmlBody);
+                                    JSONObject xmlJSONObj = XML.toJSONObject(xmlBody);
                                     log.debug("xml 2 json Output:\n{}", xmlJSONObj);
 
-                                    org.json.JSONObject edan_content = xmlJSONObj.getJSONObject("xml").getJSONObject("content");
+                                    JSONObject edan_content = xmlJSONObj.getJSONObject("xml").getJSONObject("content");
                                     log.debug("json edan_content Output:\n{}", edan_content.toString(4));
 
                                     //convert online_media to json array
-                                    org.json.JSONObject image = edan_content.getJSONObject("image");
-                                    org.json.JSONObject online_media = image.getJSONObject("online_media");
+                                    JSONObject image = edan_content.getJSONObject("image");
+                                    JSONObject online_media = image.getJSONObject("online_media");
                                     Object online_media_array_element = online_media.get("online_media_array_element");
-                                    if (online_media_array_element instanceof org.json.JSONObject) {
+                                    if (online_media_array_element instanceof JSONObject) {
                                         JSONArray online_media_replace = new JSONArray();
                                         online_media_replace.put(online_media_array_element);
                                         edan_content.getJSONObject("image").put("online_media", online_media_replace);
@@ -770,9 +769,9 @@ public class EdanAPITest extends CamelTestSupport {
                                     log.debug("json edan_content after online_media fix:\n{}", edan_content.getJSONObject("image").getJSONArray("online_media").toString(4));
 
                                     //convert image_identifications to json array
-                                    org.json.JSONObject image_identifications = edan_content.getJSONObject("image_identifications");
+                                    JSONObject image_identifications = edan_content.getJSONObject("image_identifications");
                                     Object image_identifications_array_element = image_identifications.get("image_identifications_array_element");
-                                    if (image_identifications_array_element instanceof org.json.JSONObject) {
+                                    if (image_identifications_array_element instanceof JSONObject) {
                                         JSONArray image_identifications_replace = new JSONArray();
                                         image_identifications_replace.put(image_identifications_array_element);
                                         edan_content.getJSONObject("image").put("image_identifications", image_identifications_replace);

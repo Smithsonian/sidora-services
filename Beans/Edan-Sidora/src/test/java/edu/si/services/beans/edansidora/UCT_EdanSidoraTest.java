@@ -27,6 +27,7 @@
 
 package edu.si.services.beans.edansidora;
 
+import com.amazonaws.services.dynamodbv2.xspec.S;
 import edu.si.services.beans.edansidora.aggregation.EdanBulkAggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import edu.si.services.beans.edansidora.model.IdsAsset;
 import org.w3c.dom.Document;
@@ -122,32 +124,75 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
     @Test
     public void ctIngestMessageTest() throws Exception {
-        //String testDatastreamsXML = readFileToString(new File(KARAF_HOME + "/test-data/fedoraObjectDatastreams.xml"));
+
+        deleteDirectory(getExtra().getProperty("si.ct.uscbi.idsPushLocation"));
+
         HashMap<String, Object> headers = new HashMap<>();
         headers.put("testPID", CT_PID_NS +"test");
         headers.put("testDsLabel", "testDeploymentIds1i1");
         headers.put("testObjMimeType", "image/jpg");
 
-        VelocityContext velocityContext = new VelocityContext();
-        velocityContext.put("date", new DateTool());
-        velocityContext.put("headers", headers);
-
-        headers.put(VelocityConstants.VELOCITY_CONTEXT, velocityContext);
-
-        String testDatastreamsXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl", "test body", headers, String.class);
-
-        log.debug(testDatastreamsXML);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i < 100; i++) {
+            sb.append("test:"+i+",");
+        }
+        sb.append("test:100");
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult.expectedMessageCount(6);
-        mockResult.expectedHeaderReceived("imageid", "testDeploymentIds1i1");
-        mockResult.expectedHeaderValuesReceivedInAnyOrder("pid", "test:004", "test:005", "test:006", "test:007", "test:008", "test:009");
+        mockResult.expectedMessageCount(100);
+        mockResult.setResultWaitTime(2000*100);
+        mockResult.expectedHeaderValuesReceivedInAnyOrder("pid", sb.toString().split(","));
+
+        MockEndpoint mockEnd = getMockEndpoint("mock:end");
+        mockEnd.expectedMessageCount(1);
 
         context.getRouteDefinition("EdanIdsProcessCtDeployment").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("ctProcessGetFedoraDatastream").replace().setBody().simple(testDatastreamsXML);
-                weaveById("ctProcessEdanUpdate").replace().to("mock:result").stop();
+
+                weaveById("ctProcessGetFedoraDatastream").replace()//.setBody().simple(testDatastreamsXML);
+                        .setHeader("testPID").simple("${header.pid}")
+                        .setHeader("testObjMimeType").simple("image/jp")
+                        .setHeader("testDsLabel").simple("testImageId_${header.pid}")
+                        .toD("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl");
+
+                weaveById("ctProcessEdanUpdate").replace().process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        long leftLimit = 1L;
+                        long rightLimit = 2000L;
+                        long generatedLong = leftLimit + (long) (Math.random() * (rightLimit - leftLimit));
+                        log.debug("delay for {}", generatedLong);
+                        Thread.sleep(generatedLong);
+                    }
+                }).to("mock:result");
+            }
+        });
+
+        context.getRouteDefinition("idsAssetImageUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("idsAssetUpdateGetFedoraOBJDatastreamContent").replace()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String resourceFilePath = KARAF_HOME + "/unified-test-deployment/testDeploymentIds1i1.JPG";
+                                File resourceFile = new File(resourceFilePath);
+                                if (resourceFile.exists()) {
+                                    out.setBody(resourceFile, File.class);
+                                } else {
+                                    out.setBody(null);
+                                }
+                            }
+                        });
+            }
+        });
+
+        context.getRouteDefinition("idsAssetXMLWriter").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveAddLast().to("mock:end");
             }
         });
 
@@ -156,7 +201,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setHeader("ProjectId", "testProjectId");
         exchange.getIn().setHeader("SiteId", "testDeploymentId");
         exchange.getIn().setHeader("SitePID", "test:003");
-        exchange.getIn().setHeader("PIDAggregation", "test:004,test:005,test:006,test:007,test:008,test:009,test:010,test:011,test:012");
+        exchange.getIn().setHeader("PIDAggregation", sb.toString());
         exchange.getIn().setHeader("ResearcherObservationPID", "test:010");
         exchange.getIn().setHeader("VolunteerObservationPID", "test:011");
         exchange.getIn().setHeader("ImageObservationPID", "test:012");
@@ -724,10 +769,18 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
             }
         });
 
+        List<IdsAsset> idsAssetList = new ArrayList<IdsAsset>();
+
+        IdsAsset asset = new IdsAsset();
+        asset.setImageid(TEST_IAMGE_ID);
+        asset.setSiteId(TEST_DEPLOYMENT_ID);
+        asset.setIsPublic("Yes");
+        asset.setIsInternal("No");
+        asset.setPid("test:001");
+        idsAssetList.add(asset);
+
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("imageid", TEST_IAMGE_ID);
-        exchange.getIn().setHeader("isPublic", "Yes");
-        exchange.getIn().setHeader("isInternal", "No");
+        exchange.getIn().setHeader("idsAssetList", idsAssetList);
 
         template.send("direct:idsVelocityTest", exchange);
 
@@ -944,7 +997,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                     }
                 };
 
-                weaveById("edanApiSendRequest").replace().process(processor);
+                weaveById("edanApiSendSingleRequest").replace().process(processor);
             }
         });
 

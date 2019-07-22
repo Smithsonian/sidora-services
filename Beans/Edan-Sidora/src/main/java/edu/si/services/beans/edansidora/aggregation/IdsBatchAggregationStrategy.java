@@ -25,11 +25,11 @@ public class IdsBatchAggregationStrategy implements AggregationStrategy {
             idsAssetList = new ArrayList<>();
             idsAssetList.add(asset);
 
-            newExchange.getIn().setHeader("idsAssetXMLList", idsAssetList);
+            newExchange.getIn().setHeader("idsAssetList", idsAssetList);
 
             return newExchange;
         } else {
-            idsAssetList = oldExchange.getIn().getHeader("idsAssetXMLList", List.class);
+            idsAssetList = oldExchange.getIn().getHeader("idsAssetList", List.class);
             idsAssetList.add(asset);
 
             return oldExchange;
