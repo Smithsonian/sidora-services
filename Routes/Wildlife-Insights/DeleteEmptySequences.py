@@ -13,15 +13,12 @@ import time
 from concurrent.futures import ALL_COMPLETED
 from string import Template
 
-import cv2
 import requests
 from lxml.etree import fromstring, tostring, parse, XSLT
 from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
 # from requests.packages.urllib3.util.retry import Retry
 from urllib3 import Retry
-
-from FaceBlurrer import FaceBlurrer
 
 ns = {"fsmgmt": "http://www.fedora.info/definitions/1/0/management/",
       "fedora": "info:fedora/fedora-system:def/relations-external#",
@@ -59,7 +56,7 @@ def getDeploymentsFromFuseki():
 
 
 # https://www.peterbe.com/plog/best-practice-with-retries-with-requests
-def doGet(pid, ds, content, deploymentPid):
+def doGet(pid, ds, content):
     FEDORA_PARAMS = {'format': 'xml'}
     if ds is None:
         URL = FEDORA_URL + "/objects/" + pid + "/datastreams"
@@ -74,30 +71,6 @@ def doGet(pid, ds, content, deploymentPid):
     content_disposition = req.headers.get('content-disposition')
     log.debug("content_type: %s, content-disposition: %s", content_type, content_disposition)
 
-    if 'image/jpeg' in content_type.lower():
-        if not content_disposition:
-            return None
-        fname = re.findall('filename="(.+?)(?=[."])', content_disposition)
-        if len(fname) == 0:
-            return None
-
-        if args.group_resources:
-            fileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + pid.replace(":", "_") + "/" + pid + "_" + fname[0] + ".jpg"
-        else:
-            fileName = output_dir + "/" + deploymentPid.replace(":", "_") + "/" + pid.replace(":", "_") + "_" + fname[0] + ".jpg"
-
-        log.debug("filename: %s", fileName)
-
-        if not os.path.exists(os.path.dirname(fileName)):
-            os.makedirs(os.path.dirname(fileName))
-
-        with open(fileName, "wb") as f:
-            for chunk in req.iter_content(chunk_size=1024):
-                # writing one chunk at a time to jpg file
-                if chunk:
-                    f.write(chunk)
-        f.close()
-        return fileName
     if 'application/json' in content_type.lower():
         # extracting data in json format
         fuseki_data = req.json()
@@ -151,25 +124,24 @@ def doDelete(pid, data, ds, params):
     log.debug("delete at url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
     return response
 
-def getOBJ(pid, deploymentPid):
+
+def getOBJ(pid):
 
     objLabel = None
-    objVersion = None
     fileName = None
 
     if pid not in (None, ''):
-        objDatastreamProfile = doGet(pid, "OBJ", False, None)
+        objDatastreamProfile = doGet(pid, "OBJ", False)
         # log.debug(tostring(objDatastreamProfile, pretty_print=True).decode())
 
         objMIME = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()", namespaces=ns)[0]
         objLabel = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsLabel/text()", namespaces=ns)[0]
-        objVersion = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsVersionID/text()", namespaces=ns)[0]
         log.debug("OBJ mimeType: %s label: %s", objMIME, objLabel)
 
         if "image" in objMIME:
             log.debug("downloading %s OBJ...", pid)
             # Save OBJ to tmp file
-            fileName = doGet(pid, "OBJ", True, deploymentPid)
+            fileName = doGet(pid, "OBJ", False)
         elif "csv" in objMIME:
             log.debug("Found Observation!!! Skipping Downloading Resource %s", pid)
         else:
@@ -179,17 +151,14 @@ def getOBJ(pid, deploymentPid):
         log.error("no resources %s", pid)
         problemList[pid] = "resources pid is null"
 
-    return fileName, objLabel, objVersion
+    return fileName, objLabel
 
 
-def removeOBJ(resourcePid, filename):
-    if dryrun:
-        log.info("%s is an empty sequence image resource. Saving to file", filename)
-        removeList.append(resourcePid)
-    else:
-        resultDelete = doDelete(resourcePid, None, "OBJ", {'versionable': 'true'})
-        log.debug("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultPut, pretty_print=True).decode())
-
+def removeOBJ(resourcePid):
+    log.info("%s is an empty sequence image resource. Saving to file")
+    #TODO: Verify purge object or pure obj datastream
+    resultDelete = doDelete(resourcePid, None, "OBJ", {'versionable': 'true'})
+    log.debug("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultDelete, pretty_print=True).decode())
     log.info("Finished removeOBJ for resource %s", resourcePid)
 
 
@@ -203,29 +172,32 @@ def doUpdate(deploymentPid, resourcePid, manifest):
     try:
         # TODO: check manifest
         if filename in (None, ''):
-            filename, label, objVersion = getOBJ(resourcePid, deploymentPid)
+            filename, label = getOBJ(resourcePid)
 
-        log.debug("OBJ version: %s, pid: %s", objVersion, resourcePid)
+        log.debug("OBJ pid: %s", resourcePid)
 
-        if args.validate and "OBJ.0" in objVersion:
-            if label not in (None, '') and filename not in (None, ''):
-                imageId = os.path.splitext(label)[0]
-                log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
-                filterList = "No Animal, Blank, Camera Misfire, False trigger, Time Lapse"
-                xpath = str("boolean(.//ImageSequence[Image[ImageId/text() = '" + imageId + "']]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('" + filterList + "', text())])")
-                isEmpty = manifest.xpath(xpath)
+        log.debug("Label: %s filename: %s", label, filename)
 
-                if isEmpty:
-                    log.debug("resource: %s, label: %s, isEmpty: %s", resourcePid, label, isEmpty)
+        if label not in (None, '') and filename not in (None, ''):
+            imageId = os.path.splitext(label)[0]
+            log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
+            filterList = "Bicycle, Blank, Calibration Photos, Camera Misfire, Camera Trapper, False trigger, \
+                Homo sapien, Homo sapiens, No Animal, Setup Pickup, Time Lapse, Vehicle"
+            xpath = str("boolean(.//ImageSequence[Image[ImageId/text() = '" + imageId + "']]/\
+                ResearcherIdentifications/Identification/SpeciesScientificName[contains('" + filterList + "', text())])")
+            isEmpty = manifest.xpath(xpath)
+            log.debug("resource: %s, label: %s, isEmpty: %s", resourcePid, label, isEmpty)
+
+            if isEmpty:
+                if not dryrun:
                     removeOBJ(resourcePid)
-                else:
-                    return resourcePid
             else:
-                log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
-                problemList[resourcePid] = "Problem with resource could not update OBJ"
+                log.debug("Resource %s is not empty. Adding to list for updated rels_ext", resourcePid)
+
+            return [resourcePid, isEmpty]
         else:
-            log.error("multiple OBJ versions, pid: %s", resourcePid)
-            problemList[resourcePid] = "multiple OBJ versions"
+            log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
+            problemList[resourcePid] = "Problem with resource could not update OBJ"
     except:
         log.exception("Error updating OBJ: pid = %s", resourcePid)
         problemList[resourcePid] = "Error updating OBJ"
@@ -234,14 +206,14 @@ def doUpdate(deploymentPid, resourcePid, manifest):
 def updateDeployment(pid):
     log.info("Processing deployment: %s, updating datastreams %s", pid, args.datastreams)
 
-    deploymentDatastreams = doGet(pid, None, False, None)
+    deploymentDatastreams = doGet(pid, None, False)
 
     log.debug("deployment objectDatastreams:\n%s", tostring(deploymentDatastreams, pretty_print=True).decode())
 
     hasMANIFEST = deploymentDatastreams.xpath("boolean(.//*[@dsid='MANIFEST'])", namespaces=ns)
     hasRELS_EXT = deploymentDatastreams.xpath("boolean(.//*[@dsid='RELS-EXT'])", namespaces=ns)
 
-    log.debug("deployment: %s, hasMANIFEST: %s, hasRELS_EXT: %s", pid, hasMANIFEST, hasRELS_EXT)
+    #log.debug("deployment: %s, hasMANIFEST: %s, hasRELS_EXT: %s", pid, hasMANIFEST, hasRELS_EXT)
 
     ## We can also check for deployment models: ['info:fedora/si:cameraTrapCModel', 'info:fedora/si:conceptCModel']
     # if hasRELS_EXT:
@@ -252,14 +224,14 @@ def updateDeployment(pid):
     #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
 
     if hasMANIFEST:
-        manifest = doGet(pid, "MANIFEST", True, None)
+        manifest = doGet(pid, "MANIFEST", True)
         # log.debug("update deployment manifest:\n%s", tostring(manifest, pretty_print=True).decode())
 
         if hasRELS_EXT:
-            deploymentRelsExt = doGet(pid, "RELS-EXT", True, None)
+            deploymentRelsExt = doGet(pid, "RELS-EXT", True)
             # log.debug(tostring(deploymentRelsExt, pretty_print=True).decode())
 
-            log.debug("deployment: %s, resource pid for camera make and model: %s", pid, cameraInfoResourcePid)
+            #log.debug("deployment: %s, resource pid for camera make and model: %s", pid, cameraInfoResourcePid)
 
             resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
             resourceList = [p.split("info:fedora/")[1] for p in resourceList]
@@ -269,31 +241,44 @@ def updateDeployment(pid):
                 concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
 
             vslPids = list()
-            if not dryrun:
-                for future in concurrent.futures.as_completed(futures):
-                    pid = futures[future]
-                    try:
-                        data = future.result()
-                    except Exception as exc:
-                        print('%r generated an exception: %s' % (pid, exc))
-                    else:
-                        print('adding good pid to RELS-EXT list %s, data)
-                        if data not in (None, ''):
-                            vslPids.append(data)
+            emptyList = list()
 
-                    velocityString = ''
+            for future in concurrent.futures.as_completed(futures):
+                # pid = futures[future]
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    print('%r generated an exception: %s' % (pid, exc))
+                else:
+                    if data not in (None, ''):
+                        print('adding good pid to RELS-EXT list %s', data)
+                        if data[1]:
+                            vslPids.append(data[0])
+                        else:
+                            emptyList.append(data[0])
+            if dryrun:
+                relsExtDryrunFile = output_dir + "/deployment_" + pid + "_nonEmptySequences.csv"
 
-                    for pid in vslPids:
-                        velocityString += "<fedora:hasResource rdf:resource=\"info:fedora/" + pid + "\"/>"
+                if not os.path.exists(os.path.dirname(relsExtDryrunFile)):
+                    os.makedirs(os.path.dirname(relsExtDryrunFile))
 
-                    RELS_EXT_DS = Template(relsExtTemplate).substitute(resourcePidObjects=velocityString, parentDeploymentPid=str(pid))
-                    updateRELS_EXT(resourcePid, RELS_EXT_DS, deploymentPid)
+                w = csv.writer(open(relsExtDryrunFile, "w"))
+                for pid in vslPids:
+                    w.writerow([pid])
+            else:
+                velocityString = ''
+
+                for pid in vslPids:
+                    velocityString += "<fedora:hasResource rdf:resource=\"info:fedora/" + pid + "\"/>"
+
+                RELS_EXT_DS = Template(relsExtTemplate).substitute(resourcePidObjects=velocityString, parentDeploymentPid=str(pid))
+                updateRELS_EXT(RELS_EXT_DS, pid)
 
             # for resourcePid in resourceList:
             #     doUpdate(pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest)
-
             log.info("Finished Updating Resources for Deployment %s", pid)
-
+            log.debug("Length of list: %d", len(emptyList))
+            return emptyList
         else:
             log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
             problemList[pid] = "Deployment has no RELS-EXT datastream"
@@ -301,12 +286,9 @@ def updateDeployment(pid):
         log.error("Deployment has no MANIFEST datastream: pid = %s", pid)
         problemList[pid] = "Deployment has no MANIFEST datastream"
 
-def updateRELS_EXT(ds, RELS_EXT_DS, deploymentPid):
-    if dryrun:
-        log.info("Skipping deployment RELS_EXT update!!!")
-    else:
-        result = doPut(deploymentPid, RELS_EXT_DS, "RELS-EXT", {'mimeType': 'text/xml', 'versionable': "true"})
-        log.debug("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
+def updateRELS_EXT(RELS_EXT_DS, deploymentPid):
+    result = doPut(deploymentPid, RELS_EXT_DS, "RELS-EXT", {'mimeType': 'text/xml', 'versionable': "true"})
+    log.debug("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
 
     log.info("Finished updateRELS_EXT for deployment %s", deploymentPid)
 
@@ -333,7 +315,7 @@ def createDeploymentPidFile():
 
 def findDeployments(pid, ds):
 
-    objectDatastreams = doGet(pid, None, False, None)
+    objectDatastreams = doGet(pid, None, False)
 
     isDeployment = objectDatastreams.xpath(".//*[@dsid='FGDC'] and .//*[@dsid='MANIFEST']", namespaces=ns)
     log.debug("pid: %s, isDeployment: %s", pid, isDeployment)
@@ -348,7 +330,7 @@ def findDeployments(pid, ds):
     #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
 
     if not isDeployment and hasRelsExt:
-        relsExtDs = doGet(pid, ds, True, None)
+        relsExtDs = doGet(pid, ds, True)
         resourceList = relsExtDs.xpath(".//fedora:hasConcept/@rdf:resource", namespaces=ns)
 
         resourceList = [p.split("info:fedora/")[1] for p in resourceList]
@@ -435,14 +417,27 @@ def main():
 
         finish = time.time()
 
+        for future in concurrent.futures.as_completed(futures):
+            #pid = futures[future]
+            try:
+                data = future.result()
+            except Exception as exc:
+                log.error("An error occurred")
+            else:
+                if data not in (None, ''):
+                    print('adding good pid to RELS-EXT list %s', data)
+                    removeList = removeList + data
+
+        log.debug("Length of removeList is %d", len(removeList))
+
         emptiesFileName = output_dir + "/emptySequences.csv"
 
-        if not os.path.exists(os.path.dirname(fileName)):
-            os.makedirs(os.path.dirname(fileName))
+        if not os.path.exists(os.path.dirname(emptiesFileName)):
+            os.makedirs(os.path.dirname(emptiesFileName))
 
         w = csv.writer(open(output_dir + "/emptySequences.csv", "w"))
         for pid in removeList:
-            w.writerow(pid)
+            w.writerow([pid])
 
         log.info("Finished Updating all Deployments... elapsed time: %s:", (finish-start))
     else:
@@ -497,7 +492,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]  %(message)s",
                         handlers=[
-                            logging.FileHandler("updateLegacyCT.log"),
+                            logging.FileHandler("DeleteEmptySequences.log"),
                             logging.StreamHandler(sys.stdout)
                         ])
     log = logging.getLogger(__name__)
@@ -541,7 +536,7 @@ if __name__ == "__main__":
         log.info("pool_block = %s", pool_block)
         pooled_connections = config.get("defaults", "pooled.connections")
         polled_maxsize = config.get("defaults", "polled.maxsize")
-        relsExtTemplate = open(config.get("defaults", "relsext.template "), "r+").read()
+        relsExtTemplate = open(config.get("defaults", "relsext.template"), "r+").read()
     else:
         sys.exit("missing config properties file!!!")
 
@@ -553,11 +548,13 @@ if __name__ == "__main__":
 
     initHttp()
 
-    if args.dry_run:
-        log.warning("dryrun on: %s", str(args.dry_run))
-        dryrun = True
-    else:
-        dryrun = False
+    dryrun = True
+
+    #if args.dry_run:
+        #log.warning("dryrun on: %s", str(args.dry_run))
+        #dryrun = True
+    #else:
+    #    dryrun = False
 
     if args.infile:
         if os.path.exists(args.infile):
@@ -576,9 +573,11 @@ if __name__ == "__main__":
             # sys.exit()
         else:
             sys.exit("ERROR: Must provide an infile containing list of PIDS to update OR outfile name for deployment pids to be saved to!!!")
+    problemList = dict()
+    main()
 
-    if args.datastreams:
-        problemList = dict()
-        main()
-    else:
-        sys.exit("No further processing. Datastreams not provided!!!")
+    #if args.datastreams:
+        #problemList = dict()
+        #main()
+    #else:
+        #sys.exit("No further processing. Datastreams not provided!!!")
