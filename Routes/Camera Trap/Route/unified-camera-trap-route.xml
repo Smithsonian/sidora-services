@@ -958,7 +958,7 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <setHeader headerName="imagePurged">
+            <setHeader headerName="imageSkipped">
                 <simple resultType="java.lang.Boolean">false</simple>
             </setHeader>
 
@@ -1013,7 +1013,7 @@
                     //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = 'No Animal' or 'Blank' or 'Camera Misfire' or 'False trigger' or 'Time Lapse'
                 </xpath>
 
-                <setHeader headerName="imagePurged">
+                <setHeader headerName="imageSkipped">
                     <simple resultType="java.lang.Boolean">true</simple>
                 </setHeader>
 
@@ -1023,7 +1023,7 @@
             </filter>
 
             <log id="emptySequenceFilter"
-                 message="Purged Image Count After Filter: ${header.purgedImageCount}"
+                 message="Skipped Image Count After Filter: ${header.skippedImageCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -2473,13 +2473,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
