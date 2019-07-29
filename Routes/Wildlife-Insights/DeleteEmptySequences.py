@@ -13,6 +13,7 @@ import time
 from concurrent.futures import ALL_COMPLETED
 from string import Template
 
+import datetime as datetime
 import requests
 from lxml.etree import fromstring, tostring, parse, XSLT
 from requests.adapters import HTTPAdapter
@@ -30,8 +31,6 @@ ns = {"fsmgmt": "http://www.fedora.info/definitions/1/0/management/",
 global FEDORA_URL
 global FUSEKI_URL
 global FITS_URL
-
-global removeList
 
 def getDeploymentsFromFuseki():
     # fuseki query param
@@ -81,27 +80,6 @@ def doGet(pid, ds, content):
         log.debug("pid: %s, response:\n%s", pid, tostring(response, pretty_print=True).decode())
         return response
 
-
-def doPost(pid, data, ds, params):
-    if params:
-        FEDORA_PARAMS = params
-    else:
-        FEDORA_PARAMS = {'format': 'xml'}
-
-    if ds is None:
-        URL = FEDORA_URL + "/objects/" + pid + "/datastreams"
-    else:
-        URL = FEDORA_URL + "/objects/" + pid + "/datastreams/" + ds
-
-    req = r.post(url=URL, params=FEDORA_PARAMS, auth=HTTPBasicAuth(fedora_user, fedora_pass), data=data)
-    log.info("pid: %s, url: %s", pid, req.url + "<--------------------")
-    content_type = req.headers.get("content-type")
-    content_disposition = req.headers.get('content-disposition')
-    response = fromstring(req.content)
-    log.debug("post to url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
-    return response
-
-
 def doPut(pid, data, ds, params):
     FEDORA_PARAMS = params
 
@@ -113,10 +91,11 @@ def doPut(pid, data, ds, params):
     log.debug("put to url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
     return response
 
-def doDelete(pid, data, ds, params):
+
+def doDelete(pid, params):
     FEDORA_PARAMS = params
 
-    URL = FEDORA_URL + "/objects" + pid + "/datastreams/" + ds
+    URL = FEDORA_URL + "/objects" + pid
 
     req = r.delete(url=URL, params=FEDORA_PARAMS, auth=HTTPBasicAuth(fedora_user, fedora_pass))
     log.info("pid: %s, url: %s", pid, req.url + "<--------------------")
@@ -157,7 +136,7 @@ def getOBJ(pid):
 def removeOBJ(resourcePid):
     log.info("%s is an empty sequence image resource. Saving to file")
     #TODO: Verify purge object or pure obj datastream
-    resultDelete = doDelete(resourcePid, None, "OBJ", {'versionable': 'true'})
+    resultDelete = doDelete(resourcePid, {'versionable': 'true'})
     log.debug("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultDelete, pretty_print=True).decode())
     log.info("Finished removeOBJ for resource %s", resourcePid)
 
@@ -181,19 +160,19 @@ def doUpdate(deploymentPid, resourcePid, manifest):
         if label not in (None, '') and filename not in (None, ''):
             imageId = os.path.splitext(label)[0]
             log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
-            filterList = "Bicycle, Blank, Calibration Photos, Camera Misfire, Camera Trapper, False trigger, \
-                Homo sapien, Homo sapiens, No Animal, Setup Pickup, Time Lapse, Vehicle"
+            filterList = "No Animal, Blank, Camera Misfire, False trigger, Time Lapse"
             xpath = str("boolean(.//ImageSequence[Image[ImageId/text() = '" + imageId + "']]/\
                 ResearcherIdentifications/Identification/SpeciesScientificName[contains('" + filterList + "', text())])")
             isEmpty = manifest.xpath(xpath)
             log.debug("resource: %s, label: %s, isEmpty: %s", resourcePid, label, isEmpty)
 
             if isEmpty:
+                log.debug("Resource %s is empty", resourcePid)
                 if not dryrun:
                     removeOBJ(resourcePid)
             else:
                 log.debug("Resource %s is not empty. Adding to list for updated rels_ext", resourcePid)
-
+            log.debug("resourcePid: " + resourcePid + " isEmpty: " + str(isEmpty))
             return [resourcePid, isEmpty]
         else:
             log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
@@ -236,6 +215,13 @@ def updateDeployment(pid):
             resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
             resourceList = [p.split("info:fedora/")[1] for p in resourceList]
 
+            projId = str(manifest.xpath("//ProjectId/text()")).replace('[\'', '').replace('\']', '')
+            subId = str(manifest.xpath("//SubProjectId/text()")).replace('[\'', '').replace('\']', '')
+
+            log.debug("ProjectId: %s SubProjectId: %s", projId, subId)
+
+            deploymentOutputName = projId + "_" + subId + "_" + pid
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
                 futures = [executor.submit(doUpdate, pid, resourcePid, manifest) for resourcePid in resourceList]
                 concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
@@ -251,21 +237,13 @@ def updateDeployment(pid):
                     print('%r generated an exception: %s' % (pid, exc))
                 else:
                     if data not in (None, ''):
-                        print('adding good pid to RELS-EXT list %s', data)
                         if data[1]:
-                            vslPids.append(data[0])
-                        else:
+                            log.debug("data[1] is: %s, adding to vslPids", str(data[1]))
                             emptyList.append(data[0])
-            if dryrun:
-                relsExtDryrunFile = output_dir + "/deployment_" + pid + "_nonEmptySequences.csv"
-
-                if not os.path.exists(os.path.dirname(relsExtDryrunFile)):
-                    os.makedirs(os.path.dirname(relsExtDryrunFile))
-
-                w = csv.writer(open(relsExtDryrunFile, "w"))
-                for pid in vslPids:
-                    w.writerow([pid])
-            else:
+                        else:
+                            log.debug("data[1] is: %s, adding to emptyList", str(data[1]))
+                            vslPids.append(data[0])
+            if not dryrun:
                 velocityString = ''
 
                 for pid in vslPids:
@@ -278,7 +256,7 @@ def updateDeployment(pid):
             #     doUpdate(pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest)
             log.info("Finished Updating Resources for Deployment %s", pid)
             log.debug("Length of list: %d", len(emptyList))
-            return emptyList
+            return [deploymentOutputName, vslPids, emptyList]
         else:
             log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
             problemList[pid] = "Deployment has no RELS-EXT datastream"
@@ -406,6 +384,9 @@ def main():
 
         start = time.time()  # let's see how long this takes
         removeList = list()
+        keepList = list()
+
+
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             futures = [executor.submit(updateDeployment, pid) for pid in deploymentList]
@@ -422,23 +403,38 @@ def main():
             try:
                 data = future.result()
             except Exception as exc:
-                log.error("An error occurred")
+                log.error("An error occurred in retrieving future from updateDeployment")
             else:
                 if data not in (None, ''):
                     print('adding good pid to RELS-EXT list %s', data)
-                    removeList = removeList + data
+                    removeList = removeList + data[2]
+                    keepList.append([data[0], data[1]])
+
+        date = datetime.datetime.now()
+        date_string = str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(date.hour) + ":" + str(
+            date.minute) + ":" + str(date.second)
 
         log.debug("Length of removeList is %d", len(removeList))
+        log.debug("Date String is: " + date_string)
 
-        emptiesFileName = output_dir + "/emptySequences.csv"
+        emptiesFileName = "empty_sequence_output_" + date_string + ".csv"
+        log.debug("emptiesFileName: " + emptiesFileName)
 
-        if not os.path.exists(os.path.dirname(emptiesFileName)):
-            os.makedirs(os.path.dirname(emptiesFileName))
+        if not os.path.exists(os.path.dirname(output_dir + "/" + emptiesFileName)):
+            os.makedirs(os.path.dirname(output_dir + "/" + emptiesFileName))
 
-        w = csv.writer(open(output_dir + "/emptySequences.csv", "w"))
+        w = csv.writer(open(output_dir + "/" + emptiesFileName, "w"))
+        w.writerow(["dryrun: " + str(dryrun)])
+        w.writerow(["Empty Sequences: "])
+        w.writerow(["count: " + str(len(removeList))])
         for pid in removeList:
             w.writerow([pid])
-
+        w.writerow(["Sequences Kept (listed by deployment): "])
+        for deployment in keepList:
+            w.writerow([deployment[0] + ": "])
+            w.writerow(["count: " + str(len(deployment[1]))])
+            for seq in deployment[1]:
+                w.writerow([seq])
         log.info("Finished Updating all Deployments... elapsed time: %s:", (finish-start))
     else:
         sys.exit("Error pid list is empty!!!")
@@ -548,13 +544,13 @@ if __name__ == "__main__":
 
     initHttp()
 
-    dryrun = True
+    #dryrun = True
 
-    #if args.dry_run:
-        #log.warning("dryrun on: %s", str(args.dry_run))
-        #dryrun = True
-    #else:
-    #    dryrun = False
+    if args.dry_run:
+        log.warning("dryrun on: %s", str(args.dry_run))
+        dryrun = True
+    else:
+        dryrun = False
 
     if args.infile:
         if os.path.exists(args.infile):
@@ -573,11 +569,11 @@ if __name__ == "__main__":
             # sys.exit()
         else:
             sys.exit("ERROR: Must provide an infile containing list of PIDS to update OR outfile name for deployment pids to be saved to!!!")
-    problemList = dict()
-    main()
+    # problemList = dict()
+    # main()
 
-    #if args.datastreams:
-        #problemList = dict()
-        #main()
-    #else:
-        #sys.exit("No further processing. Datastreams not provided!!!")
+    if args.datastreams:
+        problemList = dict()
+        main()
+    else:
+        sys.exit("No further processing. Datastreams not provided!!!")
