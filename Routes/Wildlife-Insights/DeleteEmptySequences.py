@@ -173,7 +173,7 @@ def doUpdate(deploymentPid, resourcePid, manifest):
             else:
                 log.debug("Resource %s is not empty. Adding to list for updated rels_ext", resourcePid)
             log.debug("resourcePid: " + resourcePid + " isEmpty: " + str(isEmpty))
-            return [resourcePid, isEmpty]
+            return [resourcePid, label, isEmpty]
         else:
             log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
             problemList[resourcePid] = "Problem with resource could not update OBJ"
@@ -215,18 +215,16 @@ def updateDeployment(pid):
             resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
             resourceList = [p.split("info:fedora/")[1] for p in resourceList]
 
-            projId = str(manifest.xpath("//ProjectId/text()")).replace('[\'', '').replace('\']', '')
-            subId = str(manifest.xpath("//SubProjectId/text()")).replace('[\'', '').replace('\']', '')
-
-            log.debug("ProjectId: %s SubProjectId: %s", projId, subId)
-
-            deploymentOutputName = projId + "_" + subId + "_" + pid
+            crumbtrailValues = getDeploymentCrumbtrail(pid)
+            pidCrumbtrail = crumbtrailValues[0]
+            labelCrumbtrail = crumbtrailValues[1]
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
                 futures = [executor.submit(doUpdate, pid, resourcePid, manifest) for resourcePid in resourceList]
                 concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
 
             vslPids = list()
+            keepList = list()
             emptyList = list()
 
             for future in concurrent.futures.as_completed(futures):
@@ -237,12 +235,15 @@ def updateDeployment(pid):
                     print('%r generated an exception: %s' % (pid, exc))
                 else:
                     if data not in (None, ''):
-                        if data[1]:
+                        resourcePidCrumbtrail = pidCrumbtrail + data[0]
+                        resourceLabelCrumbtrail = labelCrumbtrail + data[1]
+                        if data[2]:
                             log.debug("data[1] is: %s, adding to vslPids", str(data[1]))
-                            emptyList.append(data[0])
+                            emptyList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
                         else:
                             log.debug("data[1] is: %s, adding to emptyList", str(data[1]))
-                            vslPids.append(data[0])
+                            keepList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
+                            vslPids.append([data[0]])
             if not dryrun:
                 velocityString = ''
 
@@ -256,7 +257,7 @@ def updateDeployment(pid):
             #     doUpdate(pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest)
             log.info("Finished Updating Resources for Deployment %s", pid)
             log.debug("Length of list: %d", len(emptyList))
-            return [deploymentOutputName, vslPids, emptyList]
+            return [keepList, emptyList]
         else:
             log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
             problemList[pid] = "Deployment has no RELS-EXT datastream"
@@ -269,6 +270,59 @@ def updateRELS_EXT(RELS_EXT_DS, deploymentPid):
     log.debug("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
 
     log.info("Finished updateRELS_EXT for deployment %s", deploymentPid)
+
+
+def getDeploymentCrumbtrail(pid):
+    # fuseki query param
+    # query = "SELECT ?ctPID FROM <info:edu.si.fedora#ri> WHERE {?ctPID <info:fedora/fedora-system:def/model#hasModel> <info:fedora/si:cameraTrapCModel>.}"
+
+    # (count(?ctPID) as ?count)
+    try:
+        query = "SELECT ?ctPID ?ctLabel ?sitePID ?siteLabel ?parkPID ?parkLabel ?projectPID ?projectLabel ?subprojectPID ?subprojectLabel ?plotPID ?plotLabel FROM <info:edu.si.fedora#ri> WHERE { ?ctPID <info:fedora/fedora-system:def/relations-external#hasResource> <info:fedora/test.smx.home:33> ; <info:fedora/fedora-system:def/model#label> ?ctLabel . OPTIONAL { ?sitePID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#hasModel> <info:fedora/si:ctPlotCModel> ; <info:fedora/fedora-system:def/model#label> ?siteLabel . ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?sitePID ; <info:fedora/fedora-system:def/model#label> ?parkLabel } . OPTIONAL { ?plotPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?plotLabel . ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?parkLabel } . ?projectPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?parkPID ; <info:fedora/fedora-system:def/model#label> ?projectLabel . ?subprojectPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?parkPID ; <info:fedora/fedora-system:def/model#label> ?subprojectLabel }"
+        # defining a params dict for the parameters to be sent
+        FUSEKI_PARAMS = {'query': query}
+
+        # sending get request and saving the response as response object
+        fuseki_request = r.get(url=FUSEKI_URL, params=FUSEKI_PARAMS)
+        # extracting data in json format
+        fuseki_data = fuseki_request.json()
+
+        log.info(fuseki_data)
+        log.info("TYPE OF FUSEKI_DATA: " + str(type(fuseki_data)))
+
+        bindings = fuseki_data["results"]["bindings"][0]
+
+        # extract PIDS
+        deploymentPID = bindings["ctPID"]["value"].replace("info:fedora/", "")
+
+        try:
+            plotPID = "_" + bindings["plotPID"]["value"].replace("info:fedora/", "") + "-"
+        except:
+            plotPID = "_"
+
+        subprojectPID = bindings["subprojectPID"]["value"].replace("info:fedora/", "")
+        projectPID = bindings["projectPID"]["value"].replace("info:fedora/", "")
+
+        pidCrumbtrail = projectPID + "_" + subprojectPID + plotPID + deploymentPID + "_"
+
+        #extract Labels
+
+        deploymentLabel = bindings["ctLabel"]["value"]
+
+        try:
+            plotLabel = "_" + bindings["plotLabel"]["value"] + "_"
+        except:
+            plotLabel = "_"
+
+        subprojectLabel = bindings["subprojectLabel"]["value"]
+        projectLabel = bindings["projectLabel"]["value"]
+
+        labelCrumbtrail = projectLabel + "_" + subprojectLabel + plotLabel + deploymentLabel + "_"
+
+        return [pidCrumbtrail, labelCrumbtrail]
+    except:
+        log.error("Error retrieving fuseki data")
+        return ["", ""]
 
 def createDeploymentPidFile():
     start = time.time() # let's see how long this takes
@@ -292,7 +346,6 @@ def createDeploymentPidFile():
 
 
 def findDeployments(pid, ds):
-
     objectDatastreams = doGet(pid, None, False)
 
     isDeployment = objectDatastreams.xpath(".//*[@dsid='FGDC'] and .//*[@dsid='MANIFEST']", namespaces=ns)
@@ -370,6 +423,7 @@ def main():
             delete = True
         else:
             delete = yes_or_no("Removing any existing files from '" + output_dir + "' y directory!!!")
+        # delete = True
 
         if delete:
             for f in os.listdir(output_dir):
@@ -385,8 +439,6 @@ def main():
         start = time.time()  # let's see how long this takes
         removeList = list()
         keepList = list()
-
-
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             futures = [executor.submit(updateDeployment, pid) for pid in deploymentList]
@@ -407,8 +459,8 @@ def main():
             else:
                 if data not in (None, ''):
                     print('adding good pid to RELS-EXT list %s', data)
-                    removeList = removeList + data[2]
-                    keepList.append([data[0], data[1]])
+                    removeList = removeList + data[1]
+                    keepList = keepList + data[0]
 
         date = datetime.datetime.now()
         date_string = str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(date.hour) + ":" + str(
@@ -425,16 +477,14 @@ def main():
 
         w = csv.writer(open(output_dir + "/" + emptiesFileName, "w"))
         w.writerow(["dryrun: " + str(dryrun)])
-        w.writerow(["Empty Sequences: "])
+        w.writerow(["Objects Purged: "])
         w.writerow(["count: " + str(len(removeList))])
-        for pid in removeList:
-            w.writerow([pid])
-        w.writerow(["Sequences Kept (listed by deployment): "])
-        for deployment in keepList:
-            w.writerow([deployment[0] + ": "])
-            w.writerow(["count: " + str(len(deployment[1]))])
-            for seq in deployment[1]:
-                w.writerow([seq])
+        for removeSet in removeList:
+            w.writerow([removeSet[0], removeSet[1]])
+        w.writerow(["Objects Preserved: "])
+        w.writerow(["count: " + str(len(keepList))])
+        for keepSet in keepList:
+            w.writerow([keepSet[0], keepSet[1]])
         log.info("Finished Updating all Deployments... elapsed time: %s:", (finish-start))
     else:
         sys.exit("Error pid list is empty!!!")
