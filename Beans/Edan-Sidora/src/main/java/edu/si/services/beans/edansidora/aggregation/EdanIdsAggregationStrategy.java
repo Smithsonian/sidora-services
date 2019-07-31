@@ -57,14 +57,23 @@ public class EdanIdsAggregationStrategy implements AggregationStrategy {
 
         if (oldExchange == null) {
             idsAssetList = new ArrayList<>();
+
+            //add only public assets
+            if (asset.getIsPublic().equalsIgnoreCase("yes")) {
             idsAssetList.add(asset);
+            }
 
             newExchange.getIn().setHeader("idsAssetList", idsAssetList);
 
             return newExchange;
         } else {
             idsAssetList = oldExchange.getIn().getHeader("idsAssetList", List.class);
+
+            //add only public assets
+            if (asset.getIsPublic().equalsIgnoreCase("yes")) {
             idsAssetList.add(asset);
+            }
+
             return oldExchange;
         }
     }

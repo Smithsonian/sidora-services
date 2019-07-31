@@ -141,7 +141,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
 //                weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -202,7 +202,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -267,7 +267,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -328,7 +328,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -412,7 +412,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg2);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace()
@@ -550,7 +550,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Met//log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);hod: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg2);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace()
@@ -638,7 +638,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -699,7 +699,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("startProcessingFedoraMessage").replace()

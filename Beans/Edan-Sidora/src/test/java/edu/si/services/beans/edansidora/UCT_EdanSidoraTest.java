@@ -27,8 +27,8 @@
 
 package edu.si.services.beans.edansidora;
 
-import com.amazonaws.services.dynamodbv2.xspec.S;
 import edu.si.services.beans.edansidora.aggregation.EdanBulkAggregationStrategy;
+import edu.si.services.beans.edansidora.model.IdsAsset;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
@@ -36,44 +36,27 @@ import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.component.velocity.VelocityConstants;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.FilterDefinition;
-import org.apache.camel.model.SplitDefinition;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.DateTool;
 import org.custommonkey.xmlunit.XMLAssert;
+import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.*;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import edu.si.services.beans.edansidora.model.IdsAsset;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
+import java.util.*;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
 
@@ -250,7 +233,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         mockFilter.expectedMessageCount(0);
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -270,63 +253,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         assertMockEndpointsSatisfied();
     }
 
-    @Test
-    public void fedoraMessageTest() throws Exception {
-        //String testFedoraMessageBody = readFileToString(new File(KARAF_HOME + "/JMS-test-data/otherUser-modifyDatastreamByValue.atom"));
-        HashMap<String, Object> headers = new HashMap<>();
-        headers.put("origin", "otherUser");
-        headers.put("methodName", "modifyDatastreamByValue");
-        headers.put("testPID", CT_PID_NS+"1");
-        headers.put("testDsLabel", "testDeploymentIds1i1");
-        headers.put("testDsId", "OBJ");
-        headers.put("testObjMimeType", "image/jpg");
-        headers.put("testFedoraModel", "info:fedora/si:generalImageCModel");
 
-        VelocityContext velocityContext = new VelocityContext();
-        velocityContext.put("date", new DateTool());
-        velocityContext.put("headers", headers);
-
-        headers.put(VelocityConstants.VELOCITY_CONTEXT, velocityContext);
-
-        String jmsMsg = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_atom.vsl", "test body", headers, String.class);
-        String dsXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl", "test body", headers, String.class);
-        String rels_extXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_RELS-EXT.vsl", "test body", headers, String.class);
-
-        log.debug(jmsMsg);
-
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult.expectedMessageCount(1);
-        //resultEndpoint.expectedBodiesReceived(jmsMsg);
-        mockResult.expectedHeaderReceived("origin", "otherUser");
-        mockResult.expectedHeaderReceived("methodName", "modifyDatastreamByValue");
-        mockResult.expectedHeaderReceived("pid", CT_PID_NS+"1");
-        mockResult.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-
-        MockEndpoint mockFilter = getMockEndpoint("mock:filter");
-        mockFilter.expectedMessageCount(0);
-        mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
-                weaveById("processFedoraGetRELS-EXT").replace().setBody().simple(rels_extXML);
-                weaveById("logFilteredMessage").after().to("mock:filter");
-                weaveById("startProcessingFedoraMessage").replace()
-                        .log(LoggingLevel.DEBUG, "${body}")
-                        .to("mock:result");
-            }
-        });
-
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
-        exchange.getIn().setHeader("pid", CT_PID_NS+"1");
-        exchange.getIn().setBody(jmsMsg);
-
-        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
-
-        assertMockEndpointsSatisfied();
-    }
 
     @Test
     public void fedoraDeleteMessageTest() throws Exception {
@@ -358,7 +285,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         mockDelete.expectedMessageCount(2);
         mockDelete.expectedHeaderValuesReceivedInAnyOrder("imageid", "testDeploymentIds1i1000", "testRaccoonAndFox");
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraEdanDelete").after().to("mock:result").stop();
@@ -391,7 +318,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
 
-        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsProcessFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraFindParentObject").remove();
@@ -402,26 +329,27 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         });
 
         Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("SiteId", TEST_DEPLOYMENT_ID);
         exchange.getIn().setHeader("ManifestXML", testManifestXML);
 
         // Double-identification set with raccoon and human:
         exchange.getIn().setHeader("imageid", "testImageRaccoonAndMan");
-        template.send("seda:edanUpdate", exchange);
+        template.send("seda:processFedoraMessage", exchange);
 
         // Set with human:
         exchange.getIn().setHeader("imageid", "testImageMan");
         exchange.setProperty(Exchange.ROUTE_STOP, false);
-        template.send("seda:edanUpdate", exchange);
+        template.send("seda:processFedoraMessage", exchange);
 
         // Set with human and vehicle:
         exchange.getIn().setHeader("imageid", "testImageRaccoonAndVehicleAndMan");
         exchange.setProperty(Exchange.ROUTE_STOP, false);
-        template.send("seda:edanUpdate", exchange);
+        template.send("seda:processFedoraMessage", exchange);
 
         // Double-identification set with Raccoon and Fox:
         exchange.getIn().setHeader("imageid", "RaccoonAndFox");
         exchange.setProperty(Exchange.ROUTE_STOP, false);
-        template.send("seda:edanUpdate", exchange);
+        template.send("seda:processFedoraMessage", exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -444,8 +372,6 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraFindParentObject").remove();
-                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
 
                 weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
                         .process(new Processor() {
@@ -469,71 +395,8 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", testManifestXML);
         exchange.getIn().setHeader("pid", "test:0001");
-        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
-
-        template.send("seda:edanUpdate", exchange);
-
-        assertMockEndpointsSatisfied();
-
-        String resultJson = URLDecoder.decode(mockResult.getReceivedExchanges().get(0).getIn().getHeader("edanJson", String.class), "UTF-8");
-        JSONObject result = new JSONObject(resultJson);
-
-        JSONObject expected = new JSONObject(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_withEdanId.json")));
-        JSONAssert.assertEquals(expected, result, JSONCompareMode.LENIENT);
-        JSONAssert.assertEquals(expected, result, JSONCompareMode.STRICT);
-    }
-
-    /**
-     * Testing the updateEdan route when there is an existing edan record and an EDAN editRecord request is needed.
-     * @throws Exception
-     */
-    @Test
-    public void updateEdanBatchEditContentTest() throws Exception {
-        String testManifestXML = readFileToString(testManifest);
-
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("edanId", "p2b-1515252134647-1516215519247-0");
-        mockResult.expectedHeaderReceived("edanTitle", "Camera Trap Image Northern Raccoon, Red Fox");
-        mockResult.expectedHeaderReceived("edanType", "emammal_image");
-        mockResult.expectedHeaderReceived("SiteId", "testDeploymentId");
-
-        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("processFedoraFindParentObject").remove();
-                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
-
-                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message out = exchange.getIn();
-                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_Exists.json";
-                                File resourceFile = new File(resourceFilePath);
-                                if (resourceFile.exists()) {
-                                    out.setBody(resourceFile, String.class);
-                                } else {
-                                    out.setBody(null);
-                                }
-                            }
-                        });
-                //weaveById("edanUpdateEditContent").replace().log(LoggingLevel.INFO, "Skipping Edan Edit Content!!!");
-                weaveById("edanUpdateEditContent").replace().log(LoggingLevel.INFO, "Skipping Edan Edit Content!!!")
-                        .aggregate(simple("${header.edanServiceEndpoint}"), new EdanBulkAggregationStrategy())
-                        .completionTimeout(1000)
-                        .parallelProcessing(Boolean.parseBoolean("true"))
-                        .setHeader(Exchange.HTTP_QUERY).groovy("\"content=\" + URLEncoder.encode(request.headers.get('edanBulkRequests'));")
-                        .to("bean:edanApiBean?method=sendRequest")
-                        .convertBodyTo(String.class);
-                weaveAddLast().to("mock:result");
-            }
-        });
-
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("ManifestXML", testManifestXML);
-        exchange.getIn().setHeader("pid", "test:0001");
-        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
+        exchange.getIn().setHeader("SiteId", TEST_DEPLOYMENT_ID);
+        exchange.getIn().setHeader("imageid", TEST_IAMGE_ID);
 
         template.send("seda:edanUpdate", exchange);
 
@@ -556,13 +419,10 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         String testManifestXML = readFileToString(testManifest);
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("edanId", "p2b-1515252134647-1516215519247-0");
 
         context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraFindParentObject").remove();
-                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
 
                 weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
                         .process(new Processor() {
@@ -599,61 +459,8 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", testManifestXML);
         exchange.getIn().setHeader("pid", "test:0001");
-        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
-
-        template.send("seda:edanUpdate", exchange);
-
-        assertMockEndpointsSatisfied();
-
-        String resultJson = URLDecoder.decode(mockResult.getReceivedExchanges().get(0).getIn().getHeader("edanJson", String.class), "UTF-8");
-        JSONObject result = new JSONObject(resultJson);
-
-        JSONObject expected = new JSONObject(readFileToString(new File(KARAF_HOME + "/test-json-data/testEdanJsonContentEncoded_NoEdanId.json")));
-        JSONAssert.assertEquals(expected, result, JSONCompareMode.LENIENT);
-        JSONAssert.assertEquals(expected, result, JSONCompareMode.STRICT);
-    }
-
-    /**
-     * TODO: REWORK THIS test
-     * Testing the updateEdan route when there is no existing edan record and an EDAN createRecord request is needed.
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void updateEdanCreateContentBatchTest() throws Exception {
-        String testManifestXML = readFileToString(testManifest);
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("edanId", "p2b-1515252134647-1516215519247-0");
-
-        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("processFedoraFindParentObject").remove();
-                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
-
-                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message out = exchange.getIn();
-                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_NotExist.json";
-                                File resourceFile = new File(resourceFilePath);
-                                if (resourceFile.exists()) {
-                                    out.setBody(resourceFile, String.class);
-                                } else {
-                                    out.setBody(null);
-                                }
-                            }
-                        });
-                weaveAddLast().to("mock:result");
-            }
-        });
-
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("ManifestXML", testManifestXML);
-        exchange.getIn().setHeader("pid", "test:0001");
-        exchange.getIn().setHeader("imageid", "testRaccoonAndFox");
+        exchange.getIn().setHeader("SiteId", TEST_DEPLOYMENT_ID);
+        exchange.getIn().setHeader("imageid", TEST_IAMGE_ID);
 
         template.send("seda:edanUpdate", exchange);
 
@@ -744,7 +551,10 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     public void idsVelocityTest() throws Exception {
         String expectedBody = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
                 "<Assets>\n" +
-                "  <Asset Name=\"" + getExtra().getProperty("si.edu.idsAssetImagePrefix") + TEST_IAMGE_ID + ".JPG\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">" + getExtra().getProperty("si.edu.idsAssetImagePrefix") + TEST_IAMGE_ID + "</Asset>\n" +
+                "  <Asset Name=\"emammal_image_testImageId_0.JPG\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">emammal_image_testImageId_0</Asset>\n" +
+                "  <Asset Name=\"emammal_image_testImageId_1.JPG\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">emammal_image_testImageId_1</Asset>\n" +
+                "  <Asset Name=\"emammal_image_testImageId_2.JPG\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">emammal_image_testImageId_2</Asset>\n" +
+                "  <Asset Name=\"emammal_image_testImageId_3.JPG\" IsPublic=\"Yes\" IsInternal=\"No\" MaxSize=\"3000\" InternalMaxSize=\"4000\">emammal_image_testImageId_3</Asset>\n" +
                 "</Assets>\n";
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -757,20 +567,23 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
                 from("direct:idsVelocityTest").routeId("idsVelocityTest")
                         .setHeader("idsAssetImagePrefix", simple("{{si.edu.idsAssetImagePrefix}}"))
                         .toD("velocity:file:{{karaf.home}}/Input/templates/ids_template.vsl")
-                        .log(LoggingLevel.INFO, "${body}")
+                        .log(LoggingLevel.INFO, "result body:\n${body}")
                         .to("mock:result");
             }
         });
 
         List<IdsAsset> idsAssetList = new ArrayList<IdsAsset>();
 
-        IdsAsset asset = new IdsAsset();
-        asset.setImageid(TEST_IAMGE_ID);
-        asset.setSiteId(TEST_DEPLOYMENT_ID);
-        asset.setIsPublic("Yes");
-        asset.setIsInternal("No");
-        asset.setPid("test:001");
-        idsAssetList.add(asset);
+        for (int i = 0; i < 4; i++) {
+            IdsAsset asset = new IdsAsset();
+            asset.setPid("test:00"+i);
+            asset.setSiteId("testSidteId");
+            asset.setImageid("testImageId_"+i);
+            asset.setIsInternal("No");
+            asset.setIsPublic("Yes");
+
+            idsAssetList.add(asset);
+        }
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("idsAssetList", idsAssetList);
@@ -894,8 +707,8 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
         template.send("seda:idsAssetImageUpdate", exchange);
 
         assertMockEndpointsSatisfied();
-        /*
-        //Asserts for the first test deployment
+
+        /*//Asserts for the first test deployment
         assertFileExists(expectedAssetXmlFile_1);
         assertFileExists(expectedAssetDir_1 + "/" + idsAssetImagePrefix + "testDeploymentIds1i1.JPG");
         assertFileExists(expectedAssetDir_1 + "/" + idsAssetImagePrefix + "testDeploymentIds1i2.JPG");
@@ -1028,6 +841,7 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
     }
 
     @Test
+    @Ignore // flaky test
     public void edanIdsHTTPExceptionTest () throws Exception {
         Integer minEdanHTTPRedelivery = Integer.valueOf(getExtra().getProperty("min.edan.http.redeliveries"));
 
@@ -1109,4 +923,357 @@ public class UCT_EdanSidoraTest extends EDAN_CT_BlueprintTestSupport {
 
         assertMockEndpointsSatisfied();
     }
+
+
+    /**
+     * Testing the batch create edan records from Fedora messages
+     * @throws Exception
+     */
+    @Test
+    public void testCreate_EdanBatchAggregation_FedoraMessages() throws Exception {
+
+        double testBatchSize = Double.parseDouble(context.resolvePropertyPlaceholders("{{si.ct.edanIds.edan.bulk.size}}"));
+        double extraMessages = 22;
+        int expectedBatches = (int) Math.ceil(((testBatchSize+extraMessages)/testBatchSize));
+        log.info("expected number of batches = {}", expectedBatches);
+
+        PropertiesComponent pc = context.getComponent("properties", PropertiesComponent.class);
+        Properties extra = new Properties();
+        extra.put("si.ct.batchEnabled", "true");
+        pc.setOverrideProperties(extra);
+
+        String testManifestXML = readFileToString(testManifest);
+
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount((int) (testBatchSize + extraMessages));
+
+        MockEndpoint bulkRequest = getMockEndpoint("mock:bulkRequest");
+        bulkRequest.expectedMessageCount(expectedBatches);
+        bulkRequest.message(0).header("edanBulkRequests").isInstanceOf(JSONArray.class);
+
+        MockEndpoint singleRequest = getMockEndpoint("mock:singleRequest");
+        singleRequest.expectedMessageCount(0);
+
+
+        context.getRouteDefinition("EdanIdsProcessFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("processFedoraFindParentObject").remove();
+                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
+                weaveById("processFedoraEdanUpdate").after().to("mock:result").stop();
+            }
+        });
+
+        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_NotExist.json";
+                                File resourceFile = new File(resourceFilePath);
+                                if (resourceFile.exists()) {
+                                    out.setBody(resourceFile, String.class);
+                                } else {
+                                    out.setBody(null);
+                                }
+                            }
+                        });
+            }
+        });
+
+        context.getRouteDefinition("edanHttpRequest").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                weaveById("edanApiSendBulkRequest").replace()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                int edanBulkRequestSize = out.getHeader("edanBulkRequests", JSONArray.class).length();
+                                log.warn("Bulk Request Size = {}", edanBulkRequestSize);
+                            }
+                        })
+                        .setBody().simple("some edan response")
+                        .to("mock:bulkRequest");
+
+                weaveById("edanApiSendSingleRequest").replace()
+                        .log(LoggingLevel.ERROR, "*** BAD *** Hit edanApiSendSingleRequest")
+                        .to("mock:singleRequest");
+            }
+        });
+
+
+        for (int i = 0; i < (testBatchSize + extraMessages); i++) {
+            Exchange exchange = new DefaultExchange(context);
+            exchange.getIn().setHeader("pid", "test:00" + i);
+            exchange.getIn().setHeader("dsLabel", "testRaccoonAndFox");
+
+            template.send("seda:processFedoraMessage?waitForTaskToComplete=Never", exchange);
+        }
+
+        assertMockEndpointsSatisfied();
+    }
+
+    /**
+     * Testing the batch edit edan records from Fedora messages
+     * @throws Exception
+     */
+    @Test
+    public void testEdit_EdanBatchAggregation_FedoraMessages() throws Exception {
+
+        double testBatchSize = Double.parseDouble(context.resolvePropertyPlaceholders("{{si.ct.edanIds.edan.bulk.size}}"));
+        double extraMessages = 22;
+        int expectedBatches = (int) Math.ceil(((testBatchSize+extraMessages)/testBatchSize));
+        log.info("expected number of batches = {}", expectedBatches);
+
+        PropertiesComponent pc = context.getComponent("properties", PropertiesComponent.class);
+        Properties extra = new Properties();
+        extra.put("si.ct.batchEnabled", "true");
+        pc.setOverrideProperties(extra);
+
+        String testManifestXML = readFileToString(testManifest);
+
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount((int) (testBatchSize + extraMessages));
+
+        MockEndpoint bulkRequest = getMockEndpoint("mock:bulkRequest");
+        bulkRequest.expectedMessageCount(expectedBatches);
+        bulkRequest.message(0).header("edanBulkRequests").isInstanceOf(JSONArray.class);
+
+        MockEndpoint singleRequest = getMockEndpoint("mock:singleRequest");
+        singleRequest.expectedMessageCount(0);
+
+
+        context.getRouteDefinition("EdanIdsProcessFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("processFedoraFindParentObject").remove();
+                weaveById("processFedoraGetManifestDatastream").replace().setBody().simple(testManifestXML);
+                weaveById("processFedoraEdanUpdate").after().to("mock:result").stop();
+            }
+        });
+
+        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+
+
+                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_Exists.json";
+                                File resourceFile = new File(resourceFilePath);
+                                if (resourceFile.exists()) {
+                                    out.setBody(resourceFile, String.class);
+                                } else {
+                                    out.setBody(null);
+                                }
+                            }
+                        });
+            }
+        });
+
+        context.getRouteDefinition("edanHttpRequest").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                weaveById("edanApiSendBulkRequest").replace()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                int edanBulkRequestSize = out.getHeader("edanBulkRequests", JSONArray.class).length();
+                                log.warn("Bulk Request Size = {}", edanBulkRequestSize);
+                            }
+                        })
+                        .setBody().simple("some edan response")
+                        .to("mock:bulkRequest");
+
+                weaveById("edanApiSendSingleRequest").replace()
+                        .log(LoggingLevel.ERROR, "*** BAD *** Hit edanApiSendSingleRequest")
+                        .to("mock:singleRequest");
+            }
+        });
+
+
+        for (int i = 0; i < (testBatchSize + extraMessages); i++) {
+            Exchange exchange = new DefaultExchange(context);
+            exchange.getIn().setHeader("pid", "test:00" + i);
+            exchange.getIn().setHeader("dsLabel", "testRaccoonAndFox");
+
+            template.send("seda:processFedoraMessage?waitForTaskToComplete=Never", exchange);
+        }
+
+        assertMockEndpointsSatisfied();
+    }
+
+    /**
+     * Testing the batch delete edan records from Fedora messages
+     * @throws Exception
+     */
+    @Test
+    public void testDelete_EdanBatchAggregation_FedoraMessage() throws Exception {
+
+
+        double testBatchSize = Double.parseDouble(context.resolvePropertyPlaceholders("{{si.ct.edanIds.edan.bulk.size}}"));
+        double extraMessages = 22;
+        int expectedBatches = (int) Math.ceil(((testBatchSize+extraMessages)/testBatchSize));
+        log.info("expected number of batches = {}", expectedBatches);
+
+        PropertiesComponent pc = context.getComponent("properties", PropertiesComponent.class);
+        Properties extra = new Properties();
+        extra.put("si.ct.batchEnabled", "true");
+        pc.setOverrideProperties(extra);
+
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount((int) (testBatchSize + extraMessages));
+
+        MockEndpoint bulkRequest = getMockEndpoint("mock:bulkRequest");
+        bulkRequest.expectedMessageCount(expectedBatches);
+        bulkRequest.message(0).header("edanBulkRequests").isInstanceOf(JSONArray.class);
+
+        MockEndpoint singleRequest = getMockEndpoint("mock:singleRequest");
+        singleRequest.expectedMessageCount(0);
+
+
+
+        context.getRouteDefinition("edanDelete").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("deleteEdanSearchRequest").replace().toD("velocity:file:{{karaf.home}}/test-json-data/edanDeletePidSearch_response_json.vsl");
+                weaveAddLast().to("mock:result");
+            }
+        });
+
+        context.getRouteDefinition("edanHttpRequest").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                weaveById("edanApiSendBulkRequest").replace()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                int edanBulkRequestSize = out.getHeader("edanBulkRequests", JSONArray.class).length();
+                                log.info("Bulk Request Size = {}", edanBulkRequestSize);
+                            }
+                        })
+                        .to("mock:bulkRequest");
+
+                weaveById("edanApiSendSingleRequest").replace()
+                        .log("*** BAD *** Hit edanApiSendSingleRequest")
+                        .to("mock:singleRequest");
+            }
+        });
+
+
+        for (int i = 0; i < (testBatchSize + extraMessages); i++) {
+            Exchange exchange = new DefaultExchange(context);
+            String pid = "test:000" + i;
+            exchange.getIn().setHeader("pid", pid);
+
+            template.send("seda:edanDelete?waitForTaskToComplete=Never", exchange);
+        }
+
+        assertMockEndpointsSatisfied();
+    }
+
+
+    /**
+     * Testing the batch create edan records from CT Ingest messages
+     * @throws Exception
+     */
+    @Test
+    public void ctIngestEdanCreateContentBatchTest() throws Exception {
+
+        double testBatchSize = Double.parseDouble(context.resolvePropertyPlaceholders("{{si.ct.edanIds.edan.bulk.size}}"));
+        double extraMessages = 22;
+        int expectedBatches = (int) Math.ceil(((testBatchSize+extraMessages)/testBatchSize));
+        log.info("expected number of batches = {}", expectedBatches);
+
+        PropertiesComponent pc = context.getComponent("properties", PropertiesComponent.class);
+        Properties extra = new Properties();
+        extra.put("si.ct.batchEnabled", "true");
+        pc.setOverrideProperties(extra);
+
+        String testManifestXML = readFileToString(testManifest);
+
+        MockEndpoint bulkRequest = getMockEndpoint("mock:bulkRequest");
+        bulkRequest.expectedMessageCount(expectedBatches);
+        bulkRequest.message(0).header("edanBulkRequests").isInstanceOf(JSONArray.class);
+
+        MockEndpoint singleRequest = getMockEndpoint("mock:singleRequest");
+        singleRequest.expectedMessageCount(0);
+
+        context.getRouteDefinition("edanUpdate").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("updateEdanSearchRequest").replace().log(LoggingLevel.INFO, "Skipping Edan ImageId Search!!!")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String resourceFilePath = KARAF_HOME + "/test-json-data/edanImageIdSearch_ImageId_NotExist.json";
+                                File resourceFile = new File(resourceFilePath);
+                                if (resourceFile.exists()) {
+                                    out.setBody(resourceFile, String.class);
+                                } else {
+                                    out.setBody(null);
+                                }
+                            }
+                        });
+            }
+        });
+
+        context.getRouteDefinition("edanHttpRequest").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                weaveById("edanApiSendBulkRequest").replace()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                int edanBulkRequestSize = out.getHeader("edanBulkRequests", JSONArray.class).length();
+                                log.info("Bulk Request Size = {}", edanBulkRequestSize);
+                            }
+                        })
+                        .to("mock:bulkRequest");
+
+                weaveById("edanApiSendSingleRequest").replace()
+                        .log("*** BAD *** Hit edanApiSendSingleRequest")
+                        .to("mock:singleRequest");
+            }
+        });
+
+
+        for (int i = 0; i < (testBatchSize + extraMessages); i++) {
+            Map<String, Object> headers = new HashMap<>();
+            headers.put("ManifestXML", testManifestXML);
+            headers.put("pid", "test:00" + i);
+            headers.put("imageid", "testRaccoonAndFox");
+            headers.put("edanServiceEndpoint", "/content/v1.1/admincontent/createContent.htm");
+
+            template.sendBodyAndHeaders("seda:edanUpdate", "Test Body", headers);
+        }
+
+        assertMockEndpointsSatisfied();
+
+        assertEquals((int) testBatchSize, bulkRequest.getExchanges().get(0).getIn().getHeader("edanBulkRequests", JSONArray.class).length());
+        assertEquals((int) (extraMessages/testBatchSize), bulkRequest.getExchanges().get(bulkRequest.getExchanges().size() -1).getIn().getHeader("edanBulkRequests", JSONArray.class).length());
+        log.info("Stop");
+    }
+
+
 }

@@ -436,7 +436,8 @@ public class EdanAPITest extends CamelTestSupport {
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("edanServiceEndpoint", "/metadata/v2.0/metadata/search.htm");
-        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.id:" + TEST_IAMGE_ID + "\"]", "UTF-8"));
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.id:" + TEST_IAMGE_ID + "\"]", "UTF-8"));
+        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "q=" + URLEncoder.encode("p.emammal_image.image.id:" + TEST_IAMGE_ID + " AND app_id:" + TEST_APP_ID + " AND type:emammal_image AND p.emammal_image.deployment_id:" + TEST_DEPLOYMENT_ID, "UTF-8"));
 
         template.send("direct:edanTest", exchange);
 
