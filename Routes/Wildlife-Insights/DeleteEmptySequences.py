@@ -93,15 +93,21 @@ def doPut(pid, data, ds, params):
 
 
 def doDelete(pid, params):
-    FEDORA_PARAMS = params
+    try:
+        FEDORA_PARAMS = params
 
-    URL = FEDORA_URL + "/objects" + pid
+        URL = FEDORA_URL + "/objects/" + pid
 
-    req = r.delete(url=URL, params=FEDORA_PARAMS, auth=HTTPBasicAuth(fedora_user, fedora_pass))
-    log.info("pid: %s, url: %s", pid, req.url + "<--------------------")
-    response = fromstring(req.content)
-    log.debug("delete at url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
-    return response
+        req = r.delete(url=URL, params=FEDORA_PARAMS, auth=HTTPBasicAuth(fedora_user, fedora_pass))
+
+        log.info("pid: %s, url: %s", pid, req.url + "<--------------------")
+        response = fromstring(req.content)
+
+        log.debug("delete at url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
+
+        return response
+    except Exception as exc:
+        log.error("Error in delete api call: " + str(exc))
 
 
 def getOBJ(pid):
@@ -111,7 +117,6 @@ def getOBJ(pid):
 
     if pid not in (None, ''):
         objDatastreamProfile = doGet(pid, "OBJ", False)
-        # log.debug(tostring(objDatastreamProfile, pretty_print=True).decode())
 
         objMIME = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsMIME/text()", namespaces=ns)[0]
         objLabel = objDatastreamProfile.xpath("//fsmgmt:datastreamProfile/fsmgmt:dsLabel/text()", namespaces=ns)[0]
@@ -130,19 +135,19 @@ def getOBJ(pid):
         log.error("no resources %s", pid)
         problemList[pid] = "resources pid is null"
 
-    return fileName, objLabel
+    return fileName, objLabel, objMIME
 
 
 def removeOBJ(resourcePid):
     log.info("%s is an empty sequence image resource. Saving to file")
     #TODO: Verify purge object or pure obj datastream
     resultDelete = doDelete(resourcePid, {'versionable': 'true'})
-    log.debug("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultDelete, pretty_print=True).decode())
+    if resultDelete not in (None, ""):
+        log.info("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultDelete, pretty_print=True).decode())
     log.info("Finished removeOBJ for resource %s", resourcePid)
 
 
 def doUpdate(deploymentPid, resourcePid, manifest):
-
     filename = None
     label = None
 
@@ -151,7 +156,7 @@ def doUpdate(deploymentPid, resourcePid, manifest):
     try:
         # TODO: check manifest
         if filename in (None, ''):
-            filename, label = getOBJ(resourcePid)
+            filename, label, mime = getOBJ(resourcePid)
 
         log.debug("OBJ pid: %s", resourcePid)
 
@@ -167,13 +172,11 @@ def doUpdate(deploymentPid, resourcePid, manifest):
             log.debug("resource: %s, label: %s, isEmpty: %s", resourcePid, label, isEmpty)
 
             if isEmpty:
-                log.debug("Resource %s is empty", resourcePid)
                 if not dryrun:
                     removeOBJ(resourcePid)
             else:
-                log.debug("Resource %s is not empty. Adding to list for updated rels_ext", resourcePid)
-            log.debug("resourcePid: " + resourcePid + " isEmpty: " + str(isEmpty))
-            return [resourcePid, label, isEmpty]
+                log.debug("Resource %s is not empty. Adding to list for updated RELS-EXT", resourcePid)
+            return [resourcePid, label, isEmpty, mime]
         else:
             log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
             problemList[resourcePid] = "Problem with resource could not update OBJ"
@@ -192,32 +195,14 @@ def updateDeployment(pid):
     hasMANIFEST = deploymentDatastreams.xpath("boolean(.//*[@dsid='MANIFEST'])", namespaces=ns)
     hasRELS_EXT = deploymentDatastreams.xpath("boolean(.//*[@dsid='RELS-EXT'])", namespaces=ns)
 
-    #log.debug("deployment: %s, hasMANIFEST: %s, hasRELS_EXT: %s", pid, hasMANIFEST, hasRELS_EXT)
-
-    ## We can also check for deployment models: ['info:fedora/si:cameraTrapCModel', 'info:fedora/si:conceptCModel']
-    # if hasRELS_EXT:
-    #     deploymentRelsExt = doGet(pid, ds, True, None)
-    #     deploymentModels = deploymentRelsExt.xpath(".//fs:hasModel/@rdf:resource", namespaces=ns)
-    #     log.debug("deployment models: %s, pid: %s", deploymentModels, pid)
-    #     hasDeploymentModels = "info:fedora/si:cameraTrapCModel" in deploymentModels and "info:fedora/si:conceptCModel" in deploymentModels
-    #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
-
     if hasMANIFEST:
         manifest = doGet(pid, "MANIFEST", True)
-        # log.debug("update deployment manifest:\n%s", tostring(manifest, pretty_print=True).decode())
 
         if hasRELS_EXT:
             deploymentRelsExt = doGet(pid, "RELS-EXT", True)
-            # log.debug(tostring(deploymentRelsExt, pretty_print=True).decode())
-
-            #log.debug("deployment: %s, resource pid for camera make and model: %s", pid, cameraInfoResourcePid)
 
             resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
             resourceList = [p.split("info:fedora/")[1] for p in resourceList]
-
-            crumbtrailValues = getDeploymentCrumbtrail(pid)
-            pidCrumbtrail = crumbtrailValues[0]
-            labelCrumbtrail = crumbtrailValues[1]
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
                 futures = [executor.submit(doUpdate, pid, resourcePid, manifest) for resourcePid in resourceList]
@@ -228,15 +213,15 @@ def updateDeployment(pid):
             emptyList = list()
 
             for future in concurrent.futures.as_completed(futures):
-                # pid = futures[future]
                 try:
                     data = future.result()
                 except Exception as exc:
                     print('%r generated an exception: %s' % (pid, exc))
                 else:
                     if data not in (None, ''):
-                        resourcePidCrumbtrail = pidCrumbtrail + data[0]
-                        resourceLabelCrumbtrail = labelCrumbtrail + data[1]
+                        crumbtrailValues = getDeploymentCrumbtrail(data[0], data[1])
+                        resourcePidCrumbtrail = crumbtrailValues[0]
+                        resourceLabelCrumbtrail = crumbtrailValues[1]
                         if data[2]:
                             log.debug("data[1] is: %s, adding to vslPids", str(data[1]))
                             emptyList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
@@ -247,16 +232,19 @@ def updateDeployment(pid):
             if not dryrun:
                 velocityString = ''
 
-                for pid in vslPids:
-                    velocityString += "<fedora:hasResource rdf:resource=\"info:fedora/" + pid + "\"/>"
+                for val in vslPids:
+                    part1 = '<fedora:hasResource rdf:resource="info:fedora/'
+                    str_pid = str(val).replace("['", "").replace("']", "")
+                    part2 = '"/>'
+                    velocityString += (part1 + str_pid + part2)
+                try:
+                    deploymentPID = str(pid).replace("['", "").replace("']", "")
+                    RELS_EXT_DS = Template(relsExtTemplate).substitute(SitePid=deploymentPID, resourcePidObjects=velocityString, parentDeploymentPid=deploymentPID)
+                    updateRELS_EXT(RELS_EXT_DS, pid)
+                except Exception as e:
+                    log.error('Error Updating RELS-EXT: ' + str(e))
 
-                RELS_EXT_DS = Template(relsExtTemplate).substitute(resourcePidObjects=velocityString, parentDeploymentPid=str(pid))
-                updateRELS_EXT(RELS_EXT_DS, pid)
-
-            # for resourcePid in resourceList:
-            #     doUpdate(pid, resourcePid, cameraInfoResourcePid, deploymentDatastreams, manifest)
             log.info("Finished Updating Resources for Deployment %s", pid)
-            log.debug("Length of list: %d", len(emptyList))
             return [keepList, emptyList]
         else:
             log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
@@ -266,19 +254,17 @@ def updateDeployment(pid):
         problemList[pid] = "Deployment has no MANIFEST datastream"
 
 def updateRELS_EXT(RELS_EXT_DS, deploymentPid):
-    result = doPut(deploymentPid, RELS_EXT_DS, "RELS-EXT", {'mimeType': 'text/xml', 'versionable': "true"})
-    log.debug("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
-
+    try:
+        result = doPut(deploymentPid, RELS_EXT_DS, "RELS-EXT", {'mimeType': 'text/xml', 'versionable': "true"})
+        log.info("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
+    except Exception as e:
+        log.error("Error updating RELS-EXT: %s", str(e))
     log.info("Finished updateRELS_EXT for deployment %s", deploymentPid)
 
 
-def getDeploymentCrumbtrail(pid):
-    # fuseki query param
-    # query = "SELECT ?ctPID FROM <info:edu.si.fedora#ri> WHERE {?ctPID <info:fedora/fedora-system:def/model#hasModel> <info:fedora/si:cameraTrapCModel>.}"
-
-    # (count(?ctPID) as ?count)
+def getDeploymentCrumbtrail(pid, label):
     try:
-        query = "SELECT ?ctPID ?ctLabel ?sitePID ?siteLabel ?parkPID ?parkLabel ?projectPID ?projectLabel ?subprojectPID ?subprojectLabel ?plotPID ?plotLabel FROM <info:edu.si.fedora#ri> WHERE { ?ctPID <info:fedora/fedora-system:def/relations-external#hasResource> <info:fedora/test.smx.home:33> ; <info:fedora/fedora-system:def/model#label> ?ctLabel . OPTIONAL { ?sitePID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#hasModel> <info:fedora/si:ctPlotCModel> ; <info:fedora/fedora-system:def/model#label> ?siteLabel . ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?sitePID ; <info:fedora/fedora-system:def/model#label> ?parkLabel } . OPTIONAL { ?plotPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?plotLabel . ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?parkLabel } . ?projectPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?parkPID ; <info:fedora/fedora-system:def/model#label> ?projectLabel . ?subprojectPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?parkPID ; <info:fedora/fedora-system:def/model#label> ?subprojectLabel }"
+        query = "SELECT ?ctPID ?ctLabel ?sitePID ?siteLabel ?parkPID ?parkLabel ?projectPID ?projectLabel ?subprojectPID ?subprojectLabel FROM <info:edu.si.fedora#ri> WHERE { ?ctPID <info:fedora/fedora-system:def/relations-external#hasResource> <info:fedora/" + pid + "> ; <info:fedora/fedora-system:def/model#label> ?ctLabel . OPTIONAL { ?sitePID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#hasModel> <info:fedora/si:ctPlotCModel> ; <info:fedora/fedora-system:def/model#label> ?siteLabel . ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?sitePID ; <info:fedora/fedora-system:def/model#label> ?parkLabel } . OPTIONAL { ?plotPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?plotLabel . ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?parkLabel } . ?projectPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?parkPID ; <info:fedora/fedora-system:def/model#label> ?projectLabel . ?subprojectPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?subprojectLabel OPTIONAL { ?plotPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?plotLabel . ?parkPID <info:fedora/fedora-system:def/relations-external#hasConcept> ?ctPID ; <info:fedora/fedora-system:def/model#label> ?parkLabel } . }"
         # defining a params dict for the parameters to be sent
         FUSEKI_PARAMS = {'query': query}
 
@@ -286,9 +272,6 @@ def getDeploymentCrumbtrail(pid):
         fuseki_request = r.get(url=FUSEKI_URL, params=FUSEKI_PARAMS)
         # extracting data in json format
         fuseki_data = fuseki_request.json()
-
-        log.info(fuseki_data)
-        log.info("TYPE OF FUSEKI_DATA: " + str(type(fuseki_data)))
 
         bindings = fuseki_data["results"]["bindings"][0]
 
@@ -303,7 +286,7 @@ def getDeploymentCrumbtrail(pid):
         subprojectPID = bindings["subprojectPID"]["value"].replace("info:fedora/", "")
         projectPID = bindings["projectPID"]["value"].replace("info:fedora/", "")
 
-        pidCrumbtrail = projectPID + "_" + subprojectPID + plotPID + deploymentPID + "_"
+        pidCrumbtrail = projectPID + "_" + subprojectPID + plotPID + deploymentPID + "_" + pid
 
         #extract Labels
 
@@ -317,11 +300,11 @@ def getDeploymentCrumbtrail(pid):
         subprojectLabel = bindings["subprojectLabel"]["value"]
         projectLabel = bindings["projectLabel"]["value"]
 
-        labelCrumbtrail = projectLabel + "_" + subprojectLabel + plotLabel + deploymentLabel + "_"
+        labelCrumbtrail = projectLabel + "_" + subprojectLabel + plotLabel + deploymentLabel + "_" + label
 
         return [pidCrumbtrail, labelCrumbtrail]
-    except:
-        log.error("Error retrieving fuseki data")
+    except Exception as e:
+        log.error("Error retrieving fuseki data: %s", str(e))
         return ["", ""]
 
 def createDeploymentPidFile():
@@ -423,7 +406,7 @@ def main():
             delete = True
         else:
             delete = yes_or_no("Removing any existing files from '" + output_dir + "' y directory!!!")
-        # delete = True
+        #delete = True
 
         if delete:
             for f in os.listdir(output_dir):
@@ -451,11 +434,10 @@ def main():
         finish = time.time()
 
         for future in concurrent.futures.as_completed(futures):
-            #pid = futures[future]
             try:
                 data = future.result()
             except Exception as exc:
-                log.error("An error occurred in retrieving future from updateDeployment")
+                log.error("An error occurred in retrieving future from updateDeployment: %s", str(exc))
             else:
                 if data not in (None, ''):
                     print('adding good pid to RELS-EXT list %s', data)
@@ -594,7 +576,7 @@ if __name__ == "__main__":
 
     initHttp()
 
-    #dryrun = True
+    # dryrun = False
 
     if args.dry_run:
         log.warning("dryrun on: %s", str(args.dry_run))
@@ -619,8 +601,8 @@ if __name__ == "__main__":
             # sys.exit()
         else:
             sys.exit("ERROR: Must provide an infile containing list of PIDS to update OR outfile name for deployment pids to be saved to!!!")
-    # problemList = dict()
-    # main()
+    #problemList = dict()
+    #main()
 
     if args.datastreams:
         problemList = dict()

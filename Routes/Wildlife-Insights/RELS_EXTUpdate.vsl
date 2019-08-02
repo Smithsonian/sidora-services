@@ -11,11 +11,11 @@
          xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
          xmlns:sidora="http://oris.si.edu/2017/01/relations#">
-    <rdf:Description rdf:about="info:fedora/$headers.SitePid">
+    <rdf:Description rdf:about="info:fedora/$SitePid">
         <fedora-model:hasModel rdf:resource="info:fedora/si:cameraTrapCModel"/>
         <fedora-model:hasModel rdf:resource="info:fedora/si:conceptCModel"/>
         <default:orginal_metadata xmlns="http://islandora.org/ontologies/metadata#">TRUE</default:orginal_metadata>
-        $resourcePidObjects
+            $resourcePidObjects
         <sidora:isAdministeredBy rdf:resource="info:fedora/$parentDeploymentPid"/>
     </rdf:Description>
 </rdf:RDF>
