@@ -147,7 +147,7 @@ public class EdanApiBean {
 
                 String authContent = Base64Utility.encode(DigestUtils.sha1Hex(nonce + "\n" + edanQueryParams + "\n" + sdfDate + "\n" + edan_key).getBytes("UTF-8"));
 
-                LOG.warn(logMarker, "setEdanAuth nonce:{}, edanQuery:{}, sfDate:{}, edan_key:{} | authContent:{}", nonce, edanQueryParams, sdfDate, edan_key, authContent);
+                LOG.debug(logMarker, "setEdanAuth nonce:{}, edanQuery:{}, sfDate:{}, edan_key:{} | authContent:{}", nonce, edanQueryParams, sdfDate, edan_key, authContent);
 
                 HttpGet httpget = new HttpGet(uri);
                 httpget.setHeader("X-AppId", app_id);

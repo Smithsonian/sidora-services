@@ -34,6 +34,7 @@ import edu.si.services.beans.edansidora.model.IdsAsset;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
+import org.apache.camel.component.seda.SedaConsumer;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.util.concurrent.CamelThreadFactory;
@@ -53,6 +54,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -130,6 +132,23 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                     log.debug(logMarker, "xml 2 json Output:\n{}", xmlJSONObj);
 
+                    if (Boolean.parseBoolean(out.getHeader("test_edan_url", String.class))) {
+
+                        String existingEdanURL = out.getHeader("edanURL", String.class);
+
+                        if (existingEdanURL != null && !existingEdanURL.isEmpty()) {
+                            existingEdanURL = existingEdanURL.replaceAll("emammal_image:", "").replaceAll("emammal-image-", "");
+                            log.warn(logMarker, "SETTING TEST URL = {}", existingEdanURL);
+                            xmlJSONObj.getJSONObject("xml").put("url", existingEdanURL);
+                        } else {
+                            String edan_url = xmlJSONObj.getJSONObject("xml").getString("url");
+                            String test_edan_url = edan_url + "_test_" + UUID.randomUUID().toString().replace("-", "");
+                            log.warn(logMarker, "SETTING TEST URL = {}", test_edan_url);
+                            xmlJSONObj.getJSONObject("xml").put("url", test_edan_url);
+                        }
+
+                    }
+
                     JSONObject edan_content = xmlJSONObj.getJSONObject("xml").getJSONObject("content");
                     log.debug(logMarker, "edan_content json before online_media and image_identifications array fix:\n{}", edan_content.toString(4));
 
@@ -145,7 +164,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         edan_content.getJSONObject("image").put("online_media", online_media_array_element);
                     }
 
-                    log.debug(logMarker, "json after online_media fix:\n{}", edan_content.getJSONObject("image").getJSONArray("online_media").toString(4));
+                    //log.debug(logMarker, "json after online_media fix:\n{}", edan_content.getJSONObject("image").getJSONArray("online_media").toString(4));
 
                     //convert image_identifications to json array
                     JSONObject image_identifications = edan_content.getJSONObject("image_identifications");
@@ -158,7 +177,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         edan_content.put("image_identifications", image_identifications_array_element);
                     }
 
-                    log.debug(logMarker, "json after image_identifications fix:\n{}", edan_content.getJSONArray("image_identifications").toString(4));
+                    //log.debug(logMarker, "json after image_identifications fix:\n{}", edan_content.getJSONArray("image_identifications").toString(4));
 
                     log.debug(logMarker, "json final edan_content :\n{}", xmlJSONObj.getJSONObject("xml").toString(4));
                     out.setBody(xmlJSONObj.getJSONObject("xml").toString());
@@ -221,7 +240,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
                 .logNewException(true)
-                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
+//                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
 //                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsHTTPException");
 
         onException(EdanIdsException.class)
@@ -231,8 +250,8 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .maximumRedeliveries("{{min.edan.redeliveries}}")
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-                //.logExhausted(true)
-                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
+                .logExhausted(true);
+//                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
 //                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsException");
 
         //Retries for all exceptions after response has been sent
@@ -244,7 +263,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
                 .logExhausted(true)
-                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
+//                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
 //                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}");
 
         ThreadFactory threadFactory = new CamelThreadFactory("Camel (EdanIdsCamelContext) thread ##counter# - #name#", "customSplit", true);
@@ -274,6 +293,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 .filter()
                     .simple("${header.methodName} == 'purgeObject'")
+                        .setHeader("imageid").simple("${header.dsLabel}")
                         .to("seda:edanDelete?waitForTaskToComplete=Always").id("processFedoraEdanDelete")
                         .stop()
                 .end()
@@ -379,10 +399,12 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 //Search EDAN for imageId, deploymentId, app_id, and type
                 .setBody().simple("p.emammal_image.image.id:${header.imageid} AND p.emammal_image.deployment_id:${header.SiteId} AND app_id:{{si.ct.uscbi.appId}} AND type:{{si.ct.uscbi.edan_type}}")
-                .setHeader(Exchange.HTTP_QUERY).groovy("q=URLEncoder.encode(request.getBody(String.class));")
+                .setHeader(Exchange.HTTP_QUERY).groovy("\"q=\" + URLEncoder.encode(request.getBody(String.class));")
+
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds:\nEdanSearch Query:\n${header.CamelHttpQuery}")
 
                 .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("updateEdanSearchRequest")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds:\nEdanSearch result:\n${body}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds:\nEdanSearch result:\n${body}")
 
                 //Convert string JSON so we can access the data
                 .unmarshal().json(JsonLibrary.Gson, true) //converts json to LinkedTreeMap
@@ -392,11 +414,11 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 //Are we editing or creating the EDAN record
                 .choice()
                     .when().simple("${body[rowCount]} >= 1 && ${body[rows].get(0)[content][image][id]} == ${header.imageid}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: EDAN record found for ImageId: ${header.imageid}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Edit Content...")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Edit Content for ImageId: ${header.imageid}")
 
                         //Headers needed for EDAN edit record
                         .setHeader("edanId").simple("${body[rows].get(0)[id]}")
+                        .setHeader("edanURL").simple("${body[rows].get(0)[url]}")
                         .setHeader("edanTitle").simple("${body[rows].get(0)[title]}")
                         .setHeader("edanType").simple("${body[rows].get(0)[type]}")
 
@@ -417,7 +439,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                                 } else {
                                     String id = out.getHeader("edanId", String.class);
                                     String content = out.getHeader("edanJson", String.class);
-                                    out.setHeader(Exchange.HTTP_QUERY, "id="+ id + "content=" + content);
+                                    out.setHeader(Exchange.HTTP_QUERY, "id="+ id + "&content=" + content);
                                 }
 
                             }
@@ -426,13 +448,28 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         // Set the EDAN endpoint and query params
                         .setHeader("edanServiceEndpoint", simple("/content/v1.1/admincontent/editContent.htm"))
                         .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("edanUpdateEditContent")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EditContent result:\n${body}")
 
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Edit Content...")
+                        //Get the edan id and url from the EDAN response
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String body = out.getBody(String.class);
+                                if (body != null) {
+                                    JSONObject edanResponse = new JSONObject(body);
+                                    String edanId = edanResponse.getString("id");
+                                    String edanUrl = edanResponse.getString("url");
+                                    out.setHeader("edanId", edanId);
+                                    out.setHeader("edanUrl", edanUrl);
+                                }
+                            }
+                        })
+
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Finished EditContent Request ${header.edanServiceEndpoint} for ImageId: ${header.imageid}, EDAN id: ${header.edanId}, url: ${header.edanUrl}, Status: ${header.CamelHttpResponseCode}, Response: ${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EditContent Request ${header.edanServiceEndpoint} for ImageId: ${header.imageid}, EDAN id: ${header.edanId}, url: ${header.edanUrl}")
                     .endChoice()
                     .otherwise()
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: EDAN record not found for ImageId: ${header.imageid}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Create Content...")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Create Content for ImageId: ${header.imageid}")
 
                         // create the EDAN content and encode
                         .to("seda:createEdanJsonContent?waitForTaskToComplete=Always")
@@ -457,29 +494,29 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         // Set the EDAN endpoint and query params
                         .setHeader("edanServiceEndpoint", simple("/content/v1.1/admincontent/createContent.htm"))
                         .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("edanUpdateCreateContent")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: CreateContent result:\n${body}")
 
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Create Content...")
+                        //Get the edan id and url from the EDAN response
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String body = out.getBody(String.class);
+                                if (body != null) {
+                                    JSONObject edanResponse = new JSONObject(body);
+                                    String edanId = edanResponse.getString("id");
+                                    String edanUrl = edanResponse.getString("url");
+                                    out.setHeader("edanId", edanId);
+                                    out.setHeader("edanUrl", edanUrl);
+                                }
+                            }
+                        })
+
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Finished CreateContent Request ${header.edanServiceEndpoint} for ImageId: ${header.imageid}, EDAN id: ${header.edanId}, url: ${header.edanUrl}, Status: ${header.CamelHttpResponseCode}, Response: ${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished CreateContent Request ${header.edanServiceEndpoint} for ImageId: ${header.imageid}, EDAN id: ${header.edanId}, url: ${header.edanUrl}")
                     .endChoice()
                 .end()
 
-                //Get the edanId from the EDAN response
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        Message out = exchange.getIn();
-                        String body = out.getBody(String.class);
-                        if (body != null) {
-                            JSONObject edanResponse = new JSONObject(body);
-                            String edaanId = edanResponse.getString("id");
-                            out.setHeader("edanId", edaanId);
-                        }
-                    }
-                })
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: EDAN record created for ImageId: ${header.imageid}, EDAN ID: ${header.edanId}")
-
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Update...");
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Finished EDAN Update...");
 
         from("seda:edanDelete?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("edanDelete")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Delete Record...")
@@ -494,17 +531,18 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         out.setHeader("sidoraPid", sidoraPid);
                     }
                 })
-                .setBody().simple("[\"p.emammal_image.image.online_media.sidorapid:${header.sidoraPid}\"]")
-                .setHeader(Exchange.HTTP_QUERY).groovy("\"fqs=\" + URLEncoder.encode(request.getBody(String.class));")
+
+                //Search EDAN for imageId, deploymentId, app_id, and type
+                .setBody().simple("p.emammal_image.image.online_media.sidorapid:${header.sidoraPid} AND p.emammal_image.image.id:${header.imageid} AND app_id:{{si.ct.uscbi.appId}} AND type:{{si.ct.uscbi.edan_type}}")
+                .setHeader(Exchange.HTTP_QUERY).groovy("\"q=\" + URLEncoder.encode(request.getBody(String.class));")
                 .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("deleteEdanSearchRequest")
 
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN metadata search Response Body:\n${body}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN delete metadata search Response Body:\n${body}")
 
                 //Convert string JSON so we can access the data
                 .unmarshal().json(JsonLibrary.Gson, true) //converts json to LinkedTreeMap
                 //.unmarshal().json(JsonLibrary.Jackson, EdanSearch.class) //converts json to EdanSearch java object
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Body After Unmarshal from JSON= ${body}").id("edanDeleteUnmarshal")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Search Found PID=${body[rows].get(0)[content][image][online_media].get(0)[sidoraPid]}")
 
                 //Are we editing or creating the EDAN record
                 .choice()
@@ -543,7 +581,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                                     } else {
                                         String id = out.getHeader("edanId", String.class);
                                         String type = out.getHeader("edanType", String.class);
-                                        out.setHeader(Exchange.HTTP_QUERY, "id="+ id + "type=" + type);
+                                        out.setHeader(Exchange.HTTP_QUERY, "id="+ id + "&type=" + type);
                                     }
 
                                 }
@@ -571,13 +609,12 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                     .endChoice()
                 .end()
 
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished EDAN Delete Record...");
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Finished EDAN Delete Record...");
 
         from("seda:edanHttpRequest?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("edanHttpRequest")
                 .errorHandler(noErrorHandler())
 
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting EDAN Http Request...")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Request: Endpoint = ${header.edanServiceEndpoint}, HTTP_QUERY = ${header.CamelHttpQuery}")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Starting EDAN Http Request: Endpoint = ${header.edanServiceEndpoint}, HTTP_QUERY = ${header.CamelHttpQuery}")
 
                 .choice()
                     .when().simple("{{si.ct.batchEnabled}} == 'true' && ${header.edanServiceEndpoint} not contains 'search'")
@@ -605,13 +642,30 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         // Set the EDAN Authorization headers and preform the EDAN query request
                         .to("bean:edanApiBean?method=sendRequest").id("edanApiSendSingleRequest")
                         .convertBodyTo(String.class)
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Single Request Status: ${header.CamelHttpResponseCode}, Response: ${body}")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Single EDAN Http Request...")
-                    . endChoice()
+
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String body = out.getBody(String.class);
+                                if (body != null) {
+                                    JSONObject edanResponse = new JSONObject(body);
+                                    if (edanResponse.has("error")) {
+                                        String endpoint = out.getHeader("edanServiceEndpoint", String.class);
+                                        String query = out.getHeader(Exchange.HTTP_QUERY, String.class);
+                                        //throw new EdanIdsException("EDAN Request Error!!! Endpoint: " + endpoint + ", Query: " + query + ", Error:" + edanResponse.toString(4));
+                                        throw new EdanIdsException("EDAN Request Error!!! " + endpoint + "?" + query + ", Error: " + edanResponse.toString());
+                                        SedaConsumer
+                                    }
+                                }
+
+                            }
+                        })
+                    .endChoice()
                 .end();
 
         from("seda:createEdanJsonContent?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("createEdanJsonContent")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Edan JSON Content creation...")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Starting Edan JSON Content creation...")
 
                 // create xml edan content from ManifestXML which will be converted to json for EDAN using a processor
                 .setHeader("CamelFedoraPid", simple("${header.pid}"))
@@ -625,7 +679,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 .setHeader("edanJson").groovy("URLEncoder.encode(request.body, 'UTF-8')").id("encodeJson")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN JSON content created and encoded: ${header.edanJson}")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Edan JSON Content creation...");
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Finished Edan JSON Content creation...");
 
 
         from("seda:idsAssetImageUpdate?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("idsAssetImageUpdate")
@@ -656,14 +710,16 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                             .setHeader(Exchange.HTTP_URI).simple("{{si.fedora.host}}/objects/${body.pid}/datastreams/OBJ/content")
                             .removeHeader("CamelHttpQuery")
 
-                            .log(LoggingLevel.DEBUG, "${id} EdanIds: Get Image http uri = ${header.CamelHttpUri}")
+                            .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Get Image http uri = ${header.CamelHttpUri}")
+
+                            .setBody().simple("")
 
                             .toD("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("idsAssetUpdateGetFedoraOBJDatastreamContent")
 
                             //Save the image asset to the file system alongside the asset xml
-                            .log(LoggingLevel.DEBUG, "${id} EdanIds: Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.CamelOverruleFileName}.JPG")
+                            .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Saving File: {{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}/${header.idsAssetImagePrefix}${header.CamelOverruleFileName}.JPG")
                             .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}")
-                            .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
+                            .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Added IDS Asset File CamelFileNameProduced:${header.CamelFileNameProduced}")
                         .endChoice()
                         // Dont Copy Images Just write asset xml for delete
                         .when().simple("${body.isPublic} == 'No' && ${body.isInternal} == 'No'")
@@ -681,7 +737,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
 
         from("seda:idsAssetXMLWriter?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("idsAssetXMLWriter")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting IDS Image Asset XML for SiteId: ${header.siteId}...")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Starting IDS Image Asset XML for SiteId: ${header.siteId}...")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: si.ct.uscbi.idsPushLocation = {{si.ct.uscbi.idsPushLocation}}, SiteId: ${header.siteId}, idsAssetName: ${header.idsAssetName}, idsAsset:\n${body}")
 
                 // Aggregate on idsAssetName that is based on siteId
@@ -776,12 +832,12 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         //Save the IDS Asset XML to file system
                         .setHeader("CamelOverruleFileName", simple("${header.idsAssetName}.xml"))
                         .toD("file:{{si.ct.uscbi.idsPushLocation}}/${header.idsAssetName}?fileName=${header.idsAssetName}.xml").id("saveFile")
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: IDS Asset XML saved to CamelFileNameProduced:${header.CamelFileNameProduced}")
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: IDS Asset XML saved to CamelFileNameProduced:${header.CamelFileNameProduced}")
 
-                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished IDS Asset Update...");
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished IDS Asset Update for SiteId: ${header.siteId}...");
 
         from("seda:findParentObject?concurrentConsumers=" + Integer.valueOf(CONCURRENT_CONSUMERS)).routeId("EdanIdsFindParentObject").errorHandler(noErrorHandler())
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting Find Parent Object...")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Starting Find Parent Object...")
                 .setBody().simple("SELECT ?subject FROM <info:edu.si.fedora#ri> WHERE { ?subject <info:fedora/fedora-system:def/relations-external#hasResource> <info:fedora/${header.pid}> .}")
                 .setBody().groovy("\"query=\" + URLEncoder.encode(request.getBody(String.class));")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Find Parent Query - ${body}")
@@ -813,7 +869,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 .setHeader("parentPid").xpath("substring-after(/ri:sparql/ri:results/ri:result[1]/ri:binding/ri:uri, 'info:fedora/')", String.class, ns)
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Parent PID: ${header.parentPid}")
-                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Finished Find Parent Object...");
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Finished Find Parent Object...");
 
         from("activemq:queue:{{edanIds.ct.queue}}").routeId("EdanIdsProcessCtMsg")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: Starting processing Camera Trap Ingest Message...").id("ctEdanIdsStart")
@@ -871,7 +927,12 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                         //Filter out images that have speciesScientificName that are in the excluded list
                         //check the speciesScientificName in the deployment manifest to see if we even need to continue processing
                         .choice()
-                            .when().xpath("not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.edanids.speciesScientificName.filter'), text())] != '')", "ManifestXML")
+                            .when().xpath("//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.edanids.speciesScientificName.filter'), text())] != ''", "ManifestXML")
+
+                                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: NO POST TO EDAN or IDS for this PID: ${header.pid}, ImageId: ${header.imageid}")
+                            .endChoice()
+                            .otherwise()
+                                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: Send to EDAN [ label: ${header.imageid} for PID: ${header.pid} ]")
 
                                 // edit/create the EDAN record
                                 .to("seda:edanUpdate?waitForTaskToComplete=Never").id("ctProcessEdanUpdate")
@@ -879,9 +940,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                                 //Asset XML atributes indicating serve to IDS (pub)
                                 .setHeader("isPublic").simple("Yes")
                                 .setHeader("isInternal").simple("No")
-                            .endChoice()
-                            .otherwise()
-                                .log(LoggingLevel.INFO, LOG_NAME, "${id} EdanIds: NO POST TO EDAN or IDS for this PID: ${header.pid}, ImageId: ${header.imageid}")
                             .endChoice()
                         .end()
                     .end()
