@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xmlns:cxf="http://cxf.apache.org/blueprint/core"
+           xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
+           xmlns:camel-cxf="http://camel.apache.org/schema/blueprint/cxf"
+           xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xsi:schemaLocation="
+         http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+         http://camel.apache.org/schema/blueprint/cxf http://camel.apache.org/schema/blueprint/cxf/camel-cxf.xsd
+         http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd
+         http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+         http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0 http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd">
+
+    <cm:property-placeholder id="sidora.karaf.test.utils.fits.properties" persistent-id="edu.si.sidora.fits" update-strategy="none">
+        <cm:default-properties>
+            <cm:property name="edu.si.fits.test" value="edu.si.fits.test"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
+
+    <bean id="FITSRoutes" class="edu.si.fits.servlet.FITSServletServiceRouteBuilder"/>
+
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilter">
+            <set>
+                <value>ds_metadataXML</value>
+                <value>ds_sidoraXML</value>
+                <value>ds_dcXML</value>
+                <value>associationXML</value>
+            </set>
+        </property>
+    </bean>
+
+    <!-- Provides the Camel routing setup -->
+    <camelContext id="FITS-Servlet-Service-Test-CamelContext"
+                  xmlns="http://camel.apache.org/schema/blueprint"
+                  xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
+                  trace="false"
+                  useMDCLogging="true">
+
+        <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
+        <propertyPlaceholder id="properties"
+                             location="file:${karaf.home}/etc/edu.si.sidora.fits.cfg"/>
+
+        <routeBuilder ref="FITSRoutes"/>
+
+    </camelContext>
+
+</blueprint>

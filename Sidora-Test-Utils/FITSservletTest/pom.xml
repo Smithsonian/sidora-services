@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~ Copyright 2015-2017 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -248,6 +248,21 @@
             <artifactId>asm-all</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore-osgi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http4</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient-osgi</artifactId>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
 
@@ -263,17 +278,20 @@
             </testResource>
 
             <!-- add the Camera Trap Route directory as resources -->
+            <!--
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
                 <filtering>true</filtering>
             </testResource>
+            -->
             <!-- add the emammal property file needed by the unified route -->
             <testResource>
-                <directory>../../Beans/Edan-Sidora/Karaf-config/etc</directory>
+                <directory>Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
                 <filtering>true</filtering>
             </testResource>
+            <!--
             <testResource>
                 <directory>../../Beans/Edan-Sidora/Karaf-config/Input</directory>
                 <targetPath>${karaf.home}/Input</targetPath>
@@ -286,6 +304,7 @@
                 <directory>../../Routes/Camera Trap/Route</directory>
                 <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
+            -->
         </testResources>
 
         <plugins>
