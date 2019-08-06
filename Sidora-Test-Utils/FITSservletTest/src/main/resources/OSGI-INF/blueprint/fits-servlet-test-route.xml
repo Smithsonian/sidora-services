@@ -44,6 +44,61 @@
 
         <routeBuilder ref="FITSRoutes"/>
 
+        <route id="AddFITSDataStream">
+            <from uri="direct:addFITSDataStream"/>
+            <!--
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.socketEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="fitsServiceException"/>
+            </onException>
+            -->
+
+            <log message="${id}: Started processing FITS ..."/>
+
+            <!--
+               Ensure that we actually have a 200 response from the fits web service as this header could have been
+               set upstream by another http request.
+            -->
+            <removeHeader headerName="CamelHttpResponseCode"/>
+
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
+
+            <log message="${id} FITS Output:\n${body}"/>
+
+            <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
+            <choice>
+                <when>
+                    <simple>
+                        ${header.CamelHttpResponseCode} == 200
+                    </simple>
+                    <setHeader headerName="dsMIME">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:identification/fits:identity[1]/@mimetype</xpath>
+                    </setHeader>
+                    <log message="${id}: FITS MIME: ${headers.dsMIME}"/>
+                    <log message="${id}: FITS. BODY: ${body}"/>
+                    <to uri="fedora:addDatastream?name=FITS&amp;type=text/xml&amp;dsLabel=FITS%20Generated%20Image%20Metadata&amp;group=X&amp;versionable=false" id="fitsAddDatastream"/>
+                </when>
+                <otherwise>
+                    <log message="${id}: FITS processing failed for PID: ${header.CamelFedoraPid}"
+                         loggingLevel="ERROR"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id}: Finished processing FITS."/>
+        </route>
+
     </camelContext>
 
 </blueprint>

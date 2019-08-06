@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Smithsonian Institution.
+ * Copyright 2015-2017 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -70,8 +70,10 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
     private static final String KARAF_HOME = System.getProperty("karaf.home");
     private static Properties extra = new Properties();
     //private static final File testFile = new File(KARAF_HOME + "/large_image_moth.jp2");
-    private static String TEST_FILENAME = KARAF_HOME + "/large_image_moth.jp2";
-    //private static String TEST_FILENAME = "large_image_moth.jp2";
+    //private static String TEST_FILENAME = KARAF_HOME + "/large_image_moth.jp2";
+    private static final File testFile = new File(KARAF_HOME + "/BBB_9425.NEF");
+    private static String TEST_FILENAME = KARAF_HOME + "/BBB_9425.NEF";
+
     protected static String FITS_URI;
 
     private static CloseableHttpClient httpClient;
@@ -133,16 +135,6 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
         return true;
     }
 
-    @BeforeClass
-    public static void createHttpClient() throws IOException {
-        httpClient = HttpClientBuilder.create().build();
-    }
-
-    @AfterClass
-    public static void cleanUpHttpClient() throws IOException {
-        httpClient.close();
-    }
-
     @Test
     public void fitsVersionTest() {
         logger.info("FITS_URI = {}", FITS_URI);
@@ -162,7 +154,7 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader(Exchange.FILE_NAME, TEST_FILENAME);
         //exchange.getIn().setBody(testFile, File.class);
-        template.send("direct:generateFITSReport", exchange);
+        template.send("direct:getFITSReport", exchange);
 
         String fitsOutput = exchange.getIn().getBody(String.class);
         logger.info("FITS Response: {}", fitsOutput);
@@ -171,46 +163,44 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
         nsMap.put("fits", "http://hul.harvard.edu/ois/xml/ns/fits/fits_output");
         XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(nsMap));
 
-        assertXpathEvaluatesTo("image/jp2", "/fits:fits/fits:identification/fits:identity[2]/@mimetype", fitsOutput.trim());
-        //assertXpathEvaluatesTo("image/x-nikon-nef", "/fits:fits/fits:identification/fits:identity[1]/@mimetype", fitsOutput.trim());
+        //assertXpathEvaluatesTo("image/jp2", "/fits:fits/fits:identification/fits:identity[2]/@mimetype", fitsOutput.trim());
+        assertXpathEvaluatesTo("image/x-nikon-nef", "/fits:fits/fits:identification/fits:identity[1]/@mimetype", fitsOutput.trim());
     }
 
-//    /**
-//     * Testing UnifiedCameraTrapAddFITSDataStream Route
-//     *
-//     * @throws Exception
-//     */
-//    @Test
-//    public void fitsCameraTrapRouteTest() throws Exception {
-//
-//        //The mock endpoint we are sending to for assertions
-//        MockEndpoint mockResult = getMockEndpoint("mock:mockResult");
-//        mockResult.expectedMessageCount(1);
-//        mockResult.expectedHeaderReceived("dsMIME", "image/x-nikon-nef");
-//
-//        /* Advicewith the routes as needed for this test */
-//        context.getRouteDefinition("UnifiedCameraTrapAddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
-//            @Override
-//            public void configure() throws Exception {
-//                interceptSendToEndpoint("fedora:addDatastream.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping add datastream to Fedora").to("mock:mockResult");
-//            }
-//        });
-//
-//        context.start();
-//
-//        //Initialize the exchange with body and headers as needed
-//        Exchange exchange = new DefaultExchange(context);
-//        exchange.getIn().setHeader("CamelFileAbsolutePath", testFile.getAbsolutePath());
-//        exchange.getIn().setHeader("CamelFedoraPid", "test:0001");
-//
-//        // The endpoint we want to start from with the exchange body and headers we want
-//        template.send("direct:addFITSDataStream", exchange);
-//
-//        Message result = mockResult.getExchanges().get(0).getIn();
-//
-//        //Project
-//        assertEquals("image/x-nikon-nef", result.getHeader("dsMIME"));
-//
-//        assertMockEndpointsSatisfied();
-//    }
+    /**
+     * Testing AddFITSDataStream Route
+     *
+     * @throws Exception
+     */
+    @Test
+    public void fitsRouteTest() throws Exception {
+
+        // The mock endpoint we are sending to for assertions.
+        MockEndpoint mockResult = getMockEndpoint("mock:mockResult");
+        mockResult.expectedMessageCount(1);
+        mockResult.expectedHeaderReceived("dsMIME", "image/x-nikon-nef");
+
+        // AdviceWith the routes as needed for this test.
+        context.getRouteDefinition("AddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint("fedora:addDatastream.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping add datastream to Fedora").to("mock:mockResult");
+            }
+        });
+
+        context.start();
+
+        // Initialize the exchange with body and headers as needed.
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader(Exchange.FILE_NAME, TEST_FILENAME);
+        exchange.getIn().setHeader("CamelFedoraPid", "test:0001");
+
+        // The endpoint we want to start from with the exchange body and headers we want
+        template.send("direct:addFITSDataStream", exchange);
+
+        // Check the result
+        Message result = mockResult.getExchanges().get(0).getIn();
+        assertEquals("image/x-nikon-nef", result.getHeader("dsMIME"));
+        assertMockEndpointsSatisfied();
+    }
 }

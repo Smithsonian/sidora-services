@@ -56,7 +56,7 @@ public class FITSServletServiceRouteBuilder extends RouteBuilder {
     @Override
     public void configure() {
 
-        from("direct:generateFITSReport")
+        from("direct:getFITSReport")
                 .log("Calling FITS")
                 .process(new Processor() {
                     @Override
