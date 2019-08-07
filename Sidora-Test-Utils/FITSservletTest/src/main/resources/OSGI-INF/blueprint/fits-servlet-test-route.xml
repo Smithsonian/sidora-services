@@ -18,7 +18,7 @@
         </cm:default-properties>
     </cm:property-placeholder>
 
-    <bean id="FITSRoutes" class="edu.si.fits.servlet.FITSServletServiceRouteBuilder"/>
+    <bean id="FITSRoutes" class="FITSServletServiceRouteBuilder"/>
 
     <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
         <property name="outFilter">

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~ Copyright 2015-2019 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -83,6 +83,8 @@
     
     <bean id="contentModels" class="java.util.HashSet"/>
 
+    <bean id="FITSRoutes" class="edu.si.services.beans.fitsservlet.FITSServletRouteBuilder"/>
+
     <!-- Provides the Camel routing setup -->
     <camelContext id="DerivativesCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -107,6 +109,7 @@
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
 
+        <routeBuilder ref="FITSRoutes"/>
 
         <!--
         <errorHandler id="derivativesErrorHandler" type="DefaultErrorHandler">
@@ -1022,21 +1025,44 @@
                  logName="edu.si.derivatives"/>
 
             <!-- Create a FITS derivative using Harvard FITS. -->
+            <!--
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
+            -->
+            <!--
             <setHeader headerName="CamelHttpQuery">
                 <simple>
                     file={{karaf.home}}/${header.CamelFileNameProduced}
                 </simple>
             </setHeader>
+            -->
 
+            <setHeader headerName="CamelFileName">
+                <simple>
+                    file={{karaf.home}}/${header.CamelFileNameProduced}
+                </simple>
+            </setHeader>
+
+            <!--
             <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+            -->
 
+            <!--
             <toD uri="{{si.fits.host}}/examine"/>
             <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+            -->
+
+            <!--
+                Ensure that we actually have a 200 response from the fits web service as this header could have been
+                set upstream by another http request.
+            -->
+            <removeHeader headerName="CamelHttpResponseCode"/>
+
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
 
             <log message="${id} FITS Web Service Response Body:\n${body}"
                  loggingLevel="DEBUG"
