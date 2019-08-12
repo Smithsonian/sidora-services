@@ -239,7 +239,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .maximumRedeliveries("{{min.edan.http.redeliveries}}")
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-                .logNewException(true)
+                .logNewException(true);
 //                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
 //                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}").id("logEdanIdsHTTPException");
 
@@ -262,7 +262,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 .maximumRedeliveries(10)
                 .retryAttemptedLogLevel(LoggingLevel.WARN)
                 .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-                .logExhausted(true)
+                .logExhausted(true);
 //                .setHeader("error").simple("[${routeId}] :: EdanIds Error reported: ${exception.message}");
 //                .log(LoggingLevel.ERROR, LOG_NAME, "${header.error}\nCamel Headers:\n${headers}");
 
@@ -655,7 +655,6 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                                         String query = out.getHeader(Exchange.HTTP_QUERY, String.class);
                                         //throw new EdanIdsException("EDAN Request Error!!! Endpoint: " + endpoint + ", Query: " + query + ", Error:" + edanResponse.toString(4));
                                         throw new EdanIdsException("EDAN Request Error!!! " + endpoint + "?" + query + ", Error: " + edanResponse.toString());
-                                        SedaConsumer
                                     }
                                 }
 
