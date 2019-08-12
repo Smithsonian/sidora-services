@@ -57,29 +57,26 @@ public class FITSServletServiceRouteBuilder extends RouteBuilder {
     public void configure() {
 
         from("direct:getFITSReport")
-                .log("Calling FITS")
+                .log("Calling FITS Examine")
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
                         MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
-                        //multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
                         String filePath = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
                         File uploadFile = new File(filePath);
-                        //File file = exchange.getIn().getBody(File.class);
                         FileBody bin = new FileBody(uploadFile);
-                        //multipartEntityBuilder.addPart("datafile", new FileBody(file, ContentType.MULTIPART_FORM_DATA, filename));
                         multipartEntityBuilder.addPart("datafile", bin);
-                        exchange.getOut().setBody(multipartEntityBuilder.build());
+                        exchange.getIn().setBody(multipartEntityBuilder.build());
                     }
                 })
-                .to("http4:{{si.fits.host}}/examine?headerFilterStrategy=#dropHeadersStrategy")
+                .to("log:?level=INFO&showHeaders=true")
+                .toD("http4:{{si.fits.host}}/examine?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class, "UTF-8")
-                .log(LoggingLevel.INFO, "FITS RESPONSE BODY ${body}").end();
+                .end();
 
         from("direct:getFITSVersion")
                 .log("Calling FITS Version")
                 .to("http4:{{si.fits.host}}/version?headerFilterStrategy=#dropHeadersStrategy");
-                //.log(LoggingLevel.INFO, "FITS RESPONSE BODY ${body}");
 
     }
 }

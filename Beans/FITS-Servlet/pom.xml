@@ -44,6 +44,7 @@
     <version>1.0</version>
 
     <properties>
+        <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
         <servlet.port>8080</servlet.port>
         <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep the fits web service up -->
         <!--<dynamic.test.port>39799</dynamic.test.port>-->
@@ -232,9 +233,10 @@
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>edu.si.services.beans.fitsservlet</Bundle-SymbolicName>
-                        <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
-                        <Embed-Transitive>true</Embed-Transitive>
+                        <!-- <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency> -->
+                        <!-- <Embed-Transitive>true</Embed-Transitive> -->
                         <Export-Package>edu.si.services.beans.fitsservlet</Export-Package>
+                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>
@@ -245,7 +247,7 @@
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering -->
+                        <!-- We choose this phase to ensure that the chosen port number is available for test resource filtering. -->
                         <phase>process-test-sources</phase>
                         <goals>
                             <goal>reserve-network-port</goal>

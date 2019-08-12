@@ -85,6 +85,10 @@
 
     <bean id="FITSRoutes" class="edu.si.services.beans.fitsservlet.FITSServletRouteBuilder"/>
 
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value=".*"/>
+    </bean>
+
     <!-- Provides the Camel routing setup -->
     <camelContext id="DerivativesCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -1025,40 +1029,20 @@
                  logName="edu.si.derivatives"/>
 
             <!-- Create a FITS derivative using Harvard FITS. -->
-            <!--
-            <setHeader headerName="CamelHttpMethod">
-                <constant>GET</constant>
-            </setHeader>
-            -->
-            <!--
-            <setHeader headerName="CamelHttpQuery">
-                <simple>
-                    file={{karaf.home}}/${header.CamelFileNameProduced}
-                </simple>
-            </setHeader>
-            -->
 
-            <setHeader headerName="CamelFileName">
-                <simple>
-                    file={{karaf.home}}/${header.CamelFileNameProduced}
-                </simple>
-            </setHeader>
-
-            <!--
-            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.derivatives"/>
-            -->
-
-            <!--
-            <toD uri="{{si.fits.host}}/examine"/>
-            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
-            -->
+            <log message="FITS File Name: ${header.CamelFileName}"/>
 
             <!--
                 Ensure that we actually have a 200 response from the fits web service as this header could have been
-                set upstream by another http request.
+                set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
             -->
+
+            <!-- Not sure this is needed. -->
+            <setBody>
+                <simple>null</simple>
+            </setBody>
+
+            <removeHeader headerName="CamelHttpMethod"/>
             <removeHeader headerName="CamelHttpResponseCode"/>
 
             <!-- Get the FITS analysis of the file. -->
@@ -1072,7 +1056,6 @@
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        <!--${body} != ''-->
                         ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
