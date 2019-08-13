@@ -48,14 +48,7 @@
     <bean id="FITSRoutes" class="edu.si.services.beans.fitsservlet.FITSServletRouteBuilder"/>
 
     <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
-        <property name="outFilter">
-            <set>
-                <value>ds_metadataXML</value>
-                <value>ds_sidoraXML</value>
-                <value>ds_dcXML</value>
-                <value>associationXML</value>
-            </set>
-        </property>
+        <property name="outFilterPattern" value=".*"/>
     </bean>
 
     <!-- Provides the Camel routing setup -->

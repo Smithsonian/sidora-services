@@ -160,6 +160,12 @@
         <property name="configuration" ref="jmsConfig"/>
     </bean>
 
+    <bean id="FITSRoutes" class="edu.si.services.beans.fitsservlet.FITSServletRouteBuilder"/>
+
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value=".*"/>
+    </bean>
+
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
@@ -176,9 +182,11 @@
         <!--
           The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
+
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
                              location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
+
         <!--
         <dataFormats>
           <base64 lineSeparator="&#10;" id="base64withNewLine" />
@@ -199,6 +207,7 @@
 
         <routeBuilder ref="cameraTrapRoutes"/>
         <routeBuilder ref="cameraTrapAutoS3SyncRouteBuilder"/>
+        <routeBuilder ref="FITSRoutes"/>
 
         <onException>
             <exception>java.net.ConnectException</exception>
@@ -848,6 +857,7 @@
 
         <route id="UnifiedCameraTrapGetCameraMakeModel">
             <from uri="direct:getCameraMakeModel"/>
+
             <onException>
                 <exception>java.net.SocketException</exception>
                 <redeliveryPolicy useExponentialBackOff="true"
@@ -864,6 +874,7 @@
                      id="getCameraMakeModelFitsServiceException"/>
             </onException>
 
+            <!--
             <setHeader headerName="imageName">
                 <xpath headerName="ManifestXML" resultType="java.lang.String">
                     //ImageSequence[1]/Image[1]/ImageFileName/text()
@@ -873,7 +884,24 @@
             <log message="${id}: Getting CameraMakeModel from image: ${header.imageName}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+            -->
 
+            <setHeader headerName="imageName">
+                <xpath headerName="ManifestXML" resultType="java.lang.String">
+                    //ImageSequence[1]/Image[1]/ImageFileName/text()
+                </xpath>
+            </setHeader>
+            <setHeader headerName="CamelFileName">
+                <simple>
+                    ${header.deploymentDataDir}/${header.imageName}
+                </simple>
+            </setHeader>
+
+            <log message="${id}: Getting CameraMakeModel from image: ${header.imageName}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <!--
             <setHeader headerName="CamelHttpMethod">
                 <constant>GET</constant>
             </setHeader>
@@ -883,14 +911,33 @@
                 </simple>
             </setHeader>
             <removeHeader headerName="CamelHttpResponseCode"/>
+            -->
 
+            <!--
+                Ensure that we actually have a 200 response from the fits web service as this header could have been
+                set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
+            -->
+
+            <!-- Not sure this is needed. -->
+            <setBody>
+                <simple>null</simple>
+            </setBody>
+
+            <removeHeader headerName="CamelHttpMethod"/>
+            <removeHeader headerName="CamelHttpResponseCode"/>
+
+            <!--
             <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="getCameraMakeModel_fitsHttpRequest"/>
+            -->
 
-            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
+
+            <!-- <convertBodyTo type="java.lang.String" charset="UTF-8"/> -->
 
             <log message="${id} FITS Output:\n${body}"
                  loggingLevel="DEBUG"

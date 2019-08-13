@@ -1028,6 +1028,22 @@
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.socketEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="getCameraMakeModelFitsServiceException"/>
+            </onException>
+
             <!-- Create a FITS derivative using Harvard FITS. -->
 
             <log message="FITS File Name: ${header.CamelFileName}"/>
