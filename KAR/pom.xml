@@ -151,11 +151,11 @@
         </dependency>-->
 
         <!-- Sidora Solr -->
-        <dependency>
+        <!--<dependency>
             <groupId>edu.si.services</groupId>
             <artifactId>sidora-solr</artifactId>
             <version>1.0</version>
-        </dependency>
+        </dependency>-->
 
     </dependencies>
 
@@ -254,7 +254,7 @@
             </resource>
               
             <!-- Sidora-Solr -->
-            <resource>
+            <!--<resource>
                 <directory>../Sidora-Solr/Karaf-Config/etc</directory>
                 <targetPath>${target-karaf-etc-path}</targetPath>
                 <filtering>true</filtering>
@@ -266,7 +266,7 @@
             <resource>
                 <directory>../Sidora-Solr/Karaf-Config/sql</directory>
                 <targetPath>${target-karaf-sql-path}</targetPath>
-            </resource>
+            </resource>-->
         </resources>
 
         <plugins>
