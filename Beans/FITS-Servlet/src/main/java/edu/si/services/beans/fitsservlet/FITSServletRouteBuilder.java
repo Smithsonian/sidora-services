@@ -47,8 +47,8 @@ import java.io.File;
  */
 public class FITSServletRouteBuilder extends RouteBuilder {
 
-//    @PropertyInject(value = "si.ct.id")
-//    static private String CT_LOG_NAME;
+    //@PropertyInject(value = "edu.si.fits")
+    //static private String LOG_NAME;
 
     /**
      * Configure the Camel routing rules for the FITS Servlet.
@@ -64,19 +64,21 @@ public class FITSServletRouteBuilder extends RouteBuilder {
                         MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
                         String filePath = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
                         File uploadFile = new File(filePath);
-                        //File file = exchange.getIn().getBody(File.class);
                         FileBody bin = new FileBody(uploadFile);
                         multipartEntityBuilder.addPart("datafile", bin);
-                        exchange.getOut().setBody(multipartEntityBuilder.build());
+                        exchange.getIn().setBody(multipartEntityBuilder.build());
                     }
                 })
-                .to("http4:{{si.fits.host}}/examine?headerFilterStrategy=#dropHeadersStrategy")
+                .to("log:?level=DEBUG&showHeaders=true")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/examine")
+                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class, "UTF-8")
                 .end();
 
         from("direct:getFITSVersion")
                 .log("Calling FITS Version")
-                .to("http4:{{si.fits.host}}/version?headerFilterStrategy=#dropHeadersStrategy");
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/version")
+                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy");
 
     }
 }

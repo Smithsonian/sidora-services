@@ -52,14 +52,22 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-blueprint</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-blueprint</artifactId>
+            <artifactId>camel-http4</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -70,127 +78,58 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test-blueprint</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
             <version>1.0</version>
             <scope>test</scope>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>edu.si.services.camel</groupId>
-            <artifactId>FcrepoRest</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
-        </dependency>
-        -->
+
         <dependency>
             <groupId>xmlunit</groupId>
             <artifactId>xmlunit</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--
+
+        <!-- ActiveMQ Dependency because derivatives route not contained by any single project. -->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-configuration2</artifactId>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-camel</artifactId>
             <scope>test</scope>
+            <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.apache.camel</groupId>
+                    <artifactId>camel-jms</artifactId>
+                </exclusion>
+            </exclusions>-->
         </dependency>
-        -->
-        <!--
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <scope>test</scope>
-        </dependency>
-        -->
 
         <!-- Test Logging -->
-        <!--<dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
-        </dependency>
 
-        <!-- Http client tests -->
-        <!--
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http</artifactId>
-            <scope>test</scope>
-        </dependency>
-        -->
-        <!--
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <scope>test</scope>
-        </dependency>
-        -->
-        <!--
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <scope>test</scope>
-        </dependency>
-        -->
-        <!--
-        <dependency>
-            <groupId>commons-net</groupId>
-            <artifactId>commons-net</artifactId>
-            <scope>test</scope>
-        </dependency>
-        -->
-
-        <!-- Integration Testing gear -->
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.enterprise</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-all</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore-osgi</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http4</artifactId>
-            <scope>provided</scope>
-        </dependency>
+        <!-- Integration Testing -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient-osgi</artifactId>
@@ -208,6 +147,13 @@
 
             <testResource>
                 <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+
+            <!-- Add the test properties file. -->
+            <testResource>
+                <directory>Karaf-config/etc</directory>
+                <targetPath>${karaf.home}/etc</targetPath>
                 <filtering>true</filtering>
             </testResource>
 

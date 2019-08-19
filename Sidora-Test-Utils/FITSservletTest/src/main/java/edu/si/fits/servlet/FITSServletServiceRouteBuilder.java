@@ -69,14 +69,16 @@ public class FITSServletServiceRouteBuilder extends RouteBuilder {
                         exchange.getIn().setBody(multipartEntityBuilder.build());
                     }
                 })
-                .to("log:?level=INFO&showHeaders=true")
-                .toD("http4:{{si.fits.host}}/examine?headerFilterStrategy=#dropHeadersStrategy")
+                .to("log:?level=DEBUG&showHeaders=true")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/examine")
+                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class, "UTF-8")
                 .end();
 
         from("direct:getFITSVersion")
                 .log("Calling FITS Version")
-                .to("http4:{{si.fits.host}}/version?headerFilterStrategy=#dropHeadersStrategy");
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/version")
+                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy");
 
     }
 }

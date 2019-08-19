@@ -136,7 +136,7 @@
 
         <!-- Edan-Sidora -->
         <dependency>
-            <groupId>edu.si.services.beans</groupId>
+            <groupId>edu.si.services</groupId>
             <artifactId>edansidora</artifactId>
             <version>1.0</version>
         </dependency>

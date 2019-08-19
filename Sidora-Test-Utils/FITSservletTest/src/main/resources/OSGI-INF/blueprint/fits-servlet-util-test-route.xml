@@ -20,12 +20,8 @@
 
     <bean id="FITSTestRoutes" class="edu.si.fits.servlet.FITSServletServiceRouteBuilder"/>
 
-    <bean id="FITSHeaderStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
-        <property name="outFilter">
-            <set>
-                <value>CamelTestHeader/></value>
-            </set>
-        </property>
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value=".*"/>
     </bean>
 
     <!-- Provides the Camel routing setup -->

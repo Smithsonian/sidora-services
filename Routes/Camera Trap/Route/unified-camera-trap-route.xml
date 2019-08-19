@@ -902,18 +902,6 @@
                  logName="{{si.ct.id}}"/>
 
             <!--
-            <setHeader headerName="CamelHttpMethod">
-                <constant>GET</constant>
-            </setHeader>
-            <setHeader headerName="CamelHttpQuery">
-                <simple>
-                    file=${header.deploymentDataDir}/${header.imageName}
-                </simple>
-            </setHeader>
-            <removeHeader headerName="CamelHttpResponseCode"/>
-            -->
-
-            <!--
                 Ensure that we actually have a 200 response from the fits web service as this header could have been
                 set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
             -->
@@ -925,14 +913,6 @@
 
             <removeHeader headerName="CamelHttpMethod"/>
             <removeHeader headerName="CamelHttpResponseCode"/>
-
-            <!--
-            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
-                 loggingLevel="DEBUG"
-                 logName="{{si.ct.id}}"/>
-
-            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="getCameraMakeModel_fitsHttpRequest"/>
-            -->
 
             <!-- Get the FITS analysis of the file. -->
             <to uri="direct:getFITSReport"/>
@@ -1502,24 +1482,29 @@
                  logName="{{si.ct.id}}"/>
 
             <!-- Create a FITS derivative using Harvard FITS. -->
-            <setHeader headerName="CamelHttpMethod">
-                <constant>GET</constant>
-            </setHeader>
-            <setHeader headerName="CamelHttpQuery">
+            <setHeader headerName="CamelFileName">
                 <simple>
-                    file=${header.CamelFileAbsolutePath}
+                    ${header.CamelFileAbsolutePath}
                 </simple>
             </setHeader>
-            <!-- ensure that we actually have a 200 response from the fits web service as this header could have been set upstream by another http request -->
+
+            <!--
+                Ensure that we actually have a 200 response from the fits web service as this header could have been
+                set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
+            -->
+
+            <!-- Not sure this is needed. -->
+            <setBody>
+                <simple>null</simple>
+            </setBody>
+
+            <removeHeader headerName="CamelHttpMethod"/>
             <removeHeader headerName="CamelHttpResponseCode"/>
 
-            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
-                 loggingLevel="DEBUG"
-                 logName="{{si.ct.id}}"/>
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
 
-            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="fitsHttpRequest"/>
-
-            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+            <!-- <convertBodyTo type="java.lang.String" charset="UTF-8"/> -->
 
             <log message="${id} FITS Output:\n${body}"
                  loggingLevel="DEBUG"

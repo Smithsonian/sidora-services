@@ -32,26 +32,11 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.converter.stream.CachedOutputStream;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
-import org.apache.camel.util.KeyValueHolder;
-import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.FileBasedConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.custommonkey.xmlunit.exceptions.XpathException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +51,7 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
  * @author jbirkhimer
  * @author davisda
  */
-public class UCT_FITS_IT extends CamelBlueprintTestSupport {
+public class FITS_Utils_IT extends CamelBlueprintTestSupport {
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
     private static Properties extra = new Properties();
@@ -75,16 +60,16 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
 
     protected static String FITS_URI;
 
-    private static final Logger logger = LoggerFactory.getLogger(UCT_FITS_IT.class);
+    private static final Logger logger = LoggerFactory.getLogger(FITS_Utils_IT.class);
 
     @Override
     protected String getBlueprintDescriptor() {
-        return "OSGI-INF/blueprint/fits-servlet-test-route.xml";
+        return "OSGI-INF/blueprint/fits-servlet-util-test-route.xml";
     }
 
     @Override
     public void setUp() throws Exception {
-        //System.getProperties().list(System.out);
+        System.getProperties().list(System.out);
         log.debug("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
 
         List<String> propFileList = loadAdditionalPropertyFiles();
@@ -112,7 +97,7 @@ public class UCT_FITS_IT extends CamelBlueprintTestSupport {
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return null;
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.fits.cfg");
         //return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
     }
 

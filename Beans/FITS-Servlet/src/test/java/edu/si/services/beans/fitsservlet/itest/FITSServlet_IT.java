@@ -34,7 +34,6 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.custommonkey.xmlunit.exceptions.XpathException;
@@ -50,19 +49,15 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 
 /**
  * @author jbirkhimer
+ * @author davisda
  */
 public class FITSServlet_IT extends CamelBlueprintTestSupport {
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
     private static Properties extra = new Properties();
-    //private static final File testFile = new File(KARAF_HOME + "/large_image_moth.jp2");
-    //private static String TEST_FILENAME = KARAF_HOME + "/large_image_moth.jp2";
-    private static final File testFile = new File(KARAF_HOME + "/BBB_9425.NEF");
     private static String TEST_FILENAME = KARAF_HOME + "/BBB_9425.NEF";
 
     protected static String FITS_URI;
-
-    private static CloseableHttpClient httpClient;
 
     private static final Logger logger = LoggerFactory.getLogger(FITSServlet_IT.class);
 
@@ -73,7 +68,7 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
 
     @Override
     public void setUp() throws Exception {
-        //System.getProperties().list(System.out);
+        System.getProperties().list(System.out);
         log.info("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
 
         List<String> propFileList = loadAdditionalPropertyFiles();
@@ -95,14 +90,13 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
             }
         }
 
-        super.setUp();
-
         FITS_URI = extra.getProperty("si.fits.host");
+
+        super.setUp();
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return null;
-        //return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg");
+        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.fits.cfg");
     }
 
     @Override
@@ -110,11 +104,6 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
         configAdmin.putAll(extra);
         return "edu.si.sidora.karaf";
     }
-
-//    @Override
-//    protected void addServicesOnStartup(Map<String, KeyValueHolder<Object, Dictionary>> services) {
-//        services.put("amazonS3Client", asService(new AmazonS3ClientMock("some_key", "some_secret_key"), null));
-//    }
 
     @Override
     public boolean isUseAdviceWith() {
@@ -139,7 +128,6 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader(Exchange.FILE_NAME, TEST_FILENAME);
-        //exchange.getIn().setBody(testFile, File.class);
         template.send("direct:getFITSReport", exchange);
 
         String fitsOutput = exchange.getIn().getBody(String.class);
@@ -149,7 +137,6 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
         nsMap.put("fits", "http://hul.harvard.edu/ois/xml/ns/fits/fits_output");
         XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(nsMap));
 
-        //assertXpathEvaluatesTo("image/jp2", "/fits:fits/fits:identification/fits:identity[2]/@mimetype", fitsOutput.trim());
         assertXpathEvaluatesTo("image/x-nikon-nef", "/fits:fits/fits:identification/fits:identity[1]/@mimetype", fitsOutput.trim());
     }
 
