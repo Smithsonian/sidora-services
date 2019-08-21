@@ -68,7 +68,7 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
 
     @Override
     public void setUp() throws Exception {
-        System.getProperties().list(System.out);
+        //System.getProperties().list(System.out);
         log.info("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
 
         List<String> propFileList = loadAdditionalPropertyFiles();
