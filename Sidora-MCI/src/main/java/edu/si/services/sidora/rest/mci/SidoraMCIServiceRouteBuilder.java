@@ -28,16 +28,14 @@
 package edu.si.services.sidora.rest.mci;
 
 import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
-import org.apache.camel.PropertyInject;
+import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -309,13 +307,30 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
         from("direct:findFolderHolderUserPID").routeId("MCIFindFolderHolderUserPID").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Find MCI Folder Holder User PID...")
-                .toD("sql:{{sql.find.mci.user.pid}}?dataSource=#drupalDataSource").id("queryFolderHolder")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "Drupal db SQL Query Result Body: ${body}")
+                .toD("sql:{{sql.find.mci.user.data}}?dataSource=#drupalDataSource&outputType=SelectOne&outputHeader=drupalUserData").id("queryFolderHolder")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "Drupal db SQL Query Result: ${header.drupalUserData}")
                 .choice()
-                    .when().simple("${body.size} != 0 && ${body[0][user_pid]} != null")
-                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
-                        .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
-                        .setHeader("mciOwnerName").simple("${header.mciFolderHolder}")
+                    .when().simple("${header.drupalUserData} != null")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' Found!!!")
+
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String drupalUserData = out.getHeader("drupalUserData", String.class);
+
+                                List<String> args = new ArrayList<>();
+                                args.add("-r");
+                                args.add("echo unserialize('"+ drupalUserData +"')[\"islandora_user_pid\"];");
+
+                                out.setHeader("CamelExecCommandArgs", args);
+                            }
+                        })
+
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "***** php exec args ***** = ${header.CamelExecCommandArgs}")
+                        .toD("exec:php?useStderrOnEmptyStdout=true").id("phpDeserializeUserData")
+                        .setHeader("mciOwnerPID").simple("${body}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID = ${header.mciOwnerPID}")
                     .endChoice()
                     .otherwise()
                         .setBody().simple("[${routeId}] :: correlationId = ${header.correlationId} :: Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
