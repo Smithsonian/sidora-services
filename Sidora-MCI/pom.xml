@@ -133,6 +133,12 @@
 
         <!-- Sidora Services -->
         <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>FITS-Servlet</artifactId>
+            <version>1.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
             <version>1.0</version>

@@ -403,30 +403,57 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Resource - PID = ${header.projectResourcePID} :: correlationId = ${header.correlationId}");
 
+//        from("direct:addFITSDataStream").routeId("MCIProjectAddFITSDataStream")
+//                .log(LoggingLevel.INFO, LOG_NAME, "Started processing FITS...")
+//
+//                .to("file://staging/")
+//
+//                .setHeader("CamelHttpMethod", constant("GET"))
+//                .setHeader("CamelHttpQuery", simple("file={{karaf.home}}/${header.CamelFileNameProduced}"))
+//                .toD("cxfrs:{{si.fits.host}}/examine?headerFilterStrategy=#dropHeadersStrategy").id("fitsRequest")
+//                .convertBodyTo(String.class, "UTF-8")
+//                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} FITS Web Service Response Body:\\n${body}")
+//
+//                .choice()
+//                    .when().simple("${header.CamelHttpResponseCode} == 200")
+//                        .log(LoggingLevel.DEBUG, LOG_NAME, "FITS Web Service Response Body: ${body}")
+//                        .convertBodyTo(String.class)
+//                        .to("fedora:addDatastream?name=FITS&type=text/xml&dsLabel=FITS%20Generated%20Image%20Metadata&group=X&versionable=false")
+//                    .endChoice()
+//                    .otherwise()
+//                        .log(LoggingLevel.WARN, LOG_NAME, "FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelHttpResponseCode}")
+//                .end()
+//                .recipientList().simple("exec:rm?args=-f ${header.CamelFileNameProduced}")
+//                .choice()
+//                    .when().simple("${headers.CamelExecExitValue} != 0")
+//                        .log(LoggingLevel.WARN, LOG_NAME, "Unable to delete working file. Filename: ${headers.CamelFileNameProduced}")
+//                .end()
+//                .log(LoggingLevel.INFO, LOG_NAME, "Finished processing FITS...");
+
         from("direct:addFITSDataStream").routeId("MCIProjectAddFITSDataStream")
                 .log(LoggingLevel.INFO, LOG_NAME, "Started processing FITS...")
 
                 .to("file://staging/")
 
-                .setHeader("CamelHttpMethod", constant("GET"))
-                .setHeader("CamelHttpQuery", simple("file={{karaf.home}}/${header.CamelFileNameProduced}"))
-                .toD("cxfrs:{{si.fits.host}}/examine?headerFilterStrategy=#dropHeadersStrategy").id("fitsRequest")
-                .convertBodyTo(String.class, "UTF-8")
+                .removeHeader("CamelHttpMethod")
+                .removeHeader("CamelHttpResponseCode")
+                .setHeader(Exchange.FILE_NAME, simple("{{karaf.home}}/${header.CamelFileNameProduced}"))
+                .toD("getFITSReport").id("fitsRequest")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} FITS Web Service Response Body:\\n${body}")
 
                 .choice()
-                    .when().simple("${header.CamelHttpResponseCode} == 200")
-                        .log(LoggingLevel.DEBUG, LOG_NAME, "FITS Web Service Response Body: ${body}")
-                        .convertBodyTo(String.class)
-                        .to("fedora:addDatastream?name=FITS&type=text/xml&dsLabel=FITS%20Generated%20Image%20Metadata&group=X&versionable=false")
-                    .endChoice()
-                    .otherwise()
-                        .log(LoggingLevel.WARN, LOG_NAME, "FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelHttpResponseCode}")
+                .when().simple("${header.CamelHttpResponseCode} == 200")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "FITS Web Service Response Body: ${body}")
+                .convertBodyTo(String.class)
+                .to("fedora:addDatastream?name=FITS&type=text/xml&dsLabel=FITS%20Generated%20Image%20Metadata&group=X&versionable=false")
+                .endChoice()
+                .otherwise()
+                .log(LoggingLevel.WARN, LOG_NAME, "FITS processing failed. PID: ${headers.CamelFedoraPid}  Error Code: ${headers.CamelHttpResponseCode}")
                 .end()
                 .recipientList().simple("exec:rm?args=-f ${header.CamelFileNameProduced}")
                 .choice()
-                    .when().simple("${headers.CamelExecExitValue} != 0")
-                        .log(LoggingLevel.WARN, LOG_NAME, "Unable to delete working file. Filename: ${headers.CamelFileNameProduced}")
+                .when().simple("${headers.CamelExecExitValue} != 0")
+                .log(LoggingLevel.WARN, LOG_NAME, "Unable to delete working file. Filename: ${headers.CamelFileNameProduced}")
                 .end()
                 .log(LoggingLevel.INFO, LOG_NAME, "Finished processing FITS...");
 
