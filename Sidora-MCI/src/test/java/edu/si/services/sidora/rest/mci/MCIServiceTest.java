@@ -448,6 +448,67 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
     @Test
     @Ignore
+    public void testWorkbenchLogin() throws Exception {
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.setAssertPeriod(1500);
+
+        context.getRouteDefinition("MCIWorkbenchLogin").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                weaveById("workbenchLogin")
+                        .after()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        });
+
+                weaveById("mciWBLoginParseSet-CookieHeader")
+                        .after()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        });
+
+            }
+        });
+
+        context.getRouteDefinition("MCIWorkbenchCreateResearchProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("workbenchCreateResearchProject")
+                        .after()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        })
+                        .to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setBody("test body");
+        exchange.getIn().setHeader("mciOwnerName", "SomeUser");
+        exchange.getIn().setHeader("mciResearchProjectLabel", "testCookie");
+
+        template.send("direct:workbenchLogin", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    @Ignore
     public void testWorkbenchLoginException() throws Exception {
     }
 
