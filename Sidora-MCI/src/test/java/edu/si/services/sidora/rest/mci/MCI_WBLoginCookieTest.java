@@ -27,10 +27,7 @@
 
 package edu.si.services.sidora.rest.mci;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Message;
-import org.apache.camel.Processor;
+import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
@@ -46,6 +43,7 @@ import org.junit.Test;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.HttpCookie;
+import java.util.Properties;
 import java.util.*;
 
 /**
@@ -112,8 +110,52 @@ public class MCI_WBLoginCookieTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
 
+                from("direct:login")
+                        .removeHeaders("CamelHttp*")
+                        .setHeader("Content-Type", simple("application/x-www-form-urlencoded"))
+                        .setHeader(Exchange.HTTP_METHOD, simple("POST"))
+                        .removeHeader(Exchange.HTTP_QUERY)
+                        .setBody().simple("name={{camel.workbench.user}}&pass={{camel.workbench.password}}&form_id=user_login&op=Log in")
+
+                        .toD("cxfrs:{{camel.workbench.login.url}}?throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut")
+                        .id("workbenchLogin")
+
+                        .log(LoggingLevel.WARN, "${id} $[routeId}: Workbench Login received Set-Cookie: ${header.Set-Cookie}")
+
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        })
+
+                        .process(cookieProcessor2())
+                        .removeHeader("Set-Cookie")
+                        //.stop()
+
+                        .setHeader(Exchange.HTTP_METHOD, simple("GET"))
+                        //.setHeader(Exchange.HTTP_URI).simple("workbench.sidora.si.edu/user")
+                        .setHeader(Exchange.HTTP_QUERY).groovy("\"label=\" + URLEncoder.encode(request.headers.mciResearchProjectLabel) + \"&desc=\" + URLEncoder.encode(request.headers.mciResearchProjectLabel) + \"&user=\" + request.headers.mciOwnerName")
+                        .setBody().simple("")
+
+                        .toD("cxfrs:{{camel.workbench.create.research.project.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false").id("testworkbenchCreateResearchProject")
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        })
+                        .to("mock:result");
+
                 from("direct:start")
                         .process(cookieProcessor())
+                        .to("mock:result");
+
+                from("direct:cookieProcessor2")
+                        .process(cookieProcessor2())
+                        .setBody().simple("${header.cookie}")
                         .to("mock:result");
             }
         };
@@ -165,12 +207,73 @@ public class MCI_WBLoginCookieTest extends CamelTestSupport {
                     cookie = cookiesList.get(0);
                 }
 
-                out.setHeader("cookie", cookie);
                 log.info("{}, Cookie: {}", out.getBody(String.class), cookie);
+
+                out.setHeader("cookie", cookie);
             }
         };
 
         return cookieProcessor;
+    }
+
+    public Processor cookieProcessor2() {
+        Processor cookieProcessor2 = new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                Message out = exchange.getIn();
+                String cookie = null;
+                List<String> setCookieList = new ArrayList<>();
+                addCookies(exchange.getIn().getHeader("Set-Cookie"), setCookieList);
+                addCookies(exchange.getIn().getHeader("Set-Cookie2"), setCookieList);
+
+                List<String> cookieList = new ArrayList<>();
+                for (String c : setCookieList) {
+                    HttpCookie.parse(c).forEach(httpCookie -> cookieList.add(httpCookie.getName()+"="+httpCookie.getValue()));
+                }
+
+                cookie = StringUtils.join(cookieList, "; ");
+
+                log.info("Cookie: {}", cookie);
+
+                out.setHeader("cookie", cookie);
+            }
+        };
+        return cookieProcessor2;
+    }
+
+    public void addCookies(Object cookieHeader, List<String> cookielist) {
+        if (cookieHeader instanceof List) {
+            cookielist.addAll((Collection<? extends String>) cookieHeader);
+        } else if (cookieHeader instanceof Object[]) {
+            Collections.addAll(cookielist, (String[]) cookieHeader);
+        } else if (cookieHeader instanceof String) {
+            String cookie = ((String) cookieHeader).trim();
+            if (cookie.startsWith("[") && cookie.endsWith("]")) {
+                // remove the [ ] markers
+                cookie = cookie.substring(1, cookie.length() - 1);
+                Collections.addAll(cookielist, ((String) cookie).replaceAll("expires=(.*?\\;)", "").split(","));
+            } else {
+                Collections.addAll(cookielist, ((String) cookie).replaceAll("expires=(.*?\\;)", "").split(","));
+            }
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testWorkbenchLogin() throws Exception {
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(5);
+        mockResult.setAssertPeriod(1500);
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.setPattern(ExchangePattern.InOut);
+        exchange.getIn().setBody("test body");
+        exchange.getIn().setHeader("mciOwnerName", "SomeUser");
+        exchange.getIn().setHeader("mciResearchProjectLabel", "cookieFixTest");
+        template.send("direct:login", exchange);
+
+        assertMockEndpointsSatisfied();
     }
 
     @Test
@@ -191,6 +294,36 @@ public class MCI_WBLoginCookieTest extends CamelTestSupport {
         template.sendBodyAndHeader("direct:start", "test4", "Set-Cookie", "[f4261fb3-bfc7-4f62-b73a-eec35451fcd1=d5fcd4db-7f7f-40e7-bc88-90f20a3b1bb2; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly, e160650a-d863-4cc4-bbd7-ce53925632d1=3343b084-9bfb-49f9-8e5e-285e8dbe31a4; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly]");
 
         template.sendBodyAndHeader("direct:start", "test5", "Set-Cookie", "[f4261fb3-bfc7-4f62-b73a-eec35451fcd1=d5fcd4db-7f7f-40e7-bc88-90f20a3b1bb2; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly]");
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    public void testSetCookieParsing() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(5);
+        mockResult.setAssertPeriod(1500);
+
+        String testCookie1 = "f4261fb3-bfc7-4f62-b73a-eec35451fcd1=d5fcd4db-7f7f-40e7-bc88-90f20a3b1bb2; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly";
+        Object cookie = template.requestBodyAndHeader("direct:cookieProcessor2", "test", "Set-Cookie", testCookie1, Object.class);
+        log.warn("Result: {}", cookie);
+
+        String testCookie2 = "Set-Cookie2: 2_1=d5fcd4db-7f7f-40e7-bc88-90f20a3b1bb2; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly, 2_2=3343b084-9bfb-49f9-8e5e-285e8dbe31a4; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly";
+        cookie = template.requestBodyAndHeader("direct:cookieProcessor2", "test", "Set-Cookie", testCookie2, Object.class);
+        log.warn("Result: {}", cookie);
+
+        List<String> testCookie3 = new ArrayList<>();
+        testCookie3.addAll(Arrays.asList(new String[]{"3_1=d5fcd4db-7f7f-40e7-bc88-90f20a3b1bb2; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly", "3_2=3343b084-9bfb-49f9-8e5e-285e8dbe31a4; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly"}));
+        cookie = template.requestBodyAndHeader("direct:cookieProcessor2", "test", "Set-Cookie", testCookie3, Object.class);
+        log.warn("Result: {}", cookie);
+
+        String[] testCookie4 = new String[]{"4_1=d5fcd4db-7f7f-40e7-bc88-90f20a3b1bb2; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly", "4_2=3343b084-9bfb-49f9-8e5e-285e8dbe31a4; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly"};
+        cookie = template.requestBodyAndHeader("direct:cookieProcessor2", "test", "Set-Cookie", testCookie4, Object.class);
+        log.warn("Result: {}", cookie);
+
+        String testCookie5 = "[5_1=d5fcd4db-7f7f-40e7-bc88-90f20a3b1bb2; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly, 5_2=3343b084-9bfb-49f9-8e5e-285e8dbe31a4; expires=Sun, 22-Sep-2019 08:35:39 GMT; Max-Age=2000000; path=/; domain=.somehost.si.edu; secure; HttpOnly]";
+        cookie = template.requestBodyAndHeader("direct:cookieProcessor2", "test", "Set-Cookie", testCookie5, Object.class);
+        log.warn("Result: {}", cookie);
 
         assertMockEndpointsSatisfied();
     }
