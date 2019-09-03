@@ -363,6 +363,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                         .log(LoggingLevel.DEBUG, LOG_NAME, "***** php exec args ***** = ${header.CamelExecCommandArgs}")
                         .toD("exec:php?useStderrOnEmptyStdout=true").id("phpDeserializeUserData")
                         .setHeader("mciOwnerPID").simple("${body}")
+                        .setHeader("mciOwnerName").simple("${header.mciFolderHolder}")
                         .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID = ${header.mciOwnerPID}")
                     .endChoice()
                     .otherwise()
