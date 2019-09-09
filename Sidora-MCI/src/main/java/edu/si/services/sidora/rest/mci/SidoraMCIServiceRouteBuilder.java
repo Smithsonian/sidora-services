@@ -157,8 +157,6 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .setHeader("mciOwnerName").simple("{{mci.default.owner.name}}") //the user that the research project will be under when making the workbench http request
                 .log(LoggingLevel.WARN, LOG_NAME, "${exception.message} :: Using Default User PID ${header.mciOwnerPID}!!!").id("MCI_ExceptionOnException");
 
-
-
         from("cxfrs://bean://rsServer?bindingStyle=SimpleConsumer").routeId("SidoraMCIService")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting Sidora MCI Service Request for: ${header.operationName} ... ")
                 .recipientList(simple("direct:${header.operationName}"))
@@ -445,10 +443,10 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .toD("velocity:file:{{karaf.home}}/Input/templates/MCIResourceTemplate.vsl").id("velocityMCIResourceTemplate")
                 .toD("fedora:addDatastream?name=RELS-EXT&type=application/rdf+xml&group=X&dsLabel=RDF%20Statements%20about%20this%20object&versionable=false")
 
-                //TODO: update the derivatives route to create FITS datastream for si:genericCModel
+                // FITS is no longer needed for MCI.  The only object being passed is an XML document.
                 //Create the FITS datastream
-                .setBody().simple("${header.mciProjectXML}", String.class)
-                .to("direct:addFITSDataStream")
+                //.setBody().simple("${header.mciProjectXML}", String.class)
+                //.to("direct:addFITSDataStream")
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Finished MCI Request - Create MCI Project Resource - PID = ${header.projectResourcePID} :: correlationId = ${header.correlationId}");
 

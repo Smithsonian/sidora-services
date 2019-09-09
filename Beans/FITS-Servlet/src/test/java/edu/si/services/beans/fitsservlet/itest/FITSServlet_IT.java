@@ -63,7 +63,7 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
 
     @Override
     protected String getBlueprintDescriptor() {
-        return "OSGI-INF/blueprint/fits-servlet-test-route.xml";
+        return "fits-servlet-test-route.xml";
     }
 
     @Override
@@ -96,7 +96,7 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/edu.si.sidora.fits.cfg");
+        return Arrays.asList(KARAF_HOME + "/edu.si.sidora.fits.cfg");
     }
 
     @Override
