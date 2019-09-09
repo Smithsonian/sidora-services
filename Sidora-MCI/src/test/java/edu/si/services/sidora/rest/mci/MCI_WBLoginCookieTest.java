@@ -117,7 +117,9 @@ public class MCI_WBLoginCookieTest extends CamelTestSupport {
                         .removeHeader(Exchange.HTTP_QUERY)
                         .setBody().simple("name={{camel.workbench.user}}&pass={{camel.workbench.password}}&form_id=user_login&op=Log in")
 
-                        .toD("cxfrs:{{camel.workbench.login.url}}?throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut")
+                        //.toD("cxfrs:{{camel.workbench.login.url}}?throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut")
+                        .setHeader(Exchange.HTTP_URI).simple("{{camel.workbench.login.url}}")
+                        .toD("https4://useHttpUriHeader?throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut")
                         .id("workbenchLogin")
 
                         .log(LoggingLevel.WARN, "${id} $[routeId}: Workbench Login received Set-Cookie: ${header.Set-Cookie}")
