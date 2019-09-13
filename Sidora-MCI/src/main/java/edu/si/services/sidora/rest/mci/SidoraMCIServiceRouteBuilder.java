@@ -249,7 +249,9 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Request Headers:${headers}")
 
                 //TODO: replace throwExceptionOnFailure param with onException to catch and handle the exception that is thrown for a 302 redirect response
-                .toD("cxfrs:{{camel.workbench.login.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut").id("workbenchLogin")
+                //.toD("cxfrs:{{camel.workbench.login.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut").id("workbenchLogin")
+                .setHeader(Exchange.HTTP_URI).simple("{{camel.workbench.login.url}}")
+                .toD("https4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} $[routeId}: Workbench Login received Set-Cookie: ${header.Set-Cookie}")
@@ -360,7 +362,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
                         .log(LoggingLevel.DEBUG, LOG_NAME, "***** php exec args ***** = ${header.CamelExecCommandArgs}")
                         .toD("exec:php?useStderrOnEmptyStdout=true").id("phpDeserializeUserData")
-                        .setHeader("mciOwnerPID").simple("${body}")
+                        .setHeader("mciOwnerPID").simple("${body}", String.class)
                         .setHeader("mciOwnerName").simple("${header.mciFolderHolder}")
                         .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID = ${header.mciOwnerPID}")
                     .endChoice()
