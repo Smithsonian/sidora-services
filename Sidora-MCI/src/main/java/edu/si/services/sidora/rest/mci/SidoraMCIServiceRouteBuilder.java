@@ -28,17 +28,15 @@
 package edu.si.services.sidora.rest.mci;
 
 import edu.si.services.fedorarepo.FedoraObjectNotFoundException;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
-import org.apache.camel.PropertyInject;
+import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.UUID;
+import java.net.HttpCookie;
+import java.util.*;
 
 
 /**
@@ -55,6 +53,49 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
     static private String retryAttemptedLogLevel;
     @PropertyInject(value = "mci.retriesExhaustedLogLevel")
     static private String retriesExhaustedLogLevel;
+
+    public Processor cookieProcessor() {
+        Processor cookieProcessor = new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                Message out = exchange.getIn();
+                String cookie = null;
+                List<String> setCookieList = new ArrayList<>();
+                addCookies(exchange.getIn().getHeader("Set-Cookie"), setCookieList);
+                addCookies(exchange.getIn().getHeader("Set-Cookie2"), setCookieList);
+
+                List<String> cookieList = new ArrayList<>();
+                for (String c : setCookieList) {
+                    HttpCookie.parse(c).forEach(httpCookie -> cookieList.add(httpCookie.getName()+"="+httpCookie.getValue()));
+                }
+
+                cookie = StringUtils.join(cookieList, "; ");
+
+                log.info("Cookie: {}", cookie);
+
+                out.setHeader("cookie", cookie);
+            }
+        };
+
+        return cookieProcessor;
+    }
+
+    public void addCookies(Object cookieHeader, List<String> cookielist) {
+        if (cookieHeader instanceof List) {
+            cookielist.addAll((Collection<? extends String>) cookieHeader);
+        } else if (cookieHeader instanceof Object[]) {
+            Collections.addAll(cookielist, (String[]) cookieHeader);
+        } else if (cookieHeader instanceof String) {
+            String cookie = ((String) cookieHeader).trim();
+            if (cookie.startsWith("[") && cookie.endsWith("]")) {
+                // remove the [ ] markers
+                cookie = cookie.substring(1, cookie.length() - 1);
+                Collections.addAll(cookielist, ((String) cookie).replaceAll("expires=(.*?\\;)", "").split(","));
+            } else {
+                Collections.addAll(cookielist, ((String) cookie).replaceAll("expires=(.*?\\;)", "").split(","));
+            }
+        }
+    }
 
     @Override
     public void configure() throws Exception {
@@ -210,7 +251,9 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Login Request Headers:${headers}")
 
                 //TODO: replace throwExceptionOnFailure param with onException to catch and handle the exception that is thrown for a 302 redirect response
-                .toD("{{camel.workbench.login.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false").id("workbenchLogin")
+                //.toD("cxfrs:{{camel.workbench.login.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut").id("workbenchLogin")
+                .setHeader(Exchange.HTTP_URI).simple("{{camel.workbench.login.url}}")
+                .toD("https4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false")
                 .convertBodyTo(String.class)
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} $[routeId}: Workbench Login received Set-Cookie: ${header.Set-Cookie}")
@@ -220,23 +263,13 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                     //There is no need to follow the redirect location if the login was successful we only need the cookie
                     .when().simple("${header.CamelHttpResponseCode} in '302,200'  && ${header.Set-Cookie} != null")
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} $[routeId}: Workbench Login successful received Cookie: ${header.Set-Cookie}")
-                        //Set the Cookie header from the Set-Cookie that was par of the login response
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                ArrayList setCookie = exchange.getIn().getHeader("Set-Cookie", ArrayList.class);
-                                StringBuilder builder = new StringBuilder();
-                                for (int i = 0; i < setCookie.size(); i++) {
-                                    LOG.debug(String.valueOf(setCookie.get(i)).split(";", 2)[0]);
-                                    builder.append(String.valueOf(setCookie.get(i)).split(";", 2)[0]);
-                                    if( i != setCookie.size() - 1 ){
-                                        builder.append("; ");
-                                    }
-                                }
-                                exchange.getIn().setHeader("Cookie", builder.toString());
-                            }
-                        }).id("mciWBLoginParseSet-CookieHeader")
-                    .to("direct:workbenchCreateResearchProject").id("workbenchLoginCreateResearchProjectCall")
+
+                        //Set the Cookie header from the Set-Cookie that was returned from login
+                        .process(cookieProcessor()).id("mciWBLoginParseSet-CookieHeader")
+
+                        .log(LoggingLevel.INFO, LOG_NAME, "${id} $[routeId}: cookie: ${header.cookie}")
+
+                        .to("direct:workbenchCreateResearchProject").id("workbenchLoginCreateResearchProjectCall")
                     .endChoice()
                     .otherwise()
                         .log(LoggingLevel.INFO, LOG_NAME, "${id} ${routeId}: Workbench Login Failed!!! Response Code: ${header.CamelHttpResponseCode}, Response: ${header.CamelHttpResponseText}, Response Set-Cookie: ${header.Set-Cookie}")
@@ -258,7 +291,7 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Body:${body}")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} ${routeId}: Workbench Create Research Project Request Headers:${headers}")
 
-                .toD("cxfrs:{{camel.workbench.create.research.project.url}}?headerFilterStrategy=#dropHeadersStrategy").id("workbenchCreateResearchProject")
+                .toD("cxfrs:{{camel.workbench.create.research.project.url}}?headerFilterStrategy=#dropHeadersStrategy&throwExceptionOnFailure=false&loggingFeatureEnabled=true&exchangePattern=InOut").id("workbenchCreateResearchProject")
                 .convertBodyTo(String.class)
 
                 .choice()
@@ -309,13 +342,31 @@ public class SidoraMCIServiceRouteBuilder extends RouteBuilder {
 
         from("direct:findFolderHolderUserPID").routeId("MCIFindFolderHolderUserPID").errorHandler(noErrorHandler())
                 .log(LoggingLevel.INFO, LOG_NAME, "${id}: Starting MCI Request - Find MCI Folder Holder User PID...")
-                .toD("sql:{{sql.find.mci.user.pid}}?dataSource=#drupalDataSource").id("queryFolderHolder")
-                .log(LoggingLevel.DEBUG, LOG_NAME, "Drupal db SQL Query Result Body: ${body}")
+                .toD("sql:{{sql.find.mci.user.data}}?dataSource=#drupalDataSource&outputType=SelectOne&outputHeader=drupalUserData").id("queryFolderHolder")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "Drupal db SQL Query Result: ${header.drupalUserData}")
                 .choice()
-                    .when().simple("${body.size} != 0 && ${body[0][user_pid]} != null")
-                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID Found!!! MCI Folder Holder User PID = ${body[0][user_pid]}")
-                        .setHeader("mciOwnerPID").simple("${body[0][user_pid]}")
+                    .when().simple("${header.drupalUserData} != null")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' Found!!!")
+
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String drupalUserData = out.getHeader("drupalUserData", String.class);
+
+                                List<String> args = new ArrayList<>();
+                                args.add("-r");
+                                args.add("echo unserialize('"+ drupalUserData +"')[\"islandora_user_pid\"];");
+
+                                out.setHeader("CamelExecCommandArgs", args);
+                            }
+                        })
+
+                        .log(LoggingLevel.DEBUG, LOG_NAME, "***** php exec args ***** = ${header.CamelExecCommandArgs}")
+                        .toD("exec:php?useStderrOnEmptyStdout=true").id("phpDeserializeUserData")
+                        .setHeader("mciOwnerPID").simple("${body}", String.class)
                         .setHeader("mciOwnerName").simple("${header.mciFolderHolder}")
+                        .log(LoggingLevel.INFO, LOG_NAME, "Folder Holder '${header.mciFolderHolder}' User PID = ${header.mciOwnerPID}")
                     .endChoice()
                     .otherwise()
                         .setBody().simple("[${routeId}] :: correlationId = ${header.correlationId} :: Folder Holder ${header.mciFolderHolder} User PID Not Found!!!")
