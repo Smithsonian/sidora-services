@@ -610,7 +610,7 @@
 
             <!-- Create a JPEG from NEF (Nikon RAW) image -->
             <!--<toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>-->
-            <toD uri="exec:sh?args=-c &quot;/opt/sidora/fits/tools/exiftool/perl/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
+            <toD uri="exec:sh?args=-c &quot;/usr/local/bin/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
 
             <choice>
                 <description>If the conversion succeeded? Add a display datastream for the image to the FDO.</description>
@@ -1730,7 +1730,7 @@
                                     <toD uri="file:staging?fileName=${header.CamelFileName}_blur" id="saveFaceBlurOutputToStaging"/>
 
                                     <!-- copy exif tags from the original image to the blurred image in staging-->
-                                    <toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -TagsFromFile ${header.BlurSourceFile} ${header.CamelFileNameProduced} -overwrite_original" id="exiftool"/>
+                                    <toD uri="exec:/usr/local/bin/exiftool?args= -TagsFromFile ${header.BlurSourceFile} ${header.CamelFileNameProduced} -overwrite_original" id="exiftool"/>
                                 </otherwise>
                             </choice>
 
