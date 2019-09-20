@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~ Copyright 2015-2019 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -37,8 +37,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <name>SI :: Sidora :: Test :: Utils :: FITSservlet</name>
-    <artifactId>fits-servlet-test</artifactId>
+    <name>SI :: Sidora :: Test :: Utils :: S3TestService</name>
+    <artifactId>s3-test-service</artifactId>
     <version>1.0</version>
 
     <properties>
@@ -50,14 +50,22 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-blueprint</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-blueprint</artifactId>
+            <artifactId>camel-http4</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -244,9 +252,19 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.ow2.asm</groupId>
+            <groupId>org.ow2.asm</groupId>rchristensen42
             <artifactId>asm-all</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore-osgi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient-osgi</artifactId>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>
@@ -263,17 +281,22 @@
             </testResource>
 
             <!-- add the Camera Trap Route directory as resources -->
+            <!--
             <testResource>
                 <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
                 <filtering>true</filtering>
             </testResource>
+            -->
             <!-- add the emammal property file needed by the unified route -->
+            <!--
             <testResource>
-                <directory>../../Beans/Edan-Sidora/Karaf-config/etc</directory>
+                <directory>Karaf-config/etc</directory>
                 <targetPath>${karaf.home}/etc</targetPath>
                 <filtering>true</filtering>
             </testResource>
+            -->
+            <!--
             <testResource>
                 <directory>../../Beans/Edan-Sidora/Karaf-config/Input</directory>
                 <targetPath>${karaf.home}/Input</targetPath>
@@ -286,6 +309,7 @@
                 <directory>../../Routes/Camera Trap/Route</directory>
                 <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
+            -->
         </testResources>
 
         <plugins>
@@ -300,15 +324,10 @@
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
 
-            <!-- reserve network ports for integration testing -->
+            <!-- Reserve network ports for integration testing. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <configuration>
-                    <portNames>
-                        <portName>dynamic.test.port</portName>
-                    </portNames>
-                </configuration>
                 <executions>
                     <execution>
                         <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering -->
@@ -316,12 +335,17 @@
                         <goals>
                             <goal>reserve-network-port</goal>
                         </goals>
+                        <configuration>
+                            <portNames>
+                                <portName>dynamic.test.port</portName>
+                            </portNames>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+                <groupId>org.apache.maven.plugins</groupId>rchristensen42
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludes>
@@ -355,14 +379,20 @@
                 </executions>
             </plugin>
 
+            <!-- keep Apache Derby as quiet as possible -->
+            <!-- fire AJP into /dev/null -->
+            <!-- empty deployer element prevents Cargo from trying to deploy our project, which is a bundle, into
+Tomcat -->
+            <!--
             <plugin>
+
                 <groupId>org.codehaus.cargo</groupId>
                 <artifactId>cargo-maven2-plugin</artifactId>
                 <configuration>
                     <container>
                         <containerId>tomcat7x</containerId>
                         <systemProperties>
-                            <!-- keep Apache Derby as quiet as possible -->
+
                             <derby.stream.error.field>java.lang.System.err</derby.stream.error.field>
                             <derby.stream.error.logSeverityLevel>5000</derby.stream.error.logSeverityLevel>
                         </systemProperties>
@@ -376,7 +406,7 @@
                             <cargo.servlet.uriencoding>UTF-8</cargo.servlet.uriencoding>
                             <cargo.jvmargs>-Xmx512m</cargo.jvmargs>
                             <cargo.servlet.port>${dynamic.test.port}</cargo.servlet.port>
-                            <!-- fire AJP into /dev/null -->
+
                             <cargo.tomcat.ajp.port>0</cargo.tomcat.ajp.port>
                             <fits.home>${fits.home}</fits.home>
                         </properties>
@@ -395,8 +425,7 @@
                         </configfiles>
                     </configuration>
                     <deployer>
-                        <!-- empty deployer element prevents Cargo from trying to deploy our project, which is a bundle, into
-                        Tomcat -->
+
                     </deployer>
                     <deployables>
                         <deployable>
@@ -425,7 +454,13 @@
                     </execution>
                 </executions>
             </plugin>
+        -->
 
+            <!-- the wget goal actually binds itself to this phase by default -->
+            <!-- default target location, just to demonstrate the parameter -->
+            <!-- the wget goal actually binds itself to this phase by default -->
+            <!-- default target location, just to demonstrate the parameter -->
+            <!--
             <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
@@ -433,7 +468,7 @@
                 <executions>
                     <execution>
                         <id>fits</id>
-                        <!-- the wget goal actually binds itself to this phase by default -->
+
                         <phase>process-test-resources</phase>
                         <goals>
                             <goal>wget</goal>
@@ -442,13 +477,13 @@
                             <url>http://projects.iq.harvard.edu/files/fits/files/${fits.version}.zip</url>
                             <unpack>true</unpack>
                             <overwrite>false</overwrite>
-                            <!-- default target location, just to demonstrate the parameter -->
+
                             <outputDirectory>${project.build.directory}/fits</outputDirectory>
                         </configuration>
                     </execution>
                     <execution>
                         <id>fits-web-service</id>
-                        <!-- the wget goal actually binds itself to this phase by default -->
+
                         <phase>process-test-resources</phase>
                         <goals>
                             <goal>wget</goal>
@@ -456,12 +491,13 @@
                         <configuration>
                             <url>http://projects.iq.harvard.edu/files/fits/files/${FITSservlet.version}.war</url>
                             <overwrite>false</overwrite>
-                            <!-- default target location, just to demonstrate the parameter -->
+
                             <outputDirectory>${project.build.directory}/fits</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+            -->
 
         </plugins>
     </build>

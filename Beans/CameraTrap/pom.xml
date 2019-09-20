@@ -459,11 +459,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <configuration>
-                    <portNames>
-                        <portName>dynamic.test.port</portName>
-                    </portNames>
-                </configuration>
                 <executions>
                     <execution>
                         <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering, specifically
@@ -472,6 +467,11 @@
                         <goals>
                             <goal>reserve-network-port</goal>
                         </goals>
+                        <configuration>
+                            <portNames>
+                                <portName>dynamic.test.port</portName>
+                            </portNames>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

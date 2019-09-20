@@ -25,7 +25,7 @@
  * those of third-party libraries, please see the product release notes.
  */
 
-package edu.si.services.fits.itest;
+package edu.si.services.S3.itest;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;

@@ -45,7 +45,7 @@
 
     <modules>
         <module>EdanTestService</module>
-        <module>FITSservletTest</module>
+        <!-- <module>FITSservletTest</module> -->
     </modules>
 
 

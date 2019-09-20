@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~ Copyright 2015-2019 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -83,6 +83,12 @@
     
     <bean id="contentModels" class="java.util.HashSet"/>
 
+    <bean id="FITSRoutes" class="edu.si.services.beans.fitsservlet.FITSServletRouteBuilder"/>
+
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value=".*"/>
+    </bean>
+
     <!-- Provides the Camel routing setup -->
     <camelContext id="DerivativesCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -107,6 +113,7 @@
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
 
+        <routeBuilder ref="FITSRoutes"/>
 
         <!--
         <errorHandler id="derivativesErrorHandler" type="DefaultErrorHandler">
@@ -603,7 +610,7 @@
 
             <!-- Create a JPEG from NEF (Nikon RAW) image -->
             <!--<toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>-->
-            <toD uri="exec:sh?args=-c &quot;/opt/sidora/fits/tools/exiftool/perl/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
+            <toD uri="exec:sh?args=-c &quot;/usr/local/bin/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
 
             <choice>
                 <description>If the conversion succeeded? Add a display datastream for the image to the FDO.</description>
@@ -1021,22 +1028,44 @@
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="1000"
+                                  maximumRedeliveries="200"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="edu.si.derivatives"
+                     id="derivativesFITSServiceException"/>
+            </onException>
+
             <!-- Create a FITS derivative using Harvard FITS. -->
-            <setHeader headerName="CamelHttpMethod">
-                <constant>GET</constant>
-            </setHeader>
-            <setHeader headerName="CamelHttpQuery">
+            <setHeader headerName="CamelFileName">
                 <simple>
-                    file={{karaf.home}}/${header.CamelFileNameProduced}
+                    ${header.CamelFileAbsolutePath}
                 </simple>
             </setHeader>
 
-            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.derivatives"/>
+            <!--
+                Ensure that we actually have a 200 response from the fits web service as this header could have been
+                set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
+            -->
 
-            <toD uri="{{si.fits.host}}/examine"/>
-            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+            <!-- Not sure this is needed. -->
+            <setBody>
+                <simple>null</simple>
+            </setBody>
+
+            <removeHeader headerName="CamelHttpMethod"/>
+            <removeHeader headerName="CamelHttpResponseCode"/>
+
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
 
             <log message="${id} FITS Web Service Response Body:\n${body}"
                  loggingLevel="DEBUG"
@@ -1046,7 +1075,6 @@
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        <!--${body} != ''-->
                         ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
@@ -1702,7 +1730,7 @@
                                     <toD uri="file:staging?fileName=${header.CamelFileName}_blur" id="saveFaceBlurOutputToStaging"/>
 
                                     <!-- copy exif tags from the original image to the blurred image in staging-->
-                                    <toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -TagsFromFile ${header.BlurSourceFile} ${header.CamelFileNameProduced} -overwrite_original" id="exiftool"/>
+                                    <toD uri="exec:/usr/local/bin/exiftool?args= -TagsFromFile ${header.BlurSourceFile} ${header.CamelFileNameProduced} -overwrite_original" id="exiftool"/>
                                 </otherwise>
                             </choice>
 

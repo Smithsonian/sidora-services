@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2015-2019 Smithsonian Institution.
+  ~
+  ~  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~  use this file except in compliance with the License.You may obtain a copy of
+  ~  the License at: http://www.apache.org/licenses/
+  ~
+  ~  This software and accompanying documentation is supplied without
+  ~  warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~  (1) expressly disclaim any warranties, express or implied, including but not
+  ~  limited to any implied warranties of merchantability, fitness for a
+  ~  particular purpose, title or non-infringement; (2) do not assume any legal
+  ~  liability or responsibility for the accuracy, completeness, or usefulness of
+  ~  the software; (3) do not represent that use of the software would not
+  ~  infringe privately owned rights; (4) do not warrant that the software
+  ~  is error-free or will be maintained, supported, updated or enhanced;
+  ~  (5) will not be liable for any indirect, incidental, consequential special
+  ~  or punitive damages of any kind or nature, including but not limited to lost
+  ~  profits or loss of data, on any basis arising from contract, tort or
+  ~  otherwise, even if any of the parties has been warned of the possibility of
+  ~  such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~  license terms. For a complete copy of all copyright and license terms, including
+  ~  those of third-party libraries, please see the product release notes.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>edu.si.services</groupId>
+        <artifactId>beans</artifactId>
+        <version>1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <name>SI :: Services :: Beans :: FITS-Servlet</name>
+    <groupId>edu.si.services.beans</groupId>
+    <artifactId>FITS-Servlet</artifactId>
+    <packaging>bundle</packaging>
+    <version>1.0</version>
+
+    <properties>
+        <karaf.home>${project.build.directory}/test-classes</karaf.home>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http4</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-blueprint</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test-blueprint</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FedoraRepo</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>xmlunit</groupId>
+            <artifactId>xmlunit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Test Logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Integration Testing -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient-osgi</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <defaultGoal>verify</defaultGoal>
+
+        <!-- Copy test resources to output folder target/test-classes. -->
+        <!-- Remember to specify the default test resources directory. -->
+        <testResources>
+
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+
+        </testResources>
+
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+
+            <!-- To generate the MANIFEST-FILE of the bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>edu.si.services.beans.fitsservlet</Bundle-SymbolicName>
+                        <!-- <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency> -->
+                        <!-- <Embed-Transitive>true</Embed-Transitive> -->
+                        <Export-Package>edu.si.services.beans.fitsservlet</Export-Package>
+                        <DynamicImport-Package>*</DynamicImport-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+
+            <!-- Reserve network ports for integration testing. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- We choose this phase to ensure that the chosen port number is available for test resource filtering. -->
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>reserve-network-port</goal>
+                        </goals>
+                        <configuration>
+                            <portNames>
+                                <portName>dynamic.test.port</portName>
+                            </portNames>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*_IT</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <fits.version>${fits.version}</fits.version>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                    </systemPropertyVariables>
+                    <includes>
+                        <include>**/*_IT</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
