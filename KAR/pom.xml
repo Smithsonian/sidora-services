@@ -152,6 +152,13 @@
             <version>1.0</version>
         </dependency>-->
 
+        <!-- Sidora-WI-->
+        <dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-wi</artifactId>
+            <version>1.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -262,6 +269,13 @@
                 <directory>../Sidora-Solr/Karaf-Config/sql</directory>
                 <targetPath>${target-karaf-sql-path}</targetPath>
             </resource>-->
+
+            <!-- Sidora-WI -->
+            <resource>
+                <directory>../Sidora-WI/Karaf-Config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
         </resources>
 
         <plugins>

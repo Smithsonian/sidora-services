@@ -360,15 +360,21 @@
                         <!-- Validate image count and check filenames. -->
                         <to uri="direct:validateIngest"/>
 
-
                         <!-- Send message to EdanIds route for processing -->
                         <setHeader headerName="addEdanIds">
                             <simple>true</simple>
                         </setHeader>
 
+                        <!--header used for enabling test url value so that we can create new edan records for testing sets url = url_test_randomUUID-->
+                        <setHeader headerName="test_edan_url">
+                            <simple>false</simple>
+                        </setHeader>
+
                         <to uri="activemq:queue:{{edanIds.ct.queue}}" id="edanIdsActiveMQ"/>
 
                         <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
+
+                        <to uri="activemq:queue:{{sidora.wi.ct.queue}}" id="sidoraWiActiveMQ"/>
 
                     </otherwise>
                 </choice>

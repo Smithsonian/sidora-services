@@ -1,0 +1,7 @@
+<objectDatastreams xmlns="http://www.fedora.info/definitions/1/0/access/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fedora.info/definitions/1/0/access/ http://www.fedora-commons.org/definitions/1/0/listDatastreams.xsd" pid="$headers.testPID" baseURL="http://localhost:8080/fedora/">
+    <datastream dsid="DC" label="Dublin Core Record for this object" mimeType="text/xml"/>
+    <datastream dsid="FGDC" label="FGDC Record" mimeType="text/xml"/>
+    <datastream dsid="OBJ" label="$headers.testDsLabel" mimeType="$headers.testObjMimeType"/>
+    <datastream dsid="RELS-EXT" label="RDF Statements about this object" mimeType="application/rdf+xml"/>
+    <datastream dsid="CSV" label="CSV" mimeType="text/csv"/>
+</objectDatastreams>
