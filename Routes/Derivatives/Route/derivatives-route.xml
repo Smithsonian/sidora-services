@@ -609,8 +609,8 @@
                  logName="edu.si.derivatives"/>
 
             <!-- Create a JPEG from NEF (Nikon RAW) image -->
-            <!--<toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>-->
-            <toD uri="exec:sh?args=-c &quot;/usr/local/bin/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
+            <!--<toD uri="exec:{{exiftoo.path}}?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>-->
+            <toD uri="exec:sh?args=-c &quot;{{exiftoo.path}} -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
 
             <choice>
                 <description>If the conversion succeeded? Add a display datastream for the image to the FDO.</description>
