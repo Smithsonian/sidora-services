@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                exclude-result-prefixes="xs"
+                version="1.0">
+    <xsl:output method="xml" encoding="UTF-8" media-type="text/plain"/>
+
+
+    <xsl:param name="imageid"/>
+    <xsl:param name="CamelFedoraPid"/>
+    <xsl:param name="extraJson"/>
+    <xsl:param name="edanId"/>
+
+    <xsl:template match="/">
+
+        <xsl:apply-templates select="/CameraTrapDeployment">
+            <xsl:with-param name="imageid"><xsl:value-of select="$imageid"/></xsl:with-param>
+            <xsl:with-param name="CamelFedoraPid"><xsl:value-of select="$CamelFedoraPid"/></xsl:with-param>
+            <xsl:with-param name="extraJson"><xsl:value-of select="$extraJson"/></xsl:with-param>
+            <xsl:with-param name="edanId"><xsl:value-of select="$edanId"/></xsl:with-param>
+        </xsl:apply-templates>
+    </xsl:template>
+
+    <xsl:template match="CameraTrapDeployment">
+        <xsl:param name="imageid"/>
+        <xsl:param name="CamelFedoraPid"/>
+        <xsl:param name="extraJson"/>
+        <xsl:param name="edanId"/>
+        <xml>
+            <content>
+                <!--<xsl:value-of select="$extraJson"/>-->
+                <project_id><xsl:value-of select="ProjectId"/></project_id>
+                <project_name><xsl:value-of select="ProjectName"/></project_name>
+                <sub_project_id><xsl:value-of select="SubProjectId"/></sub_project_id>
+                <sub_project_name><xsl:value-of select="SubProjectName"/></sub_project_name>
+                <deployment_id><xsl:value-of select="CameraDeploymentID"/></deployment_id>
+                <deployment_name><xsl:value-of select="CameraSiteName"/></deployment_name>
+                <image_sequence_id><xsl:value-of select="//ImageSequence[Image[ImageId=$imageid]]/ImageSequenceId"/></image_sequence_id>
+                <image>
+                    <id><xsl:value-of select="$imageid"/></id>
+                    <online_media>
+                        <online_media_array_element>
+                            <content><xsl:text>http://ids.si.edu/ids/deliveryService?id=emammal_image_</xsl:text><xsl:value-of select="$imageid"/></content>
+                            <idsId>emammal_image_<xsl:value-of select="$imageid"/></idsId>
+                            <sidoraPid><xsl:value-of select="$CamelFedoraPid"/></sidoraPid>
+                            <type>Images</type>
+                            <caption>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
+                                <xsl:value-of select="."/><xsl:if test="not(position() = last())">,</xsl:if>
+                            </xsl:for-each>
+                            </caption>
+                            <thumbnail>http://ids.si.edu/ids/deliveryService?id=emammal_image_<xsl:value-of select="$imageid"/><xsl:text>&amp;max=100</xsl:text></thumbnail>
+                        </online_media_array_element>
+                    </online_media>
+                    <date_time><xsl:value-of select="//Image[ImageId=$imageid]/ImageDateTime"/></date_time>
+                    <photo_type><xsl:value-of select="//Image[ImageId=$imageid]/PhotoType"/></photo_type>
+                    <photo_type_identified_by><xsl:value-of select="//Image[ImageId=$imageid]/PhotoTypeIdentifications/PhotoTypeIdentifiedBy"/></photo_type_identified_by>
+                    <interest_ranking>None</interest_ranking>
+                </image>
+                <image_identifications>
+                    <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification">
+                        <image_identifications_array_element>
+                            <iucn_id><xsl:value-of select="IUCNId"/></iucn_id>
+                            <species_scientific_name><xsl:value-of select="SpeciesScientificName"/></species_scientific_name>
+                            <individual_animal_notes><xsl:value-of select="IndividualAnimalNotes"/></individual_animal_notes>
+                            <species_common_name><xsl:value-of select="SpeciesCommonName"/></species_common_name>
+                            <count><xsl:value-of select="Count"/></count>
+                            <age><xsl:value-of select="Age"/></age>
+                            <sex><xsl:value-of select="Sex"/></sex>
+                            <individual_id><xsl:value-of select="IndividualId"/></individual_id>
+                            <animal_recognizable><xsl:value-of select="AnimalRecognizable"/></animal_recognizable>
+                        </image_identifications_array_element>
+                    </xsl:for-each>
+                </image_identifications>
+            </content>
+
+            <publicSearch>true</publicSearch>
+            <title>Camera Trap Image <xsl:for-each select="//ImageSequence[Image[ImageId = $imageid]]/ResearcherIdentifications/Identification/SpeciesCommonName">
+                <xsl:value-of select="."/><xsl:if test="not(position() = last())">, </xsl:if>
+            </xsl:for-each></title>
+            <type>emammal_image</type>
+            <url><xsl:value-of select="$imageid"/></url>
+            <xsl:if test="$edanId != ''">
+                <id><xsl:value-of select="$edanId"/></id>
+            </xsl:if>
+        </xml>
+    </xsl:template>
+
+</xsl:stylesheet>

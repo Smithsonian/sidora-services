@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2019 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>sidora-test-utils</artifactId>
+        <groupId>edu.si.services</groupId>
+        <version>1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <name>SI :: Sidora :: Test :: Utils :: S3TestService</name>
+    <artifactId>s3-test-service</artifactId>
+    <version>1.0</version>
+
+    <properties>
+        <servlet.port>8080</servlet.port>
+        <!-- Dynamic test port to use when creating/running test in combination with cargo:run to keep the fits web service up -->
+        <!--<dynamic.test.port>39799</dynamic.test.port>-->
+        <karaf.home>${project.build.directory}/test-classes</karaf.home>
+        <fits.home>${project.build.directory}/fits/${fits.version}</fits.home>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-blueprint</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http4</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-test-blueprint</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-aws</artifactId>
+            <!--<version>2.18.0</version>-->
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-csv</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-groovy</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-velocity</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.servicemix.bundles</groupId>
+            <artifactId>org.apache.servicemix.bundles.velocity-tools</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-saxon</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-schematron</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-exec</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-camel</artifactId>
+            <scope>test</scope>
+            <!-- break the cyclic dependency to camel-jms which otherwise would baffle the maven eclipse plugin -->
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.apache.camel</groupId>
+                    <artifactId>camel-jms</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>CameraTrap</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FedoraRepo</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FcrepoRest</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>VelocityToolsHandler</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Reader</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Thumbnailator</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Extractor</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>xmlunit</groupId>
+            <artifactId>xmlunit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Test Logging -->
+        <!--<dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>-->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+
+        <!-- Http client tests -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Integration Testing gear -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.enterprise</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>rchristensen42
+            <artifactId>asm-all</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore-osgi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient-osgi</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <defaultGoal>verify</defaultGoal>
+
+        <!-- Copy test resources to output folder target/test-classes -->
+        <testResources>
+            <!-- don't forget to specify the default test resources directory -->
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+
+            <!-- add the Camera Trap Route directory as resources -->
+            <!--
+            <testResource>
+                <directory>../../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
+            </testResource>
+            -->
+            <!-- add the emammal property file needed by the unified route -->
+            <!--
+            <testResource>
+                <directory>Karaf-config/etc</directory>
+                <targetPath>${karaf.home}/etc</targetPath>
+                <filtering>true</filtering>
+            </testResource>
+            -->
+            <!--
+            <testResource>
+                <directory>../../Beans/Edan-Sidora/Karaf-config/Input</directory>
+                <targetPath>${karaf.home}/Input</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Camera Trap/Input</directory>
+                <targetPath>${karaf.home}/Input</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Camera Trap/Route</directory>
+                <targetPath>${karaf.home}/Routes</targetPath>
+            </testResource>
+            -->
+        </testResources>
+
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+
+            <!-- Reserve network ports for integration testing. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering -->
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>reserve-network-port</goal>
+                        </goals>
+                        <configuration>
+                            <portNames>
+                                <portName>dynamic.test.port</portName>
+                            </portNames>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>rchristensen42
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*_IT</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <karaf.home>${karaf.home}</karaf.home>
+                        <fits.home>${fits.home}</fits.home>
+                        <fits.version>${fits.version}</fits.version>
+                        <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                    </systemPropertyVariables>
+                    <includes>
+                        <include>**/*_IT</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- keep Apache Derby as quiet as possible -->
+            <!-- fire AJP into /dev/null -->
+            <!-- empty deployer element prevents Cargo from trying to deploy our project, which is a bundle, into
+Tomcat -->
+            <!--
+            <plugin>
+
+                <groupId>org.codehaus.cargo</groupId>
+                <artifactId>cargo-maven2-plugin</artifactId>
+                <configuration>
+                    <container>
+                        <containerId>tomcat7x</containerId>
+                        <systemProperties>
+
+                            <derby.stream.error.field>java.lang.System.err</derby.stream.error.field>
+                            <derby.stream.error.logSeverityLevel>5000</derby.stream.error.logSeverityLevel>
+                        </systemProperties>
+                        <log>${project.build.directory}/cargo.log</log>
+                        <output>${project.build.directory}/cargo-output.log</output>
+                    </container>
+                    <configuration>
+                        <home>${project.build.directory}/cargo-tomcat</home>
+                        <properties>
+                            <cargo.logging>high</cargo.logging>
+                            <cargo.servlet.uriencoding>UTF-8</cargo.servlet.uriencoding>
+                            <cargo.jvmargs>-Xmx512m</cargo.jvmargs>
+                            <cargo.servlet.port>${dynamic.test.port}</cargo.servlet.port>
+
+                            <cargo.tomcat.ajp.port>0</cargo.tomcat.ajp.port>
+                            <fits.home>${fits.home}</fits.home>
+                        </properties>
+                        <files>
+                            <copy>
+                                <file>${basedir}/src/test/resources/fits.xml</file>
+                                <toDir>../fits/${fits.version}/xml</toDir>
+                                <overwrite>true</overwrite>
+                            </copy>
+                        </files>
+                        <configfiles>
+                            <configfile>
+                                <file>${project.basedir}/src/test/resources/catalina.properties</file>
+                                <todir>conf</todir>
+                            </configfile>
+                        </configfiles>
+                    </configuration>
+                    <deployer>
+
+                    </deployer>
+                    <deployables>
+                        <deployable>
+                            <location>${project.build.directory}/fits/${FITSservlet.version}.war</location>
+                            <type>war</type>
+                            <properties>
+                                <context>fits</context>
+                            </properties>
+                        </deployable>
+                    </deployables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start-tomcat</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-tomcat</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        -->
+
+            <!-- the wget goal actually binds itself to this phase by default -->
+            <!-- default target location, just to demonstrate the parameter -->
+            <!-- the wget goal actually binds itself to this phase by default -->
+            <!-- default target location, just to demonstrate the parameter -->
+            <!--
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.3.0</version>
+                <executions>
+                    <execution>
+                        <id>fits</id>
+
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>http://projects.iq.harvard.edu/files/fits/files/${fits.version}.zip</url>
+                            <unpack>true</unpack>
+                            <overwrite>false</overwrite>
+
+                            <outputDirectory>${project.build.directory}/fits</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>fits-web-service</id>
+
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>http://projects.iq.harvard.edu/files/fits/files/${FITSservlet.version}.war</url>
+                            <overwrite>false</overwrite>
+
+                            <outputDirectory>${project.build.directory}/fits</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            -->
+
+        </plugins>
+    </build>
+
+</project>

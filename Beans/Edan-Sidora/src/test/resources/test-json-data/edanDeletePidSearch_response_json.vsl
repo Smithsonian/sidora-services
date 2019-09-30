@@ -1,0 +1,63 @@
+{
+  "rows": [
+    {
+      "id": "p2b-1517667604453-1519849807945-0",
+      "title": "Camera Trap Image White-tailed Deer",
+      "unitCode": "QUOTIENT",
+      "type": "emammal_image",
+      "url": "emammal_image:testdeploymentids1i1000",
+      "content": {
+        "source": "dev",
+        "project_id": "testProjectId",
+        "project_name": "Sample Camera Trap Survey Project",
+        "sub_project_id": "testSubprojectId",
+        "sub_project_name": "Test Camera Trap Survey Subproject",
+        "deployment_id": "testDeploymentId",
+        "deployment_name": "Test Deployment",
+        "image_sequence_id": "testDeploymentIds1",
+        "image": {
+          "id": "testDeploymentIds1i1000",
+          "online_media": [
+            {
+              "content": "http://ids.si.edu/ids/deliveryService?id\u003demammal_image_testDeploymentIds1i1000",
+              "idsId": "emammal_image_testDeploymentIds1i1000",
+              "sidoraPid": "$headers.pid",
+              "type": "Images",
+              "caption": "Camera Trap Image White-tailed Deer",
+              "thumbnail": "http://ids.si.edu/ids/deliveryService?id\u003demammal_image_testDeploymentIds1i1000\u0026max\u003d100"
+            }
+          ],
+          "date_time": "2016-02-13 12:11:26",
+          "photo_type": "animal",
+          "photo_type_identified_by": "",
+          "interest_ranking": "None"
+        },
+        "image_identifications": [
+          {
+            "iucn_id": "42394",
+            "species_scientific_name": "Odocoileus virginianus",
+            "individual_animal_notes": "",
+            "species_common_name": "White-tailed Deer",
+            "count": 3,
+            "age": "",
+            "sex": "",
+            "individual_id": "",
+            "animal_recognizable": ""
+          }
+        ]
+      },
+      "hash": "e8701a49d8188a8bb887c9cc918bdea0f801f44c",
+      "docSignature": "testdeploymentids1i1000_40b8eb9005e82b10441d891dfffa20d5",
+      "timestamp": "Wed Feb 28 15:30:07 EST 2018",
+      "lastTimeUpdated": "Wed Feb 28 15:30:07 EST 2018",
+      "status": 0,
+      "version": "p2b-1517667604453-1519849807945-0",
+      "publicSearch": true,
+      "linkedContent": {}
+    }
+  ],
+  "facetQueries": {},
+  "facets": {},
+  "start": 0,
+  "rowCount": 1
+}

@@ -58,7 +58,8 @@ import java.util.HashMap;
 public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private static String JMS_TEST_QUEUE;
+    private static String JMS_FEDORA_TEST_QUEUE;
+    private static String JMS_CT_INGEST_TEST_QUEUE;
     private static String TEST_PID;
     private static String CT_PID_NS;
     private static String SI_FEDORA_USER;
@@ -71,7 +72,8 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        JMS_TEST_QUEUE = getExtra().getProperty("edanIds.queue");
+        JMS_FEDORA_TEST_QUEUE = getExtra().getProperty("edanIds.queue");
+        JMS_CT_INGEST_TEST_QUEUE = getExtra().getProperty("edanIds.ct.queue");
         TEST_PID = getExtra().getProperty("si.ct.namespace") + ":test";
         CT_PID_NS = context.resolvePropertyPlaceholders("{{si.ct.namespace}}") + ":";
         SI_FEDORA_USER = context.resolvePropertyPlaceholders("{{si.fedora.user}}");
@@ -83,7 +85,6 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
      * @throws Exception
      */
     @Test
-    @Ignore
     public void testJmsSelectorSimple() throws Exception {
         String expectedBody = "<root><a key='first' num='1'/><b key='second' num='2'>b</b></root>";
 
@@ -92,12 +93,12 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
         resultEndpoint.expectedMessageCount(1);
         resultEndpoint.expectedBodiesReceived(expectedBody);
-        resultEndpoint.setAssertPeriod(1500);
+//        resultEndpoint.setAssertPeriod(1500);
 
         context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("activemq:queue:{{edanIds.queue}}?selector=" + edanIds_selector).routeId("simpleJMSSelectorTestRoute")
+                from("activemq:queue:testSelector?selector=" + edanIds_selector).routeId("simpleJMSSelectorTestRoute")
                         .log(LoggingLevel.INFO, "Message Selected:\n${body}")
                         .to("mock:result");
             }
@@ -106,7 +107,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setBody(expectedBody);
 
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:testSelector", exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -134,17 +135,17 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         headers.put(VelocityConstants.VELOCITY_CONTEXT, velocityContext);
 
         String jmsMsg = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_atom.vsl", "test body", headers, String.class);
-        String dsXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl", "test body", headers, String.class);
-        String rels_extXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_RELS-EXT.vsl", "test body", headers, String.class);
+//        String dsXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_datastreams.vsl", "test body", headers, String.class);
+//        String rels_extXML = template.requestBodyAndHeaders("velocity:file:{{karaf.home}}/JMS-test-data/fedora_RELS-EXT.vsl", "test body", headers, String.class);
 
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
-                weaveById("processFedoraGetRELS-EXT").replace().setBody().simple(rels_extXML);
+//                weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
+//                weaveById("processFedoraGetRELS-EXT").replace().setBody().simple(rels_extXML);
                 weaveById("logFilteredMessage").after().to("mock:filter");
                 weaveById("startProcessingFedoraMessage").replace()
                         .log(LoggingLevel.INFO, "${body}")
@@ -155,19 +156,19 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         MockEndpoint mockresult = getMockEndpoint("mock:result");
         mockresult.expectedMessageCount(0);
         mockresult.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-        mockresult.setAssertPeriod(1500);
+//        mockresult.setAssertPeriod(1500);
 
         MockEndpoint mockFilter = getMockEndpoint("mock:filter");
         mockFilter.expectedMessageCount(1);
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        mockFilter.setAssertPeriod(1500);
+//        mockFilter.setAssertPeriod(1500);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
         exchange.getIn().setHeader("pid", TEST_PID);
         exchange.getIn().setBody(jmsMsg, String.class);
 
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -201,7 +202,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -220,19 +221,19 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         mockResult.expectedHeaderReceived("methodName", "modifyDatastreamByValue");
         mockResult.expectedHeaderReceived("pid", CT_PID_NS+"1");
         mockResult.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-        mockResult.setAssertPeriod(1500);
+//        mockResult.setAssertPeriod(1500);
 
         MockEndpoint mockFilter = getMockEndpoint("mock:filter");
         mockFilter.expectedMessageCount(0);
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        mockFilter.setAssertPeriod(1500);
+//        mockFilter.setAssertPeriod(1500);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
         exchange.getIn().setHeader("pid", CT_PID_NS+"1");
         exchange.getIn().setBody(jmsMsg, String.class);
 
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -266,7 +267,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -281,19 +282,19 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
         resultEndpoint.expectedMessageCount(0);
         resultEndpoint.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-        resultEndpoint.setAssertPeriod(1500);
+//        resultEndpoint.setAssertPeriod(1500);
 
         MockEndpoint mockFilter = getMockEndpoint("mock:filter");
         mockFilter.expectedMessageCount(1);
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        mockFilter.setAssertPeriod(1500);
+//        mockFilter.setAssertPeriod(1500);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
         exchange.getIn().setHeader("pid", TEST_PID);
         exchange.getIn().setBody(jmsMsg, String.class);
 
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -327,7 +328,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -342,12 +343,12 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(0);
         mockResult.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-        mockResult.setAssertPeriod(1500);
+//        mockResult.setAssertPeriod(1500);
 
         MockEndpoint mockFilter = getMockEndpoint("mock:filter");
         mockFilter.expectedMessageCount(1);
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        mockFilter.setAssertPeriod(1500);
+//        mockFilter.setAssertPeriod(1500);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
@@ -355,7 +356,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
 
         //test dsLabel containing Observations is not selected for processing
         exchange.getIn().setBody(jmsMsg, String.class);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -411,7 +412,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg2);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace()
@@ -444,14 +445,14 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         mockResult.expectedHeaderValuesReceivedInAnyOrder("test", 2,3,4,5,6,7);
         mockResult.expectedHeaderValuesReceivedInAnyOrder("methodName", "addDatastream","modifyDatastreamByValue","modifyDatastreamByReference","modifyObject","ingest","purgeDatastream");
         mockResult.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-        mockResult.setAssertPeriod(1500);
+//        mockResult.setAssertPeriod(1500);
 
         MockEndpoint mockFilter = getMockEndpoint("mock:filter");
         mockFilter.expectedMessageCount(1);
         mockFilter.expectedHeaderReceived("test", 1);
         mockFilter.expectedHeaderReceived("methodName", "testMethodName");
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        mockFilter.setAssertPeriod(1500);
+//        mockFilter.setAssertPeriod(1500);
 
 
         Exchange exchange = new DefaultExchange(context);
@@ -461,37 +462,37 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //Test non valid methodName header value
         exchange.getIn().setHeader("methodName", "testMethodName");
         exchange.getIn().setHeader("test", 1);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         //Test addDatastream methodName header value
         exchange.getIn().setHeader("methodName", "addDatastream");
         exchange.getIn().setHeader("test", 2);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         //Test modifyDatastreamByValue methodName header value
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
         exchange.getIn().setHeader("test", 3);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         //Test modifyDatastreamByReference methodName header value
         exchange.getIn().setHeader("methodName", "modifyDatastreamByReference");
         exchange.getIn().setHeader("test", 4);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         //Test modifyObject methodName header value
         exchange.getIn().setHeader("methodName", "modifyObject");
         exchange.getIn().setHeader("test", 5);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         //Test ingest methodName header value
         exchange.getIn().setHeader("methodName", "ingest");
         exchange.getIn().setHeader("test", 6);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         //Test purgeDatastream methodName header value
         exchange.getIn().setHeader("methodName", "purgeDatastream");
         exchange.getIn().setHeader("test", 7);
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -549,7 +550,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Met//log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);hod: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg2);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace()
@@ -581,13 +582,13 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         mockResult.expectedMessageCount(1);
         mockResult.expectedHeaderReceived("test", 2);
         mockResult.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-        mockResult.setAssertPeriod(1500);
+//        mockResult.setAssertPeriod(1500);
 
         MockEndpoint mockFilter = getMockEndpoint("mock:filter");
         mockFilter.expectedMessageCount(1);
         mockFilter.expectedHeaderReceived("test", 1);
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        mockFilter.setAssertPeriod(1500);
+//        mockFilter.setAssertPeriod(1500);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByValue");
@@ -596,51 +597,14 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         exchange.getIn().setBody(jmsMsg, String.class);
 
         //test with a non valid pid which should not be selected for processing
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         //test with a valid pid which should be selected for processing
         exchange.getIn().setHeader("pid", CT_PID_NS + "1");
         exchange.getIn().setHeader("test", 2);
         exchange.getIn().setBody(jmsMsg, String.class);
 
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
-
-        assertMockEndpointsSatisfied();
-    }
-
-    /**
-     * Test messages selected for processing contain addEdanIds header and is equal to true
-     * Sending everything that should be selected for fedora message processing and the addEdanIds header.
-     * Having the addEdanIds header alone will start the camera trap message processing and not fedora message processing
-     * @throws Exception
-     */
-    @Test
-    public void testJmsSelectorAddEdanIdsHeader() throws Exception {
-
-        MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
-        resultEndpoint.expectedMessageCount(1);
-        resultEndpoint.expectedHeaderReceived("addEdanIds", "true");
-
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("startProcessCtDeployment").replace()
-                        .log(LoggingLevel.INFO, "Skip Actual Processing!!!")
-                        .to("mock:result");
-            }
-        });
-
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("addEdanIds", "true");
-        exchange.getIn().setHeader("ProjectId", "testProjectId");
-        exchange.getIn().setHeader("SiteId", "testDeploymentId");
-        exchange.getIn().setHeader("SitePID", "test:003");
-        exchange.getIn().setHeader("PIDAggregation", "test:004,test:005,test:006,test:007,test:008,test:009,test:010,test:011,test:012");
-        exchange.getIn().setHeader("ResearcherObservationPID", "test:010");
-        exchange.getIn().setHeader("VolunteerObservationPID", "test:011");
-        exchange.getIn().setHeader("ImageObservationPID", "test:012");
-
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -674,7 +638,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("processFedoraGetDatastreams").replace().setBody().simple(dsXML);
@@ -693,19 +657,19 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         resultEndpoint.expectedHeaderReceived("methodName", "purgeDatastream");
         resultEndpoint.expectedHeaderReceived("pid", CT_PID_NS +"test");
         resultEndpoint.expectedPropertyReceived(Exchange.FILTER_MATCHED, false);
-        resultEndpoint.setAssertPeriod(1500);
+//        resultEndpoint.setAssertPeriod(1500);
 
         MockEndpoint mockFilter = getMockEndpoint("mock:filter");
         mockFilter.expectedMessageCount(0);
         mockFilter.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        mockFilter.setAssertPeriod(1500);
+//        mockFilter.setAssertPeriod(1500);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "purgeDatastream");
         exchange.getIn().setHeader("pid", CT_PID_NS +"test");
         exchange.getIn().setBody(jmsMsg, String.class);
 
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }
@@ -735,7 +699,7 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         //log.debug("PID: {} | User: {} | Method: {} | Label: {}", pid, user, method, label);
         log.debug(jmsMsg);
 
-        context.getRouteDefinition("EdanIdsStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("EdanIdsStartProcessingFedoraMessage").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveById("startProcessingFedoraMessage").replace()
@@ -763,14 +727,14 @@ public class EdanIdsJmsSelectorTest extends EDAN_CT_BlueprintTestSupport {
         resultEndpoint.expectedHeaderReceived("methodName", "modifyDatastreamByReference");
         resultEndpoint.expectedHeaderReceived("pid", "ct:2625763");
         resultEndpoint.expectedPropertyReceived(Exchange.FILTER_MATCHED, true);
-        resultEndpoint.setAssertPeriod(1500);
+//        resultEndpoint.setAssertPeriod(1500);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("methodName", "modifyDatastreamByReference");
         exchange.getIn().setHeader("pid", "ct:2625763");
         exchange.getIn().setBody(jmsMsg, String.class);
 
-        template.send("activemq:queue:" + JMS_TEST_QUEUE, exchange);
+        template.send("activemq:queue:" + JMS_FEDORA_TEST_QUEUE, exchange);
 
         assertMockEndpointsSatisfied();
     }

@@ -27,10 +27,10 @@
 
 package edu.si.services.beans.edansidora;
 
-import com.amazonaws.util.json.JSONException;
-import com.amazonaws.util.json.JSONObject;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.properties.PropertiesComponent;
@@ -39,8 +39,10 @@ import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.cxf.endpoint.Server;
-import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.XML;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -48,7 +50,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -57,7 +61,6 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.apache.commons.io.FileUtils.readFileToString;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -67,8 +70,6 @@ public class EdanAPITest extends CamelTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(EdanAPITest.class);
     private static final boolean DEBUG = true;
-
-    protected static final boolean LOCAL_TEST = false;
 
     //EDAN and IDS Solr
     protected static String SOLR_SERVER;
@@ -80,16 +81,13 @@ public class EdanAPITest extends CamelTestSupport {
 
     private static EdanApiBean edanApiBean = new EdanApiBean();
 
-    private static Server server;
-
-    //private static String TEST_EDAN_ID = "p2b-1515252134647-1515436502565-0"; //QUOTIENTPROD
     //private static String TEST_IMAGE_PREFIX = config.getString("si.edu.idsAssetImagePrefix");
-    private static String TEST_EDAN_ID = "p2b-1515252134647-1516215519247-0"; //QUOTIENTPROD
+    private static String TEST_EDAN_ID = "p1b-1562599618948-1563542629068-0"; //QUOTIENTPROD
     private static String TEST_PROJECT_ID = "testProjectId";
     private static String TEST_DEPLOYMENT_ID = "testDeploymentId";
     private static String TEST_IAMGE_ID = "testRaccoonAndFox";
     private static String TEST_TITLE = "Camera Trap Image Northern Raccoon, Red Fox";
-    private static String TEST_SIDORA_PID = "test:0001";
+    private static String TEST_SIDORA_PID = "test:001";
     private static String TEST_TYPE = "emammal_image";
     private static String TEST_APP_ID = "QUOTIENTPROD";
 
@@ -119,13 +117,9 @@ public class EdanAPITest extends CamelTestSupport {
 
         edanApiBean.initIt();
 
-        if (LOCAL_TEST) {
-            startEdanTestServer();
-        } else {
-            EDAN_TEST_URI = props.getProperty("si.ct.uscbi.server");
-            LOG.info("===========[ EDAN_TEST_URI = {} ]============", EDAN_TEST_URI);
-            assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
-        }
+        EDAN_TEST_URI = props.getProperty("si.ct.uscbi.server");
+        LOG.info("===========[ EDAN_TEST_URI = {} ]============", EDAN_TEST_URI);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         if (DEBUG) {
             System.getProperties().list(System.out);
@@ -145,33 +139,11 @@ public class EdanAPITest extends CamelTestSupport {
         return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg", KARAF_HOME + "/test.properties");
     }
 
-    public static void startEdanTestServer() throws Exception {
-        assumeTrue("Dynamic Test Port is Null. To run tests locally run via maven using 'mvn clean test -Dtest=EdanAPITest' ", StringUtils.isNotEmpty(props.getProperty("dynamic.test.port")));
-
-        //EDAN test server host set via maven surefire/failsafe
-        EDAN_TEST_URI = "http://localhost:" + System.getProperty("dynamic.test.port");
-        props.setProperty("si.ct.uscbi.server", EDAN_TEST_URI);
-
-        LOG.info("===========[ EDAN_TEST_URI = " + EDAN_TEST_URI + " ]============");
-
-        // start a simple front service
-        JAXRSServerFactoryBean factory = new JAXRSServerFactoryBean();
-        factory.setAddress(EDAN_TEST_URI);
-        factory.setResourceClasses(EdanTestService.class);
-
-        server = factory.create();
-        server.start();
-    }
-
     /**
      * Stop the test EDAN Server
      */
     @AfterClass
-    public static void stopServer() throws Exception {
-        if (LOCAL_TEST) {
-            server.stop();
-        }
-
+    public static void cleanUp() throws Exception {
         edanApiBean.cleanUp();
     }
 
@@ -191,7 +163,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanGetContentIdParamTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -214,7 +186,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanGetAdminContentTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
         assumeTrue(props.getProperty("si.ct.uscbi.appId").equals(TEST_APP_ID));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -239,7 +211,7 @@ public class EdanAPITest extends CamelTestSupport {
     @Test
     @Ignore
     public void edanAdminContentEditContentTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
         assumeTrue(props.getProperty("si.ct.uscbi.appId").equals(TEST_APP_ID));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -275,7 +247,7 @@ public class EdanAPITest extends CamelTestSupport {
     @Test
     @Ignore
     public void edanAdminContentCreateContentTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
         assumeTrue(props.getProperty("si.ct.uscbi.appId").equals(TEST_APP_ID));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -310,7 +282,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -333,7 +305,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -356,7 +328,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryCtProjectIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -379,7 +351,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryCtDeploymentIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -407,13 +379,15 @@ public class EdanAPITest extends CamelTestSupport {
         assertEquals("The returned DeploymentId does not match", TEST_DEPLOYMENT_ID, result_deploymentId);
 
         for (int i = 0; i < json.getJSONArray("rows").length(); i++) {
-            LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            if (json.getJSONArray("rows").getJSONObject(i).has("image")) {
+                LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            }
         }
     }
 
     @Test
     public void edanMetadataSearchFilterQueryCtProjectAndDeploymentIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -447,20 +421,23 @@ public class EdanAPITest extends CamelTestSupport {
         assertEquals("The returned ProjectId does not match", TEST_PROJECT_ID, result_projectId);
 
         for (int i = 0; i < json.getJSONArray("rows").length(); i++) {
-            LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            if (json.getJSONArray("rows").getJSONObject(i).has("image")) {
+                LOG.debug("image_sequence_id = {}", json.getJSONArray("rows").getJSONObject(i).getJSONObject("content").getJSONObject("image").getString("id"));
+            }
         }
     }
 
     @Test
     public void edanMetadataSearchFilterQueryImageIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("edanServiceEndpoint", "/metadata/v2.0/metadata/search.htm");
-        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.id:" + TEST_IAMGE_ID + "\"]", "UTF-8"));
+        //exchange.getIn().setHeader(Exchange.HTTP_QUERY, "fqs=" + URLEncoder.encode("[\"p.emammal_image.image.id:" + TEST_IAMGE_ID + "\"]", "UTF-8"));
+        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "q=" + URLEncoder.encode("p.emammal_image.image.id:" + TEST_IAMGE_ID + " AND app_id:" + TEST_APP_ID + " AND type:emammal_image AND p.emammal_image.deployment_id:" + TEST_DEPLOYMENT_ID, "UTF-8"));
 
         template.send("direct:edanTest", exchange);
 
@@ -486,7 +463,7 @@ public class EdanAPITest extends CamelTestSupport {
 
     @Test
     public void edanMetadataSearchFilterQueryIdsIdTest() throws Exception {
-        assumeFalse(LOCAL_TEST);
+        assumeTrue("Edan Server Cannot be reached!", hostAvailabilityCheck(EDAN_TEST_URI, 80));
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
@@ -561,11 +538,15 @@ public class EdanAPITest extends CamelTestSupport {
         MockEndpoint mockResult = getMockEndpoint("mock:result");
         mockResult.expectedMessageCount(1);
 
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("edanServiceEndpoint", "/content/v1.1/admincontent/releaseContent.htm");
-        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "id=p2b-1513178057393-1515183776910-0&type=" + TEST_TYPE);
+        List<String> delIdList = Arrays.asList("p2b-1527589878996-1527781471561-0", "p2b-1527589878996-1527718044046-0", "p2b-1527589878996-1527781554376-0", "p2b-1527589878996-1527781635832-0");
 
-        template.send("direct:edanTest", exchange);
+        for (String id : delIdList) {
+            Exchange exchange = new DefaultExchange(context);
+            exchange.getIn().setHeader("edanServiceEndpoint", "/content/v1.1/admincontent/releaseContent.htm");
+            exchange.getIn().setHeader(Exchange.HTTP_QUERY, "id=" + id + "&type=" + TEST_TYPE);
+
+            template.send("direct:edanTest", exchange);
+        }
 
         assertMockEndpointsSatisfied();
     }
@@ -614,7 +595,7 @@ public class EdanAPITest extends CamelTestSupport {
         exchange.getIn().setHeader("CamelHttpQuery", httpQuery);
         exchange.getIn().setHeader("uri", uri);
 
-        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
+        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN if you want this test to run!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
         template.send("direct:solrTest", exchange);
 
         assertMockEndpointsSatisfied();
@@ -650,7 +631,7 @@ public class EdanAPITest extends CamelTestSupport {
         exchange.getIn().setHeader("CamelHttpQuery", httpQuery);
         exchange.getIn().setHeader("uri", uri);
 
-        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
+        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN if you want this test to run!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
 
         template.send("direct:solrTest", exchange);
 
@@ -672,7 +653,12 @@ public class EdanAPITest extends CamelTestSupport {
 
     }
 
+    /**
+     * Solr 3.2 instances were deprecated and retired
+     * @throws Exception
+     */
     @Test
+    @Ignore
     public void solrIDSTest() throws Exception {
 
         MockEndpoint mockResult = getMockEndpoint("mock:result");
@@ -688,7 +674,7 @@ public class EdanAPITest extends CamelTestSupport {
         exchange.getIn().setHeader("CamelHttpQuery", httpQuery);
         exchange.getIn().setHeader("uri", uri);
 
-        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
+        assumeTrue("The Solr Server could not be found! Make sure you are connected to SI VPN if you want this test to run!", hostAvailabilityCheck(SOLR_SERVER, SOLR_PORT));
 
         template.send("direct:solrTest", exchange);
 
@@ -752,7 +738,58 @@ public class EdanAPITest extends CamelTestSupport {
                         .setHeader("CamelFedoraPid", simple("${header.pid}"))
                         .setHeader("extraJson").simple("{{si.ct.uscbi.extra_property}}")
                         .setBody(simple("${header.manifestXML}"))
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true")
+                        //.to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform.xsl?saxon=true").id("transform2json")
+                        .to("xslt:file:{{karaf.home}}/Input/xslt/edan_Transform_2_xml.xsl?saxon=true").id("transform2xml")
+
+                        // convert xslt xml output to json and convert array elements to json array
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                String xmlBody = out.getBody(String.class);
+                                try {
+                                    //JSONObject xmlJSONObj = XML.toJSONObject(xmlBody, true);
+                                    JSONObject xmlJSONObj = XML.toJSONObject(xmlBody);
+                                    log.debug("xml 2 json Output:\n{}", xmlJSONObj);
+
+                                    JSONObject edan_content = xmlJSONObj.getJSONObject("xml").getJSONObject("content");
+                                    log.debug("json edan_content Output:\n{}", edan_content.toString(4));
+
+                                    //convert online_media to json array
+                                    JSONObject image = edan_content.getJSONObject("image");
+                                    JSONObject online_media = image.getJSONObject("online_media");
+                                    Object online_media_array_element = online_media.get("online_media_array_element");
+                                    if (online_media_array_element instanceof JSONObject) {
+                                        JSONArray online_media_replace = new JSONArray();
+                                        online_media_replace.put(online_media_array_element);
+                                        edan_content.getJSONObject("image").put("online_media", online_media_replace);
+                                    } else if (online_media_array_element instanceof JSONArray) {
+                                        edan_content.getJSONObject("image").put("online_media", online_media_array_element);
+                                    }
+
+                                    log.debug("json edan_content after online_media fix:\n{}", edan_content.getJSONObject("image").getJSONArray("online_media").toString(4));
+
+                                    //convert image_identifications to json array
+                                    JSONObject image_identifications = edan_content.getJSONObject("image_identifications");
+                                    Object image_identifications_array_element = image_identifications.get("image_identifications_array_element");
+                                    if (image_identifications_array_element instanceof JSONObject) {
+                                        JSONArray image_identifications_replace = new JSONArray();
+                                        image_identifications_replace.put(image_identifications_array_element);
+                                        edan_content.getJSONObject("image").put("image_identifications", image_identifications_replace);
+                                    } else if (image_identifications_array_element instanceof JSONArray) {
+                                        edan_content.put("image_identifications", image_identifications_array_element);
+                                    }
+
+                                    log.debug("json edan_content after image_identifications fix:\n{}", edan_content.getJSONArray("image_identifications").toString(4));
+
+                                    log.debug("json final edan_content :\n{}", xmlJSONObj.getJSONObject("xml").toString(4));
+                                    out.setBody(xmlJSONObj.getJSONObject("xml").toString());
+                                } catch (JSONException je) {
+                                    throw new EdanIdsException("Error creating edan json", je);
+                                }
+                            }
+                        }).id("edanConvertXml2Json")
+
                         .log(LoggingLevel.INFO, "${id} EdanIds: EDAN JSON content before encoding: ${body}")
                         .setHeader("edanJson").groovy("URLEncoder.encode(request.body, 'UTF-8')")
                         .log(LoggingLevel.INFO, "${id} EdanIds: EDAN JSON content encoded: ${header.edanJson}")

@@ -110,7 +110,7 @@ public class JMS_testing extends EDAN_CT_BlueprintTestSupport {
 
     @Override
     protected String[] preventRoutesFromStarting() {
-        return new String[]{"EdanIdsStartProcessing"};
+        return new String[]{"EdanIdsStartProcessingFedoraMessage"};
     }
 
     @Before
