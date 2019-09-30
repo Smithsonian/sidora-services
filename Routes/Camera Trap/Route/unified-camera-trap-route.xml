@@ -1160,7 +1160,7 @@
                             <toD uri="file:{{karaf.home}}/staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
 
                             <!-- copy exif tags from the original image to the blurred image in staging-->
-                            <toD uri="exec:{{exiftoo.path}}?args=-TagsFromFile ${header.CamelFileAbsolutePath} ${header.CamelFileNameProduced} -overwrite_original" id="execExiftool"/>
+                            <toD uri="exec:{{exiftool.path}}?args=-TagsFromFile ${header.CamelFileAbsolutePath} ${header.CamelFileNameProduced} -overwrite_original" id="execExiftool"/>
 
                             <choice>
                                 <when>
