@@ -42,6 +42,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
@@ -59,7 +61,10 @@ import java.util.UUID;
 public class EdanApiBean {
 
     private static final Logger LOG = LoggerFactory.getLogger(EdanApiBean.class);
-    private Message out;
+
+    @PropertyInject(value = "edu.si.edanIds")
+    static private String LOG_NAME;
+    Marker logMarker = MarkerFactory.getMarker("edu.si.edanIds");
 
     @PropertyInject(value = "si.ct.uscbi.server")
     private String server;
@@ -80,9 +85,6 @@ public class EdanApiBean {
     private int auth_type;
 
     private CloseableHttpClient client;
-    private String nonce;
-    private String sdfDate;
-    private String authContent;
 
     public void setServer(String server) {
         this.server = server;
@@ -101,25 +103,6 @@ public class EdanApiBean {
     }
 
     /**
-     * Setting the required http request headers for EDAN Authentication
-     * (See <a href="http://edandoc.si.edu/authentication">http://edandoc.si.edu/authentication</a> for more information)
-     *
-     * @param edanQuery the EDAN Query string
-     */
-    public void setEdanAuth(String edanQuery) throws Exception {
-
-        MessageDigest md = MessageDigest.getInstance("SHA-1");
-        nonce = UUID.randomUUID().toString().replace("-", "");
-
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        sdfDate = df.format(new Date());
-
-        LOG.debug("setEdanAuth edanParams = {}", edanQuery);
-
-        authContent = Base64Utility.encode(DigestUtils.sha1Hex(nonce + "\n" + edanQuery + "\n" + sdfDate + "\n" + edan_key).getBytes("UTF-8"));
-    }
-
-    /**
      * Constructor
      */
     public EdanApiBean() {
@@ -127,12 +110,12 @@ public class EdanApiBean {
     }
 
     public void initIt() throws Exception {
-        LOG.info("Creating EdanApiBean Http Client");
+        LOG.info(logMarker, "Creating EdanApiBean Http Client");
         client = HttpClientBuilder.create().build();
     }
 
     public void cleanUp() throws Exception {
-        LOG.info("Closing EdanApiBean Http Client");
+        LOG.info(logMarker, "Closing EdanApiBean Http Client");
         client.close();
     }
 
@@ -144,19 +127,27 @@ public class EdanApiBean {
      */
     public void sendRequest(Exchange exchange,
                             @Header("edanServiceEndpoint") String edanServiceEndpoint,
-                            @Header(Exchange.HTTP_QUERY) String edanQueryParams) throws EdanIdsException {
+                            @Header(Exchange.HTTP_QUERY) String edanQueryParams) throws Exception {
 
-        out = exchange.getIn();
+        Message out = exchange.getIn();
 
         try {
-            setEdanAuth(edanQueryParams);
-
             if (client == null) {
                 throw new EdanIdsException("EdanApiBean Client IS NULL");
             } else {
                 System.setProperty("http.agent", "");
                 String uri = server + edanServiceEndpoint + "?" + edanQueryParams;
-                LOG.debug("EdanApiBean uri: {}", uri);
+                LOG.debug(logMarker, "EdanApiBean uri: {}", uri);
+
+                MessageDigest md = MessageDigest.getInstance("SHA-1");
+                String nonce = UUID.randomUUID().toString().replace("-", "");
+
+                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String sdfDate = df.format(new Date());
+
+                String authContent = Base64Utility.encode(DigestUtils.sha1Hex(nonce + "\n" + edanQueryParams + "\n" + sdfDate + "\n" + edan_key).getBytes("UTF-8"));
+
+                LOG.debug(logMarker, "setEdanAuth nonce:{}, edanQuery:{}, sfDate:{}, edan_key:{} | authContent:{}", nonce, edanQueryParams, sdfDate, edan_key, authContent);
 
                 HttpGet httpget = new HttpGet(uri);
                 httpget.setHeader("X-AppId", app_id);
@@ -168,12 +159,12 @@ public class EdanApiBean {
                 httpget.setHeader("Accept-Encoding", "identity");
                 httpget.setHeader("User-Agent", "unknown");
 
-                LOG.debug("EdanApiBean httpGet headers: " + Arrays.toString(httpget.getAllHeaders()));
+                LOG.debug(logMarker, "EdanApiBean httpGet:\nuri: {}\nheaders:{}", uri, Arrays.toString(httpget.getAllHeaders()));
 
                 try (CloseableHttpResponse response = client.execute(httpget)) {
                     HttpEntity entity = response.getEntity();
 
-                    LOG.debug("CloseableHttpResponse response.toString(): {}", response.toString());
+                    LOG.debug(logMarker, "CloseableHttpResponse response.toString(): {}", response.toString());
 
                     Integer responseCode = response.getStatusLine().getStatusCode();
                     String statusLine = response.getStatusLine().getReasonPhrase();
@@ -199,23 +190,24 @@ public class EdanApiBean {
                     out.setHeader(Exchange.HTTP_RESPONSE_TEXT, statusLine);
 
                     if (responseCode != 200) {
-                        LOG.debug("Edan response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
-                        LOG.error("Edan response entity: {}", entityResponse);
+                        LOG.debug(logMarker, "ERROR: Edan response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                        LOG.error(logMarker, "EDAN ERROR:\nRequest uri:{}[ nonce:{}, sfDate:{} authContent:{} ]Headers:{}\nResponse entity:{}", uri, nonce, sdfDate, authContent, Arrays.toString(httpget.getAllHeaders()), entityResponse);
+                        throw new EdanIdsException("EDAN ERROR:\nResponse entity:" + entityResponse + "\nRequest uri:" + uri);
                     } else {
-                        LOG.debug("Edan response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
+                        LOG.debug(logMarker, "Edan response: " + Exchange.HTTP_RESPONSE_CODE + "= {}, " + Exchange.HTTP_RESPONSE_TEXT + "= {}", responseCode, statusLine);
                     }
-
-
 
                     if (!ContentType.getOrDefault(entity).getMimeType().equalsIgnoreCase("application/json")) {
                         throw new EdanIdsException("The EDAN response did not contain and JSON! Content-Type is " + contentType);
                     }
                 } catch (Exception e) {
-                    throw new EdanIdsException("EdanApiBean error sending Edan request", e);
+                    //throw new EdanIdsException("EdanApiBean error sending Edan request", e);
+                    throw e;
                 }
             }
         } catch (Exception e) {
-            throw new EdanIdsException(e);
+            //throw new EdanIdsException(e);
+            throw e;
         }
     }
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <batch>
   <batch_id>batchID123456</batch_id>
-  <file>codebook1.xlsx</file>
-  <file>codebook2.csv</file>
-  <file>codebook3.csv</file>
+  <file originalname="codebook1.xlsx">codebook1.xlsx</file>
+  <file originalname="codebook2.csv">codebook2.csv</file>
+  <file originalname="codebook3.csv">codebook3.csv</file>
 </batch>

@@ -46,6 +46,7 @@
         <module>Sidora-Batch</module>
         <module>Sidora-MCI</module>
         <module>Sidora-Test-Utils</module>
+        <module>Sidora-Solr</module>
     </modules>
 
     <properties>
@@ -63,7 +64,7 @@
         <fedora-user>fedoraAdmin</fedora-user>
 
         <!-- Note that activemq dependency is only used for testing! -->
-        <activemq.version>5.12.1</activemq.version>
+        <!-- <activemq.version>5.12.1</activemq.version> -->
         <activemq.version>5.12.3</activemq.version> <!-- Servicemix version -->
         <apache-poi.version>3.15_1</apache-poi.version>
         <poi-ooxml-version>3.15</poi-ooxml-version>
@@ -86,7 +87,7 @@
         <commons-net.version>3.6</commons-net.version>
         <cxf-version>3.1.5</cxf-version>
         <derby-version>10.11.1.1</derby-version>
-        <fasterxml.jackson.version>2.6.3</fasterxml.jackson.version>
+        <fasterxml.jackson.version>2.6.7</fasterxml.jackson.version>
         <google-guava-version>18.0</google-guava-version>
         <!--<google.guava.version>15.0</google.guava.version>--> <!-- Servicemix version -->
         <jacoco-maven-plugin-version>0.7.2.201409121644</jacoco-maven-plugin-version>
@@ -159,7 +160,7 @@
 
         <mysql-connector.version>5.1.6</mysql-connector.version>
         <commons-dbcp.version>1.4</commons-dbcp.version>
-        <apache-tika.version>1.13</apache-tika.version>
+        <apache-tika.version>1.18</apache-tika.version>
         <fuseki.version>2.5.0</fuseki.version>
         <trippi-sparql.version>1.0</trippi-sparql.version>
         <fits.version>fits-1.2.0</fits.version>
@@ -337,6 +338,11 @@
             <dependency>
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-script</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-solr</artifactId>
                 <version>${camel.version}</version>
             </dependency>
             <dependency>

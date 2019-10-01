@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CameraTrapDeployment>
     <ProjectId>testProjectId</ProjectId>
-    <ProjectName>Sample Camera Trap Survey Project</ProjectName>
+    <ProjectName>Sample "Camera Trap" Survey Project</ProjectName>
     <ProjectObjectives>Sample Project Objectives</ProjectObjectives>
     <PublishDate>2016-04-27</PublishDate>
     <ProjectOwners>
@@ -27,12 +27,12 @@
     <CountryCode>EC</CountryCode>
     <ProjectDataAccessandUseConstraints>None</ProjectDataAccessandUseConstraints>
     <SubProjectId>testSubprojectId</SubProjectId>
-    <SubProjectName>Test Camera Trap Survey Subproject</SubProjectName>
+    <SubProjectName>Test "Camera Trap" Survey Subproject</SubProjectName>
     <SubProjectDesign></SubProjectDesign>
     <PlotName></PlotName>
     <PlotTreatment></PlotTreatment>
     <CameraDeploymentID>testDeploymentId</CameraDeploymentID>
-    <CameraSiteName>Test Deployment</CameraSiteName>
+    <CameraSiteName>Test "Site" Deployment</CameraSiteName>
     <Originators>
         <Originator>
             <OriginatorName>411</OriginatorName>

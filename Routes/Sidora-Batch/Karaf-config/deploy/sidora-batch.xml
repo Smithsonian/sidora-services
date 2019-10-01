@@ -248,26 +248,44 @@
                 </xpath>
             </setHeader>
 
+            <setBody>
+                <simple>
+                    ${header.resourceXML}
+                </simple>
+            </setBody>
+
+            <log message="${id}: Body for split: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
+
             <!-- add each resource to the camelBatchResources mysql table -->
             <split>
-                <xpath headerName="resourceXML">
-                    //file/text()
-                </xpath>
+                <xtokenize mode="w" trim="true">//file</xtokenize>
+
+                <log message="${id}:  Split Body: ${body}"
+                     loggingLevel="DEBUG"
+                     logName="{{edu.si.batch}}"/>
 
                 <setHeader headerName="resourceFile">
-                    <simple resultType="java.lang.String">
-                        ${body}
-                    </simple>
+                    <xpath resultType="java.lang.String">
+                        //file/text()
+                    </xpath>
                 </setHeader>
 
-                <to uri="sql:{{sql.insertResources}}"/>
+                <setHeader headerName="objDsLabel">
+                    <xpath resultType="java.lang.String">
+                        string(//file/@originalname)
+                    </xpath>
+                </setHeader>
+
+                <to uri="sql:{{sql.insertResources}}" id="sqlInsertResources"/>
 
                 <log message="${id}: Batch Request ResourceFile: ${header.resourceFile} added"
                      loggingLevel="DEBUG"
                      logName="{{edu.si.batch}}"/>
             </split>
 
-            <to uri="sql:{{sql.insertNewBatchRequest}}"/>
+            <to uri="sql:{{sql.insertNewBatchRequest}}" id="sqlInsertNewBatchRequest"/>
 
             <!-- send the xml response body -->
             <to uri="bean:responseControllerBean?method=batchRequestResponse"/>
@@ -314,6 +332,10 @@
 
             <to uri="sql:{{sql.selectResources}}"/>
 
+            <log message="${id} BatchProcessResources sql.selectResources headers: ${headers}\nBody: ${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
+
             <log message="${id}: Batch Request CorrelationId: ${header.correlationId}"
                  loggingLevel="INFO"
                  logName="{{edu.si.batch}}"/>
@@ -345,6 +367,14 @@
                         ${body[resourceFile]}
                     </simple>
                 </setHeader>
+
+                <setHeader headerName="objDsLabel">
+                    <simple>
+                        ${body[objDsLabel]}
+                    </simple>
+                </setHeader>
+
+                <to uri="bean:batchRequestControllerBean?method=setPrimaryTitleLabel"/>
 
                 <to uri="sql:{{sql.markResourceConsumed}}"/>
 
@@ -500,6 +530,7 @@
 
             <convertBodyTo type="java.lang.String"/>
 
+            <!-- Use the uploaded filename (objDsLabel) if no title info provided -->
             <to uri="xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true"/>
 
             <!-- store the metadata with updated title -->
@@ -718,10 +749,14 @@
                 <constant/>
             </setBody>
 
-            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.titleLabel}.${header.objDsLabelExtension}&amp;versionable=false&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
+            <log message="${id}: BatchProcessAddOBJDatastream objDsLabel: ${header.objDsLabel}"
+                 loggingLevel="DEBUG"
+                 logName="{{edu.si.batch}}"/>
+
+            <toD uri="cxfrs://{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?dsLocation=${header.resourceFile}&amp;mimeType=${header.dsMIME}&amp;controlGroup=M&amp;dsLabel=${header.objDsLabel}&amp;versionable=true&amp;headerFilterStrategy=#dropHeadersStrategy" pattern="InOut" id="addObjDatastream"/>
 
             <to uri="bean:batchRequestControllerBean?method=updateCreatedStatus(*, ds_obj_created)"/>
-            <to uri="sql:{{sql.updateDsObjCreated}}"/>
+            <to uri="sql:{{sql.updateDsObjCreated}}" id="sqlUpdateDsObjCreated"/>
 
             <log message="${id}: Finished processing OBJ."
                  loggingLevel="INFO"

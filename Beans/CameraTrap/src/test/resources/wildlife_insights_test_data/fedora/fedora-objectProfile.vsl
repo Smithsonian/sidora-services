@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objectProfile xmlns="http://www.fedora.info/definitions/1/0/access/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://www.fedora.info/definitions/1/0/access/ http://www.fedora.info/definitions/1/0/objectProfile.xsd"
+               pid="$headers.CamelFedoraPid">
+    <objLabel>$headers.testObjLabel</objLabel>
+    <objOwnerId>$headers.origin</objOwnerId>
+    <objModels>
+        <model>info:fedora/si:generalImageCModel</model>
+        <model>info:fedora/fedora-system:FedoraObject-3.0</model>
+        <model>info:fedora/si:resourceCModel</model>
+    </objModels>
+    <objCreateDate>2019-01-21T21:32:56.633Z</objCreateDate>
+    <objLastModDate>2019-01-23T18:49:47.851Z</objLastModDate>
+    <objState>A</objState>
+</objectProfile>

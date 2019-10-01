@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <batch>
     <batch_id>batchID123456</batch_id>
-    <file>pdf1.jpg</file>
-    <file>pdf2.jpg</file>
+    <file originalname="pdf1.pdf">pdf1.pdf</file>
+    <file originalname="pdf2.pdf">pdf2.pdf</file>
 </batch>

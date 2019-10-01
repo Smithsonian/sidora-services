@@ -448,6 +448,67 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
     @Test
     @Ignore
+    public void testWorkbenchLogin() throws Exception {
+
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMessageCount(1);
+        mockResult.setAssertPeriod(1500);
+
+        context.getRouteDefinition("MCIWorkbenchLogin").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+
+                weaveById("workbenchLogin")
+                        .after()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        });
+
+                weaveById("mciWBLoginParseSet-CookieHeader")
+                        .after()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        });
+
+            }
+        });
+
+        context.getRouteDefinition("MCIWorkbenchCreateResearchProject").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("workbenchCreateResearchProject")
+                        .after()
+                        .process(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                Message out = exchange.getIn();
+                                log.info("Stop");
+                            }
+                        })
+                        .to("mock:result");
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setBody("test body");
+        exchange.getIn().setHeader("mciOwnerName", "SomeUser");
+        exchange.getIn().setHeader("mciResearchProjectLabel", "testCookie");
+
+        template.send("direct:workbenchLogin", exchange);
+
+        assertMockEndpointsSatisfied();
+    }
+
+    @Test
+    @Ignore
     public void testWorkbenchLoginException() throws Exception {
     }
 
@@ -550,5 +611,28 @@ public class MCIServiceTest extends MCI_BlueprintTestSupport {
 
         log.info("Body Type: {}", mockResult.getExchanges().get(0).getIn().getBody().getClass());
         assertIsInstanceOf(String.class, mockResult.getExchanges().get(0).getIn().getHeader("mciLabel"));
+    }
+
+    @Test
+    public void testDrupalUserDataDeserialize() throws Exception {
+        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        mockResult.expectedMinimumMessageCount(1);
+        mockResult.expectedBodiesReceived("si-user:5");
+
+        context.getRouteDefinition("MCIFindFolderHolderUserPID").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveById("queryFolderHolder").replace().setHeader("drupalUserData").simple("a:6:{s:16:\"ckeditor_default\";s:1:\"t\";s:20:\"ckeditor_show_toggle\";s:1:\"t\";s:14:\"ckeditor_width\";s:4:\"100%\";s:13:\"ckeditor_lang\";s:2:\"en\";s:18:\"ckeditor_auto_lang\";s:1:\"t\";s:18:\"islandora_user_pid\";s:9:\"si-user:5\";}");
+                weaveById("phpDeserializeUserData").after().to("mock:result").stop();
+            }
+        });
+
+        Exchange exchange = new DefaultExchange(context);
+        exchange.getIn().setHeader("mciFolderHolder", "testFolderHolder");
+
+        template.send("direct:findFolderHolderUserPID", exchange);
+
+        assertMockEndpointsSatisfied();
+
     }
 }

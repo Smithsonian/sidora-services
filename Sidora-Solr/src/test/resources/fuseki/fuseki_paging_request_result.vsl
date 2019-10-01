@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">
+    <head>
+        <variable name="pid"/>
+        <variable name="label"/>
+        <variable name="ownerId"/>
+        <variable name="state"/>
+    </head>
+    <results>
+        #set ($dummy = 1)
+        #set ($start = 1)
+        #set ($limit = $dummy.valueOf($camelContext.resolvePropertyPlaceholders('{{sidora.solr.page.limit}}')))
+        #set ($range = [$start..$limit])
+        #foreach($i in $range)
+            #set( $j = $dummy.valueOf($i))
+            #set( $pid = $j + ($headers.loopIndex * $limit) )
+            <result>
+                <binding name="pid">
+                    <uri>info:fedora/test:#evaluate($pid)</uri>
+                </binding>
+                <binding name="label">
+                    <literal datatype="http://www.w3.org/2001/XMLSchema#string">Test Label test:#evaluate($pid)</literal>
+                </binding>
+                <binding name="ownerId">
+                    <literal datatype="http://www.w3.org/2001/XMLSchema#string">Test Owner test:#evaluate($pid)</literal>
+                </binding>
+                <binding name="state">
+                    <uri>info:fedora/fedora-system:def/model#Active</uri>
+                </binding>
+            </result>
+        #end
+    </results>
+</sparql>

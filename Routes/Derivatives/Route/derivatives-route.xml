@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~ Copyright 2015-2019 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -29,8 +29,11 @@
 
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
            xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
            http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-2.16.3.xsd">
+
+    <cm:property-placeholder id="sidora.karaf.derivatives.properties" persistent-id="edu.si.sidora.karaf" update-strategy="none"/>
 
     <!-- <osgi:reference id="activemq" interface="org.apache.camel.Component"/> -->
 
@@ -44,8 +47,8 @@
 
     <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
     <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
-        <!-- <property name="brokerURL" value="${broker.url}"/> -->
-        <property name="brokerURL" value="tcp://localhost:61616"/>
+        <property name="brokerURL" value="${broker.url}"/>
+        <!--<property name="brokerURL" value="tcp://localhost:61616"/>-->
         <property name="userName" value="smx"/>
         <property name="password" value="smx"/>
     </bean>
@@ -80,6 +83,12 @@
     
     <bean id="contentModels" class="java.util.HashSet"/>
 
+    <bean id="FITSRoutes" class="edu.si.services.beans.fitsservlet.FITSServletRouteBuilder"/>
+
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value=".*"/>
+    </bean>
+
     <!-- Provides the Camel routing setup -->
     <camelContext id="DerivativesCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -89,14 +98,22 @@
                   xmlns:fedora-types="http://www.fedora.info/definitions/1/0/types/"
                   xmlns:fits="http://hul.harvard.edu/ois/xml/ns/fits/fits_output"
                   xmlns:fsmgmt="http://www.fedora.info/definitions/1/0/management/"
+                  xmlns:sidora="http://oris.si.edu/2017/01/relations#"
+                  xmlns:objectProfile="http://www.fedora.info/definitions/1/0/access/"
                   trace="false"
                   streamCache="true"
                   useMDCLogging="true">
+
+        <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
+        <propertyPlaceholder id="properties"
+                             location="blueprint:sidora.karaf.derivatives.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.karaf.cfg,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
+
 
         <!--
             The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
 
+        <routeBuilder ref="FITSRoutes"/>
 
         <!--
         <errorHandler id="derivativesErrorHandler" type="DefaultErrorHandler">
@@ -180,6 +197,29 @@
                 <log message="${id} Derivatives: Filtered ${header.DSID} - No derivative processing required."/>
                 <stop/>
             </filter>
+
+            <setHeader headerName="dsLocation">
+                <xpath resultType="java.lang.String">
+                    /atom:entry/atom:category[@scheme="fedora-types:dsLocation"]/@term
+                </xpath>
+            </setHeader>
+            <setHeader headerName="logMessage">
+                <xpath resultType="java.lang.String">
+                    /atom:entry/atom:category[@scheme="fedora-types:logMessage"]/@term
+                </xpath>
+            </setHeader>
+            <log message="${id} Derivatives: dsLocation = ${headers.dsLocation}, logMessage = ${headers.logMessage}"
+                 loggingLevel="DEBUG"
+                 logName="edu.si.derivatives"/>
+            <!-- Filter CT Face Blurred OBJ images that have already been processed -->
+            <!-- Otherwise will cause a loop -->
+            <filter>
+                <simple>
+                    ${header.logMessage} == 'faceBlurred'
+                </simple>
+                <log message="${id} Derivatives: Filtered ${header.logMessage} - No derivative processing required."/>
+                <stop/>
+            </filter>
             
             <!-- Filter out Fedora API methods that do not need derivatives processing. -->
             <!-- This could be done with a JMS selector. -->
@@ -212,23 +252,36 @@
             </setHeader>
 
             <!-- Get the Content Models for the FDO and put them on a list. -->
-            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=RELS-EXT&amp;exchangePattern=InOut" id="getContentModels"/>
             <convertBodyTo type="java.lang.String" charset="utf-8"/>
             <log message="${id} Derivatives: RELS-EXT: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
-            <split strategyRef="modelAggregator">
+
+            <setHeader headerName="isAdministeredBy">
+                <xpath resultType="java.lang.String">
+                    substring-after(//sidora:isAdministeredBy/@rdf:resource, 'info:fedora/')
+                </xpath>
+            </setHeader>
+
+            <!--<split strategyRef="modelAggregator">
                 <xpath>
                     //fs:hasModel/@rdf:resource
                 </xpath>
+                &lt;!&ndash;<convertBodyTo type="java.lang.String"/>&ndash;&gt;
                 <log message="${id} Derivatives: Split Content Model. BODY: ${body}"
-                     loggingLevel="DEBUG"
+                     loggingLevel="ERROR"
                      logName="edu.si.derivatives"/>
-            </split>
+            </split>-->
+            <setHeader headerName="ContentModels">
+                <xpath resultType="java.lang.String">
+                    string-join(//fs:hasModel/@rdf:resource, ',')
+                </xpath>
+            </setHeader>
             <log message="${id} Derivatives: Content Models: ${header.ContentModels}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
-            
+
             <choice> <!-- Filter by content model. -->
                 <when> <!-- If imageCModel or generalImageCModel, and the DSID is "OBJ" - process the image." -->
                     <spel>
@@ -284,7 +337,7 @@
                 </when>
 
                 <otherwise> <!-- No supported content model was found. -->
-                    <log message="${id} Derivatives: No message processing required."/>
+                    <log message="${id} Derivatives: No supported content model was found. No message processing required."/>
                 </otherwise>
             </choice>
             
@@ -305,7 +358,7 @@
             <!-- We really should only make new derivatives if the OBJ has changed. -->
 
             <!-- Get the MIME type from the datastream profile. -->
-            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut"/>
+            <to uri="fedora://getDatastream?dsId=OBJ&amp;exchangePattern=InOut" id="getObjDs"/>
             <log message="${id} Derivatives: Datastream Metadata. BODY: ${body}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
@@ -322,11 +375,20 @@
                 DGI has quite a bit more in their Python conversions so we need to improve this.
             -->
 
-            <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut"/>
-            <to uri="file://staging/"/>
+            <to uri="fedora://getDatastreamDissemination?dsId=OBJ&amp;exchangePattern=InOut" id="getObjContent"/>
+            <to uri="file://staging/" id="saveToStaging"/>
             <log message="${id} Derivatives: Staged file Name: ${header.CamelFileNameProduced}"
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+
+            <!-- only check for uploads (note WB triggers several OBJ updates operating on all causes issues) -->
+            <filter>
+                <simple>
+                    ${header.dsLocation} contains 'uploaded' || ${header.dsLocation} contains 'http://'
+                </simple>
+                <!-- If this is a CT image that needs face blurred -->
+                <to uri="direct:isFaceBlur" id="isFaceBlur"/>
+            </filter>
 
             <choice>
                 <description>Filter content by image format.</description>
@@ -340,8 +402,8 @@
                          logName="edu.si.derivatives"/>
                     <multicast>
                         <description>Add a thumbnail from the JPEG.</description>
-                        <to uri="direct://processDerivativesThumbnailator"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesThumbnailator"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -355,8 +417,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesTIFFImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesTIFFImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -370,8 +432,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesJP2Image"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesJP2Image"/>
+                        <to uri="direct:processDerivativesFITS"/>
                     </multicast>
                 </when>
 
@@ -384,8 +446,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesBGPImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesBGPImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -399,8 +461,8 @@
                          loggingLevel="DEBUG"
                          logName="edu.si.derivatives"/>
                     <multicast>
-                        <to uri="direct://processDerivativesNEFImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesNEFImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                 </when>
@@ -428,8 +490,8 @@
                     <to uri="file://?fileName=${header.CamelFileNameProduced}.dng"/>
 
                     <multicast>
-                        <to uri="direct://processDerivativesDNGImage"/>
-                        <to uri="direct://processDerivativesFITS"/>
+                        <to uri="direct:processDerivativesDNGImage"/>
+                        <to uri="direct:processDerivativesFITS"/>
                         <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
                     </multicast>
                     <!-- Delete the temporary file created for DNG processing. Note: This approach is Unix specific. -->
@@ -469,6 +531,21 @@
                          loggingLevel="WARN"/>
                 </when>
             </choice>
+
+            <!-- Delete the temporary file. Note: This approach is Unix specific. -->
+            <toD uri="exec:rm?args=-f ${header.BlurSourceFile}"/>
+
+            <choice>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} != 0
+                    </simple>
+                    <log message="${id} Derivatives: Unable to delete working file. Filename: ${headers.CamelFileNameProduced}"
+                         loggingLevel="WARN"/>
+                </when>
+            </choice>
+
+            <removeHeader headerName="BlurSourceFile"/>
 
             <log message="${id} Derivatives: Finished Image processing."
                  loggingLevel="DEBUG"
@@ -532,8 +609,8 @@
                  logName="edu.si.derivatives"/>
 
             <!-- Create a JPEG from NEF (Nikon RAW) image -->
-            <!--<toD uri="exec:/opt/sidora/fits/tools/exiftool/perl/exiftool?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>-->
-            <toD uri="exec:sh?args=-c &quot;/opt/sidora/fits/tools/exiftool/perl/exiftool -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
+            <!--<toD uri="exec:{{exiftool.path}}?args= -b -JpgFromRaw ${header.CamelFileNameProduced}"/>-->
+            <toD uri="exec:sh?args=-c &quot;{{exiftool.path}} -b -JpgFromRaw ${header.CamelFileNameProduced} > ${header.CamelFileNameProduced}.jpg&quot;"/>
 
             <choice>
                 <description>If the conversion succeeded? Add a display datastream for the image to the FDO.</description>
@@ -713,7 +790,7 @@
                     </setBody>
                     <to uri="reader:file"/>
                     <to uri="fedora:addDatastream?name=DISPLAY&amp;type=image/jpg&amp;group=M&amp;dsLabel=DISPLAY&amp;versionable=false"/>
-                    <to uri="direct://processDerivativesThumbnailator"/>
+                    <to uri="direct:processDerivativesThumbnailator"/>
 
                     <!-- Delete the temporary JPG conversion file. Note: This approach is Unix specific. -->
                     <recipientList>
@@ -951,22 +1028,44 @@
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
 
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="1000"
+                                  maximumRedeliveries="200"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="edu.si.derivatives"
+                     id="derivativesFITSServiceException"/>
+            </onException>
+
             <!-- Create a FITS derivative using Harvard FITS. -->
-            <setHeader headerName="CamelHttpMethod">
-                <constant>GET</constant>
-            </setHeader>
-            <setHeader headerName="CamelHttpQuery">
+            <setHeader headerName="CamelFileName">
                 <simple>
-                    file={{karaf.home}}/${header.CamelFileNameProduced}
+                    ${header.CamelFileAbsolutePath}
                 </simple>
             </setHeader>
 
-            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
-                 loggingLevel="DEBUG"
-                 logName="edu.si.derivatives"/>
+            <!--
+                Ensure that we actually have a 200 response from the fits web service as this header could have been
+                set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
+            -->
 
-            <toD uri="{{si.fits.host}}/examine"/>
-            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+            <!-- Not sure this is needed. -->
+            <setBody>
+                <simple>null</simple>
+            </setBody>
+
+            <removeHeader headerName="CamelHttpMethod"/>
+            <removeHeader headerName="CamelHttpResponseCode"/>
+
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
 
             <log message="${id} FITS Web Service Response Body:\n${body}"
                  loggingLevel="DEBUG"
@@ -976,7 +1075,6 @@
                 <!-- If FITS processing succeeded? Store a FITS datastream on the FDO. -->
                 <when>
                     <simple>
-                        <!--${body} != ''-->
                         ${header.CamelHttpResponseCode} == 200
                     </simple>
                     <setHeader headerName="dsMIME">
@@ -1551,6 +1649,127 @@
             <log message="${id} Finished Video Thumbnail processing."
                  loggingLevel="DEBUG"
                  logName="edu.si.derivatives"/>
+        </route>
+
+        <route id="DerivativesIsFaceBlur">
+            <from uri="direct:isFaceBlur"/>
+            <setHeader headerName="CamelHttpMethod">
+                <simple>GET</simple>
+            </setHeader>
+            <!-- Get Parent Datastreams -->
+            <toD uri="{{si.fedora.host}}/objects/${header.isAdministeredBy}/datastreams?format=xml" id="getParentDs"/>
+            <!-- TODO: also check parent RELS-EXT for <fedora-model:hasModel rdf:resource="info:fedora/si:cameraTrapCModel"/> -->
+            <choice>
+                <!-- see if the parent object has a ct manifest -->
+                <when>
+                    <xpath>
+                        boolean(//@dsid='MANIFEST')
+                    </xpath>
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>GET</simple>
+                    </setHeader>
+                    <!-- Get the object label from object profile xml -->
+                    <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}?format=xml" id="getObjectXMl"/>
+                    <setHeader headerName="dsLabel">
+                        <xpath resultType="java.lang.String">
+                            /objectProfile:objectProfile/objectProfile:objLabel/text()
+                        </xpath>
+                    </setHeader>
+                    <!-- Get the manifest to check SpeciesScientificName -->
+                    <toD uri="{{si.fedora.host}}/objects/${header.isAdministeredBy}/datastreams/MANIFEST/content" id="getParentManifest"/>
+
+                    <setHeader headerName="blurRequired">
+                        <simple>false</simple>
+                    </setHeader>
+                    <setHeader headerName="isBlurred">
+                        <simple>false</simple>
+                    </setHeader>
+
+                    <!-- use same fedora user as CT routes so jms msg will be filtered otherwise a loop will occur -->
+                    <setHeader headerName="Authorization">
+                        <groovy>"Basic " + "{{si.fedora.user}}:{{si.fedora.password}}".bytes.encodeBase64().toString()</groovy>
+                    </setHeader>
+
+                    <choice>
+                        <!-- filter images that have SpeciesScientificName's that require face blur processing -->
+                        <when>
+                            <xpath logNamespaces="false" resultType="java.util.Boolean">
+                                //ImageSequence[Image[ImageId/text() = $in:dsLabel]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
+                            </xpath>
+                            <log message="${id}: Found image that may contain a face... Face Processing Required..."
+                                 loggingLevel="INFO"
+                                 logName="edu.si.derivatives"/>
+                            <setHeader headerName="blurRequired">
+                                <simple>true</simple>
+                            </setHeader>
+                            <setBody>
+                                <simple>${header.CamelFileNameProduced}</simple>
+                            </setBody>
+                            <setHeader headerName="BlurSourceFile">
+                                <simple>${header.CamelFileNameProduced}</simple>
+                            </setHeader>
+
+                            <to uri="reader:file"/>
+
+                            <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+
+                            <convertBodyTo type="byte[]"/>
+
+                            <choice>
+                                <when>
+                                    <simple>${header.CamelExecExitValue} != '0'</simple>
+                                    <log message="${id}: Face Blur Error!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                         loggingLevel="ERROR"
+                                         logName="edu.si.derivatives"/>
+                                </when>
+                                <otherwise>
+                                    <setHeader headerName="isBlurred">
+                                        <simple>true</simple>
+                                    </setHeader>
+                                    <!-- Save the blurred image to staging -->
+                                    <toD uri="file:staging?fileName=${header.CamelFileName}_blur" id="saveFaceBlurOutputToStaging"/>
+
+                                    <!-- copy exif tags from the original image to the blurred image in staging-->
+                                    <toD uri="exec:/usr/local/bin/exiftool?args= -TagsFromFile ${header.BlurSourceFile} ${header.CamelFileNameProduced} -overwrite_original" id="exiftool"/>
+                                </otherwise>
+                            </choice>
+
+                            <setBody>
+                                <simple>${header.CamelFileNameProduced}</simple>
+                            </setBody>
+
+                            <!-- put the blurred image with copied exif tags back on body -->
+                            <to uri="reader:file" id="readExifBlurImageResource"/>
+
+                            <setHeader headerName="CamelHttpMethod">
+                                <simple>PUT</simple>
+                            </setHeader>
+                            <!-- replace the OBJ with the faceBlur image adding a log message -->
+                            <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/OBJ?mimeType=image/jpeg&amp;logMessage=faceBlurred" id="replaceOBJ"/>
+                        </when>
+                    </choice>
+                    <setHeader headerName="SitePID">
+                        <simple>${header.isAdministeredBy}</simple>
+                    </setHeader>
+                    <setHeader headerName="CamelHttpMethod">
+                        <simple>POST</simple>
+                    </setHeader>
+                    <to uri="velocity:file:{{karaf.home}}/Input/templates/WI-SidoraTemplate.vsl"/>
+                    <toD uri="{{si.fedora.host}}/objects/${header.CamelFedoraPid}/datastreams/SIDORA?mimeType=text/xml&amp;dsLabel=SIDORA&amp;group=X" id="addSidoraDS"/>
+                </when>
+                <otherwise>
+                    <log message="${id}: No Face Blur Processing Required."
+                         loggingLevel="INFO"
+                         logName="edu.si.derivatives"/>
+                </otherwise>
+            </choice>
+
+            <setBody>
+                <simple>${header.CamelFileNameProduced}</simple>
+            </setBody>
+            <to uri="reader:file"/>
+
+            <removeHeader headerName="Authorization"/>
         </route>
 
     </camelContext>

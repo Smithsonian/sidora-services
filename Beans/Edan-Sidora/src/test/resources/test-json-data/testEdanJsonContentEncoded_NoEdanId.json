@@ -1,0 +1,54 @@
+{
+    "publicSearch": true,
+    "title": "Camera Trap Image Northern Raccoon, Red Fox",
+    "type": "emammal_image",
+    "content": {
+        "image": {
+            "online_media": [{
+                "thumbnail": "http://ids.si.edu/ids/deliveryService?id=emammal_image_testRaccoonAndFox&max=100",
+                "idsId": "emammal_image_testRaccoonAndFox",
+                "caption": "Camera Trap Image Northern Raccoon,Red Fox",
+                "type": "Images",
+                "sidoraPid": "test:0001",
+                "content": "http://ids.si.edu/ids/deliveryService?id=emammal_image_testRaccoonAndFox"
+            }],
+            "date_time": "2016-02-24 18:45:30",
+            "photo_type": "animal",
+            "photo_type_identified_by": "",
+            "id": "testRaccoonAndFox",
+            "interest_ranking": "None"
+        },
+        "sub_project_name": "Test \"Camera Trap\" Survey Subproject",
+        "image_sequence_id": "testImageSequence3",
+        "project_id": "testProjectId",
+        "sub_project_id": "testSubprojectId",
+        "deployment_name": "Test \"Site\" Deployment",
+        "image_identifications": [
+            {
+                "sex": "",
+                "iucn_id": 180575,
+                "count": 2,
+                "species_common_name": "Northern Raccoon",
+                "individual_animal_notes": "",
+                "species_scientific_name": "Procyon lotor",
+                "age": "",
+                "animal_recognizable": "",
+                "individual_id": ""
+            },
+            {
+                "sex": "",
+                "iucn_id": 180604,
+                "count": 2,
+                "species_common_name": "Red Fox",
+                "individual_animal_notes": "",
+                "species_scientific_name": "Vulpes vulpes",
+                "age": "",
+                "animal_recognizable": "",
+                "individual_id": ""
+            }
+        ],
+        "deployment_id": "testDeploymentId",
+        "project_name": "Sample \"Camera Trap\" Survey Project"
+    },
+    "url": "testRaccoonAndFox"
+}

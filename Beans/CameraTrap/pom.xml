@@ -146,6 +146,17 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>Excel</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.servicemix.bundles</groupId>
+            <artifactId>org.apache.servicemix.bundles.poi</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-csv</artifactId>
             <scope>test</scope>
@@ -310,6 +321,18 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-script</artifactId>
+            <version>${camel.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <scope>test</scope>
+        </dependency>
+
 
     </dependencies>
 
@@ -353,6 +376,26 @@
                 <directory>../../Routes/Camera Trap/Route</directory>
                 <targetPath>${karaf.home}/Routes</targetPath>
             </testResource>
+            <testResource>
+                <directory>../../Routes/Derivatives/Route</directory>
+                <targetPath>${karaf.home}/Routes</targetPath>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Wildlife-Insights/FaceBlurrer</directory>
+                <targetPath>${karaf.home}/FaceBlurrer</targetPath>
+                <includes>
+                    <include>FaceBlurrer.py</include>
+                    <include>haarcascades/**</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>../../Routes/Wildlife-Insights</directory>
+                <targetPath>${karaf.home}/Wildlife-Insights</targetPath>
+                <includes>
+                    <include>UpdateFGDC.py</include>
+                    <include>updateManifestDeployment.xsl</include>
+                </includes>
+            </testResource>
 
             <testResource>
                 <directory>../../Sidora-Test-Utils/src/test/resources/fedora-home</directory>
@@ -369,6 +412,14 @@
                 <targetPath>${project.build.directory}/foxml</targetPath>
                 <filtering>true</filtering>
             </testResource>-->
+            <testResource>
+                <directory>../../</directory>
+                <targetPath>${karaf.home}/etc</targetPath>
+                <includes>
+                    <include>test.properties</include>
+                </includes>
+                <filtering>true</filtering>
+            </testResource>
         </testResources>
 
         <plugins>
@@ -408,11 +459,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <configuration>
-                    <portNames>
-                        <portName>dynamic.test.port</portName>
-                    </portNames>
-                </configuration>
                 <executions>
                     <execution>
                         <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering, specifically
@@ -421,6 +467,11 @@
                         <goals>
                             <goal>reserve-network-port</goal>
                         </goals>
+                        <configuration>
+                            <portNames>
+                                <portName>dynamic.test.port</portName>
+                            </portNames>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -434,6 +485,8 @@
                     </excludes>
                     <systemPropertyVariables>
                         <karaf.home>${karaf.home}</karaf.home>
+                        <baseDir>${project.basedir}</baseDir>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -444,6 +497,7 @@
                     <systemPropertyVariables>
                         <karaf.home>${karaf.home}</karaf.home>
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <baseDir>${project.basedir}</baseDir>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                         <si.fuseki.host>http://localhost:${dynamic.test.port}/jena-fuseki-war</si.fuseki.host>
                         <si.fedora.host>http://localhost:${dynamic.test.port}/trippi-sparql-fcrepo-webapp</si.fedora.host>

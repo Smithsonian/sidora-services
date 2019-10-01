@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~ Copyright 2015-2019 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -50,6 +50,7 @@
         <target-karaf-input-path>${basedir}/target/classes/resources/Input</target-karaf-input-path>
         <target-karaf-deploy-path>${basedir}/target/classes/resources/deploy</target-karaf-deploy-path>
         <target-karaf-sql-path>${basedir}/target/classes/resources/sql</target-karaf-sql-path>
+        <target-karaf-faceblur-path>${basedir}/target/classes/resources/FaceBlurrer</target-karaf-faceblur-path>
     </properties>
 
     <dependencies>
@@ -67,6 +68,11 @@
         <dependency>
             <groupId>edu.si.services.beans</groupId>
             <artifactId>VelocityToolsHandler</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>FITS-Servlet</artifactId>
             <version>1.0</version>
         </dependency>
 
@@ -130,7 +136,7 @@
 
         <!-- Edan-Sidora -->
         <dependency>
-            <groupId>edu.si.services.beans</groupId>
+            <groupId>edu.si.services</groupId>
             <artifactId>edansidora</artifactId>
             <version>1.0</version>
         </dependency>
@@ -142,6 +148,13 @@
             <version>1.0</version>
             <classifier>features</classifier>
             <type>xml</type>
+        </dependency>-->
+
+        <!-- Sidora Solr -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-solr</artifactId>
+            <version>1.0</version>
         </dependency>-->
 
     </dependencies>
@@ -230,6 +243,30 @@
                 <directory>../Sidora-MCI/Karaf-Config/sql</directory>
                 <targetPath>${target-karaf-sql-path}</targetPath>
             </resource>
+
+            <resource>
+                <directory>../Routes/Wildlife-Insights/FaceBlurrer</directory>
+                <targetPath>${target-karaf-faceblur-path}</targetPath>
+                <includes>
+                    <include>FaceBlurrer.py</include>
+                    <include>haarcascades/**</include>
+                </includes>
+            </resource>
+              
+            <!-- Sidora-Solr -->
+            <!--<resource>
+                <directory>../Sidora-Solr/Karaf-Config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
+            </resource>-->
         </resources>
 
         <plugins>
@@ -358,6 +395,7 @@
                                         <file>${smx.home.path}/etc/edu.si.sidora.emammal.cfg</file>
                                         <file>${smx.home.path}/etc/edu.si.sidora.karaf.cfg</file>
                                         <file>${smx.home.path}/etc/edu.si.sidora.mci.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.solr.cfg</file>
                                         <file>${smx.home.path}/etc/system.properties</file>
                                     </files>
                                 </configuration>

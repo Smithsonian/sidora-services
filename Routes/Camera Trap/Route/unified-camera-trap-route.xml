@@ -160,6 +160,12 @@
         <property name="configuration" ref="jmsConfig"/>
     </bean>
 
+    <bean id="FITSRoutes" class="edu.si.services.beans.fitsservlet.FITSServletRouteBuilder"/>
+
+    <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
+        <property name="outFilterPattern" value=".*"/>
+    </bean>
+
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
@@ -176,9 +182,11 @@
         <!--
           The "unused" namespace definitions above are needed to deal with the way Camel handles namespaces in XPath.
         -->
+
         <!-- Using a Camel properties component and referring to the blueprint property placeholder by its ID. -->
         <propertyPlaceholder id="properties"
                              location="blueprint:sidora.karaf.properties,file:${karaf.home}/etc/system.properties,file:${karaf.home}/etc/edu.si.sidora.emammal.cfg"/>
+
         <!--
         <dataFormats>
           <base64 lineSeparator="&#10;" id="base64withNewLine" />
@@ -199,6 +207,7 @@
 
         <routeBuilder ref="cameraTrapRoutes"/>
         <routeBuilder ref="cameraTrapAutoS3SyncRouteBuilder"/>
+        <routeBuilder ref="FITSRoutes"/>
 
         <onException>
             <exception>java.net.ConnectException</exception>
@@ -366,7 +375,15 @@
                             <simple>true</simple>
                         </setHeader>
 
-                        <to uri="activemq:queue:{{edanIds.queue}}" id="edanIdsActiveMQ"/>
+                        <!-- header used for enabling test url value so that we can create new edan records for testing -->
+                        <!-- url = url_test_randomUUID -->
+                        <setHeader headerName="test_edan_url">
+                            <simple>true</simple>
+                        </setHeader>
+
+                        <to uri="activemq:queue:{{edanIds.ct.queue}}" id="edanIdsActiveMQ"/>
+
+                        <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
 
                     </otherwise>
                 </choice>
@@ -826,6 +843,8 @@
 
             <to uri="direct:workbenchReloadPid" id="siteWorkbenchReloadPid"/>
 
+            <to uri="direct:getCameraMakeModel"/>
+
             <setBody>
                 <simple>
                     ${header.ManifestXML}
@@ -838,6 +857,104 @@
             </multicast>
 
             <log message="${id}: Finished Site processing."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+        </route>
+
+        <route id="UnifiedCameraTrapGetCameraMakeModel">
+            <from uri="direct:getCameraMakeModel"/>
+
+            <onException>
+                <exception>java.net.SocketException</exception>
+                <redeliveryPolicy useExponentialBackOff="true"
+                                  backOffMultiplier="2"
+                                  redeliveryDelay="{{si.ct.connEx.redeliveryDelay}}"
+                                  maximumRedeliveries="{{min.socketEx.redeliveries}}"
+                                  retryAttemptedLogLevel="WARN"/>
+                <continued>
+                    <constant>true</constant>
+                </continued>
+                <log message="[${routeId}] :: FITS web service request failed!!! Error reported: ${exception.message}"
+                     loggingLevel="WARN"
+                     logName="{{si.ct.id}}"
+                     id="getCameraMakeModelFitsServiceException"/>
+            </onException>
+
+            <!--
+            <setHeader headerName="imageName">
+                <xpath headerName="ManifestXML" resultType="java.lang.String">
+                    //ImageSequence[1]/Image[1]/ImageFileName/text()
+                </xpath>
+            </setHeader>
+
+            <log message="${id}: Getting CameraMakeModel from image: ${header.imageName}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+            -->
+
+            <setHeader headerName="imageName">
+                <xpath headerName="ManifestXML" resultType="java.lang.String">
+                    //ImageSequence[1]/Image[1]/ImageFileName/text()
+                </xpath>
+            </setHeader>
+            <setHeader headerName="CamelFileName">
+                <simple>
+                    ${header.deploymentDataDir}/${header.imageName}
+                </simple>
+            </setHeader>
+
+            <log message="${id}: Getting CameraMakeModel from image: ${header.imageName}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <!--
+                Ensure that we actually have a 200 response from the fits web service as this header could have been
+                set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
+            -->
+
+            <!-- Not sure this is needed. -->
+            <setBody>
+                <simple>null</simple>
+            </setBody>
+
+            <removeHeader headerName="CamelHttpMethod"/>
+            <removeHeader headerName="CamelHttpResponseCode"/>
+
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
+
+            <!-- <convertBodyTo type="java.lang.String" charset="UTF-8"/> -->
+
+            <log message="${id} FITS Output:\n${body}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
+            <choice>
+                <when>
+                    <simple>
+                        ${header.CamelHttpResponseCode} == 200
+                    </simple>
+                    <setHeader headerName="cameraMake">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:metadata/fits:image/fits:digitalCameraManufacturer/text()</xpath>
+                    </setHeader>
+                    <setHeader headerName="cameraModel">
+                        <xpath resultType="java.lang.String">/fits:fits/fits:metadata/fits:image/fits:digitalCameraModelName/text()</xpath>
+                    </setHeader>
+
+                    <log message="${id}: Site FGDC Camera Make: ${header.cameraMake}, Model: ${header.cameraModel}"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </when>
+                <otherwise>
+                    <log message="${id}: FITS processing failed for ${routeId}"
+                         loggingLevel="ERROR"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
+
+            <removeHeader headerName="imageName"/>
+
+            <log message="${id}: Finished Getting Camera Make/Model..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
         </route>
@@ -998,14 +1115,84 @@
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="reader:file"/>
+            <to uri="reader:file" id="readImageResource"/>
 
-            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}"/>
+            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true"/>
+            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceOriginalVersion"/>
+
+            <setHeader headerName="blurRequired">
+                <simple>false</simple>
+            </setHeader>
+            <setHeader headerName="isBlurred">
+                <simple>false</simple>
+            </setHeader>
+
+            <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
+            <!-- Any failure during Face Blur will revert back to the original image -->
+            <choice id="speciesScientificNameFaceBlurChoice">
+                <when>
+                    <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
+                    </xpath>
+                    <log message="${id}: Found image that may contain a face..."
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+
+                    <setHeader headerName="blurRequired">
+                        <simple>true</simple>
+                    </setHeader>
+
+                    <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+
+                    <convertBodyTo type="byte[]"/>
+
+                    <choice>
+                        <when>
+                            <simple>${header.CamelExecExitValue} != 0</simple>
+                            <log message="${id}: Face Blur Error on ${header.imageid}!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                 loggingLevel="ERROR"
+                                 logName="{{si.ct.id}}"/>
+                            <setBody>
+                                <simple>${header.CamelFileAbsolutePath}</simple>
+                            </setBody>
+                            <to uri="reader:file" id="blurErrorUseOriginalImage"/>
+                        </when>
+                        <otherwise>
+                            <setHeader headerName="isBlurred">
+                                <simple>true</simple>
+                            </setHeader>
+                            <!-- Save the blurred image to staging -->
+                            <toD uri="file:{{karaf.home}}/staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
+
+                            <!-- copy exif tags from the original image to the blurred image in staging-->
+                            <toD uri="exec:{{exiftool.path}}?args=-TagsFromFile ${header.CamelFileAbsolutePath} ${header.CamelFileNameProduced} -overwrite_original" id="execExiftool"/>
+
+                            <choice>
+                                <when>
+                                    <simple>${header.CamelExecExitValue} != 0</simple>
+                                    <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!!\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                         loggingLevel="ERROR"
+                                         logName="{{si.ct.id}}"/>
+                                </when>
+                            </choice>
+
+                            <setBody>
+                                <simple>${header.CamelFileNameProduced}</simple>
+                            </setBody>
+                            <!-- put the blurred image with copied exif tags back on body -->
+                            <to uri="reader:file" id="readOrigBlurImageResource"/>
+                            <!--<to uri="reader:file" id="readImageMetadataCopyFile"/>-->
+
+                            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceBlurVersion"/>
+
+                        </otherwise>
+                    </choice>
+                </when>
+            </choice>
 
             <!--<multicast>-->
-            <to uri="direct:createThumbnail"/>
+            <to uri="direct:createThumbnail" id="addResourceCreateThumbnail"/>
             <!-- <to uri="direct:createArchivalImage" /> -->
             <!-- We may also want a DISPLAY datastream. -->
             <!--</multicast>-->
@@ -1013,6 +1200,9 @@
             <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
             <to uri="direct:addFITSDataStream"/>
             <to uri="direct:addMODSDataStream"/>
+
+            <to uri="velocity:file:{{karaf.home}}/Input/templates/WI-SidoraTemplate.vsl"/>
+            <to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA&amp;versionable=true" id="addSidoraDS"/>
 
             <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in
                 the processResources calling the addMODSDatastream to get the PID for the first MODS datastream being created -->
@@ -1045,6 +1235,23 @@
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
+            </choice>
+
+            <!-- Delete the temporary blur image for exif copying. Note: This approach is Unix specific. -->
+            <recipientList>
+                <simple>
+                    exec:rm?args=-f ${header.CamelFileNameProduced}
+                </simple>
+            </recipientList>
+            <choice>
+                <when>
+                    <simple>
+                        ${headers.CamelExecExitValue} != 0
+                    </simple>
+                    <log message="${id} ${routeId}: Unable to delete temp blurred file. Filename: ${headers.CamelFileNameProduced}"
+                         loggingLevel="WARN"/>
+                    <!-- We also want to proactively tell monitoring -->
+                </when>
             </choice>
 
             <log message="${id}: Finished Image processing."
@@ -1281,24 +1488,29 @@
                  logName="{{si.ct.id}}"/>
 
             <!-- Create a FITS derivative using Harvard FITS. -->
-            <setHeader headerName="CamelHttpMethod">
-                <constant>GET</constant>
-            </setHeader>
-            <setHeader headerName="CamelHttpQuery">
+            <setHeader headerName="CamelFileName">
                 <simple>
-                    file=${header.CamelFileAbsolutePath}
+                    ${header.CamelFileAbsolutePath}
                 </simple>
             </setHeader>
-            <!-- ensure that we actually have a 200 response from the fits web service as this header could have been set upstream by another http request -->
+
+            <!--
+                Ensure that we actually have a 200 response from the fits web service as this header could have been
+                set upstream by another http request and that we are able to use a POST rather than a GET accidentally.
+            -->
+
+            <!-- Not sure this is needed. -->
+            <setBody>
+                <simple>null</simple>
+            </setBody>
+
+            <removeHeader headerName="CamelHttpMethod"/>
             <removeHeader headerName="CamelHttpResponseCode"/>
 
-            <log message="${id} Fit Web Service Query:\n${header.CamelHttpQuery}"
-                 loggingLevel="DEBUG"
-                 logName="{{si.ct.id}}"/>
+            <!-- Get the FITS analysis of the file. -->
+            <to uri="direct:getFITSReport"/>
 
-            <toD uri="{{si.fits.host}}/examine?headerFilterStrategy=#fusekiHttpHeaderFilterStrategy" id="fitsHttpRequest"/>
-
-            <convertBodyTo type="java.lang.String" charset="UTF-8"/>
+            <!-- <convertBodyTo type="java.lang.String" charset="UTF-8"/> -->
 
             <log message="${id} FITS Output:\n${body}"
                  loggingLevel="DEBUG"
@@ -1768,6 +1980,16 @@
             <setHeader headerName="PlotPID">
                 <simple>
                     ${header.CamelFedoraPid}
+                </simple>
+            </setHeader>
+            <setHeader headerName="PlotId">
+                <simple>
+                    ${header.DeploymentCorrelationId}
+                </simple>
+            </setHeader>
+            <setHeader headerName="PlotName">
+                <simple>
+                    ${header.CamelFedoraLabel}
                 </simple>
             </setHeader>
 
