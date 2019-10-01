@@ -34,7 +34,6 @@ import edu.si.services.beans.edansidora.model.IdsAsset;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
-import org.apache.camel.component.seda.SedaConsumer;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.util.concurrent.CamelThreadFactory;
@@ -231,7 +230,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
         ns.add("sidora", "http://oris.si.edu/2017/01/relations#");
 
         //Exception handling
-        onException(Exception.class, HttpOperationFailedException.class, SocketException.class)
+        onException(Exception.class, HttpOperationFailedException.class, SocketException.class, ExchangeTimedOutException.class)
                 .onWhen(exchangeProperty(Exchange.TO_ENDPOINT).regex("^(http|https|cxfrs?(:http|:https)|http4):.*"))
                 .useExponentialBackOff()
                 .backOffMultiplier(2)
@@ -403,7 +402,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds:\nEdanSearch Query:\n${header.CamelHttpQuery}")
 
-                .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("updateEdanSearchRequest")
+                .toD("seda:edanHttpRequest?timeout={{si.ct.edanIds.seda.timeout}}&waitForTaskToComplete=Always").id("updateEdanSearchRequest")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds:\nEdanSearch result:\n${body}")
 
                 //Convert string JSON so we can access the data
@@ -447,7 +446,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                         // Set the EDAN endpoint and query params
                         .setHeader("edanServiceEndpoint", simple("/content/v1.1/admincontent/editContent.htm"))
-                        .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("edanUpdateEditContent")
+                        .toD("seda:edanHttpRequest?timeout={{si.ct.edanIds.seda.timeout}}&waitForTaskToComplete=Always").id("edanUpdateEditContent")
 
                         //Get the edan id and url from the EDAN response
                         .process(new Processor() {
@@ -493,7 +492,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                         // Set the EDAN endpoint and query params
                         .setHeader("edanServiceEndpoint", simple("/content/v1.1/admincontent/createContent.htm"))
-                        .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("edanUpdateCreateContent")
+                        .toD("seda:edanHttpRequest?timeout={{si.ct.edanIds.seda.timeout}}&waitForTaskToComplete=Always").id("edanUpdateCreateContent")
 
                         //Get the edan id and url from the EDAN response
                         .process(new Processor() {
@@ -535,7 +534,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
                 //Search EDAN for imageId, deploymentId, app_id, and type
                 .setBody().simple("p.emammal_image.image.online_media.sidorapid:${header.sidoraPid} AND p.emammal_image.image.id:${header.imageid} AND app_id:{{si.ct.uscbi.appId}} AND type:{{si.ct.uscbi.edan_type}}")
                 .setHeader(Exchange.HTTP_QUERY).groovy("\"q=\" + URLEncoder.encode(request.getBody(String.class));")
-                .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("deleteEdanSearchRequest")
+                .toD("seda:edanHttpRequest?timeout={{si.ct.edanIds.seda.timeout}}&waitForTaskToComplete=Always").id("deleteEdanSearchRequest")
 
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN delete metadata search Response Body:\n${body}")
 
@@ -589,7 +588,7 @@ public class EDANSidoraRouteBuilder extends RouteBuilder {
 
                             // Set the EDAN endpoint and query params
                             .setHeader("edanServiceEndpoint").simple("/content/v1.1/admincontent/releaseContent.htm")
-                            .to("seda:edanHttpRequest?waitForTaskToComplete=Always").id("deleteEdanRecordRequest")
+                            .toD("seda:edanHttpRequest?timeout={{si.ct.edanIds.seda.timeout}}&waitForTaskToComplete=Always").id("deleteEdanRecordRequest")
                             .log(LoggingLevel.DEBUG, LOG_NAME, "${id} EdanIds: EDAN Delete Record Response Body:\n${body}")
 
                             //Asset XML attributes indicating delete asset
