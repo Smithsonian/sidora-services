@@ -378,7 +378,7 @@
                         <!-- header used for enabling test url value so that we can create new edan records for testing -->
                         <!-- url = url_test_randomUUID -->
                         <setHeader headerName="test_edan_url">
-                            <simple>true</simple>
+                            <simple>{{enable.edan.test}}</simple>
                         </setHeader>
 
                         <to uri="activemq:queue:{{edanIds.ct.queue}}" id="edanIdsActiveMQ"/>
