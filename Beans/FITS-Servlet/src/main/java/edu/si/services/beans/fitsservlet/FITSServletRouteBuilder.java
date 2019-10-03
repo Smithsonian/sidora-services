@@ -30,12 +30,9 @@ package edu.si.services.beans.fitsservlet;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
-import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.entity.ContentType;
 
 import java.io.File;
 
@@ -47,8 +44,7 @@ import java.io.File;
  */
 public class FITSServletRouteBuilder extends RouteBuilder {
 
-    //@PropertyInject(value = "edu.si.fits")
-    //static private String LOG_NAME;
+    static private String LOG_NAME = "edu.si.fits";
 
     /**
      * Configure the Camel routing rules for the FITS Servlet.
@@ -56,8 +52,8 @@ public class FITSServletRouteBuilder extends RouteBuilder {
     @Override
     public void configure() {
 
-        from("direct:getFITSReport")
-                .log("Calling FITS Examine")
+        from("direct:getFITSReport").routeId("getFITSReport")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} FITS Report: Starting processing ...").id("FITSReportLogStart")
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
@@ -69,16 +65,17 @@ public class FITSServletRouteBuilder extends RouteBuilder {
                         exchange.getIn().setBody(multipartEntityBuilder.build());
                     }
                 })
-                .to("log:?level=DEBUG&showHeaders=true")
+                .toD("log:" + LOG_NAME + "?level=DEBUG&showHeaders=true")
                 .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/examine")
-                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
+                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("callFITSReport")
                 .convertBodyTo(String.class, "UTF-8")
+                .log(LoggingLevel.DEBUG, LOG_NAME, "${id} FITS Report: Finished processing.")
                 .end();
 
-        from("direct:getFITSVersion")
-                .log("Calling FITS Version")
+        from("direct:getFITSVersion").routeId("getFITSVersion")
+                .log(LoggingLevel.INFO, LOG_NAME, "${id} FITS Version: Starting processing ...").id("FITSVersionLogStart")
                 .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/version")
-                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy");
+                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy").id("callFITSVersion");
 
     }
 }
