@@ -1074,7 +1074,7 @@
                  logName="{{si.ct.id}}"/>
 
             <setHeader headerName="imageSkipped">
-                <simple resultType="java.lang.Boolean">false</simple>
+                <simple resultType="java.lang.Boolean">true</simple>
             </setHeader>
 
             <!-- Spelled this way for the MODS XSLT parameter. -->
@@ -1121,173 +1121,174 @@
 
             <filter>
                 <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
-                    //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() = 'No Animal' or 'Blank' or 'Camera Misfire' or 'False trigger' or 'Time Lapse'
+                    //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() != 'No Animal' or 'Blank' or 'Camera Misfire' or 'False trigger' or 'Time Lapse'
                 </xpath>
 
                 <setHeader headerName="imageSkipped">
-                    <simple resultType="java.lang.Boolean">true</simple>
+                    <simple resultType="java.lang.Boolean">false</simple>
                 </setHeader>
 
                 <log message="Empty Image Sequence, Image Not Added"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
-            </filter>
 
-            <log id="emptySequenceFilter"
-                 message="Skipped Image Count After Filter: ${header.skippedImageCount}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
 
-            <log message="Post Fitler Log"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
+                <log id="emptySequenceFilter"
+                     message="Skipped Image Count After Filter: ${header.skippedImageCount}"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
 
-            <to uri="reader:file" id="readImageResource"/>
+                <log message="Post Fitler Log"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
 
-            <log message="Image read"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
+                <to uri="reader:file" id="readImageResource"/>
 
-            <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
+                <log message="Image read"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
 
-            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceOriginalVersion"/>
+                <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
 
-            <setHeader headerName="blurRequired">
-                <simple>false</simple>
-            </setHeader>
-            <setHeader headerName="isBlurred">
-                <simple>false</simple>
-            </setHeader>
+                <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceOriginalVersion"/>
 
-            <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
-            <!-- Any failure during Face Blur will revert back to the original image -->
-            <choice id="speciesScientificNameFaceBlurChoice">
-                <when>
-                    <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
-                        //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
-                    </xpath>
-                    <log message="${id}: Found image that may contain a face..."
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-
-                    <setHeader headerName="blurRequired">
-                        <simple>true</simple>
-                    </setHeader>
-
-                    <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
-
-                    <convertBodyTo type="byte[]"/>
-
-                    <choice>
-                        <when>
-                            <simple>${header.CamelExecExitValue} != 0</simple>
-                            <log message="${id}: Face Blur Error on ${header.imageid}!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
-                                 loggingLevel="ERROR"
-                                 logName="{{si.ct.id}}"/>
-                            <setBody>
-                                <simple>${header.CamelFileAbsolutePath}</simple>
-                            </setBody>
-                            <to uri="reader:file" id="blurErrorUseOriginalImage"/>
-                        </when>
-                        <otherwise>
-                            <setHeader headerName="isBlurred">
-                                <simple>true</simple>
-                            </setHeader>
-                            <!-- Save the blurred image to staging -->
-                            <toD uri="file:{{karaf.home}}/staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
-
-                            <!-- copy exif tags from the original image to the blurred image in staging-->
-                            <toD uri="exec:{{exiftool.path}}?args=-TagsFromFile ${header.CamelFileAbsolutePath} ${header.CamelFileNameProduced} -overwrite_original" id="execExiftool"/>
-
-                            <choice>
-                                <when>
-                                    <simple>${header.CamelExecExitValue} != 0</simple>
-                                    <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!!\nCamelExecStderr:\n${header.CamelExecStderr}"
-                                         loggingLevel="ERROR"
-                                         logName="{{si.ct.id}}"/>
-                                </when>
-                            </choice>
-
-                            <setBody>
-                                <simple>${header.CamelFileNameProduced}</simple>
-                            </setBody>
-                            <!-- put the blurred image with copied exif tags back on body -->
-                            <to uri="reader:file" id="readOrigBlurImageResource"/>
-                            <!--<to uri="reader:file" id="readImageMetadataCopyFile"/>-->
-
-                            <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceBlurVersion"/>
-
-                        </otherwise>
-                    </choice>
-                </when>
-            </choice>
-
-            <!--<multicast>-->
-            <to uri="direct:createThumbnail" id="addResourceCreateThumbnail"/>
-            <!-- <to uri="direct:createArchivalImage" /> -->
-            <!-- We may also want a DISPLAY datastream. -->
-            <!--</multicast>-->
-            <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
-            <to uri="direct:addFITSDataStream"/>
-            <to uri="direct:addMODSDataStream"/>
-
-            <to uri="velocity:file:{{karaf.home}}/Input/templates/WI-SidoraTemplate.vsl"/>
-            <to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA&amp;versionable=true" id="addSidoraDS"/>
-
-            <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in
-                the processResources calling the addMODSDatastream to get the PID for the first MODS datastream being created -->
-            <filter>
-                <simple>
-                    ${property.CamelSplitIndex} &lt;= 0
-                </simple>
-                <setHeader headerName="ImageResourcePID">
-                    <simple>
-                        ${header.CamelFedoraPid}
-                    </simple>
+                <setHeader headerName="blurRequired">
+                    <simple>false</simple>
                 </setHeader>
+                <setHeader headerName="isBlurred">
+                    <simple>false</simple>
+                </setHeader>
+
+                <!-- Check SpeciesScientificName for Homo sapien, Camera Trapper, Homo sapiens and blur out faces -->
+                <!-- Any failure during Face Blur will revert back to the original image -->
+                <choice id="speciesScientificNameFaceBlurChoice">
+                    <when>
+                        <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+                            //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())] != ''
+                        </xpath>
+                        <log message="${id}: Found image that may contain a face..."
+                             loggingLevel="INFO"
+                             logName="{{si.ct.id}}"/>
+
+                        <setHeader headerName="blurRequired">
+                            <simple>true</simple>
+                        </setHeader>
+
+                        <toD uri="exec:python?args={{si.ct.wi.faceBlur.script}} {{si.ct.wi.faceBlur.blur_value}} {{si.ct.wi.faceBlur.classifier}}" id="execPythonFaceblur"/>
+
+                        <convertBodyTo type="byte[]"/>
+
+                        <choice>
+                            <when>
+                                <simple>${header.CamelExecExitValue} != 0</simple>
+                                <log message="${id}: Face Blur Error on ${header.imageid}!!! Use original image...\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                     loggingLevel="ERROR"
+                                     logName="{{si.ct.id}}"/>
+                                <setBody>
+                                    <simple>${header.CamelFileAbsolutePath}</simple>
+                                </setBody>
+                                <to uri="reader:file" id="blurErrorUseOriginalImage"/>
+                            </when>
+                            <otherwise>
+                                <setHeader headerName="isBlurred">
+                                    <simple>true</simple>
+                                </setHeader>
+                                <!-- Save the blurred image to staging -->
+                                <toD uri="file:{{karaf.home}}/staging?fileName=${header.CamelFileName}" id="saveFaceBlurOutputToStaging"/>
+
+                                <!-- copy exif tags from the original image to the blurred image in staging-->
+                                <toD uri="exec:{{exiftool.path}}?args=-TagsFromFile ${header.CamelFileAbsolutePath} ${header.CamelFileNameProduced} -overwrite_original" id="execExiftool"/>
+
+                                <choice>
+                                    <when>
+                                        <simple>${header.CamelExecExitValue} != 0</simple>
+                                        <log message="${id}: ExifTool Error Copying Image Metadata for ${header.imageid}!!!\nCamelExecStderr:\n${header.CamelExecStderr}"
+                                             loggingLevel="ERROR"
+                                             logName="{{si.ct.id}}"/>
+                                    </when>
+                                </choice>
+
+                                <setBody>
+                                    <simple>${header.CamelFileNameProduced}</simple>
+                                </setBody>
+                                <!-- put the blurred image with copied exif tags back on body -->
+                                <to uri="reader:file" id="readOrigBlurImageResource"/>
+                                <!--<to uri="reader:file" id="readImageMetadataCopyFile"/>-->
+
+                                <toD uri="fedora:addDatastream?name=OBJ&amp;type=image/jpeg&amp;group=M&amp;dsLabel=${header.imageid}&amp;versionable=true" id="addResourceBlurVersion"/>
+
+                            </otherwise>
+                        </choice>
+                    </when>
+                </choice>
+
+                <!--<multicast>-->
+                <to uri="direct:createThumbnail" id="addResourceCreateThumbnail"/>
+                <!-- <to uri="direct:createArchivalImage" /> -->
+                <!-- We may also want a DISPLAY datastream. -->
+                <!--</multicast>-->
+                <to uri="velocity:file:{{karaf.home}}/Input/templates/CTImageResourceTemplate.vsl"/>
+                <to uri="fedora:addDatastream?name=RELS-EXT&amp;group=X&amp;dsLabel=RDF%20Statements%20about%20this%20object&amp;versionable=true"/>
+                <to uri="direct:addFITSDataStream"/>
+                <to uri="direct:addMODSDataStream"/>
+
+                <to uri="velocity:file:{{karaf.home}}/Input/templates/WI-SidoraTemplate.vsl"/>
+                <to uri="fedora:addDatastream?name=SIDORA&amp;type=text/xml&amp;group=X&amp;dsLabel=SIDORA&amp;versionable=true" id="addSidoraDS"/>
+
+                <!-- We only want to validate one ImageSequenceId so use a Filter on the CamelSplitIndex from the split in
+                    the processResources calling the addMODSDatastream to get the PID for the first MODS datastream being created -->
+                <filter>
+                    <simple>
+                        ${property.CamelSplitIndex} &lt;= 0
+                    </simple>
+                    <setHeader headerName="ImageResourcePID">
+                        <simple>
+                            ${header.CamelFedoraPid}
+                        </simple>
+                    </setHeader>
+                </filter>
+
+                <!-- The current route only handles JPG. -->
+                <choice>
+                    <!-- If the image is a JPEG? Do nothing. -->
+                    <when>
+                        <simple>
+                            ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
+                        </simple>
+                        <log message="${id}: UnifiedCameraTrapAddImageResource: Found JPEG."
+                             loggingLevel="DEBUG"
+                             logName="{{si.ct.id}}"/>
+                        <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
+                    </when>
+                    <!-- Just warn for now. -->
+                    <otherwise>
+                        <log message="${id}: UnifiedCameraTrapAddImageResource: Found non-JPEG Image."
+                             loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
+                    </otherwise>
+                </choice>
+
+                <!-- Delete the temporary blur image for exif copying. Note: This approach is Unix specific. -->
+                <recipientList>
+                    <simple>
+                        exec:rm?args=-f ${header.CamelFileNameProduced}
+                    </simple>
+                </recipientList>
+                <choice>
+                    <when>
+                        <simple>
+                            ${headers.CamelExecExitValue} != 0
+                        </simple>
+                        <log message="${id} ${routeId}: Unable to delete temp blurred file. Filename: ${headers.CamelFileNameProduced}"
+                             loggingLevel="WARN"/>
+                        <!-- We also want to proactively tell monitoring -->
+                    </when>
+                </choice>
+
+                <log message="${id}: Finished Image processing."
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
             </filter>
-
-            <!-- The current route only handles JPG. -->
-            <choice>
-                <!-- If the image is a JPEG? Do nothing. -->
-                <when>
-                    <simple>
-                        ${header.dsMIME} == 'image/jpg' || ${header.dsMIME} == 'image/jpeg' || ${header.dsMIME} == 'image/jpe'
-                    </simple>
-                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found JPEG."
-                         loggingLevel="DEBUG"
-                         logName="{{si.ct.id}}"/>
-                    <!-- Future: Make a JPEG2000 archival image and store it in the MASTER datastream. -->
-                </when>
-                <!-- Just warn for now. -->
-                <otherwise>
-                    <log message="${id}: UnifiedCameraTrapAddImageResource: Found non-JPEG Image."
-                         loggingLevel="WARN"
-                         logName="{{si.ct.id}}"/>
-                </otherwise>
-            </choice>
-
-            <!-- Delete the temporary blur image for exif copying. Note: This approach is Unix specific. -->
-            <recipientList>
-                <simple>
-                    exec:rm?args=-f ${header.CamelFileNameProduced}
-                </simple>
-            </recipientList>
-            <choice>
-                <when>
-                    <simple>
-                        ${headers.CamelExecExitValue} != 0
-                    </simple>
-                    <log message="${id} ${routeId}: Unable to delete temp blurred file. Filename: ${headers.CamelFileNameProduced}"
-                         loggingLevel="WARN"/>
-                    <!-- We also want to proactively tell monitoring -->
-                </when>
-            </choice>
-
-            <log message="${id}: Finished Image processing."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddResearcherObservationResource">
