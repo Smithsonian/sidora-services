@@ -1082,7 +1082,7 @@
             <choice>
                 <when>
                     <xpath>
-                        not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contain('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text()))
+                        not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text()))
                     </xpath>
                     <setHeader headerName="imageSkipped">
                         <simple resultType="java.lang.Boolean">false</simple>
@@ -1103,7 +1103,7 @@
 
             <filter>
                 <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
-                    not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contain('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text()))
+                    not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text()))
                 </xpath>
 
                 <setHeader headerName="imageSkipped">
