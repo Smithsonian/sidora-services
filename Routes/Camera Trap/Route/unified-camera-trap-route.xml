@@ -1121,7 +1121,7 @@
 
             <filter>
                 <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
-                    //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() != 'No Animal' or 'Blank' or 'Camera Misfire' or 'False trigger' or 'Time Lapse'
+                    //ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName/text() != 'No Animal' and 'Blank' and 'Camera Misfire' and 'False trigger' and 'Time Lapse'
                 </xpath>
 
                 <setHeader headerName="imageSkipped">
