@@ -1109,8 +1109,6 @@
                 <setHeader headerName="imageSkipped">
                     <simple resultType="java.lang.Boolean">false</simple>
                 </setHeader>
-
-                <log message="${id}: ${header.skippedImageCount}"
                 <to uri="direct:addImageResource"/>
             </filter>
         </route>
