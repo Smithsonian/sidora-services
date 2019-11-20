@@ -1070,6 +1070,11 @@
 
         <route id="UnifiedCameraTrapEmptySequenceFilter" trace="true">
             <from uri="direct:emptySequenceFilter"/>
+            <setHeader headerName="imageid">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
+                </xpath>
+            </setHeader>
             <log message="${id}: Testing For Empty Sequence..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1118,11 +1123,11 @@
             </setHeader>
 
             <!-- Spelled this way for the MODS XSLT parameter. -->
-            <setHeader headerName="imageid">
+            <!--<setHeader headerName="imageid">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
                 </xpath>
-            </setHeader>
+            </setHeader>-->
             <!-- Image Sequence ID used in MODS datastream. -->
             <setHeader headerName="ImageSequenceID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
