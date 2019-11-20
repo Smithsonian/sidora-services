@@ -1078,9 +1078,15 @@
             <log message="${id}: Testing For Empty Sequence for ${header.imageid}..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+            <!--<setHeader headerName="imageSkipped">
+                <simple resultType="java.lang.Boolean">true</simple>
+            </setHeader>
+            <log message="${id}: Set imageSkipped header to true"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>-->
             <choice>
                 <when>
-                    <xpath>
+                    <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
                         not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])
                     </xpath>
                     <setHeader headerName="imageSkipped">
@@ -1099,7 +1105,6 @@
                     </setHeader>
                 </otherwise>
             </choice>
-
             <filter>
                 <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
                     not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text()])
