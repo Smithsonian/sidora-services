@@ -2401,9 +2401,21 @@
 
             <to uri="direct:validate_EAC-CPF_Datastream"/>
 
+            <log message="${id}: Validated EAC-CPF DATASTREAM"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="direct:validate_FGDC_Datastream"/>
 
+            <log message="${id}: Validated FGDC DATASTREAM"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="direct:validate_MODS_Datastream"/>
+
+            <log message="${id}: Validated MODS DATASTREAM"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
             <!-- Start Researcher CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
