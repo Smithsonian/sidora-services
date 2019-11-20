@@ -56,7 +56,7 @@ public class PidAggregationStrategy implements AggregationStrategy
 
         if(oldExchange == null)
         {
-            if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
+            if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) != null && newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
             {
                 newExchange.getIn().setHeader("skippedImageCount", 1);
             }
@@ -75,7 +75,7 @@ public class PidAggregationStrategy implements AggregationStrategy
         String aggregation = oldExchange.getIn().getHeader("PIDAggregation", String.class);
         oldExchange.getIn().setHeader("PIDAggregation", String.format("%s,%s", aggregation, pid));
 
-        if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
+        if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) != null && newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
         {
             int count = oldExchange.getIn().getHeader("skippedImageCount", Integer.class);
             oldExchange.getIn().setHeader("skippedImageCount", count+1);

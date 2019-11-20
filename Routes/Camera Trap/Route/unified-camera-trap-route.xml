@@ -1073,12 +1073,6 @@
             <log message="${id}: Testing For Empty Sequence..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-
-            <setHeader headerName="imageid">
-                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
-                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
-                </xpath>
-            </setHeader>
             <choice>
                 <when>
                     <xpath>
@@ -1087,12 +1081,12 @@
                     <setHeader headerName="imageSkipped">
                         <simple resultType="java.lang.Boolean">false</simple>
                     </setHeader>
-                    <log message="{id}: Image ${header.imageid} is not part of an empty sequence."
+                    <log message="{id}: Image is not part of an empty sequence."
                          loggingLevel="INFO"
                           logName="{{si.ct.id}}"/>
                 </when>
                 <otherwise>
-                    <log message="{id}: Image ${header.imageid} is empty"
+                    <log message="{id}: Image is empty"
                          loggingLevel="INFO"
                          logName="{{si.ct.id}}"/>
                     <setHeader headerName="imageSkipped">
