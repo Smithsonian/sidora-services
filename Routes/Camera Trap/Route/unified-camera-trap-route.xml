@@ -1075,7 +1075,7 @@
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
                 </xpath>
             </setHeader>
-            <log message="${id}: Testing For Empty Sequence..."
+            <log message="${id}: Testing For Empty Sequence for ${header.imageid}..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
             <choice>
