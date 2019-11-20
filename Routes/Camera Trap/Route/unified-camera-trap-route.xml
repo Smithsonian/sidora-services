@@ -1109,10 +1109,7 @@
                 <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
                     not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])
                 </xpath>
-
-                <setHeader headerName="imageSkipped">
-                    <simple resultType="java.lang.Boolean">false</simple>
-                </setHeader>
+                
                 <to uri="direct:addImageResource"/>
             </filter>
         </route>
@@ -2570,7 +2567,9 @@
             <log message="${id}: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-
+            <log message="${id}: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
             <!-- Start MODS Validation -->
             <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
             <setHeader headerName="CamelFedoraPid">
@@ -2579,10 +2578,22 @@
                 </simple>
             </setHeader>
 
+            <log message="${id}: Set header for CamelFedoraPid ${header.ImageResourcePID}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <!-- Get the MODS datastream -->
             <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
 
+            <log message="${id}: MODS datastream retrieved"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <convertBodyTo type="java.lang.String"/>
+
+            <log message="${id}: MODS datastream converted to a java string"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
             <!-- Store the current datastream  to be used in the validation bean -->
             <setHeader headerName="datastreamValidationXML">
@@ -2591,6 +2602,10 @@
                 </simple>
             </setHeader>
 
+            <log message="${id}: Storing the current datastream to be used in the validation bean"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
@@ -2598,6 +2613,11 @@
                     <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
                 </simple>
             </setBody>
+
+            <log message="${id}: Body set"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="direct:ValidateDatastreamFieldList"/>
             <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
         </route>
