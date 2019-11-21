@@ -2408,7 +2408,12 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <to uri="direct:validate_MODS_Datastream"/>
+            <choice>
+                <when>
+                    <header>ImageResourcePID</header>
+                    <to uri="direct:validate_MODS_Datastream"/>
+                </when>
+            </choice>
 
             <log message="${id}: Validated MODS DATASTREAM"
                  loggingLevel="INFO"
@@ -2581,54 +2586,44 @@
             <log message="${id}: Set header for CamelFedoraPid ${header.ImageResourcePID}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-            <choice>
-                <when>
-                    <simple>${header.ImageResourcePID} != null</simple>
-                    <!-- Get the MODS datastream -->
-                    <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
+            <!-- Get the MODS datastream -->
+            <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
 
-                    <log message="${id}: MODS datastream retrieved"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
+            <log message="${id}: MODS datastream retrieved"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
-                    <convertBodyTo type="java.lang.String"/>
+            <convertBodyTo type="java.lang.String"/>
 
-                    <log message="${id}: MODS datastream converted to a java string"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
+            <log message="${id}: MODS datastream converted to a java string"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
-                    <!-- Store the current datastream  to be used in the validation bean -->
-                    <setHeader headerName="datastreamValidationXML">
-                        <simple>
-                            ${body}
-                        </simple>
-                    </setHeader>
+            <!-- Store the current datastream  to be used in the validation bean -->
+            <setHeader headerName="datastreamValidationXML">
+                <simple>
+                    ${body}
+                </simple>
+            </setHeader>
 
-                    <log message="${id}: Storing the current datastream to be used in the validation bean"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
+            <log message="${id}: Storing the current datastream to be used in the validation bean"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
-                    <!-- the piped separated list of xpath's and field names to be validated -->
-                    <setBody>
-                        <simple trim="true">
-                            MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()
-                            <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
-                        </simple>
-                    </setBody>
+            <!-- the piped separated list of xpath's and field names to be validated -->
+            <setBody>
+                <simple trim="true">
+                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()
+                    <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
+                </simple>
+            </setBody>
 
-                    <log message="${id}: Body set"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
+            <log message="${id}: Body set"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
-                    <to uri="direct:ValidateDatastreamFieldList"/>
-                    <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
-                </when>
-                <otherwise>
-                    <log message="${id}: Skipping MODS datastream validation (no pid)"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                </otherwise>
-            </choice>
+            <to uri="direct:ValidateDatastreamFieldList"/>
+            <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
         </route>
 
         <!-- Validate the provided datastream and field list -->
