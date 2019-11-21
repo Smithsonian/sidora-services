@@ -1009,7 +1009,7 @@
             </setHeader>
             <setHeader headerName="ImageCount">
                 <xpath resultType="java.lang.String">
-                    count(//ImageFileName)
+                    count(//ImageFileName) - count(//ImageSequence[ResearcherIdentifications[Identification[SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())]]]]/Image/ImageId)
                 </xpath>
             </setHeader>
             <log message="${id}: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
@@ -2408,12 +2408,8 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <choice>
-                <when>
-                    <header>ImageResourcePID</header>
-                    <to uri="direct:validate_MODS_Datastream"/>
-                </when>
-            </choice>
+
+            <to uri="direct:validate_MODS_Datastream"/>
 
             <log message="${id}: Validated MODS DATASTREAM"
                  loggingLevel="INFO"
