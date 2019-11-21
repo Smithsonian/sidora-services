@@ -408,7 +408,7 @@
             </setHeader>
             <setHeader headerName="ResourceCount">
                 <xpath resultType="java.lang.Integer">
-                    count(//ImageFileName)
+                    count(//ImageFileName) - count(//ImageSequence[ResearcherIdentifications[Identification[SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())]]]]/Image/ImageId)
                 </xpath>
             </setHeader>
             <to uri="bean:deploymentPkgValidator?method=validateResourceCount"/>
