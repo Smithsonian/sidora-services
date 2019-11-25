@@ -408,7 +408,12 @@
             </setHeader>
             <setHeader headerName="ResourceCount">
                 <xpath resultType="java.lang.Integer">
-                    count(//ImageFileName) - count(//ImageSequence[ResearcherIdentifications[Identification[SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())]]]]/Image/ImageId)
+                    count(//ImageFileName)
+                </xpath>
+            </setHeader>
+            <setHeader headerName="emptyImageCount">
+                <xpath resultType="java.lang.Integer">
+                    count(//ImageSequence[ResearcherIdentifications[Identification[SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())]]]]/Image/ImageId)
                 </xpath>
             </setHeader>
             <to uri="bean:deploymentPkgValidator?method=validateResourceCount"/>
@@ -1009,7 +1014,7 @@
             </setHeader>
             <setHeader headerName="ImageCount">
                 <xpath resultType="java.lang.String">
-                    count(//ImageFileName) - count(//ImageSequence[ResearcherIdentifications[Identification[SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())]]]]/Image/ImageId)
+                    count(//ImageFileName)
                 </xpath>
             </setHeader>
             <log message="${id}: Site PID - ${header.SitePID}  Image Count - ${header.ImageCount}"
@@ -1029,7 +1034,7 @@
                         ${body}
                     </simple>
                 </setBody>
-                <to uri="direct:emptySequenceFilter"/>
+                <to uri="direct:addImageResource"/>
                 <!--<to uri="direct:addImageResource"/>-->
                 <log message="${id}: Created Image Resource - ${body}."
                      loggingLevel="DEBUG"
@@ -1068,55 +1073,13 @@
                  logName="{{si.ct.id}}"/>
         </route>
 
-        <route id="UnifiedCameraTrapEmptySequenceFilter" trace="true">
-            <from uri="direct:emptySequenceFilter"/>
-            <setHeader headerName="imageid">
-                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
-                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
-                </xpath>
-            </setHeader>
-            <log message="${id}: Testing For Empty Sequence for ${header.imageid}..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-            <!--<setHeader headerName="imageSkipped">
-                <simple resultType="java.lang.Boolean">true</simple>
-            </setHeader>
-            <log message="${id}: Set imageSkipped header to true"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>-->
-            <choice>
-                <when>
-                    <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
-                        not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])
-                    </xpath>
-                    <setHeader headerName="imageSkipped">
-                        <simple resultType="java.lang.Boolean">false</simple>
-                    </setHeader>
-                    <log message="{id}: Image is not part of an empty sequence."
-                         loggingLevel="INFO"
-                          logName="{{si.ct.id}}"/>
-                </when>
-                <otherwise>
-                    <log message="{id}: Image is empty"
-                         loggingLevel="INFO"
-                         logName="{{si.ct.id}}"/>
-                    <setHeader headerName="imageSkipped">
-                        <simple resultType="java.lang.Boolean">true</simple>
-                    </setHeader>
-                </otherwise>
-            </choice>
-            <filter>
-                <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
-                    not(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])
-                </xpath>
-
-                <to uri="direct:addImageResource"/>
-            </filter>
-        </route>
-
         <route id="UnifiedCameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
             <log message="${id}: Started Image processing ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Reached Add Image Resource for ${header.imagid}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -1125,11 +1088,28 @@
             </setHeader>
 
             <!-- Spelled this way for the MODS XSLT parameter. -->
-            <!--<setHeader headerName="imageid">
+            <setHeader headerName="imageid">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
                 </xpath>
-            </setHeader>-->
+            </setHeader>
+
+            <filter>
+                <!-- if empty image true then filter do any processing needed and stop this route and retrun to the split -->
+                <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+                    //ImageSequence[Image[ImageId/text() =
+                    $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal',
+                    text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False
+                    trigger', text()) or contains('Time Lapse', text())]
+                </xpath>
+                <log message="Empty image ${imageid}... no further processing required..."/>
+                <!-- header used in aggregator bean -->
+                <setHeader headerName="imageSkipped">
+                    <simple resultType="java.lang.Boolean">true</simple>
+                </setHeader>
+                <stop/>
+            </filter>
+
             <!-- Image Sequence ID used in MODS datastream. -->
             <setHeader headerName="ImageSequenceID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
