@@ -1081,6 +1081,18 @@
 
         <route id="UnifiedCameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
+
+            <setHeader headerName="imageSkipped">
+                <simple resultType="java.lang.Boolean">false</simple>
+            </setHeader>
+
+            <!-- Spelled this way for the MODS XSLT parameter. -->
+            <setHeader headerName="imageid">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
+                </xpath>
+            </setHeader>
+
             <log message="${id}: Started Image processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -1100,17 +1112,6 @@
             <log message="${id}: Image Count at ImageId - ${header.imagid}: ${header.resourceCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
-
-            <setHeader headerName="imageSkipped">
-                <simple resultType="java.lang.Boolean">false</simple>
-            </setHeader>
-
-            <!-- Spelled this way for the MODS XSLT parameter. -->
-            <setHeader headerName="imageid">
-                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
-                    //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
-                </xpath>
-            </setHeader>
 
             <filter>
                 <!-- if empty image true then filter do any processing needed and stop this route and retrun to the split -->

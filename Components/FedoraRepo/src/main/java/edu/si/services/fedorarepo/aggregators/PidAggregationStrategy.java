@@ -43,20 +43,6 @@ public class PidAggregationStrategy implements AggregationStrategy
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
-
-        String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
-        if(oldExchange!=null)
-        {
-            String PIDAgg = oldExchange.getIn().getHeader("PIDAggregation", String.class);
-        }
-
-        if (pid == null)
-        {
-            //Throw exception or ignore???
-            //For now ignore!
-            return oldExchange;
-        }//end if
-
         if(oldExchange == null)
         {
             if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) != null && newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
@@ -79,10 +65,6 @@ public class PidAggregationStrategy implements AggregationStrategy
                 }
 
                 newExchange.getIn().setHeader("ResourceCount", resourceCount);
-                /*log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
-                log.info("skippedImageCount: " + newExchange.getIn().getHeader("skippedImageCount", Integer.class));
-                log.info("Image Count: " + imageCount);
-                log.info("Resource Count: " + resourceCount);*/
                 return newExchange;
             }
             else
@@ -112,14 +94,21 @@ public class PidAggregationStrategy implements AggregationStrategy
             }
 
             oldExchange.getIn().setHeader("ResourceCount", resourceCount);
-
-            /*log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
-            log.info("skippedImageCount: " + oldExchange.getIn().getHeader("skippedImageCount", Integer.class));
-            log.info("Image Count: " + imageCount);
-            log.info("Resource Count: " + resourceCount);*/
-
             return oldExchange;
         }
+
+        String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
+        if(oldExchange!=null)
+        {
+            String PIDAgg = oldExchange.getIn().getHeader("PIDAggregation", String.class);
+        }
+
+        if (pid == null)
+        {
+            //Throw exception or ignore???
+            //For now ignore!
+            return oldExchange;
+        }//end if
 
         if (oldExchange == null || (oldExchange.getIn().getHeader("PIDAggregation") == null))
         {
