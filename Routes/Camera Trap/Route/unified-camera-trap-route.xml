@@ -1102,7 +1102,7 @@
                  logName="{{si.ct.id}}"/>
 
             <setHeader headerName="imageSkipped">
-                <simple resultType="java.lang.Boolean">true</simple>
+                <simple resultType="java.lang.Boolean">false</simple>
             </setHeader>
 
             <!-- Spelled this way for the MODS XSLT parameter. -->
