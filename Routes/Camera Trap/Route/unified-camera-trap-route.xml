@@ -1021,6 +1021,12 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
+            <setHeader headerName="skippedImageCount">
+                <simple resultType="java.lang.Integer">
+                    0
+                </simple>
+            </setHeader>
+
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
                 <xpath headerName="ManifestXML">
@@ -1080,6 +1086,18 @@
                  logName="{{si.ct.id}}"/>
 
             <log message="${id}: Reached Add Image Resource for ${header.imagid}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Skipped Image Count at ImageId - ${header.imagid}: ${header.skippedImageCount}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Image Count at ImageId - ${header.imagid}: ${header.imageCount}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
+            <log message="${id}: Image Count at ImageId - ${header.imagid}: ${header.resourceCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 

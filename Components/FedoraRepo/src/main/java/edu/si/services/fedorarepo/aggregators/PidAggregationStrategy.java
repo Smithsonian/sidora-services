@@ -79,10 +79,10 @@ public class PidAggregationStrategy implements AggregationStrategy
                 }
 
                 newExchange.getIn().setHeader("ResourceCount", resourceCount);
-                log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
+                /*log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
                 log.info("skippedImageCount: " + newExchange.getIn().getHeader("skippedImageCount", Integer.class));
                 log.info("Image Count: " + imageCount);
-                log.info("Resource Count: " + resourceCount);
+                log.info("Resource Count: " + resourceCount);*/
                 return newExchange;
             }
             else
@@ -112,11 +112,11 @@ public class PidAggregationStrategy implements AggregationStrategy
             }
 
             oldExchange.getIn().setHeader("ResourceCount", resourceCount);
-            
-            log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
+
+            /*log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
             log.info("skippedImageCount: " + oldExchange.getIn().getHeader("skippedImageCount", Integer.class));
             log.info("Image Count: " + imageCount);
-            log.info("Resource Count: " + resourceCount);
+            log.info("Resource Count: " + resourceCount);*/
 
             return oldExchange;
         }
