@@ -29,6 +29,8 @@ package edu.si.services.fedorarepo.aggregators;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -36,6 +38,7 @@ import org.apache.camel.processor.aggregate.AggregationStrategy;
  */
 public class PidAggregationStrategy implements AggregationStrategy
 {
+    private static final Logger log = LoggerFactory.getLogger(PidAggregationStrategy.class);
 
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
@@ -59,6 +62,7 @@ public class PidAggregationStrategy implements AggregationStrategy
             if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) != null && newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
             {
                 newExchange.getIn().setHeader("skippedImageCount", 1);
+
                 int imageCount = newExchange.getIn().getHeader("ImageCount", Integer.class);
                 int resourceCount = newExchange.getIn().getHeader("ResourceCount", Integer.class);
 
@@ -75,6 +79,10 @@ public class PidAggregationStrategy implements AggregationStrategy
                 }
 
                 newExchange.getIn().setHeader("ResourceCount", resourceCount);
+                log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
+                log.info("skippedImageCount: " + newExchange.getIn().getHeader("skippedImageCount", Integer.class));
+                log.info("Image Count: " + imageCount);
+                log.info("Resource Count: " + resourceCount);
                 return newExchange;
             }
             else
@@ -104,6 +112,11 @@ public class PidAggregationStrategy implements AggregationStrategy
             }
 
             oldExchange.getIn().setHeader("ResourceCount", resourceCount);
+            
+            log.info("PID AGGREGATION FOR EMPTY IMAGE FILE NAME: " + newExchange.getIn().getHeader("imageid", String.class));
+            log.info("skippedImageCount: " + oldExchange.getIn().getHeader("skippedImageCount", Integer.class));
+            log.info("Image Count: " + imageCount);
+            log.info("Resource Count: " + resourceCount);
 
             return oldExchange;
         }
