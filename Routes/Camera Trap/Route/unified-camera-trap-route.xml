@@ -1027,6 +1027,12 @@
                 </simple>
             </setHeader>
 
+            <setHeader headerName="rbeallTestHeader">
+                <simple resultType="java.lang.String">
+                    "Hello World!"
+                </simple>
+            </setHeader>
+
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
                 <xpath headerName="ManifestXML">
@@ -1097,19 +1103,19 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <log message="${id}: Reached Add Image Resource for ${header.imagid}"
+            <log message="${id}: Reached Add Image Resource for ${header.imageid}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <log message="${id}: Skipped Image Count at ImageId - ${header.imagid}: ${header.skippedImageCount}"
+            <log message="${id}: Skipped Image Count at ImageId - ${header.imageid}: ${header.skippedImageCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <log message="${id}: Image Count at ImageId - ${header.imagid}: ${header.imageCount}"
+            <log message="${id}: Image Count at ImageId - ${header.imageid}: ${header.imageCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <log message="${id}: Image Count at ImageId - ${header.imagid}: ${header.resourceCount}"
+            <log message="${id}: Image Count at ImageId - ${header.imageid}: ${header.resourceCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
@@ -2734,13 +2740,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.rbeallTestHeader}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.rbeallTestHeader}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
