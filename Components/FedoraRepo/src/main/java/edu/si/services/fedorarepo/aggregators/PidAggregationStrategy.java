@@ -45,10 +45,12 @@ public class PidAggregationStrategy implements AggregationStrategy
     {
         if(oldExchange == null)
         {
+            newExchange.getIn().setHeader("otherTestHeader", "I reached the pid aggregator!");
             newExchange.getIn().setHeader("rbeallTestHeader", "I reached the aggregator at some point");
         }
         else
         {
+            oldExchange.getIn().setHeader("otherTestHeader", "I reached the pid aggregator!");
             oldExchange.getIn().setHeader("rbeallTestHeader", "I reached the aggregator at some point");
         }
 

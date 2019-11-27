@@ -1119,6 +1119,10 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
+            <log message="${id}: Image Count at ImageId - ${header.imageid}: ${header.otherTestHeader}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <filter>
                 <!-- if empty image true then filter do any processing needed and stop this route and retrun to the split -->
                 <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
@@ -2740,13 +2744,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.rbeallTestHeader}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.otherTestHeader}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.rbeallTestHeader}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.otherTestHeader}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
