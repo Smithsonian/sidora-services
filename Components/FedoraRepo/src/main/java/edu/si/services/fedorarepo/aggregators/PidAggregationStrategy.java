@@ -43,62 +43,6 @@ public class PidAggregationStrategy implements AggregationStrategy
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
-        log.info("RBEALL log in aggregator");
-        /*if(oldExchange == null)
-        {
-            if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) != null && newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
-            {
-                newExchange.getIn().setHeader("skippedImageCount", 1);
-
-                int imageCount = newExchange.getIn().getHeader("ImageCount", Integer.class);
-                //int resourceCount = newExchange.getIn().getHeader("ResourceCount", Integer.class);
-
-                if(imageCount > 0)
-                {
-                    imageCount -= 1;
-                }
-
-                newExchange.getIn().setHeader("ImageCount", imageCount);
-
-                /*
-                if(resourceCount > 0)
-                {
-                    resourceCount -= 1;
-                }
-
-                newExchange.getIn().setHeader("ResourceCount", resourceCount);
-                //return newExchange;
-            }
-            else
-            {
-                //newExchange.getIn().setHeader("skippedImageCount", 0);
-            }
-        }
-
-        if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) != null && newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
-        {
-            int count = oldExchange.getIn().getHeader("skippedImageCount", Integer.class);
-            oldExchange.getIn().setHeader("skippedImageCount", count+1);
-
-            int imageCount = oldExchange.getIn().getHeader("ImageCount", Integer.class);
-            //int resourceCount = oldExchange.getIn().getHeader("ResourceCount", Integer.class);
-
-            if(imageCount > 0)
-            {
-                imageCount -= 1;
-            }
-
-            oldExchange.getIn().setHeader("ImageCount", imageCount);
-
-            /*if(resourceCount > 0)
-            {
-                resourceCount -= 1;
-            }
-
-            oldExchange.getIn().setHeader("ResourceCount", resourceCount);
-            //return oldExchange;
-        }*/
-
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
         if(oldExchange!=null)
         {

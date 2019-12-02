@@ -482,6 +482,12 @@
                 </simple>
             </setHeader>
 
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>
+                    ${header.ResourceCount} - ${header.EmptyImageCount}
+                </simple>
+            </setHeader>
+
             <to uri="direct:validatePostIngestResourceCount"/>
 
             <!-- validate datastreams exists for various object types -->
