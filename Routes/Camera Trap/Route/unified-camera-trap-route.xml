@@ -1115,11 +1115,11 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <log message="${id}: Image Count at ImageId - ${header.imageid}: ${header.resourceCount}"
+            <log message="${id}: Resource Count at ImageId - ${header.imageid}: ${header.resourceCount}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <log message="${id}: Image Count at ImageId - ${header.imageid}: ${header.otherTestHeader}"
+            <log message="${id}: Other test header at ImageId - ${header.imageid}: ${header.otherTestHeader}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
