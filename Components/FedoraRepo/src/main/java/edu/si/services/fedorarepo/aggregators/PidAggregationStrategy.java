@@ -60,10 +60,10 @@ public class PidAggregationStrategy implements AggregationStrategy
             {
                 newExchange.getIn().setHeader("skippedImageCount", 1);
 
-                int imageCount = newExchange.getIn().getHeader("ImageCount", Integer.class);
-                int resourceCount = newExchange.getIn().getHeader("ResourceCount", Integer.class);
+                //int imageCount = newExchange.getIn().getHeader("ImageCount", Integer.class);
+                //int resourceCount = newExchange.getIn().getHeader("ResourceCount", Integer.class);
 
-                if(imageCount > 0)
+                /*if(imageCount > 0)
                 {
                     imageCount -= 1;
                 }
@@ -75,7 +75,7 @@ public class PidAggregationStrategy implements AggregationStrategy
                     resourceCount -= 1;
                 }
 
-                newExchange.getIn().setHeader("ResourceCount", resourceCount);
+                newExchange.getIn().setHeader("ResourceCount", resourceCount);*/
                 return newExchange;
             }
             else
@@ -89,7 +89,7 @@ public class PidAggregationStrategy implements AggregationStrategy
             int count = oldExchange.getIn().getHeader("skippedImageCount", Integer.class);
             oldExchange.getIn().setHeader("skippedImageCount", count+1);
 
-            int imageCount = oldExchange.getIn().getHeader("ImageCount", Integer.class);
+            /*int imageCount = oldExchange.getIn().getHeader("ImageCount", Integer.class);
             int resourceCount = oldExchange.getIn().getHeader("ResourceCount", Integer.class);
 
             if(imageCount > 0)
@@ -104,7 +104,7 @@ public class PidAggregationStrategy implements AggregationStrategy
                 resourceCount -= 1;
             }
 
-            oldExchange.getIn().setHeader("ResourceCount", resourceCount);
+            oldExchange.getIn().setHeader("ResourceCount", resourceCount);*/
             return oldExchange;
         }
 
