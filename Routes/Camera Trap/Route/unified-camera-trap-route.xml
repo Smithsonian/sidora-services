@@ -1055,6 +1055,11 @@
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
             </split>
+
+            <log message="${id} RBEALL POST SPLIT: skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.otherTestHeader}, imageCount=${header.ImageCount}, resourceCount=${header.ResourceCount}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
 
             <!-- Researcher is required for Unified CT Ingest. -->
@@ -1100,26 +1105,6 @@
             </setHeader>
 
             <log message="${id}: Started Image processing ..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-            <log message="${id}: Reached Add Image Resource for ${header.imageid}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-            <log message="${id}: Skipped Image Count at ImageId - ${header.imageid}: ${header.skippedImageCount}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-            <log message="${id}: Image Count at ImageId - ${header.imageid}: ${header.imageCount}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-            <log message="${id}: Resource Count at ImageId - ${header.imageid}: ${header.resourceCount}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
-            <log message="${id}: Other test header at ImageId - ${header.imageid}: ${header.otherTestHeader}"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
