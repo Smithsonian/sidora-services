@@ -60,27 +60,28 @@ public class PidAggregationStrategy implements AggregationStrategy
             {
                 newExchange.getIn().setHeader("skippedImageCount", 1);
 
-                //int imageCount = newExchange.getIn().getHeader("ImageCount", Integer.class);
+                int imageCount = newExchange.getIn().getHeader("ImageCount", Integer.class);
                 //int resourceCount = newExchange.getIn().getHeader("ResourceCount", Integer.class);
 
-                /*if(imageCount > 0)
+                if(imageCount > 0)
                 {
                     imageCount -= 1;
                 }
 
                 newExchange.getIn().setHeader("ImageCount", imageCount);
 
+                /*
                 if(resourceCount > 0)
                 {
                     resourceCount -= 1;
                 }
 
                 newExchange.getIn().setHeader("ResourceCount", resourceCount);*/
-                return newExchange;
+                //return newExchange;
             }
             else
             {
-                newExchange.getIn().setHeader("skippedImageCount", 0);
+                //newExchange.getIn().setHeader("skippedImageCount", 0);
             }
         }
 
@@ -89,8 +90,8 @@ public class PidAggregationStrategy implements AggregationStrategy
             int count = oldExchange.getIn().getHeader("skippedImageCount", Integer.class);
             oldExchange.getIn().setHeader("skippedImageCount", count+1);
 
-            /*int imageCount = oldExchange.getIn().getHeader("ImageCount", Integer.class);
-            int resourceCount = oldExchange.getIn().getHeader("ResourceCount", Integer.class);
+            int imageCount = oldExchange.getIn().getHeader("ImageCount", Integer.class);
+            //int resourceCount = oldExchange.getIn().getHeader("ResourceCount", Integer.class);
 
             if(imageCount > 0)
             {
@@ -99,13 +100,13 @@ public class PidAggregationStrategy implements AggregationStrategy
 
             oldExchange.getIn().setHeader("ImageCount", imageCount);
 
-            if(resourceCount > 0)
+            /*if(resourceCount > 0)
             {
                 resourceCount -= 1;
             }
 
             oldExchange.getIn().setHeader("ResourceCount", resourceCount);*/
-            return oldExchange;
+            //return oldExchange;
         }
 
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
