@@ -43,18 +43,7 @@ public class PidAggregationStrategy implements AggregationStrategy
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
-        if(oldExchange == null)
-        {
-            newExchange.getIn().setHeader("otherTestHeader", "I reached the pid aggregator!");
-            newExchange.getIn().setHeader("rbeallTestHeader", "I reached the aggregator at some point");
-        }
-        else
-        {
-            oldExchange.getIn().setHeader("otherTestHeader", "I reached the pid aggregator!");
-            oldExchange.getIn().setHeader("rbeallTestHeader", "I reached the aggregator at some point");
-        }
-
-        if(oldExchange == null)
+        /*if(oldExchange == null)
         {
             if(newExchange.getIn().getHeader("imageSkipped", Boolean.class) != null && newExchange.getIn().getHeader("imageSkipped", Boolean.class) == true)
             {
@@ -76,7 +65,7 @@ public class PidAggregationStrategy implements AggregationStrategy
                     resourceCount -= 1;
                 }
 
-                newExchange.getIn().setHeader("ResourceCount", resourceCount);*/
+                newExchange.getIn().setHeader("ResourceCount", resourceCount);
                 //return newExchange;
             }
             else
@@ -105,9 +94,9 @@ public class PidAggregationStrategy implements AggregationStrategy
                 resourceCount -= 1;
             }
 
-            oldExchange.getIn().setHeader("ResourceCount", resourceCount);*/
+            oldExchange.getIn().setHeader("ResourceCount", resourceCount);
             //return oldExchange;
-        }
+        }*/
 
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
         if(oldExchange!=null)
@@ -127,6 +116,7 @@ public class PidAggregationStrategy implements AggregationStrategy
             newExchange.getIn().setHeader("PIDAggregation", pid);
             return newExchange;
         }//end if
+
 
         String aggregation = oldExchange.getIn().getHeader("PIDAggregation", String.class);
         oldExchange.getIn().setHeader("PIDAggregation", String.format("%s,%s", aggregation, pid));
