@@ -43,7 +43,7 @@ public class PidAggregationStrategy implements AggregationStrategy
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
-        log.info("Ragnarok");
+        log.info("Hello World");
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
         if(oldExchange!=null)
         {

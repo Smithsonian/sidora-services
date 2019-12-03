@@ -1042,8 +1042,11 @@
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
                 <xpath headerName="ManifestXML">
-                    //ImageFileName/text()
+                    //ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])]/Image/ImageFileName/text()
                 </xpath>
+                <!--<xpath headerName="ManifestXML">
+                    //ImageFileName/text()
+                </xpath>-->
                 <log message="${id}: Split Resource - ${body}"
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
@@ -1114,18 +1117,18 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <filter>
+            <!--<filter> -->
                 <!-- if empty image true then filter do any processing needed and stop this route and retrun to the split -->
-                <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+                <!--<xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
                     boolean(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])
-                </xpath>
-                <log message="Empty image ${header.imageid}... no further processing required..."/>
+                </xpath> -->
+                <!-- <log message="Empty image ${header.imageid}... no further processing required..."/> -->
                 <!-- header used in aggregator bean -->
-                <setHeader headerName="imageSkipped">
+                <!--<setHeader headerName="imageSkipped">
                     <simple resultType="java.lang.Boolean">true</simple>
                 </setHeader>
                 <stop/>
-            </filter>
+            </filter> -->
 
             <!-- Image Sequence ID used in MODS datastream. -->
             <setHeader headerName="ImageSequenceID">
