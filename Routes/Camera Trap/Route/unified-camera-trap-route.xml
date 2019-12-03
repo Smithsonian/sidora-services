@@ -1035,7 +1035,7 @@
 
             <setHeader headerName="rbeallTestHeader">
                 <simple resultType="java.lang.String">
-                    "Hello World!"
+                    0
                 </simple>
             </setHeader>
 
@@ -1114,18 +1114,18 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-            <filter>
-                <!-- if empty image true then filter do any processing needed and stop this route and retrun to the split -->
-                <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+            <!--<filter>
+                <!- if empty image true then filter do any processing needed and stop this route and retrun to the split -->
+                <!--<xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
                     boolean(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])
                 </xpath>
                 <log message="Empty image ${header.imageid}... no further processing required..."/>
-                <!-- header used in aggregator bean -->
-                <setHeader headerName="imageSkipped">
+                <!- header used in aggregator bean -->
+                <!--<setHeader headerName="imageSkipped">
                     <simple resultType="java.lang.Boolean">true</simple>
                 </setHeader>
                 <stop/>
-            </filter>
+            </filter>-->
 
             <!-- Image Sequence ID used in MODS datastream. -->
             <setHeader headerName="ImageSequenceID">
@@ -1162,6 +1162,19 @@
             <log message="${id}: Label - ${body}  ImageSequenceID - ${header.ImageSequenceID}  ImageSequenceCount - ${header.ImageSequenceCount}"
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
+
+            <filter>
+                <!-- if empty image true then filter do any processing needed and stop this route and retrun to the split -->
+                <xpath logNamespaces="false" resultType="java.util.Boolean" headerName="ManifestXML">
+                    boolean(//ImageSequence[Image[ImageId/text() = $in:imageid]]/ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])
+                </xpath>
+                <log message="Empty image ${header.imageid}... no further processing required..."/>
+                <!-- header used in aggregator bean -->
+                <setHeader headerName="imageSkipped">
+                    <simple resultType="java.lang.Boolean">true</simple>
+                </setHeader>
+                <stop/>
+            </filter>
 
             <to uri="reader:file" id="readImageResource"/>
 
