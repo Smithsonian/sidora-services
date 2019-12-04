@@ -54,7 +54,7 @@ public class CameraTrapRouteBuilder extends RouteBuilder {
         from("direct:validatePostResourceCount")
             .routeId("CameraTrapValidatePostResourceCount")
             .choice()
-                .when(header("ResourceCount").isEqualTo(header("RelsExtResourceCount")))
+                .when(header("AdjustedResourceCount").isEqualTo(header("RelsExtResourceCount")))
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: Post Resource Count validation passed")
                     .id("ValidatePostResourceCountWhenBlock")
                 .otherwise()

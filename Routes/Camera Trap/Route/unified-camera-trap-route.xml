@@ -408,15 +408,12 @@
             </setHeader>
             <setHeader headerName="ResourceCount">
                 <xpath resultType="java.lang.Integer">
-                    count(//ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])]/Image/ImageFileName)
-                </xpath>
-                <!--<xpath resultType="java.lang.Integer">
                     count(//ImageFileName)
-                </xpath>-->
+                </xpath>
             </setHeader>
-            <setHeader headerName="emptyImageCount">
+            <setHeader headerName="AdjustedResourceCount">
                 <xpath resultType="java.lang.Integer">
-                    count(//ImageSequence[ResearcherIdentifications[Identification[SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())]]]]/Image/ImageId)
+                    count(//ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])]/Image/ImageFileName)
                 </xpath>
             </setHeader>
             <to uri="bean:deploymentPkgValidator?method=validateResourceCount"/>
@@ -1372,6 +1369,10 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>${header.AdjustedResourceCount}++</simple>
+            </setHeader>
+
             <setHeader headerName="ResearcherObservationPID">
                 <simple>
                     ${header.CamelFedoraPid}
@@ -1443,6 +1444,10 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>${header.AdjustedResourceCount}++</simple>
+            </setHeader>
+
             <setHeader headerName="VolunteerObservationPID">
                 <simple>
                     ${header.CamelFedoraPid}
@@ -1507,6 +1512,10 @@
 
             <setHeader headerName="ResourceCount">
                 <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>${header.AdjustedResourceCount}++</simple>
             </setHeader>
 
             <setHeader headerName="ImageObservationPID">
