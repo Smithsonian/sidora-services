@@ -2567,7 +2567,7 @@
 
             <filter>
                 <simple>
-                    !${header.ImageResourcePID}
+                    ${header.ImageResourcePID} == null
                 </simple>
                 <log message="${id}: There is no ImageResourcePID - stopping route"
                      loggingLevel="INFO"
