@@ -408,8 +408,11 @@
             </setHeader>
             <setHeader headerName="ResourceCount">
                 <xpath resultType="java.lang.Integer">
-                    count(//ImageFileName)
+                    count(//ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])]/Image/ImageFileName)
                 </xpath>
+                <!--<xpath resultType="java.lang.Integer">
+                    count(//ImageFileName)
+                </xpath>-->
             </setHeader>
             <setHeader headerName="emptyImageCount">
                 <xpath resultType="java.lang.Integer">
@@ -479,12 +482,6 @@
             <setHeader headerName="ValidationErrors">
                 <simple>
                     ValidationErrors
-                </simple>
-            </setHeader>
-
-            <setHeader headerName="AdjustedResourceCount">
-                <simple>
-                    ${header.ResourceCount} - ${header.EmptyImageCount}
                 </simple>
             </setHeader>
 
@@ -2567,6 +2564,16 @@
         <!-- MODS Datastream Validation Route -->
         <route id="UnifiedCameraTrapValidate_MODS_Datastream">
             <from uri="direct:validate_MODS_Datastream"/>
+
+            <filter>
+                <simple>
+                    !${header.ImageResourcePID}
+                </simple>
+                <log message="${id}: There is no ImageResourcePID - stopping route"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
+                <stop/>
+            </filter>
 
             <log message="${id}: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
