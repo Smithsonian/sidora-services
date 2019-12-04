@@ -1270,6 +1270,9 @@
                         ${header.CamelFedoraPid}
                     </simple>
                 </setHeader>
+                <log message="${id}: Setting ImageResourcePID - PID: ${header.CamelFedoraPid} | CamelSplitIndex: ${property.CamelSplitIndex}"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
             </filter>
 
             <!-- The current route only handles JPG. -->
