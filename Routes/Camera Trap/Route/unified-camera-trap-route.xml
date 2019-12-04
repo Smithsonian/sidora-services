@@ -1130,6 +1130,14 @@
                     //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                 </xpath>
             </setHeader>
+
+            <!-- Used for MODS validation -->
+            <setHeader headerName="modsImageSequenceId">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
+                </xpath>
+            </setHeader>
+
             <setHeader headerName="ImageSequenceIndex">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageOrder/text()
@@ -2628,7 +2636,8 @@
             <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()
+                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|${header.modsImageSequenceId}
+                    <!--MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()-->
                     <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
                 </simple>
             </setBody>
