@@ -416,6 +416,11 @@
                     count(//ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains('No Animal', text()) or contains('Blank', text()) or contains('Camera Misfire', text()) or contains('False trigger', text()) or contains('Time Lapse', text())])]/Image/ImageFileName)
                 </xpath>
             </setHeader>
+
+            <log message="${id}: Adjusted Resource Count at Outset: ${header.AdjustedResourceCount} ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="bean:deploymentPkgValidator?method=validateResourceCount"/>
             <!--  Keeping the validator result in the header to allow the rest of the validation to go through and raise exception at the end of route. -->
             <setHeader headerName="ValidateResourceCountResult">
@@ -1381,6 +1386,10 @@
                 <simple>${header.AdjustedResourceCount}++</simple>
             </setHeader>
 
+            <log message="${id}: Adjusted Resource Count after adding Research Observation Resource: ${header.AdjustedResourceCount} ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+
             <setHeader headerName="ResearcherObservationPID">
                 <simple>
                     ${header.CamelFedoraPid}
@@ -1455,6 +1464,10 @@
             <setHeader headerName="AdjustedResourceCount">
                 <simple>${header.AdjustedResourceCount}++</simple>
             </setHeader>
+
+            <log message="${id}: Adjusted Resource Count after adding Volunteer Observation Resource: ${header.AdjustedResourceCount} ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="VolunteerObservationPID">
                 <simple>
@@ -2424,7 +2437,7 @@
             <choice>
                 <when>
                     <simple>
-                        ${header.ImageResourcePID} == null
+                        ${header.ImageResourcePID}
                     </simple>
                     <to uri="direct:validate_MODS_Datastream"/>
                 </when>
@@ -2763,13 +2776,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.rbeallTestHeader}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, AdjustedResourceCount=${header.AdjustedResourceCount}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, rbeallTestHeader=${header.rbeallTestHeader}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
