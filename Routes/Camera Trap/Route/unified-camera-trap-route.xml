@@ -1522,10 +1522,6 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
-            <setHeader headerName="AdjustedResourceCount">
-                <simple>${header.AdjustedResourceCount}++</simple>
-            </setHeader>
-
             <setHeader headerName="ImageObservationPID">
                 <simple>
                     ${header.CamelFedoraPid}
@@ -2636,7 +2632,7 @@
             <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|${header.modsImageSequenceId}
+                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequenceId[text()="${header.modsImageSequenceId}"]/text()
                     <!--MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()-->
                     <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
                 </simple>
