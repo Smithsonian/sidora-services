@@ -2421,8 +2421,19 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
-
-            <to uri="direct:validate_MODS_Datastream"/>
+            <choice>
+                <when>
+                    <simple>
+                        ${header.ImageResourcePID} == null
+                    </simple>
+                    <to uri="direct:validate_MODS_Datastream"/>
+                </when>
+                <otherwise>
+                    <log message="${id}: No Image Resource PID, skipping MODS Validation"
+                         loggingLevel="INFO"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
 
             <log message="${id}: Validated MODS DATASTREAM"
                  loggingLevel="INFO"
@@ -2577,16 +2588,6 @@
         <!-- MODS Datastream Validation Route -->
         <route id="UnifiedCameraTrapValidate_MODS_Datastream">
             <from uri="direct:validate_MODS_Datastream"/>
-
-            <filter>
-                <simple>
-                    ${header.ImageResourcePID} == null
-                </simple>
-                <log message="${id}: There is no ImageResourcePID - stopping route"
-                     loggingLevel="INFO"
-                     logName="{{si.ct.id}}"/>
-                <stop/>
-            </filter>
 
             <log message="${id}: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
