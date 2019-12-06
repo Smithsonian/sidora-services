@@ -1535,6 +1535,10 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>${header.AdjustedResourceCount}++</simple>
+            </setHeader>
+
             <setHeader headerName="ImageObservationPID">
                 <simple>
                     ${header.CamelFedoraPid}

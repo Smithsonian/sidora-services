@@ -53,6 +53,7 @@ public class CameraTrapRouteBuilder extends RouteBuilder {
         //CameraTrapValidatePostResourceCount route for RELS-EXT resource reference count validation
         from("direct:validatePostResourceCount")
             .routeId("CameraTrapValidatePostResourceCount")
+            .log(LoggingLevel.INFO, CT_LOG_NAME, "${id} Adjusted Resource Count: ${header.AdjustedResourceCount} | RELS-EXT Count: ${header.RelsExtResourceCount}")
             .choice()
                 .when(header("AdjustedResourceCount").isEqualTo(header("RelsExtResourceCount")))
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: Post Resource Count validation passed")
