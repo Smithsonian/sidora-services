@@ -76,7 +76,6 @@ def doGet(pid, ds, content):
         log.debug(fuseki_data)
         return fuseki_data["results"]["bindings"]
     else:
-        log.info("Response Contents: " + str(req.content))
         response = fromstring(req.content)
         log.debug("pid: %s, response:\n%s", pid, tostring(response, pretty_print=True).decode())
         return response
