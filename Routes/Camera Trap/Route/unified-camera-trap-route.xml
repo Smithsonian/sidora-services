@@ -512,6 +512,11 @@
                     count(/rdf:RDF/rdf:Description/fedora:hasResource)
                 </xpath>
             </setHeader>
+            <setHeader headerName="ResourceCount">
+                <simple>
+                    ${header.AdjustedResourceCount}
+                </simple>
+            </setHeader>
             <to uri="direct:validatePostResourceCount"/>
 
             <setHeader headerName="CamelFedoraPid">
