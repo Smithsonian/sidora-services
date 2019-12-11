@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import time
+import rdflib
 from concurrent.futures import ALL_COMPLETED
 from string import Template
 
@@ -200,6 +201,11 @@ def updateDeployment(pid):
 
         if hasRELS_EXT:
             deploymentRelsExt = doGet(pid, "RELS-EXT", True)
+            graph = rdflib.Graph()
+            graph.parse(data=rdf_triple_data, format='xml')
+            new_data = graph.serialize(format='nt')
+            log.info("RDF Parsing: " + new_data)
+            #print(new_data)
 
             resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
             resourceList = [p.split("info:fedora/")[1] for p in resourceList]
