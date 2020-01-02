@@ -668,7 +668,16 @@
                     DC, OBJ, TN, RELS-EXT, FITS, MODS
                 </simple>
             </setHeader>
-            <to uri="direct:validateObjectDatastreams"/>
+            <log message="${id}: SALAMI: Image Resource PID is ${headers.ImageResourcePID}"
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
+            <choice>
+                <when>
+                    <simple>${headers.ImageResourcePID}</simple>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
+            <!--<to uri="direct:validateObjectDatastreams"/>-->
 
             <!-- Validate Researcher Observation Object datastreams -->
             <setHeader headerName="ValidationDatastreamObjectType">
