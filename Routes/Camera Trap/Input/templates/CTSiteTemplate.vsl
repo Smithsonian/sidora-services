@@ -16,7 +16,7 @@
         <fedora-model:hasModel rdf:resource="info:fedora/si:conceptCModel"/>
         <default:orginal_metadata xmlns="http://islandora.org/ontologies/metadata#">TRUE</default:orginal_metadata>
         #foreach($child in $headers.PIDAggregation.split(","))
-        #if( "$!child" == "" )
+        #if( "$!child" != "" )
         <fedora:hasResource rdf:resource="info:fedora/$child"/>
         #end
         #end
