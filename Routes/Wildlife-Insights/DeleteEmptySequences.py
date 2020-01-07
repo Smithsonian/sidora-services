@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import rdflib
+from rdflib.namespace  import RDF
 from concurrent.futures import ALL_COMPLETED
 from string import Template
 
@@ -72,12 +73,19 @@ def doGet(pid, ds, content):
     log.debug("content_type: %s, content-disposition: %s", content_type, content_disposition)
 
     if 'application/json' in content_type.lower():
+        if ds == "CSV":
+            log.info("CSV Found - is JSON")
         # extracting data in json format
         fuseki_data = req.json()
         log.debug(fuseki_data)
         return fuseki_data["results"]["bindings"]
     else:
+        if ds == "CSV":
+            if req.content is not None:
+                return str(req.content)
         response = fromstring(req.content)
+        if ds == "CSV":
+            log.info("CSV Found")
         log.debug("pid: %s, response:\n%s", pid, tostring(response, pretty_print=True).decode())
         return response
 
@@ -148,11 +156,26 @@ def removeOBJ(resourcePid):
     log.info("Finished removeOBJ for resource %s", resourcePid)
 
 
-def doUpdate(deploymentPid, resourcePid, manifest):
+def doUpdate(deploymentPid, resourcePid, manifest, resourceList):
+    #log.info("doUpdate for " + deploymentPid)
     filename = None
     label = None
 
-    log.debug("Starting update for deployment %s, resource: %s, datastreams %s", deploymentPid, resourcePid, args.datastreams)
+    #log.info("Starting update for deployment %s, resource: %s, datastreams %s", deploymentPid, resourcePid, args.datastreams)
+    #log.info("Length of resourceList " + str( len( resourceList ) ) )
+    csv_pid = ""
+
+    for i in resourceList:
+        obj = doGet(i, "DC", True)
+        if "Researcher Observations" in str(tostring(obj)):
+            csv_pid = i
+            break
+    #log.info("csv_pid: " + csv_pid)
+    csvvals = doGet(csv_pid, "CSV", "True")
+    csvrows = csvvals.split(r"\n")
+    csvfields = []
+    for row in csvrows:
+        csvfields.append(row.split(","))
 
     try:
         # TODO: check manifest
@@ -165,12 +188,19 @@ def doUpdate(deploymentPid, resourcePid, manifest):
 
         if label not in (None, '') and filename not in (None, ''):
             imageId = os.path.splitext(label)[0]
+            isEmpty = False
+
+            for row in csvfields:
+                if len(row) > 1:
+                    #log.info(str(row))
+                    sequenceId = row[2].strip()
+                    if sequenceId in imageId:
+                        log.debug("Sequence species scientific name: " + row[5])
+                        seqName = row[5].replace("\"", "")
+                        if seqName == "No Animal" or seqName == "Blank" or seqName == "Camera Misfire" or seqName == "False trigger" or seqName == "Time Lapse":
+                            log.debug(imageId + " is part of empty sequence " + row[2] + " - scientific name is " + row[5])
+                            isEmpty = True
             log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
-            filterList = "No Animal, Blank, Camera Misfire, False trigger, Time Lapse"
-            xpath = str("boolean(.//ImageSequence[Image[ImageId/text() = '" + imageId + "']]/\
-                ResearcherIdentifications/Identification/SpeciesScientificName[contains('" + filterList + "', text())])")
-            isEmpty = manifest.xpath(xpath)
-            log.debug("resource: %s, label: %s, isEmpty: %s", resourcePid, label, isEmpty)
 
             if isEmpty:
                 if not dryrun:
@@ -187,8 +217,6 @@ def doUpdate(deploymentPid, resourcePid, manifest):
 
 
 def updateDeployment(pid):
-    log.info("Processing deployment: %s, updating datastreams %s", pid, args.datastreams)
-
     deploymentDatastreams = doGet(pid, None, False)
 
     log.debug("deployment objectDatastreams:\n%s", tostring(deploymentDatastreams, pretty_print=True).decode())
@@ -200,18 +228,26 @@ def updateDeployment(pid):
         manifest = doGet(pid, "MANIFEST", True)
 
         if hasRELS_EXT:
+
+            isParseable = False
+            hasResources = False
+
             deploymentRelsExt = doGet(pid, "RELS-EXT", True)
             graph = rdflib.Graph()
-            graph.parse(data=rdf_triple_data, format='xml')
-            new_data = graph.serialize(format='nt')
-            log.info("RDF Parsing: " + new_data)
-            #print(new_data)
-
-            resourceList = deploymentRelsExt.xpath(".//fedora:hasResource/@rdf:resource", namespaces=ns)
+            graph.parse(data=tostring(deploymentRelsExt), format='xml')
+            if graph:
+                isParseable = True
+            resourceList = []
+            for s, p, o in graph.triples((None, None, None)):
+                if "hasResource" in p:
+                    resourceList.append(str(o))
             resourceList = [p.split("info:fedora/")[1] for p in resourceList]
 
+            if len(resourceList) > 0:
+                hasResources = True
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-                futures = [executor.submit(doUpdate, pid, resourcePid, manifest) for resourcePid in resourceList]
+                futures = [executor.submit(doUpdate, pid, resourcePid, manifest, resourceList) for resourcePid in resourceList]
                 concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
 
             vslPids = list()
@@ -235,20 +271,17 @@ def updateDeployment(pid):
                             log.debug("data[1] is: %s, adding to emptyList", str(data[1]))
                             keepList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
                             vslPids.append([data[0]])
-            if not dryrun:
-                velocityString = ''
+            gf = graph
+            for epid in keepList:
+                bc = epid[0]
+                bcpids = bc.split("_")
+                pd = bcpids[len(bcpids) - 1]
+                for t in gf.triples((None, None, None)):
+                    if pd in str(t):
+                        gf.remove(t)
 
-                for val in vslPids:
-                    part1 = '<fedora:hasResource rdf:resource="info:fedora/'
-                    str_pid = str(val).replace("['", "").replace("']", "")
-                    part2 = '"/>'
-                    velocityString += (part1 + str_pid + part2)
-                try:
-                    deploymentPID = str(pid).replace("['", "").replace("']", "")
-                    RELS_EXT_DS = Template(relsExtTemplate).substitute(SitePid=deploymentPID, resourcePidObjects=velocityString, parentDeploymentPid=deploymentPID)
-                    updateRELS_EXT(RELS_EXT_DS, pid)
-                except Exception as e:
-                    log.error('Error Updating RELS-EXT: ' + str(e))
+            if not dryrun and gf is not None and hasResources and isParseable:
+                updateRELS_EXT(gf.serialize(format='nt'), pid)
 
             log.info("Finished Updating Resources for Deployment %s", pid)
             return [keepList, emptyList]
@@ -322,7 +355,7 @@ def createDeploymentPidFile():
     finish = time.time()
     log.debug("time by parallelizing %s:", (finish-start))
 
-    # log.info("deploymentList: %s", deploymentList)
+    log.debug("deploymentList: %s", deploymentList)
 
     ctPIDCount = len(deploymentList)
     log.info("deployments found: %s", str(ctPIDCount))
@@ -341,17 +374,16 @@ def findDeployments(pid, ds):
     log.debug("pid: %s, isDeployment: %s", pid, isDeployment)
     hasRelsExt = objectDatastreams.xpath("boolean(.//*[@dsid='RELS-EXT'])", namespaces=ns)
 
-    ## We can also look for deployment models: ['info:fedora/si:cameraTrapCModel', 'info:fedora/si:conceptCModel']
-    # if hasRelsExt:
-    #     deploymentRelsExt = doGet(pid, ds, True, None)
-    #     deploymentModels = deploymentRelsExt.xpath(".//fs:hasModel/@rdf:resource", namespaces=ns)
-    #     log.debug("deployment models: %s, pid: %s", deploymentModels, pid)
-    #     hasDeploymentModels = "info:fedora/si:cameraTrapCModel" in deploymentModels and "info:fedora/si:conceptCModel" in deploymentModels
-    #     log.info("hasDeploymentModels %s, pid: %s", hasDeploymentModels, pid)
-
     if not isDeployment and hasRelsExt:
         relsExtDs = doGet(pid, ds, True)
-        resourceList = relsExtDs.xpath(".//fedora:hasConcept/@rdf:resource", namespaces=ns)
+        #resourceList = relsExtDs.xpath(".//fedora:hasConcept/@rdf:resource", namespaces=ns)
+        graph = rdflib.Graph()
+        graph.parse(data=tostring(relsExtDs), format='xml')
+        resourceList = []
+        for s, p, o in graph.triples((None, None, None)):
+            if "hasConcept" in p:
+                resourceList.append(str(o))
+        log.debug("Length of resource list: " + str(len(resourceList)))
 
         resourceList = [p.split("info:fedora/")[1] for p in resourceList]
 
@@ -408,22 +440,22 @@ def main():
     if deploymentList is not None:
         log.info("Start processing")
 
-        if args.deleteAll:
-            delete = True
-        else:
-            delete = yes_or_no("Removing any existing files from '" + output_dir + "' y directory!!!")
+        #if args.deleteAll:
+        #   delete = True
+        #else:
+        #    delete = yes_or_no("Removing any existing files from '" + output_dir + "' y directory!!!")
         #delete = True
 
-        if delete:
-            for f in os.listdir(output_dir):
-                log.warning("deleting dry-run file = %s/%s", output_dir, f)
-                if os.path.isfile(output_dir + "/" + f):
-                    os.remove(output_dir + "/" + f)
-                elif os.path.isdir(output_dir + "/" + f):
-                    shutil.rmtree(output_dir + "/" + f)
-        else:
-            log.warning("Existing will be overwritten!!!!!")
-            time.sleep(15)
+        #if delete:
+            #for f in os.listdir(output_dir):
+                #log.warning("deleting dry-run file = %s/%s", output_dir, f)
+                #if os.path.isfile(output_dir + "/" + f):
+                #   os.remove(output_dir + "/" + f)
+                #elif os.path.isdir(output_dir + "/" + f):
+                #    shutil.rmtree(output_dir + "/" + f)
+        #else:
+        #    log.warning("Existing will be overwritten!!!!!")
+        #    time.sleep(15)
 
         start = time.time()  # let's see how long this takes
         removeList = list()
@@ -607,11 +639,5 @@ if __name__ == "__main__":
             # sys.exit()
         else:
             sys.exit("ERROR: Must provide an infile containing list of PIDS to update OR outfile name for deployment pids to be saved to!!!")
-    #problemList = dict()
-    #main()
-
-    if args.datastreams:
-        problemList = dict()
-        main()
-    else:
-        sys.exit("No further processing. Datastreams not provided!!!")
+    problemList = dict()
+    main()
