@@ -668,9 +668,6 @@
                     DC, OBJ, TN, RELS-EXT, FITS, MODS
                 </simple>
             </setHeader>
-            <log message="${id}: SALAMI: Image Resource PID is ${headers.ImageResourcePID}"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
             <choice>
                 <when>
                     <simple>${headers.ImageResourcePID}</simple>
