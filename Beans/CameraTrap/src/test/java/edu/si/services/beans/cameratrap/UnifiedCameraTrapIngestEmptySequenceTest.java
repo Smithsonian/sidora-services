@@ -143,7 +143,7 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
         String routeURI = "direct:addImageResource";
 
         //The expected header values
-        String skippedImageCountHeaderExpected = "true";
+        int skippedImageCountHeaderExpected = 0;
 
         //Configure and use adviceWith to mock for testing purpose
         context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
@@ -159,13 +159,13 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
-        mockEndpoint.expectedHeaderReceived("imageSkipped", "true");
+        mockEndpoint.expectedHeaderReceived("adjustedResourceCount", "true");
 
 
 
         template.sendBodyAndHeaders(routeURI, "2970s1i1.JPG", headers);
 
-        String skippedImageCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("imageSkipped", String.class);
+        int skippedImageCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("adjustedResourceCount", Integer.class);
 
         //Assertions
         assertEquals("imageid header assertEquals failed!", skippedImageCountHeaderExpected, skippedImageCountHeaderResult);

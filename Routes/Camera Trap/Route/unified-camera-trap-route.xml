@@ -513,11 +513,6 @@
                     count(/rdf:RDF/rdf:Description/fedora:hasResource)
                 </xpath>
             </setHeader>
-            <!--<setHeader headerName="ResourceCount">
-                <simple>
-                    ${header.AdjustedResourceCount}
-                </simple>
-            </setHeader>-->
             <to uri="direct:validatePostResourceCount"/>
 
             <setHeader headerName="CamelFedoraPid">
@@ -675,7 +670,6 @@
                     <to uri="direct:validateObjectDatastreams"/>
                 </when>
             </choice>
-            <!--<to uri="direct:validateObjectDatastreams"/>-->
 
             <!-- Validate Researcher Observation Object datastreams -->
             <setHeader headerName="ValidationDatastreamObjectType">
@@ -1099,10 +1093,6 @@
 
         <route id="UnifiedCameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
-
-            <setHeader headerName="imageSkipped">
-                <simple resultType="java.lang.Boolean">false</simple>
-            </setHeader>
 
             <!-- Spelled this way for the MODS XSLT parameter. -->
             <setHeader headerName="imageid">
