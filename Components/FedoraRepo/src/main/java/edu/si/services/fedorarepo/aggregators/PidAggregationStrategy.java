@@ -29,8 +29,6 @@ package edu.si.services.fedorarepo.aggregators;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -38,28 +36,18 @@ import org.slf4j.LoggerFactory;
  */
 public class PidAggregationStrategy implements AggregationStrategy
 {
-    private static final Logger log = LoggerFactory.getLogger(PidAggregationStrategy.class);
 
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
-        log.info("Started PidAggregationStrategy");
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
-
-        if(pid != null)
-        {
-            log.info("PID: " + pid);
-        }
-
         if(oldExchange!=null)
         {
             String PIDAgg = oldExchange.getIn().getHeader("PIDAggregation", String.class);
-            log.info("oldExchange not null - PIDAgg: " + PIDAgg);
         }
 
         if (pid == null)
         {
-            log.info("PID is null");
             //Throw exception or ignore???
             //For now ignore!
             return oldExchange;
@@ -67,16 +55,13 @@ public class PidAggregationStrategy implements AggregationStrategy
 
         if (oldExchange == null || (oldExchange.getIn().getHeader("PIDAggregation") == null))
         {
-            log.info("oldExchange is null or PIDAggregation is null");
             newExchange.getIn().setHeader("PIDAggregation", pid);
             return newExchange;
         }//end if
 
-        log.info("Made it to setting PID Aggreation from oldExchange");
         String aggregation = oldExchange.getIn().getHeader("PIDAggregation", String.class);
         oldExchange.getIn().setHeader("PIDAggregation", String.format("%s,%s", aggregation, pid));
 
-        log.info("returning oldExchange");
         return oldExchange;
     }
 
