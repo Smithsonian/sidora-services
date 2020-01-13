@@ -29,8 +29,6 @@ package edu.si.services.fedorarepo.aggregators;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -38,16 +36,12 @@ import org.slf4j.LoggerFactory;
  */
 public class PidAggregationStrategy implements AggregationStrategy
 {
-    private static final Logger log = LoggerFactory.getLogger(PidAggregationStrategy.class);
 
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
+
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
-        if(oldExchange!=null)
-        {
-            String PIDAgg = oldExchange.getIn().getHeader("PIDAggregation", String.class);
-        }
 
         if (pid == null)
         {
@@ -56,7 +50,7 @@ public class PidAggregationStrategy implements AggregationStrategy
             return oldExchange;
         }//end if
 
-        if (oldExchange == null || (oldExchange.getIn().getHeader("PIDAggregation") == null))
+        if ((oldExchange == null) || (oldExchange.getIn().getHeader("PIDAggregation") == null))
         {
             newExchange.getIn().setHeader("PIDAggregation", pid);
             return newExchange;
