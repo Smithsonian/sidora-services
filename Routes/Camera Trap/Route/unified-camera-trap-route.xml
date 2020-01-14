@@ -414,7 +414,7 @@
             <!-- AdjustedResourceCount is the number of resources that don't correspond to an empty sequence -->
             <setHeader headerName="AdjustedResourceCount">
                 <xpath resultType="java.lang.Integer">
-                    count(//ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())])]/Image/ImageFileName)
+                    count(//ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.emptySequence.filter'), text())])]/Image/ImageFileName)
                 </xpath>
             </setHeader>
 
@@ -1042,7 +1042,7 @@
             <split strategyRef="pidAggregator">
                 <!-- Filter out resources that match an empty sequence from split -->
                 <xpath headerName="ManifestXML">
-                    //ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.speciesScientificNameFaceBlur.filter'), text())])]/Image/ImageFileName/text()
+                    //ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.emptySequence.filter'), text())])]/Image/ImageFileName/text()
                 </xpath>
                 <log message="${id}: Split Resource - ${body}"
                      loggingLevel="INFO"
