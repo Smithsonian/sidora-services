@@ -37,5 +37,3 @@ bin/
 # .idea/dynamic.xml
 # .idea/uiDesigner.xml'.idea' 
 .idea
-/venv/*
-/Routes/Wildlife-Insights/output/*

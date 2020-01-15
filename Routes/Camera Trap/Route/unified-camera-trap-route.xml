@@ -418,10 +418,6 @@
                 </xpath>
             </setHeader>
 
-            <log message="${id}: Adjusted Resource Count at Outset: ${header.AdjustedResourceCount} ..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
             <to uri="bean:deploymentPkgValidator?method=validateResourceCount"/>
             <!--  Keeping the validator result in the header to allow the rest of the validation to go through and raise exception at the end of route. -->
             <setHeader headerName="ValidateResourceCountResult">
@@ -1054,7 +1050,7 @@
                 </setBody>
                 <to uri="direct:addImageResource"/>
                 <log message="${id}: Created Image Resource - ${body}."
-                     loggingLevel="INFO"
+                     loggingLevel="DEBUG"
                      logName="{{si.ct.id}}"/>
                 <log message="${id}: CamelSplitSize - ${property.CamelSplitSize} CamelSplitIndex - ${property.CamelSplitIndex}"
                      loggingLevel="INFO"
@@ -1093,6 +1089,9 @@
 
         <route id="UnifiedCameraTrapAddImageResource" trace="true">
             <from uri="direct:addImageResource"/>
+            <log message="${id}: Started Image processing ..."
+                 loggingLevel="INFO"
+                 logName="{{si.ct.id}}"/>
 
             <!-- Spelled this way for the MODS XSLT parameter. -->
             <setHeader headerName="imageid">
@@ -1100,10 +1099,6 @@
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
                 </xpath>
             </setHeader>
-
-            <log message="${id}: Started Image processing ..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
 
             <!-- Image Sequence ID used in MODS datastream. -->
             <setHeader headerName="ImageSequenceID">
@@ -1152,7 +1147,7 @@
             <to uri="reader:file" id="readImageResource"/>
 
             <log message="Image read"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
@@ -1297,7 +1292,7 @@
 
             <log message="${id}: Finished Image processing."
                  loggingLevel="INFO"
-                     logName="{{si.ct.id}}"/>
+                 logName="{{si.ct.id}}"/>
         </route>
 
         <route id="UnifiedCameraTrapAddResearcherObservationResource">
@@ -1361,10 +1356,6 @@
             <setHeader headerName="AdjustedResourceCount">
                 <simple>${header.AdjustedResourceCount}++</simple>
             </setHeader>
-
-            <log message="${id}: Adjusted Resource Count after adding Research Observation Resource: ${header.AdjustedResourceCount} ..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="ResearcherObservationPID">
                 <simple>
@@ -1440,10 +1431,6 @@
             <setHeader headerName="AdjustedResourceCount">
                 <simple>${header.AdjustedResourceCount}++</simple>
             </setHeader>
-
-            <log message="${id}: Adjusted Resource Count after adding Volunteer Observation Resource: ${header.AdjustedResourceCount} ..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
 
             <setHeader headerName="VolunteerObservationPID">
                 <simple>
@@ -2404,15 +2391,7 @@
 
             <to uri="direct:validate_EAC-CPF_Datastream"/>
 
-            <log message="${id}: Validated EAC-CPF DATASTREAM"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
-
             <to uri="direct:validate_FGDC_Datastream"/>
-
-            <log message="${id}: Validated FGDC DATASTREAM"
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
 
             <choice>
                 <when>
@@ -2423,13 +2402,13 @@
                 </when>
                 <otherwise>
                     <log message="${id}: No Image Resource PID, skipping MODS Validation"
-                         loggingLevel="INFO"
+                         loggingLevel="DEBUG"
                          logName="{{si.ct.id}}"/>
                 </otherwise>
             </choice>
 
             <log message="${id}: Validated MODS DATASTREAM"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <!-- Start Researcher CSV Validation -->
@@ -2585,9 +2564,6 @@
             <log message="${id}: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-            <log message="${id}: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
-                 loggingLevel="INFO"
-                 logName="{{si.ct.id}}"/>
             <!-- Start MODS Validation -->
             <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
             <setHeader headerName="CamelFedoraPid">
@@ -2597,19 +2573,19 @@
             </setHeader>
 
             <log message="${id}: Set header for CamelFedoraPid ${header.ImageResourcePID}"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
             <!-- Get the MODS datastream -->
             <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
 
             <log message="${id}: MODS datastream retrieved"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <convertBodyTo type="java.lang.String"/>
 
             <log message="${id}: MODS datastream converted to a java string"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <!-- Store the current datastream  to be used in the validation bean -->
@@ -2620,7 +2596,7 @@
             </setHeader>
 
             <log message="${id}: Storing the current datastream to be used in the validation bean"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <!-- the piped separated list of xpath's and field names to be validated -->
@@ -2633,7 +2609,7 @@
             </setBody>
 
             <log message="${id}: Body set"
-                 loggingLevel="INFO"
+                 loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
 
             <to uri="direct:ValidateDatastreamFieldList"/>
@@ -2756,13 +2732,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, AdjustedResourceCount=${header.AdjustedResourceCount}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, skippedImageCount=${header.skippedImageCount}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
