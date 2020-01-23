@@ -165,12 +165,13 @@ def doUpdate(deploymentPid, resourcePid, manifest, resourceList):
     #log.info("Length of resourceList " + str( len( resourceList ) ) )
     csv_pid = ""
 
+    #get the pid for the researcher observation csv pid
     for i in resourceList:
         obj = doGet(i, "DC", True)
         if "Researcher Observations" in str(tostring(obj)):
             csv_pid = i
             break
-    #log.info("csv_pid: " + csv_pid)
+    #get csv datastream and process
     csvvals = doGet(csv_pid, "CSV", "True")
     csvrows = csvvals.split(r"\n")
     csvfields = []
@@ -192,7 +193,7 @@ def doUpdate(deploymentPid, resourcePid, manifest, resourceList):
 
             for row in csvfields:
                 if len(row) > 1:
-                    #log.info(str(row))
+                    # pull out the sequence id and check against empty sequence list
                     sequenceId = row[2].strip()
                     if sequenceId in imageId:
                         log.debug("Sequence species scientific name: " + row[5])
@@ -238,11 +239,12 @@ def updateDeployment(pid):
             if graph:
                 isParseable = True
             resourceList = []
+            # Get all resource nodes and compile them into a list
             for s, p, o in graph.triples((None, None, None)):
                 if "hasResource" in p:
                     resourceList.append(str(o))
             resourceList = [p.split("info:fedora/")[1] for p in resourceList]
-
+            #if length of resourceList is greater than true, this check passes
             if len(resourceList) > 0:
                 hasResources = True
 
@@ -254,6 +256,8 @@ def updateDeployment(pid):
             keepList = list()
             emptyList = list()
 
+            #compile a list of pids to keep and pids to remove, making sure to compile a breadcrumb object
+            #breadcrumb object contains pid of resource along with all of its parents
             for future in concurrent.futures.as_completed(futures):
                 try:
                     data = future.result()
@@ -272,14 +276,16 @@ def updateDeployment(pid):
                             keepList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
                             vslPids.append([data[0]])
             gf = graph
-            for epid in keepList:
+            #for each breadcrumb collection of pids, check if it matches the object
+            #if it does, remove from rels-ext
+            for epid in emptyList:
                 bc = epid[0]
                 bcpids = bc.split("_")
                 pd = bcpids[len(bcpids) - 1]
                 for t in gf.triples((None, None, None)):
                     if pd in str(t):
                         gf.remove(t)
-
+            #if not dryrun and the edited graph is not null and there are empty sequences found, update rels-ext
             if not dryrun and gf is not None and hasResources and isParseable:
                 updateRELS_EXT(gf.serialize(format='nt'), pid)
 
