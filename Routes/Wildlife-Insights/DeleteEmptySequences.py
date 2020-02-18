@@ -152,13 +152,16 @@ def getOBJ(pid):
     return fileName, objLabel, objMIME
 
 
-def removeOBJ(resourcePid):
-    log.info("%s is an empty sequence image resource. Saving to file")
+def removeOBJ(resourcePid, deploymentPid):
+    #removeOBJ returns true on success and false on failure
+    deploymentLogs[deploymentPid].append(resourcePid + " is an empty sequence image resource. Saving to file")
     #TODO: Verify purge object or pure obj datastream
     resultDelete = doDelete(resourcePid, {'versionable': 'true'})
     if resultDelete not in (None, ""):
-        log.info("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultDelete, pretty_print=True).decode())
-    log.info("Finished removeOBJ for resource %s", resourcePid)
+        deploymentLogs[deploymentPid].append("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultDelete, pretty_print=True).decode())
+        return True
+    deploymentLogs[deploymentPid].append("Finished removeOBJ for resource %s", resourcePid)
+    return False
 
 
 def doUpdate(deploymentPid, resourcePid, csvfields):
@@ -183,7 +186,6 @@ def doUpdate(deploymentPid, resourcePid, csvfields):
                     # pull out the sequence id and check against empty sequence list
                     sequenceId = row[2].strip()
                     if sequenceId in imageId:
-                        #log.info("Sequence species scientific name: " + row[5])
                         deploymentLogs[deploymentPid].append("Sequence species scientific name: " + row[5])
                         seqName = row[5].replace("\"", "")
                         if seqName == "No Animal" or seqName == "Blank" or seqName == "Camera Misfire" or seqName == "False trigger" or seqName == "Time Lapse":
@@ -196,8 +198,9 @@ def doUpdate(deploymentPid, resourcePid, csvfields):
                 log.info("Empty pid found for resource: " + resourcePid);
                 deploymentLogs[deploymentPid].append("Empty pid found for resource: " + resourcePid)
                 if not dryrun:
-                    response = removeOBJ(resourcePid)
-                    isEmpty = response[0]
+                    response = removeOBJ(resourcePid, deploymentPid)
+                    #isEmpty response is reset to True or False based on success or failure of removeOBJ
+                    isEmpty = response
             else:
                 log.debug("Resource %s is not empty. Adding to list for updated RELS-EXT", resourcePid)
                 deploymentLogs[deploymentPid].append("Resource " + resourcePid +" is not empty. Adding to list for updated RELS-EXT")
@@ -530,14 +533,17 @@ def main():
 
         w = csv.writer(open(output_dir + "/" + emptiesFileName, "w"))
         w.writerow(["dryrun: " + str(dryrun)])
+        #Output list of image resources to be purged
         w.writerow(["Objects Purged: "])
         w.writerow(["count: " + str(len(removeList))])
         for removeSet in removeList:
             w.writerow([removeSet[0], removeSet[1]])
+        #Output list of image resources preserved from purge
         w.writerow(["Objects Preserved: "])
         w.writerow(["count: " + str(len(keepList))])
         for keepSet in keepList:
             w.writerow([keepSet[0], keepSet[1]])
+        #Output list of deployments with empty sequences
         w.writerow(["Deployments with Empty Sequences: "])
         w.writerow(["count: " + str(len(emptyDeployments))])
         for deployment in emptyDeployments:
