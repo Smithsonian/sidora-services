@@ -33,6 +33,7 @@ ns = {"fsmgmt": "http://www.fedora.info/definitions/1/0/management/",
 global FEDORA_URL
 global FUSEKI_URL
 global FITS_URL
+global deploymentLogs
 
 def getDeploymentsFromFuseki():
     # fuseki query param
@@ -103,6 +104,7 @@ def doPut(pid, data, ds, params):
 
 def doDelete(pid, params):
     try:
+        passed = True;
         FEDORA_PARAMS = params
 
         URL = FEDORA_URL + "/objects/" + pid
@@ -111,12 +113,15 @@ def doDelete(pid, params):
 
         log.info("pid: %s, url: %s", pid, req.url + "<--------------------")
         response = fromstring(req.content)
+        if req.status_code != 200:
+            passed = False
 
         log.debug("delete at url: %s, response: %s", req.url, tostring(response, pretty_print=True).decode())
 
-        return response
+        return [passed, response]
     except Exception as exc:
         log.error("Error in delete api call: " + str(exc))
+        return [False, str(exc)]
 
 
 def getOBJ(pid):
@@ -156,27 +161,10 @@ def removeOBJ(resourcePid):
     log.info("Finished removeOBJ for resource %s", resourcePid)
 
 
-def doUpdate(deploymentPid, resourcePid, manifest, resourceList):
+def doUpdate(deploymentPid, resourcePid, csvfields):
     #log.info("doUpdate for " + deploymentPid)
     filename = None
     label = None
-
-    #log.info("Starting update for deployment %s, resource: %s, datastreams %s", deploymentPid, resourcePid, args.datastreams)
-    #log.info("Length of resourceList " + str( len( resourceList ) ) )
-    csv_pid = ""
-
-    #get the pid for the researcher observation csv pid
-    for i in resourceList:
-        obj = doGet(i, "DC", True)
-        if "Researcher Observations" in str(tostring(obj)):
-            csv_pid = i
-            break
-    #get csv datastream and process
-    csvvals = doGet(csv_pid, "CSV", "True")
-    csvrows = csvvals.split(r"\n")
-    csvfields = []
-    for row in csvrows:
-        csvfields.append(row.split(","))
 
     try:
         # TODO: check manifest
@@ -184,8 +172,7 @@ def doUpdate(deploymentPid, resourcePid, manifest, resourceList):
             filename, label, mime = getOBJ(resourcePid)
 
         log.debug("OBJ pid: %s", resourcePid)
-
-        log.debug("Label: %s filename: %s", label, filename)
+        deploymentLogs[deploymentPid].append("OBJ pid: " + resourcePid)
 
         if label not in (None, '') and filename not in (None, ''):
             imageId = os.path.splitext(label)[0]
@@ -196,38 +183,48 @@ def doUpdate(deploymentPid, resourcePid, manifest, resourceList):
                     # pull out the sequence id and check against empty sequence list
                     sequenceId = row[2].strip()
                     if sequenceId in imageId:
-                        log.debug("Sequence species scientific name: " + row[5])
+                        #log.info("Sequence species scientific name: " + row[5])
+                        deploymentLogs[deploymentPid].append("Sequence species scientific name: " + row[5])
                         seqName = row[5].replace("\"", "")
                         if seqName == "No Animal" or seqName == "Blank" or seqName == "Camera Misfire" or seqName == "False trigger" or seqName == "Time Lapse":
                             log.debug(imageId + " is part of empty sequence " + row[2] + " - scientific name is " + row[5])
+                            deploymentLogs[deploymentPid].append(imageId + " is part of empty sequence " + row[2] + " - scientific name is " + row[5])
                             isEmpty = True
             log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
 
             if isEmpty:
+                log.info("Empty pid found for resource: " + resourcePid);
+                deploymentLogs[deploymentPid].append("Empty pid found for resource: " + resourcePid)
                 if not dryrun:
-                    removeOBJ(resourcePid)
+                    response = removeOBJ(resourcePid)
+                    isEmpty = response[0]
             else:
                 log.debug("Resource %s is not empty. Adding to list for updated RELS-EXT", resourcePid)
+                deploymentLogs[deploymentPid].append("Resource " + resourcePid +" is not empty. Adding to list for updated RELS-EXT")
             return [resourcePid, label, isEmpty, mime]
         else:
             log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
+            deploymentLogs[deploymentPid].append("Problem with resource could not update OBJ: pid = " + resourcePid)
             problemList[resourcePid] = "Problem with resource could not update OBJ"
     except:
         log.exception("Error updating OBJ: pid = %s", resourcePid)
+        deploymentLogs[deploymentPid].append("Error updating OBJ: pid = " + resourcePid)
         problemList[resourcePid] = "Error updating OBJ"
 
 
 def updateDeployment(pid):
+    deploymentLogs[pid] = []
     deploymentDatastreams = doGet(pid, None, False)
 
     log.debug("deployment objectDatastreams:\n%s", tostring(deploymentDatastreams, pretty_print=True).decode())
+    deploymentLogs[pid].append("log output for deployment: " + pid)
+    log.info("deploymentLogs[" + pid + "] initialized")
 
     hasMANIFEST = deploymentDatastreams.xpath("boolean(.//*[@dsid='MANIFEST'])", namespaces=ns)
     hasRELS_EXT = deploymentDatastreams.xpath("boolean(.//*[@dsid='RELS-EXT'])", namespaces=ns)
 
     if hasMANIFEST:
         manifest = doGet(pid, "MANIFEST", True)
-
         if hasRELS_EXT:
 
             isParseable = False
@@ -248,33 +245,37 @@ def updateDeployment(pid):
             if len(resourceList) > 0:
                 hasResources = True
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-                futures = [executor.submit(doUpdate, pid, resourcePid, manifest, resourceList) for resourcePid in resourceList]
-                concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
-
-            vslPids = list()
             keepList = list()
             emptyList = list()
 
-            #compile a list of pids to keep and pids to remove, making sure to compile a breadcrumb object
-            #breadcrumb object contains pid of resource along with all of its parents
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    data = future.result()
-                except Exception as exc:
-                    print('%r generated an exception: %s' % (pid, exc))
-                else:
-                    if data not in (None, ''):
-                        crumbtrailValues = getDeploymentCrumbtrail(data[0], data[1])
-                        resourcePidCrumbtrail = crumbtrailValues[0]
-                        resourceLabelCrumbtrail = crumbtrailValues[1]
-                        if data[2]:
-                            log.debug("data[1] is: %s, adding to vslPids", str(data[1]))
-                            emptyList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
-                        else:
-                            log.debug("data[1] is: %s, adding to emptyList", str(data[1]))
-                            keepList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
-                            vslPids.append([data[0]])
+            for resource in resourceList:
+                csv_pid = ""
+
+                # get the pid for the researcher observation csv pid
+                for i in resourceList:
+                    obj = doGet(i, "DC", True)
+                    if "Researcher Observations" in str(tostring(obj)):
+                        csv_pid = i
+                        break
+                # get csv datastream and process
+                csvvals = doGet(csv_pid, "CSV", "True")
+                csvrows = csvvals.split(r"\n")
+                csvfields = []
+                for row in csvrows:
+                    csvfields.append(row.split(","))
+                data = doUpdate(pid, resource, csvfields)
+                if data not in (None, ''):
+                    crumbtrailValues = getDeploymentCrumbtrail(data[0], data[1])
+                    resourcePidCrumbtrail = crumbtrailValues[0]
+                    resourceLabelCrumbtrail = crumbtrailValues[1]
+                    if data[2]:
+                        log.debug("data[1] is: %s, adding to emptyList", str(data[1]))
+                        deploymentLogs[pid].append("data[1 is: " + str(data[1]) + ", adding to emptyList")
+                        emptyList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
+                    else:
+                        log.debug("data[1] is %s, adding to keepList", str(data[1]))
+                        deploymentLogs[pid].append("data[1 is: " + str(data[1]) + ", adding to keepList")
+                        keepList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
             gf = graph
             #for each breadcrumb collection of pids, check if it matches the object
             #if it does, remove from rels-ext
@@ -290,21 +291,40 @@ def updateDeployment(pid):
                 updateRELS_EXT(gf.serialize(format='nt'), pid)
 
             log.info("Finished Updating Resources for Deployment %s", pid)
-            return [keepList, emptyList]
+            deploymentLogs[pid].append("Finished Updating Resources for Deployment " + pid)
+            if(len(emptyList)):
+                return [keepList, emptyList, pid]
+            else:
+                return [keepList, emptyList, None]
         else:
             log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
+            deploymentLogs[pid].append(("Deployment has no RELS-EXT datastream: pid = " + pid))
             problemList[pid] = "Deployment has no RELS-EXT datastream"
     else:
         log.error("Deployment has no MANIFEST datastream: pid = %s", pid)
+        deploymentLogs[pid].append("Deployment has no MANIFEST datastream: pid = " + pid)
         problemList[pid] = "Deployment has no MANIFEST datastream"
+    log.info("Reached end of deployment processing for pid: " + pid)
+
+def writeToDeploymentLog(pid):
+    log.info("writing to deployment logs for deployment: " + pid)
+    date = datetime.datetime.now()
+    filename = str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(date.hour) + ":" + str(
+        date.minute) + ":" + str(date.second) + "_deployment-" + str(pid) + ".log"
+    with open(output_dir + "/" + filename, 'w') as f:
+        for item in deploymentLogs[pid]:
+            f.write("%s\n" % item)
 
 def updateRELS_EXT(RELS_EXT_DS, deploymentPid):
     try:
         result = doPut(deploymentPid, RELS_EXT_DS, "RELS-EXT", {'mimeType': 'text/xml', 'versionable': "true"})
         log.info("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
+        deploymentLogs[deploymentPid].append("http PUT, RELS_EXT update, pid: " + deploymentPid + " response:\n" + tostring(result, pretty_print=True).decode())
     except Exception as e:
         log.error("Error updating RELS-EXT: %s", str(e))
+        deploymentLogs[deploymentPid].append("Error updating RELS-EXT: " + str(e))
     log.info("Finished updateRELS_EXT for deployment %s", deploymentPid)
+    deploymentLogs[deploymentPid].append("Finished updateRELS_EXT for deployment " + deploymentPid)
 
 
 def getDeploymentCrumbtrail(pid, label):
@@ -350,6 +370,7 @@ def getDeploymentCrumbtrail(pid, label):
         return [pidCrumbtrail, labelCrumbtrail]
     except Exception as e:
         log.error("Error retrieving fuseki data: %s", str(e))
+        deploymentLogs[pid].append("Error retrieving fuseki data: " + str(e))
         return ["", ""]
 
 def createDeploymentPidFile():
@@ -466,6 +487,7 @@ def main():
         start = time.time()  # let's see how long this takes
         removeList = list()
         keepList = list()
+        emptyDeployments = list()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             futures = [executor.submit(updateDeployment, pid) for pid in deploymentList]
@@ -484,9 +506,14 @@ def main():
                 log.error("An error occurred in retrieving future from updateDeployment: %s", str(exc))
             else:
                 if data not in (None, ''):
-                    print('adding good pid to RELS-EXT list %s', data)
+                    #print('adding good pid to RELS-EXT list %s', data)
                     removeList = removeList + data[1]
                     keepList = keepList + data[0]
+                    if data[2]:
+                        emptyDeployments.append(data[2])
+
+        for dep in deploymentLogs:
+            writeToDeploymentLog(dep)
 
         date = datetime.datetime.now()
         date_string = str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(date.hour) + ":" + str(
@@ -511,6 +538,10 @@ def main():
         w.writerow(["count: " + str(len(keepList))])
         for keepSet in keepList:
             w.writerow([keepSet[0], keepSet[1]])
+        w.writerow(["Deployments with Empty Sequences: "])
+        w.writerow(["count: " + str(len(emptyDeployments))])
+        for deployment in emptyDeployments:
+            w.writeRow([deployment])
         log.info("Finished Updating all Deployments... elapsed time: %s:", (finish-start))
     else:
         sys.exit("Error pid list is empty!!!")
@@ -617,6 +648,8 @@ if __name__ == "__main__":
     FEDORA_URL = "http://" + HOST + ":8080/fedora"
     FUSEKI_URL = "http://" + HOST + ":9080/fuseki/fedora3"
     FITS_URL = "http://" + HOST + ":8080/fits-1.1.3/examine"
+
+    deploymentLogs = {}
 
     initHttp()
 
