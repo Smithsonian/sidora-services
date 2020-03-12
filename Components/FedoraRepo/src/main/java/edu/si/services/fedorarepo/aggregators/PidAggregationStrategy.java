@@ -40,8 +40,11 @@ public class PidAggregationStrategy implements AggregationStrategy
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange)
     {
-        
         String pid = newExchange.getIn().getHeader("CamelFedoraPid", String.class);
+        if(oldExchange!=null)
+        {
+            String PIDAgg = oldExchange.getIn().getHeader("PIDAggregation", String.class);
+        }
 
         if (pid == null)
         {
@@ -50,7 +53,7 @@ public class PidAggregationStrategy implements AggregationStrategy
             return oldExchange;
         }//end if
 
-        if ((oldExchange == null) || (oldExchange.getIn().getHeader("PIDAggregation") == null))
+        if (oldExchange == null || (oldExchange.getIn().getHeader("PIDAggregation") == null))
         {
             newExchange.getIn().setHeader("PIDAggregation", pid);
             return newExchange;
