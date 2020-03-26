@@ -385,6 +385,8 @@
 
                         <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
 
+                        <to uri="activemq:queue:{{sidora.wi.ct.queue}}" id="sidoraWIActiveMQ"/>
+
                     </otherwise>
                 </choice>
 
