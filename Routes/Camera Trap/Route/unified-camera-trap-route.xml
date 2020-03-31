@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2015-2016 Smithsonian Institution.
+  ~ Copyright 2019-2020 Smithsonian Institution.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License.You may obtain a copy of
@@ -385,6 +385,8 @@
 
                         <to uri="activemq:queue:{{sidoraCTSolr.queue}}" id="sidoraSolrActiveMQ"/>
 
+                        <to uri="activemq:queue:{{sidora.wi.ct.queue}}" id="sidoraWIActiveMQ"/>
+
                     </otherwise>
                 </choice>
 
@@ -411,6 +413,13 @@
                     count(//ImageFileName)
                 </xpath>
             </setHeader>
+            <!-- AdjustedResourceCount is the number of resources that don't correspond to an empty sequence -->
+            <setHeader headerName="AdjustedResourceCount">
+                <xpath resultType="java.lang.Integer">
+                    count(//ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.emptySequence.filter'), text())])]/Image/ImageFileName)
+                </xpath>
+            </setHeader>
+
             <to uri="bean:deploymentPkgValidator?method=validateResourceCount"/>
             <!--  Keeping the validator result in the header to allow the rest of the validation to go through and raise exception at the end of route. -->
             <setHeader headerName="ValidateResourceCountResult">
@@ -653,7 +662,12 @@
                     DC, OBJ, TN, RELS-EXT, FITS, MODS
                 </simple>
             </setHeader>
-            <to uri="direct:validateObjectDatastreams"/>
+            <choice>
+                <when>
+                    <simple>${headers.ImageResourcePID}</simple>
+                    <to uri="direct:validateObjectDatastreams"/>
+                </when>
+            </choice>
 
             <!-- Validate Researcher Observation Object datastreams -->
             <setHeader headerName="ValidationDatastreamObjectType">
@@ -1016,10 +1030,17 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
+            <setHeader headerName="skippedImageCount">
+                <simple resultType="java.lang.Integer">
+                    0
+                </simple>
+            </setHeader>
+
             <!-- There may be several kinds of resources with zero or more instances. -->
             <split strategyRef="pidAggregator">
+                <!-- Filter out resources that match an empty sequence from split -->
                 <xpath headerName="ManifestXML">
-                    //ImageFileName/text()
+                    //ImageSequence[not(ResearcherIdentifications/Identification/SpeciesScientificName[contains(function:properties('si.ct.wi.emptySequence.filter'), text())])]/Image/ImageFileName/text()
                 </xpath>
                 <log message="${id}: Split Resource - ${body}"
                      loggingLevel="INFO"
@@ -1037,6 +1058,7 @@
                      loggingLevel="INFO"
                      logName="{{si.ct.id}}"/>
             </split>
+
             <!-- There is only one observation resource of each kind and all the observations are aggregated. -->
 
             <!-- Researcher is required for Unified CT Ingest. -->
@@ -1079,12 +1101,21 @@
                     //ImageFileName[text()=$in:body]/parent::Image/ImageId/text()
                 </xpath>
             </setHeader>
+
             <!-- Image Sequence ID used in MODS datastream. -->
             <setHeader headerName="ImageSequenceID">
                 <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
                 </xpath>
             </setHeader>
+
+            <!-- Used for MODS validation -->
+            <setHeader headerName="modsImageSequenceId">
+                <xpath logNamespaces="false" resultType="java.lang.String" headerName="ManifestXML">
+                    //ImageFileName[text()=$in:body]/parent::Image/parent::ImageSequence/ImageSequenceId/text()
+                </xpath>
+            </setHeader>
+
             <setHeader headerName="ImageSequenceIndex">
                 <xpath logNamespaces="false" resultType="java.lang.Integer" headerName="ManifestXML">
                     //ImageFileName[text()=$in:body]/parent::Image/ImageOrder/text()
@@ -1116,6 +1147,10 @@
                  logName="{{si.ct.id}}"/>
 
             <to uri="reader:file" id="readImageResource"/>
+
+            <log message="Image read"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
 
             <toD uri="fedora:create?pid=null&amp;owner={{si.ct.owner}}&amp;namespace={{si.ct.namespace}}&amp;label=${header.imageid}" id="createResourcePID"/>
 
@@ -1215,6 +1250,9 @@
                         ${header.CamelFedoraPid}
                     </simple>
                 </setHeader>
+                <log message="${id}: Setting ImageResourcePID - PID: ${header.CamelFedoraPid} | CamelSplitIndex: ${property.CamelSplitIndex}"
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
             </filter>
 
             <!-- The current route only handles JPG. -->
@@ -1317,6 +1355,10 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>${header.AdjustedResourceCount}++</simple>
+            </setHeader>
+
             <setHeader headerName="ResearcherObservationPID">
                 <simple>
                     ${header.CamelFedoraPid}
@@ -1388,6 +1430,10 @@
                 <simple>${header.ResourceCount}++</simple>
             </setHeader>
 
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>${header.AdjustedResourceCount}++</simple>
+            </setHeader>
+
             <setHeader headerName="VolunteerObservationPID">
                 <simple>
                     ${header.CamelFedoraPid}
@@ -1452,6 +1498,10 @@
 
             <setHeader headerName="ResourceCount">
                 <simple>${header.ResourceCount}++</simple>
+            </setHeader>
+
+            <setHeader headerName="AdjustedResourceCount">
+                <simple>${header.AdjustedResourceCount}++</simple>
             </setHeader>
 
             <setHeader headerName="ImageObservationPID">
@@ -2345,7 +2395,23 @@
 
             <to uri="direct:validate_FGDC_Datastream"/>
 
-            <to uri="direct:validate_MODS_Datastream"/>
+            <choice>
+                <when>
+                    <simple>
+                        ${header.ImageResourcePID}
+                    </simple>
+                    <to uri="direct:validate_MODS_Datastream"/>
+                </when>
+                <otherwise>
+                    <log message="${id}: No Image Resource PID, skipping MODS Validation"
+                         loggingLevel="DEBUG"
+                         logName="{{si.ct.id}}"/>
+                </otherwise>
+            </choice>
+
+            <log message="${id}: Validated MODS DATASTREAM"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
 
             <!-- Start Researcher CSV Validation -->
             <setHeader headerName="CamelFedoraPid">
@@ -2500,7 +2566,6 @@
             <log message="${id}: ValidateDatastreamFields: Starting MODS Datastream Validation ..."
                  loggingLevel="DEBUG"
                  logName="{{si.ct.id}}"/>
-
             <!-- Start MODS Validation -->
             <!-- get the PID that we stored using the filter in the addMODSDatastream route -->
             <setHeader headerName="CamelFedoraPid">
@@ -2509,10 +2574,21 @@
                 </simple>
             </setHeader>
 
+            <log message="${id}: Set header for CamelFedoraPid ${header.ImageResourcePID}"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
             <!-- Get the MODS datastream -->
             <to uri="fedora://getDatastreamDissemination?dsId=MODS&amp;exchangePattern=InOut" id="getMODSDatastream"/>
 
+            <log message="${id}: MODS datastream retrieved"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
             <convertBodyTo type="java.lang.String"/>
+
+            <log message="${id}: MODS datastream converted to a java string"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
 
             <!-- Store the current datastream  to be used in the validation bean -->
             <setHeader headerName="datastreamValidationXML">
@@ -2521,13 +2597,23 @@
                 </simple>
             </setHeader>
 
+            <log message="${id}: Storing the current datastream to be used in the validation bean"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
             <!-- the piped separated list of xpath's and field names to be validated -->
             <setBody>
                 <simple trim="true">
-                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()
+                    MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequenceId[text()="${header.modsImageSequenceId}"]/text()
+                    <!--MODS ImageSequenceId|//mods:relatedItem/mods:identifier/text()|//ImageSequence[1]/ImageSequenceId[1]/text()-->
                     <!--MODS ImageSequenceId, //mods:mods/mods:relatedItem[1]/mods:identifier[1], //CameraTrapDeployment/ImageSequence[1]/ImageSequenceId[1]/text()-->
                 </simple>
             </setBody>
+
+            <log message="${id}: Body set"
+                 loggingLevel="DEBUG"
+                 logName="{{si.ct.id}}"/>
+
             <to uri="direct:ValidateDatastreamFieldList"/>
             <to uri="direct:validationErrorMessageAggregationStrategy" id="aggregateMODS"/>
         </route>
@@ -2648,13 +2734,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
