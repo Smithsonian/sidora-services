@@ -35,6 +35,15 @@ global FUSEKI_URL
 global FITS_URL
 global deploymentLogs
 
+class DeploymentLogger(object):
+    def __init__(self, filename="Default.log"):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
 def getDeploymentsFromFuseki():
     # fuseki query param
     # query = "SELECT ?ctPID FROM <info:edu.si.fedora#ri> WHERE {?ctPID <info:fedora/fedora-system:def/model#hasModel> <info:fedora/si:cameraTrapCModel>.}"
@@ -73,7 +82,7 @@ def doGet(pid, ds, content):
     content_disposition = req.headers.get('content-disposition')
     log.debug("content_type: %s, content-disposition: %s", content_type, content_disposition)
 
-    if 'application/json' in content_type.lower():
+    if content_type is not None and 'application/json' in content_type.lower():
         if ds == "CSV":
             log.info("CSV Found - is JSON")
         # extracting data in json format
@@ -154,15 +163,20 @@ def getOBJ(pid):
 
 def removeOBJ(resourcePid, deploymentPid):
     #removeOBJ returns true on success and false on failure
-    deploymentLogs[deploymentPid].append(resourcePid + " is an empty sequence image resource. Saving to file")
+    #deploymentLogs[deploymentPid].append(resourcePid + " is an empty sequence image resource. Saving to file")
     #TODO: Verify purge object or pure obj datastream
     resultDelete = doDelete(resourcePid, {'versionable': 'true'})
     if resultDelete not in (None, ""):
-        deploymentLogs[deploymentPid].append("http DELETE, OBJ remove, pid: %s response:\n%s", resourcePid, tostring(resultDelete, pretty_print=True).decode())
+        logDeploymentMessage(deploymentPid, deploymentPid + ": http DELETE, OBJ remove, pid: " + resourcePid + " response:\n" + tostring(resultDelete, pretty_print=True).decode())
         return True
-    deploymentLogs[deploymentPid].append("Finished removeOBJ for resource %s", resourcePid)
+    logDeploymentMessage(deploymentPid, deploymentPid + ": Finished removeOBJ for resource " + resourcePid)
     return False
 
+def logDeploymentMessage(pid, message):
+    original = sys.stdout
+    sys.stdout = open(fileprefix + "-" + pid + '.log', 'a+')
+    print(message)
+    sys.stdout = original
 
 def doUpdate(deploymentPid, resourcePid, csvfields):
     #log.info("doUpdate for " + deploymentPid)
@@ -174,8 +188,8 @@ def doUpdate(deploymentPid, resourcePid, csvfields):
         if filename in (None, ''):
             filename, label, mime = getOBJ(resourcePid)
 
-        log.debug("OBJ pid: %s", resourcePid)
-        deploymentLogs[deploymentPid].append("OBJ pid: " + resourcePid)
+        log.debug("Reviewing Resource: %s", resourcePid)
+        logDeploymentMessage(deploymentPid, deploymentPid + ": Reviewing Resource " + resourcePid)
 
         if label not in (None, '') and filename not in (None, ''):
             imageId = os.path.splitext(label)[0]
@@ -186,42 +200,33 @@ def doUpdate(deploymentPid, resourcePid, csvfields):
                     # pull out the sequence id and check against empty sequence list
                     sequenceId = row[2].strip()
                     if sequenceId in imageId:
-                        deploymentLogs[deploymentPid].append("Sequence species scientific name: " + row[5])
                         seqName = row[5].replace("\"", "")
                         if seqName == "No Animal" or seqName == "Blank" or seqName == "Camera Misfire" or seqName == "False trigger" or seqName == "Time Lapse":
-                            log.debug(imageId + " is part of empty sequence " + row[2] + " - scientific name is " + row[5])
-                            deploymentLogs[deploymentPid].append(imageId + " is part of empty sequence " + row[2] + " - scientific name is " + row[5])
                             isEmpty = True
-            log.debug("check SpeciesScientificName for resource: %s, label: %s", resourcePid, imageId)
-
             if isEmpty:
-                log.info("Empty pid found for resource: " + resourcePid);
-                deploymentLogs[deploymentPid].append("Empty pid found for resource: " + resourcePid)
+                logDeploymentMessage(deploymentPid, deploymentPid + ": Empty resource found for pid: " + resourcePid)
                 if not dryrun:
                     response = removeOBJ(resourcePid, deploymentPid)
                     #isEmpty response is reset to True or False based on success or failure of removeOBJ
                     isEmpty = response
             else:
-                log.debug("Resource %s is not empty. Adding to list for updated RELS-EXT", resourcePid)
-                deploymentLogs[deploymentPid].append("Resource " + resourcePid +" is not empty. Adding to list for updated RELS-EXT")
+                logDeploymentMessage(deploymentPid, deploymentPid + ": Resource " + resourcePid + " is not an empty sequence")
             return [resourcePid, label, isEmpty, mime]
         else:
             log.error("Problem with resource could not update OBJ: pid = %s", resourcePid)
-            deploymentLogs[deploymentPid].append("Problem with resource could not update OBJ: pid = " + resourcePid)
+            logDeploymentMessage(deploymentPid, deploymentPid + ": Problem with resource could not update OBJ: pid = " + resourcePid)
             problemList[resourcePid] = "Problem with resource could not update OBJ"
     except:
         log.exception("Error updating OBJ: pid = %s", resourcePid)
-        deploymentLogs[deploymentPid].append("Error updating OBJ: pid = " + resourcePid)
+        logDeploymentMessage(deploymentPid, deploymentPid + ": Error updating OBJ: pid = " + resourcePid)
         problemList[resourcePid] = "Error updating OBJ"
-
 
 def updateDeployment(pid):
     deploymentLogs[pid] = []
     deploymentDatastreams = doGet(pid, None, False)
+    logDeploymentMessage(pid, "log output for deployment: " + pid)
 
-    log.debug("deployment objectDatastreams:\n%s", tostring(deploymentDatastreams, pretty_print=True).decode())
-    deploymentLogs[pid].append("log output for deployment: " + pid)
-    log.info("deploymentLogs[" + pid + "] initialized")
+    log.debug(pid, "deployment objectDatastreams:\n" + tostring(deploymentDatastreams, pretty_print=True).decode())
 
     hasMANIFEST = deploymentDatastreams.xpath("boolean(.//*[@dsid='MANIFEST'])", namespaces=ns)
     hasRELS_EXT = deploymentDatastreams.xpath("boolean(.//*[@dsid='RELS-EXT'])", namespaces=ns)
@@ -272,12 +277,8 @@ def updateDeployment(pid):
                     resourcePidCrumbtrail = crumbtrailValues[0]
                     resourceLabelCrumbtrail = crumbtrailValues[1]
                     if data[2]:
-                        log.debug("data[1] is: %s, adding to emptyList", str(data[1]))
-                        deploymentLogs[pid].append("data[1 is: " + str(data[1]) + ", adding to emptyList")
                         emptyList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
                     else:
-                        log.debug("data[1] is %s, adding to keepList", str(data[1]))
-                        deploymentLogs[pid].append("data[1 is: " + str(data[1]) + ", adding to keepList")
                         keepList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
             gf = graph
             #for each breadcrumb collection of pids, check if it matches the object
@@ -293,41 +294,29 @@ def updateDeployment(pid):
             if not dryrun and gf is not None and hasResources and isParseable:
                 updateRELS_EXT(gf.serialize(format='nt'), pid)
 
-            log.info("Finished Updating Resources for Deployment %s", pid)
-            deploymentLogs[pid].append("Finished Updating Resources for Deployment " + pid)
-            if(len(emptyList)):
+            #log.info("Finished Updating Resources for Deployment %s", pid)
+            logDeploymentMessage(pid, pid + ": Finished Updating Resources for Deployment " + pid)
+            if len(emptyList) > 0:
                 return [keepList, emptyList, pid]
             else:
                 return [keepList, emptyList, None]
         else:
-            log.error("Deployment has no RELS-EXT datastream: pid = %s", pid)
-            deploymentLogs[pid].append(("Deployment has no RELS-EXT datastream: pid = " + pid))
+            logDeploymentMessage(pid, pid + ": Deployment has no RELS-EXT datastream: pid = " + pid)
             problemList[pid] = "Deployment has no RELS-EXT datastream"
     else:
-        log.error("Deployment has no MANIFEST datastream: pid = %s", pid)
-        deploymentLogs[pid].append("Deployment has no MANIFEST datastream: pid = " + pid)
+        logDeploymentMessage(pid, pid + ": Deployment has no MANIFEST datastream: pid = " + pid)
         problemList[pid] = "Deployment has no MANIFEST datastream"
     log.info("Reached end of deployment processing for pid: " + pid)
-
-def writeToDeploymentLog(pid):
-    log.info("writing to deployment logs for deployment: " + pid)
-    date = datetime.datetime.now()
-    filename = str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(date.hour) + ":" + str(
-        date.minute) + ":" + str(date.second) + "_deployment-" + str(pid) + ".log"
-    with open(output_dir + "/" + filename, 'w') as f:
-        for item in deploymentLogs[pid]:
-            f.write("%s\n" % item)
 
 def updateRELS_EXT(RELS_EXT_DS, deploymentPid):
     try:
         result = doPut(deploymentPid, RELS_EXT_DS, "RELS-EXT", {'mimeType': 'text/xml', 'versionable': "true"})
         log.info("http PUT, RELS_EXT update, pid: %s response:\n%s", deploymentPid, tostring(result, pretty_print=True).decode())
-        deploymentLogs[deploymentPid].append("http PUT, RELS_EXT update, pid: " + deploymentPid + " response:\n" + tostring(result, pretty_print=True).decode())
+        logDeploymentMessage(deploymentPid, deploymentPid + ": http PUT, RELS_EXT update, pid: " + deploymentPid + " response:\n" + tostring(result, pretty_print=True).decode())
     except Exception as e:
         log.error("Error updating RELS-EXT: %s", str(e))
-        deploymentLogs[deploymentPid].append("Error updating RELS-EXT: " + str(e))
-    log.info("Finished updateRELS_EXT for deployment %s", deploymentPid)
-    deploymentLogs[deploymentPid].append("Finished updateRELS_EXT for deployment " + deploymentPid)
+        logDeploymentMessage(deploymentPid, "Error updating RELS-EXT: " + str(e))
+    logDeploymentMessage(deploymentPid, deploymentPid + ": Finished updateRELS_EXT for deployment %s", deploymentPid)
 
 
 def getDeploymentCrumbtrail(pid, label):
@@ -372,8 +361,9 @@ def getDeploymentCrumbtrail(pid, label):
 
         return [pidCrumbtrail, labelCrumbtrail]
     except Exception as e:
-        log.error("Error retrieving fuseki data: %s", str(e))
-        deploymentLogs[pid].append("Error retrieving fuseki data: " + str(e))
+        #log.error("Error retrieving fuseki data: %s", str(e))
+        sys.stdout = open(fileprefix + "-" + pid + '.log', 'w')
+        logDeploymentMessage(pid, pid + ": Error retrieving fuseki data: " + str(e))
         return ["", ""]
 
 def createDeploymentPidFile():
@@ -470,22 +460,22 @@ def main():
     if deploymentList is not None:
         log.info("Start processing")
 
-        #if args.deleteAll:
-        #   delete = True
-        #else:
-        #    delete = yes_or_no("Removing any existing files from '" + output_dir + "' y directory!!!")
-        #delete = True
+        if args.deleteAll:
+            delete = True
+        else:
+            delete = yes_or_no("Removing any existing files from '" + output_dir + "' y directory!!!")
+        delete = True
 
-        #if delete:
-            #for f in os.listdir(output_dir):
-                #log.warning("deleting dry-run file = %s/%s", output_dir, f)
-                #if os.path.isfile(output_dir + "/" + f):
-                #   os.remove(output_dir + "/" + f)
-                #elif os.path.isdir(output_dir + "/" + f):
-                #    shutil.rmtree(output_dir + "/" + f)
-        #else:
-        #    log.warning("Existing will be overwritten!!!!!")
-        #    time.sleep(15)
+        if delete:
+            for f in os.listdir(output_dir):
+                log.warning("deleting dry-run file = %s/%s", output_dir, f)
+                if os.path.isfile(output_dir + "/" + f):
+                   os.remove(output_dir + "/" + f)
+                elif os.path.isdir(output_dir + "/" + f):
+                    shutil.rmtree(output_dir + "/" + f)
+        else:
+            log.warning("Existing will be overwritten!!!!!")
+            time.sleep(15)
 
         start = time.time()  # let's see how long this takes
         removeList = list()
@@ -515,9 +505,7 @@ def main():
                     if data[2]:
                         emptyDeployments.append(data[2])
 
-        for dep in deploymentLogs:
-            writeToDeploymentLog(dep)
-
+        print("Length of empty deployments: " + str(len(emptyDeployments)))
         date = datetime.datetime.now()
         date_string = str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(date.hour) + ":" + str(
             date.minute) + ":" + str(date.second)
@@ -547,7 +535,7 @@ def main():
         w.writerow(["Deployments with Empty Sequences: "])
         w.writerow(["count: " + str(len(emptyDeployments))])
         for deployment in emptyDeployments:
-            w.writeRow([deployment])
+            w.writerow([deployment])
         log.info("Finished Updating all Deployments... elapsed time: %s:", (finish-start))
     else:
         sys.exit("Error pid list is empty!!!")
@@ -589,7 +577,7 @@ def str2bool(v):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Update Legacy CameraTrap Data for WildLife Insights')
     parser.add_argument("-i", "--infile", help="file name containing list of deployment pids", action="store")
-    parser.add_argument("-o", "--outfile", help="output file name for list of deployment pids (default is deploymentList.csv)", action="store", default="deploymentList.csv")
+    parser.add_argument("-of", "--outfile", help="output file name for list of deployment pids (default is deploymentList.csv)", action="store", default="deploymentList.csv")
     parser.add_argument("-ds", "--datastreams", help="datastreams to update i.e. FGDC, FITS, OBJ, SIDORA", nargs='+', action=required_length(1,4), choices={'FGDC', 'FITS', 'OBJ', 'SIDORA'})
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("-dr", "--dry-run", help="Store datastream changes to local file system instead of updating Fedora datastreams (default dir ./output)", type=str2bool, nargs='?', const=True, default=True)
@@ -633,11 +621,15 @@ if __name__ == "__main__":
         HOST = config.get("defaults", "fedora.host")
         ct_root = config.get("defaults", "ct.root")
         output_dir = config.get("defaults", "output.dir")
+        print("OUTPUT DIR: " + output_dir)
+        if not os.path.exists(output_dir):
+            log.info("Output directory: " + output_dir + " does not exist. Creating directory")
+            os.makedirs(output_dir)
         threads = config.getint("defaults", "threads")
         retries = config.getint("defaults", "retries")
         backoff_factor = config.get("defaults", "backoff_factor")
         status_forcelist = tuple(map(int, config.get("defaults", "status_forcelist").split(', ')))
-        #filterList = config.get("defaults", "speciesScientificName.filter")
+        filterList = config.get("defaults", "speciesScientificName.filter")
         blurValue = config.getint("defaults", "blur_value")
         classifier = config.get("defaults", "classifier")
         exiftool_path = config.get("defaults", "exiftool.path")
@@ -656,6 +648,11 @@ if __name__ == "__main__":
     FITS_URL = "http://" + HOST + ":8080/fits-1.1.3/examine"
 
     deploymentLogs = {}
+
+    date = datetime.datetime.now()
+    fileprefix = output_dir + "/" + str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(
+        date.hour) + ":" + str(
+        date.minute) + ":" + str(date.second) + "_deployment-"
 
     initHttp()
 
@@ -681,7 +678,7 @@ if __name__ == "__main__":
             deploymentList = list()
             createDeploymentPidFile()
             log.info("Finished creating deployment PID list...")
-            # sys.exit()
+            #sys.exit()
         else:
             sys.exit("ERROR: Must provide an infile containing list of PIDS to update OR outfile name for deployment pids to be saved to!!!")
     problemList = dict()
