@@ -95,12 +95,12 @@ public class PostIngestionValidator {
         ns.add("mods","http://www.loc.gov/mods/v3");
 
         String fieldName;
-        String camelFileParent;
+        String deploymentPackageId;
         String message;
         CameraTrapValidationMessage.MessageBean messageBean = null;
 
         //Get exchange headers
-        camelFileParent = exchange.getIn().getHeader("CamelFileParent", String.class);
+        deploymentPackageId = exchange.getIn().getHeader("deploymentPackageId", String.class);
         String datastreamXML = exchange.getIn().getHeader("datastreamValidationXML", String.class);
 
         //Get the comma separated list of datastream and manifest and the xpaths for each field
@@ -128,21 +128,21 @@ public class PostIngestionValidator {
 
         //Check if validation passed
         if (datastreamField.equals(manifestField)) {
-            message = "Deployment Package ID - " + camelFileParent
+            message = "Deployment Package ID - " + deploymentPackageId
                     + ", Message - " + fieldName + "  Field matches the Manifest Field. Validation passed...";
 
             //Create the validation message bean with validation message
-            //messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, true);
+            //messageBean = new CameraTrapValidationMessage().createValidationMessage(deploymentPackageId, message, true);
 
             log.debug(message);
 
         } else {
-            message = "Deployment Package ID - " + camelFileParent
+            message = "Deployment Package ID - " + deploymentPackageId
                     + ", Message - " + fieldName + " Field validation failed. "
                     + "Expected " + manifestField + " but found " + datastreamField + ".";
 
             //Create the validation message bean with validation message
-            messageBean = new CameraTrapValidationMessage().createValidationMessage(camelFileParent, message, false);
+            messageBean = new CameraTrapValidationMessage().createValidationMessage(deploymentPackageId, message, false);
 
             log.warn(message);
             exchange.getIn().setBody(messageBean);

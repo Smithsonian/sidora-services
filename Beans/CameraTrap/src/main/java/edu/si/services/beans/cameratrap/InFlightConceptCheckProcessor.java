@@ -53,7 +53,7 @@ public class InFlightConceptCheckProcessor implements Processor{
      * which deployment is currently processing the concept object(s).  The other deployment processes should wait
      * while the initial deployment is finishing up the first concept object(s) creation.
 
-     * @param exchange camel message exchange; requires CamelFileParent, DeploymentConceptId, CamelFedoraLabel and CamelFedoraPid from the headers
+     * @param exchange camel message exchange; requires deploymentPackage, DeploymentConceptId, CamelFedoraLabel and CamelFedoraPid from the headers
      *                 for the inFlightCheck to add the deployment concept information to the static storage
      * @throws InterruptedException
      */
@@ -61,24 +61,24 @@ public class InFlightConceptCheckProcessor implements Processor{
     public void process(Exchange exchange) throws InterruptedException {
         Message in = exchange.getIn();
 
-        String deploymentId = in.getHeader("CamelFileParent", String.class);
+        String deploymentPackageId = in.getHeader("deploymentPackageId", String.class);
         String correlationId = in.getHeader("DeploymentCorrelationId", String.class);
         String correlationLabel = in.getHeader("CamelFedoraLabel", String.class);
         String parentObjectPid = in.getHeader("CamelFedoraPid", String.class);
 
-        //check if CamelFileParent is set in the header
-        if (deploymentId == null || deploymentId.length()==0){
-            throw new IllegalArgumentException("CamelFileParent not found");
+        //check if deploymentPackageId is set in the header
+        if (deploymentPackageId == null || deploymentPackageId.length()==0){
+            throw new IllegalArgumentException("deploymentPackageId not found");
         }
 
         if (correlationId!=null && correlationLabel!=null
                 && parentObjectPid!=null && !cameraTrapStaticStore.containsCorrelationtId(correlationId)){
-            DeploymentCorrelationInformation correlationInformation = new DeploymentCorrelationInformation(deploymentId, correlationId, correlationLabel, parentObjectPid);
+            DeploymentCorrelationInformation correlationInformation = new DeploymentCorrelationInformation(deploymentPackageId, correlationId, correlationLabel, parentObjectPid);
             cameraTrapStaticStore.addCorrelationId(correlationId, correlationInformation);
         }
 
         DeploymentCorrelationInformation lockOwner = cameraTrapStaticStore.getCorrelationInformationById(correlationId);
-        if (lockOwner!=null && !deploymentId.equals(lockOwner.getDeploymentId())){
+        if (lockOwner!=null && !deploymentPackageId.equals(lockOwner.getDeploymentPackageId())){
             waitWhileProcessing(correlationId);
         }
 

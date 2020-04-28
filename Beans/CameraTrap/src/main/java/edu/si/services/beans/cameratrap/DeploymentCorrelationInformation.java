@@ -37,32 +37,32 @@ import java.util.Objects;
  */
 public class DeploymentCorrelationInformation {
 
-    private String deploymentId;
+    private String deploymentPackageId;
     private String correlationId;
     private String correlationLabel;
     private String parentObjectPid;
 
     /**
-     * Constructor that takes in the deploymentId, correlationId, correlationLabel, and parentObjectPid
+     * Constructor that takes in the deploymentPackageId, correlationId, correlationLabel, and parentObjectPid
      *
-     * @param deploymentId deployment package identifier such as the directory name for the deployment package
+     * @param deploymentPackageId deployment package identifier such as the directory name for the deployment package
      * @param correlationId concept identifier from the deployment manifest such as the projectId, subProjectId etc
      * @param correlationLabel concept name from the deployment manifest such as the projectName, subProjectName etc
      * @param parentObjectPid parent object PID from Fedora Repository for the given concept object from the manifest.
      */
-    public DeploymentCorrelationInformation(String deploymentId, String correlationId, String correlationLabel, String parentObjectPid) {
-        this.deploymentId = deploymentId;
+    public DeploymentCorrelationInformation(String deploymentPackageId, String correlationId, String correlationLabel, String parentObjectPid) {
+        this.deploymentPackageId = deploymentPackageId;
         this.correlationId = correlationId;
         this.correlationLabel = correlationLabel;
         this.parentObjectPid = parentObjectPid;
     }
 
-    public String getDeploymentId() {
-        return deploymentId;
+    public String getDeploymentPackageId() {
+        return deploymentPackageId;
     }
 
-    public void setDeploymentId(String deploymentId) {
-        this.deploymentId = deploymentId;
+    public void setDeploymentPackageId(String deploymentPackageId) {
+        this.deploymentPackageId = deploymentPackageId;
     }
 
     public String getCorrelationId() {
@@ -92,7 +92,7 @@ public class DeploymentCorrelationInformation {
     @Override
     public String toString() {
         return "DeploymentCorrelationInformation{" +
-                "deploymentID='" + deploymentId + '\'' +
+                "deploymentPackageId='" + deploymentPackageId + '\'' +
                 ", correlationId='" + correlationId + '\'' +
                 ", correlationLabel='" + correlationLabel + '\'' +
                 ", parentObjectPid='" + parentObjectPid + '\'' +
@@ -108,7 +108,7 @@ public class DeploymentCorrelationInformation {
             return false;
         }
         DeploymentCorrelationInformation that = (DeploymentCorrelationInformation) o;
-        return Objects.equals(deploymentId, that.deploymentId) &&
+        return Objects.equals(deploymentPackageId, that.deploymentPackageId) &&
                 Objects.equals(correlationId, that.correlationId) &&
                 Objects.equals(correlationLabel, that.correlationLabel) &&
                 Objects.equals(parentObjectPid, that.parentObjectPid);
@@ -116,6 +116,6 @@ public class DeploymentCorrelationInformation {
 
     @Override
     public int hashCode() {
-        return Objects.hash(deploymentId, correlationId, correlationLabel, parentObjectPid);
+        return Objects.hash(deploymentPackageId, correlationId, correlationLabel, parentObjectPid);
     }
 }

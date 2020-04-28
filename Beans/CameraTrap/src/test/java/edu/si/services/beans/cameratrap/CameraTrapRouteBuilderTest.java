@@ -65,7 +65,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
     @Test
     public void testValidatePostResourceCountFailRoute() throws Exception {
 
-        String camelFileParent = "10002000";
+        String deploymentPackageId = "10002000";
         int resourceCount = 100;
         int relsExtResourceCount = 103;
 
@@ -78,7 +78,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         });
 
         //creating a new messageBean that is expected from the test route
-        CameraTrapValidationMessage.MessageBean messageBean = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        CameraTrapValidationMessage.MessageBean messageBean = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 String.format("Post Resource Count validation failed. Expected %s but found %s", resourceCount, relsExtResourceCount), false);
 
         //expected message body response
@@ -89,7 +89,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
 
         //setting up expected headers before sending message to test route
         Map<String, Object> headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
+        headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ResourceCount", resourceCount);
         headers.put("RelsExtResourceCount", relsExtResourceCount);
         template.sendBodyAndHeaders("direct:validatePostResourceCount", "body text", headers);
@@ -107,7 +107,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
     @Test
     public void testValidatePostResourceCountSuccessRoute() throws Exception {
 
-        int camelFileParent = 10002001;
+        int deploymentPackageId = 10002001;
         int matchingCount = 10;
         String toSendBody = "some message";
 
@@ -121,14 +121,14 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
 
         //setting up expected headers before sending message to test route
         Map<String, Object> headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
+        headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ResourceCount", matchingCount);
         headers.put("RelsExtResourceCount", matchingCount);
         template.sendBodyAndHeaders("direct:validatePostResourceCount", toSendBody, headers);
 
         mockEndpoint.expectedMessageCount(1);
         assertEquals(mockEndpoint.getReceivedExchanges().get(0).getIn().getBody().toString(), toSendBody);
-        mockEndpoint.expectedHeaderReceived("CamelFileParent", camelFileParent);
+        mockEndpoint.expectedHeaderReceived("deploymentPackageId", deploymentPackageId);
         mockEndpoint.assertIsSatisfied();
     }
 

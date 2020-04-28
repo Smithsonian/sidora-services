@@ -50,7 +50,7 @@ public class UnifiedCameraTrapPostValidationEmptySequenceTest extends CT_Bluepri
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";
 
     //Camera Trap Deployment Info for testing
-    private String camelFileParent = "10002000";
+    private String deploymentPackageId = "10002000";
     private int ManifestCameraDeploymentId = 0001;
 
     //Mock endpoint to be used for assertions
@@ -97,7 +97,7 @@ public class UnifiedCameraTrapPostValidationEmptySequenceTest extends CT_Bluepri
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
+        headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
         headers.put("ValidationErrors", "ValidationErrors");
@@ -200,14 +200,14 @@ public class UnifiedCameraTrapPostValidationEmptySequenceTest extends CT_Bluepri
             message.append("Post Resource Count validation failed. ");
             message.append("Expected " + resourceCount + " but found " + relsExtResourceCountResult);
 
-            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                     message.toString(), false);
             expectedBody.add(expectedValidationMessage);
         }
 
         //Setup the Resource Object Not Found expected validation error message
         if (fcrepo_objectResponse.contains("not")) {
-            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent, String.valueOf(headers.get("SitePID")),
+            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId, String.valueOf(headers.get("SitePID")),
                     "Resource Object not found from Fedora Repository", false);
             expectedBody.add(expectedValidationMessage);
         }

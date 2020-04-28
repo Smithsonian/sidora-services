@@ -48,7 +48,7 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles";
 
     //Camera Trap Deployment Info for testing
-    private String camelFileParent = "10002000";
+    private String deploymentPackageId = "10002000";
     private int ManifestCameraDeploymentId = 0000;
 
     //Mock endpoint to be used for assertions
@@ -93,7 +93,7 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
+        headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
         headers.put("ValidationErrors", "ValidationErrors");
@@ -160,11 +160,11 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        message.append("Deployment Package ID - " + camelFileParent);
+        message.append("Deployment Package ID - " + deploymentPackageId);
         message.append(", Message - EAC-CPF ProjectName Field validation failed. ");
         message.append("Expected Sample Triangle Camera Trap Survey Project but found Sample Blah Blah Blah Project.");
 
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 message.toString(), false);
 
         ArrayList expectedBody = new ArrayList<>();
@@ -211,11 +211,11 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        message.append("Deployment Package ID - " + camelFileParent);
+        message.append("Deployment Package ID - " + deploymentPackageId);
         message.append(", Message - FGDC CameraDeploymentID Field validation failed. ");
         message.append("Expected d18981 but found blahblah.");
 
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 message.toString(), false);
 
         ArrayList expectedBody = new ArrayList<>();
@@ -262,11 +262,11 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         datastream = FileUtils.readFileToString(datastreamFile);
 
         StringBuilder message = new StringBuilder();
-        message.append("Deployment Package ID - " + camelFileParent);
+        message.append("Deployment Package ID - " + deploymentPackageId);
         message.append(", Message - MODS ImageSequenceId Field validation failed. ");
         message.append("Expected d18981s1 but found blahblah.");
 
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 message.toString(), false);
 
         ArrayList expectedBody = new ArrayList<>();
@@ -330,7 +330,7 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         csvMessage.append("ResearcherIdentifications CSV: Validation Failed!");
 
         //creating a new messageBean that is expected from the test route
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 csvMessage.toString(), false);
 
 
@@ -369,7 +369,7 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         csvMessage.append("VolunteerIdentifications CSV: Validation Failed!");
 
         //creating a new messageBean that is expected from the test route
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 csvMessage.toString(), false);
 
         runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);
@@ -407,7 +407,7 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         csvMessage.append("ImageIdentifications CSV: Validation Failed!");
 
         //creating a new messageBean that is expected from the test route
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 csvMessage.toString(), false);
 
         runValidationAdviceWithTestCSV(datastreamFile, expectedValidationMessage);

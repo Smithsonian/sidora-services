@@ -36,7 +36,6 @@ import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.File;
@@ -59,7 +58,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
     private String testDataDir = KARAF_HOME + "/UnifiedManifest-TestFiles";
 
     //Camera Trap Deployment Info for testing
-    private String camelFileParent = "10002000";
+    private String deploymentPackageId = "10002000";
     private int ManifestCameraDeploymentId = 0000;
 
     //Mock endpoint to be used for assertions
@@ -101,7 +100,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
+        headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
         headers.put("ValidationErrors", "ValidationErrors");
