@@ -126,7 +126,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyIngestedDeploymentsToS3: Starting AWS S3 upload for Ingested Deployments...")
                     .setHeader("CamelAwsS3Key", simple("${header.CamelFileName}"))
                     .setHeader("CamelAwsS3ContentLength", simple("${header.CamelFileLength}"))
-                    .to("aws-s3://" + s3IngestedBucketName + "?amazonS3Client=#amazonS3Client")
+                    .to("aws-s3://" + s3IngestedBucketName + "?multiPartUpload=true&amazonS3Client=#amazonS3Client")
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyIngestedDeploymentsToS3: Finished AWS S3 upload for file: ${header.CamelFileName}");
 
 
@@ -139,7 +139,7 @@ public class CameraTrapAutoS3SyncRouteBuilder extends RouteBuilder {
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyErrorDeploymentsToS3: Starting AWS S3 upload for Error Deployments...")
                     .setHeader("CamelAwsS3Key", simple("${header.CamelFileName}"))
                     .setHeader("CamelAwsS3ContentLength", simple("${header.CamelFileLength}"))
-                    .to("aws-s3://" + s3RejectedBucketName + "?amazonS3Client=#amazonS3Client")
+                    .to("aws-s3://" + s3RejectedBucketName + "?multiPartUpload=true&amazonS3Client=#amazonS3Client")
                     .log(LoggingLevel.INFO, CT_LOG_NAME, "${id}: CameraTrapCopyErrorDeploymentsToS3: Finished AWS S3 upload for file: ${header.CamelFileName}");
 
         }
