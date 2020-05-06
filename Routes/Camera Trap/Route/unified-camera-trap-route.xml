@@ -166,6 +166,8 @@
         <property name="outFilterPattern" value=".*"/>
     </bean>
 
+    <bean id="deploymentPackageDataCleanUpProcessor" class="edu.si.services.beans.cameratrap.DeploymentPackageDataCleanUpProcessor"/>
+
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:objDatastreams="http://www.fedora.info/definitions/1/0/access/"
@@ -260,6 +262,15 @@
 
         <route id="UnifiedCameraTrapStartProcessing">
             <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.uscbi.process.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
+            <!-- this onCompletion block will only be executed when the exchange is done being routed -->
+            <!-- this callback is always triggered even if the exchange failed -->
+            <onCompletion>
+                <process ref="deploymentPackageDataCleanUpProcessor"/>
+                <log message="${id}: Camera Trap deployment package data clean up removed ${header.deploymentDataDir} ..."
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
+            </onCompletion>
+
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
