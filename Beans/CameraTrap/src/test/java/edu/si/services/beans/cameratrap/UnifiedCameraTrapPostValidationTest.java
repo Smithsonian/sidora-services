@@ -27,11 +27,9 @@
 
 package edu.si.services.beans.cameratrap;
 
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ChoiceDefinition;
-import org.apache.camel.model.LogDefinition;
 import org.apache.camel.model.ToDynamicDefinition;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
@@ -52,7 +50,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";
 
     //Camera Trap Deployment Info for testing
-    private String camelFileParent = "10002000";
+    private String deploymentPackageId = "10002000";
     private int ManifestCameraDeploymentId = 0000;
 
     //Mock endpoint to be used for assertions
@@ -99,7 +97,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
+        headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
         headers.put("ValidationErrors", "ValidationErrors");
@@ -201,14 +199,14 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
             message.append("Post Resource Count validation failed. ");
             message.append("Expected " + resourceCount + " but found " + relsExtResourceCountResult);
 
-            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                     message.toString(), false);
             expectedBody.add(expectedValidationMessage);
         }
 
         //Setup the Resource Object Not Found expected validation error message
         if (fcrepo_objectResponse.contains("not")) {
-            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent, String.valueOf(headers.get("SitePID")),
+            expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId, String.valueOf(headers.get("SitePID")),
                     "Resource Object not found from Fedora Repository", false);
             expectedBody.add(expectedValidationMessage);
         }
@@ -344,7 +342,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         datastream = FileUtils.readFileToString(new File(testDataDir + "/ResearcherObservation/valid_ResearcherObservationCSV.csv"));
 
         //Setup the expected validation message for CSV validations
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 "ResearcherIdentifications CSV: Validation Failed!", true);
 
         //only add validation failed messages to the bucket
@@ -450,11 +448,11 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //Setup the expected validation error message for EAC-CPF validations
         StringBuilder message = new StringBuilder();
-        message.append("Deployment Package ID - " + camelFileParent);
+        message.append("Deployment Package ID - " + deploymentPackageId);
         message.append(", Message - EAC-CPF ProjectName Field validation failed. ");
         message.append("Expected Sample Triangle Camera Trap Survey Project but found Sample Blah Blah Blah Project.");
 
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 message.toString(), pass);
 
         //only add validation failed messages to the bucket
@@ -489,11 +487,11 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //Setup the expected validation error message for FGDC validations
         StringBuilder message = new StringBuilder();
-        message.append("Deployment Package ID - " + camelFileParent);
+        message.append("Deployment Package ID - " + deploymentPackageId);
         message.append(", Message - FGDC CameraDeploymentID Field validation failed. ");
         message.append("Expected d18981 but found blahblah.");
 
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 message.toString(), pass);
 
         //only add validation failed messages to the bucket
@@ -528,11 +526,11 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //Setup the expected validation error message for MODS validations
         StringBuilder message = new StringBuilder();
-        message.append("Deployment Package ID - " + camelFileParent);
+        message.append("Deployment Package ID - " + deploymentPackageId);
         message.append(", Message - MODS ImageSequenceId Field validation failed. ");
         message.append("Expected d18981s1 but found blahblah.");
 
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 message.toString(), pass);
 
         //only add validation failed messages to the bucket
@@ -572,7 +570,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         String imageCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[2]);
 
         //Setup the Researcher Observation expected validation error message
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 "ResearcherIdentifications CSV: Validation Failed!", researcherPass);
 
         //only add validation failed messages to the bucket
@@ -581,7 +579,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         }
 
         //Setup the Volunteer Observation expected error message
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 "VolunteerIdentifications CSV: Validation Failed!", volunteerPass);
 
         //only add validation failed messages to the bucket
@@ -590,7 +588,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         }
 
         //Setup the Image Observation expected validation error message
-        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(camelFileParent,
+        expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
                 "ImageIdentifications CSV: Validation Failed!", imagePass);
 
         //only add validation failed messages to the bucket

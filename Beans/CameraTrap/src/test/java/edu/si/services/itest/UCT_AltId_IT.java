@@ -289,7 +289,7 @@ public class UCT_AltId_IT extends CT_BlueprintTestSupport {
         //Initialize the exchange with body and headers as needed
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", readFileToString(testManifest));
-        exchange.getIn().setHeader("CamelFileParent", "someCamelFileParent");
+        exchange.getIn().setHeader("deploymentId", "somedeploymentId");
         exchange.getIn().setHeader("CamelFedoraPid", getExtra().getProperty("si.ct.root"));
 
         // The endpoint we want to start from with the exchange body and headers we want

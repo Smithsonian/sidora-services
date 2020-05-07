@@ -28,23 +28,14 @@
 package edu.si.services.beans.cameratrap;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
-import org.w3c.dom.Document;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,7 +52,7 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
     private String testDataDir = KARAF_HOME + "/UnifiedManifest-TestFiles";
 
     //Camera Trap Deployment Info for testing
-    private String camelFileParent = "10002000";
+    private String deploymentId = "10002000";
     private int ManifestCameraDeploymentId = 0001;
 
     //Mock endpoint to be used for assertions
@@ -103,7 +94,7 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
-        headers.put("CamelFileParent", camelFileParent);
+        headers.put("deploymentId", deploymentId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
         headers.put("ValidationErrors", "ValidationErrors");

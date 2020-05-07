@@ -282,6 +282,10 @@
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
 
+            <setHeader headerName="deploymentPackageId">
+                <simple>${header.CamelFileParent}</simple>
+            </setHeader>
+
             <setHeader headerName="deploymentDataDir">
                 <simple>
                     ${header.CamelFileAbsolutePath}
@@ -538,7 +542,7 @@
                             not(//findObjects:objectFields/findObjects:pid/text())
                         </xpath>
 
-                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${header.ValidationResourceObjectPID}
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId}, ${header.ValidationResourceObjectPID}
                             ,'Resource Object not found from Fedora Repository', ${body})"/>
                         <to uri="direct:validationErrorMessageAggregationStrategy"/>
                         <log message="${id}: Resource Object not found from Fedora Repository"
@@ -767,7 +771,7 @@
                     <choice>
                         <when>
                             <simple>${body} == false</simple>
-                            <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                            <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId},
                                     '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
                             <to uri="direct:validationErrorMessageAggregationStrategy"/>
                             <log message="${id}: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
@@ -778,7 +782,7 @@
                 </when>
 
                 <otherwise>
-                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId},
                             '${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation', false)"/>
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
                     <log message="${id}: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
@@ -2705,7 +2709,7 @@
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
 
-                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId}, ${body}, false)"/>
                 </when>
                 <otherwise>
                     <setBody>
@@ -2734,13 +2738,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.deploymentPackageId}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.deploymentPackageId}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
@@ -2759,7 +2763,7 @@
             <to uri="bean:cameraTrapStaticStore?method=getInFlightCorrelationIds()"/>
             <split>
                 <simple>${body.keySet}</simple>
-                <!-- retrieve the correlation information from the storage; such as the deployment id, correlation label etc-->
+                <!-- retrieve the correlation information from the storage; such as the deploymentPackageId, correlation label etc-->
                 <to uri="bean:cameraTrapStaticStore?method=getCorrelationInformationById(${body})"/>
 
                 <!-- stash correlation identifier so we can remove it from the storage if the concept is found in the RI -->
@@ -2787,9 +2791,9 @@
                         ${body.parentObjectPid}
                     </simple>
                 </setHeader>
-                <setHeader headerName="CamelFileParent">
+                <setHeader headerName="deploymentPackageId">
                     <simple>
-                        ${body.deploymentId}
+                        ${body.deploymentPackageId}
                     </simple>
                 </setHeader>
 
