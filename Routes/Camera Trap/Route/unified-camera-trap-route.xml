@@ -261,7 +261,8 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.uscbi.process.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed={{si.ct.uscbi.process.error.dir.path}}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
+            <!--<from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.uscbi.process.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>-->
             <!-- this onCompletion block will only be executed when the exchange is done being routed -->
             <!-- this callback is always triggered even if the exchange failed -->
             <onCompletion>
