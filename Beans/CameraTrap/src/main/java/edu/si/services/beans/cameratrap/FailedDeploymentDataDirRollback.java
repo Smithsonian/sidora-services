@@ -39,6 +39,7 @@ import java.nio.file.Files;
 /**
  * @author jbirkhimer
  */
+@Deprecated
 public class FailedDeploymentDataDirRollback {
 
     private static final Logger log = LoggerFactory.getLogger(FailedDeploymentDataDirRollback.class);
