@@ -325,6 +325,12 @@
                         <log message="${id}: Schematron Validation Report -\n ${header.CamelSchematronValidationReport}"
                              loggingLevel="WARN"
                              logName="{{si.ct.id}}"/>
+                        <setBody>
+                            <xpath resultType="java.util.List" headerName="CamelSchematronValidationReport">//svrl:failed-assert/svrl:text/text()</xpath>
+                        </setBody>
+                        <log message="${id}: Schematron Validation Error(s):\n ${body}"
+                             loggingLevel="ERROR"
+                             logName="{{si.ct.id}}"/>
                         <throwException ref="validationFailure"/>
                     </when>
                     <otherwise>
