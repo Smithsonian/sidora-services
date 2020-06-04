@@ -31,6 +31,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,10 @@ public class DeploymentPackageDataCleanUpProcessor implements Processor {
     public void process(Exchange exchange) throws Exception {
         Message out = exchange.getIn();
         String deploymentDataDir = out.getHeader("deploymentDataDir", String.class);
+
+        if (deploymentDataDir == null) {
+            deploymentDataDir = exchange.getContext().resolvePropertyPlaceholders("{{si.ct.uscbi.data.dir.path}}") + "/" + FilenameUtils.getBaseName(out.getHeader("CamelFileAbsolutePath", String.class));
+        }
 
         if (Files.exists(new File(deploymentDataDir).toPath())) {
             log.info("CLEANING UP DEPLOYMENT DATA DIR = {}", deploymentDataDir);
