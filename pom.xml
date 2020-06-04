@@ -87,7 +87,7 @@
         <commons-net.version>3.6</commons-net.version>
         <cxf-version>3.1.5</cxf-version>
         <derby-version>10.11.1.1</derby-version>
-        <fasterxml.jackson.version>2.6.7</fasterxml.jackson.version>
+        <fasterxml.jackson.version>2.10.1</fasterxml.jackson.version>
         <google-guava-version>18.0</google-guava-version>
         <!--<google.guava.version>15.0</google.guava.version>--> <!-- Servicemix version -->
         <jacoco-maven-plugin-version>0.7.2.201409121644</jacoco-maven-plugin-version>
