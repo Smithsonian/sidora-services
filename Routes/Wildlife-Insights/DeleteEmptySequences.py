@@ -33,7 +33,8 @@ ns = {"fsmgmt": "http://www.fedora.info/definitions/1/0/management/",
 global FEDORA_URL
 global FUSEKI_URL
 global FITS_URL
-global deploymentLogs
+
+global deploymentbc
 
 class DeploymentLogger(object):
     def __init__(self, filename="Default.log"):
@@ -222,7 +223,6 @@ def doUpdate(deploymentPid, resourcePid, csvfields):
         problemList[resourcePid] = "Error updating OBJ"
 
 def updateDeployment(pid):
-    deploymentLogs[pid] = []
     deploymentDatastreams = doGet(pid, None, False)
     logDeploymentMessage(pid, "log output for deployment: " + pid)
 
@@ -277,6 +277,7 @@ def updateDeployment(pid):
                     resourcePidCrumbtrail = crumbtrailValues[0]
                     resourceLabelCrumbtrail = crumbtrailValues[1]
                     if data[2]:
+                        deploymentbc[pid] = crumbtrailValues
                         emptyList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
                     else:
                         keepList.append([resourcePidCrumbtrail, resourceLabelCrumbtrail])
@@ -535,6 +536,19 @@ def main():
         w.writerow(["Deployments with Empty Sequences: "])
         w.writerow(["count: " + str(len(emptyDeployments))])
         for deployment in emptyDeployments:
+            if deployment in deploymentbc:
+                dbc = deploymentbc[deployment][0]
+                dset = dbc.split("_")
+                count = 0
+                dbreadcrumb = ""
+                for bcval in dset:
+                    if count != len(dset) - 2:
+                        dbreadcrumb += bcval + "_"
+                    if count == len(dset) - 2:
+                        dbreadcrumb += bcval
+            else:
+                w.writerow([dbreadcrumb])
+
             w.writerow([deployment])
         log.info("Finished Updating all Deployments... elapsed time: %s:", (finish-start))
     else:
@@ -647,7 +661,7 @@ if __name__ == "__main__":
     FUSEKI_URL = "http://" + HOST + ":9080/fuseki/fedora3"
     FITS_URL = "http://" + HOST + ":8080/fits-1.1.3/examine"
 
-    deploymentLogs = {}
+    deploymentbc = {}
 
     date = datetime.datetime.now()
     fileprefix = output_dir + "/" + str(date.day) + "-" + str(date.month) + "-" + str(date.year) + "-" + str(
