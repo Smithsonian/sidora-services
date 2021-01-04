@@ -48,6 +48,7 @@
         <module>Sidora-Test-Utils</module>
         <module>Sidora-Solr</module>
         <module>Sidora-CameraTrap</module>
+        <module>Sidora-Edan</module>
     </modules>
 
     <properties>

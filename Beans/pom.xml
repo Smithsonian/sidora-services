@@ -49,7 +49,6 @@
     <modules>
         <module>Excel</module>
         <module>VelocityToolsHandler</module>
-        <module>Edan-Sidora</module>
         <module>FITS-Servlet</module>
     </modules>
 
