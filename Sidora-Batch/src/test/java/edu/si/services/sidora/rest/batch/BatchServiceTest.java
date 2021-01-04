@@ -316,7 +316,7 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.batch.cfg", KARAF_HOME + "/sql/batch.process.sql.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.batch.properties", KARAF_HOME + "/sql/batch.process.sql.properties");
     }
 
     @Override
