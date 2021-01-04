@@ -47,6 +47,7 @@
         <module>Sidora-MCI</module>
         <module>Sidora-Test-Utils</module>
         <module>Sidora-Solr</module>
+        <module>Sidora-CameraTrap</module>
     </modules>
 
     <properties>
