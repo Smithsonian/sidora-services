@@ -52,7 +52,7 @@
         <module>Extractor</module>
         <module>FedoraRepo</module>
         <module>FcrepoRest</module>
-        <module>Edan</module>
+        <!--<module>Edan</module>-->
     </modules>
 
     <build>

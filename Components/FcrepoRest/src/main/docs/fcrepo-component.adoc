@@ -45,7 +45,7 @@ with the following path and query parameters:
 |===
 
 
-=== Query Parameters (8 parameters):
+=== Query Parameters (7 parameters):
 
 
 [width="100%",cols="2,5,^1,2",options="header"]
@@ -58,6 +58,5 @@ with the following path and query parameters:
 | *query* (producer) | Query for the fedora ri |  | String
 | *resultFormat* (producer) | Fedora format parameter setter - ex) HTML, XML | xml | String
 | *headerFilterStrategy* (advanced) | Fedora headerFilterStrategy |  | HeaderFilterStrategy
-| *synchronous* (advanced) | Sets whether synchronous processing should be strictly used, or Camel is allowed to use asynchronous processing (if supported). | false | boolean
 |===
 // endpoint options: END
