@@ -237,6 +237,12 @@
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-aws2-s3-starter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-aws-s3-starter</artifactId>
+            <version>3.8.0</version>
+            <scope>test</scope>
+        </dependency>
 
         <!-- ActiveMQ -->
         <!-- If you are using the activemq-camel component, then you should migrate to use camel-activemq component, where the component name has changed from org.apache.activemq.camel.component.ActiveMQComponent to org.apache.camel.component.activemq.ActiveMQComponent -->

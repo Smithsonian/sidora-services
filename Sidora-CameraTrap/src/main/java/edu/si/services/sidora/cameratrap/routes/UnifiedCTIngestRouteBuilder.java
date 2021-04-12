@@ -27,10 +27,6 @@
 
 package edu.si.services.sidora.cameratrap.routes;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import edu.si.services.beans.fitsservlet.FITSServletRouteBuilder;
 import edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler;
 import edu.si.services.camel.fcrepo.FcrepoConfiguration;

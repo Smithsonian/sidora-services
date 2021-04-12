@@ -27,16 +27,13 @@
 
 package edu.si.services.sidora.cameratrap.configs;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import javax.validation.constraints.NotNull;
 
@@ -72,16 +69,11 @@ public class AmazonS3ClientConfig {
     }
 
     @Bean(name = "amazonS3Client")
-    public AmazonS3Client amazonS3Client() {
+    public S3Client amazonS3Client() {
 
-        BasicAWSCredentials basicAWSCredentials = new BasicAWSCredentials(accessKey, secretKey);
-
-        AWSCredentialsProvider awsCredentialsProvider = new AWSStaticCredentialsProvider(basicAWSCredentials);
-
-        AmazonS3Client s3client = (AmazonS3Client) AmazonS3ClientBuilder
-                .standard()
-                .withRegion(Regions.US_EAST_1)
-                .withCredentials(awsCredentialsProvider)
+        S3Client s3client = S3Client.builder()
+                .region(Region.US_EAST_1)
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
                 .build();
 
         return s3client;

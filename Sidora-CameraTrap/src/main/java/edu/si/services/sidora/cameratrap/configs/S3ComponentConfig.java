@@ -27,11 +27,11 @@
 
 package edu.si.services.sidora.cameratrap.configs;
 
-import com.amazonaws.services.s3.AmazonS3Client;
-import org.apache.camel.component.aws.s3.S3Component;
+import org.apache.camel.component.aws2.s3.AWS2S3Component;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * @author jbirkhimer
@@ -40,11 +40,11 @@ import org.springframework.context.annotation.Configuration;
 public class S3ComponentConfig {
 
     @Autowired
-    AmazonS3Client amazonS3Client;
+    S3Client amazonS3Client;
 
     @Bean("aws-s3")
-    public S3Component s3Component() {
-        S3Component s3Component = new S3Component();
+    public AWS2S3Component s3Component() {
+        AWS2S3Component s3Component = new AWS2S3Component();
         s3Component.getConfiguration().setAmazonS3Client(amazonS3Client);
         return s3Component;
     }
