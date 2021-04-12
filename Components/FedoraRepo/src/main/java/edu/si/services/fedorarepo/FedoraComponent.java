@@ -35,16 +35,16 @@ import edu.si.services.fedorarepo.ingest.FedoraIngestEndpoint;
 import edu.si.services.fedorarepo.pid.FedoraPidEndpoint;
 import edu.si.services.fedorarepo.relationship.FedoraRelationshipEndpoint;
 import edu.si.services.fedorarepo.search.FedoraSearchEndpoint;
+import org.apache.camel.Endpoint;
+import org.apache.camel.support.DefaultComponent;
+
 import java.util.Map;
 import java.util.logging.Logger;
-import org.apache.camel.Endpoint;
-import org.apache.camel.impl.DefaultComponent;
 
 /**
  * Represents the component that manages Fedora endpoints.
  */
-public class FedoraComponent extends DefaultComponent
-{
+public class FedoraComponent extends DefaultComponent {
     private static final Logger LOG = Logger.getLogger(FedoraComponent.class.getName());
 
     private FedoraSettings settings;
@@ -53,27 +53,20 @@ public class FedoraComponent extends DefaultComponent
     private FedoraClient client;
 
     @Override
-    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception
-    {
+    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         //TODO: Remove this or at least make it configurable
-        if (client == null)
-        {
-            if (this.settings != null && this.settings.hasCredentials())
-            {
+        if (client == null) {
+            if (this.settings != null && this.settings.hasCredentials()) {
                 LOG.info(String.format("Settings found:: Host: %s Username: %s", this.settings.getHost().toExternalForm(), this.settings.getUsername()));
                 client = new FedoraClient(settings.getCredentials());
-            }
-            else if (System.getProperty("si.fedora.user") != null && System.getProperty("si.fedora.password") != null)
-            {
-                String host = System.getProperty("si.fedora.host", "http://localhost:8080/fedora");
-                String user = System.getProperty("si.fedora.user");
-                String password = System.getProperty("si.fedora.password");
+            } else if (getCamelContext().resolvePropertyPlaceholders("{{si.fedora.host}}") != null && getCamelContext().resolvePropertyPlaceholders("{{si.fedora.user}}") != null && getCamelContext().resolvePropertyPlaceholders("{{si.fedora.password}}") != null) {
+                String host = getCamelContext().resolvePropertyPlaceholders("{{si.fedora.host}}");
+                String user = getCamelContext().resolvePropertyPlaceholders("{{si.fedora.user}}");
+                String password = getCamelContext().resolvePropertyPlaceholders("{{si.fedora.password}}");
 
                 LOG.info(String.format("Settings found:: Host: %s Username: %s", host, user));
                 client = new FedoraClient(new FedoraCredentials(host, user, password));
-            }
-            else
-            {
+            } else {
                 LOG.warning("No Fedora Settings found! Using defaults [Host: http://localhost:8080/fedora]");
                 client = new FedoraClient(new FedoraCredentials("http://localhost:8080/fedora", "fedoraAdmin", "password"));
             }
@@ -82,8 +75,7 @@ public class FedoraComponent extends DefaultComponent
         }//end if
 
         Endpoint endpoint;
-        if ("nextpid".equalsIgnoreCase(remaining))
-        {
+        if ("nextpid".equalsIgnoreCase(remaining)) {
             endpoint = new FedoraPidEndpoint(uri, this);
         }//end if
         //TODO: Finish 'ingest' with params and options...
@@ -91,45 +83,31 @@ public class FedoraComponent extends DefaultComponent
 //        {
 //            endpoint = new FedoraIngestEnpoint(uri, this);
 //        }//end else if
-        else if ("create".equalsIgnoreCase(remaining))
-        {
+        else if ("create".equalsIgnoreCase(remaining)) {
             endpoint = new FedoraIngestEndpoint(uri, this, true);
-        }
-        else if ("addDatastream".equalsIgnoreCase(remaining))
-        {
+        } else if ("addDatastream".equalsIgnoreCase(remaining)) {
             FedoraSettings.FedoraType opType =
                     getCamelContext().getTypeConverter().convertTo(FedoraSettings.FedoraType.class, remaining);
             FedoraDatastreamEndpoint fdsEndpoint = new FedoraAddDatastreamEndpoint(uri, this);
             endpoint = fdsEndpoint;
-        }
-        else if ("getDatastream".equalsIgnoreCase(remaining))
-        {
+        } else if ("getDatastream".equalsIgnoreCase(remaining)) {
             FedoraSettings.FedoraType opType =
-                getCamelContext().getTypeConverter().convertTo(FedoraSettings.FedoraType.class, remaining);
+                    getCamelContext().getTypeConverter().convertTo(FedoraSettings.FedoraType.class, remaining);
             FedoraDatastreamEndpoint fdsEndpoint = new FedoraGetDatastreamEndpoint(uri, this);
             endpoint = fdsEndpoint;
-        }
-        else if ("getDatastreamDissemination".equalsIgnoreCase(remaining))
-        {
+        } else if ("getDatastreamDissemination".equalsIgnoreCase(remaining)) {
             FedoraSettings.FedoraType opType =
                     getCamelContext().getTypeConverter().convertTo(FedoraSettings.FedoraType.class, remaining);
             FedoraDatastreamEndpoint fdsEndpoint = new FedoraGetDatastreamDisseminationEndpoint(uri, this);
             endpoint = fdsEndpoint;
-        }
-        else if ("purgeDatastream".equalsIgnoreCase(remaining))
-        {
+        } else if ("purgeDatastream".equalsIgnoreCase(remaining)) {
             FedoraSettings.FedoraType opType =
-                getCamelContext().getTypeConverter().convertTo(FedoraSettings.FedoraType.class, remaining);
+                    getCamelContext().getTypeConverter().convertTo(FedoraSettings.FedoraType.class, remaining);
             FedoraDatastreamEndpoint fdsEndpoint = new FedoraPurgeDatastreamEndpoint(uri, this);
             endpoint = fdsEndpoint;
-        }
-
-        else if ("search".equalsIgnoreCase(remaining))
-        {
+        } else if ("search".equalsIgnoreCase(remaining)) {
             endpoint = new FedoraSearchEndpoint(uri, this);
-        }
-        else if ("hasResource".equalsIgnoreCase(remaining) || "hasRelationship".equalsIgnoreCase(remaining) || "hasConcept".equalsIgnoreCase(remaining))
-        {
+        } else if ("hasResource".equalsIgnoreCase(remaining) || "hasRelationship".equalsIgnoreCase(remaining) || "hasConcept".equalsIgnoreCase(remaining)) {
             FedoraRelationshipEndpoint temp = new FedoraRelationshipEndpoint(uri, this);
             temp.setNameSpace("info:fedora/");
             temp.setPredicate(String.format("info:fedora/fedora-system:def/relations-external#%s", remaining));
@@ -137,8 +115,7 @@ public class FedoraComponent extends DefaultComponent
             endpoint = temp;
         }
 //        else if ("find".equalsIgnoreCase(remaining))
-        else
-        {
+        else {
             throw new UnsupportedOperationException("Could not create Fedora Endpoint for " + remaining);
         }//end else
 
@@ -147,18 +124,15 @@ public class FedoraComponent extends DefaultComponent
     }
 
     //Needed???
-    public FedoraClient getClient()
-    {
+    public FedoraClient getClient() {
         return client;
     }
 
-    public FedoraSettings getSettings()
-    {
+    public FedoraSettings getSettings() {
         return settings;
     }
 
-    public void setSettings(FedoraSettings settings)
-    {
+    public void setSettings(FedoraSettings settings) {
         this.settings = settings;
     }
 }

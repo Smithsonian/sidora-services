@@ -27,24 +27,53 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import edu.si.services.sidora.cameratrap.validation.CameraTrapValidationMessage;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ChoiceDefinition;
 import org.apache.camel.model.ToDynamicDefinition;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.camel.builder.Builder.header;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * @author jbirkhimer
  */
-public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport {
+@CamelSpringBootTest
+@SpringBootTest(properties = {
+        "logging.file.path=target/logs",
+        "processing.dir.base.path=${user.dir}/target",
+        "si.ct.uscbi.enableS3Routes=false",
+        "camel.springboot.java-routes-exclude-pattern=UnifiedCameraTrapInFlightConceptStatusPolling,UnifiedCameraTrapStartProcessing"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class UnifiedCameraTrapPostValidationTest {
 
-    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private static final Logger log = LoggerFactory.getLogger(UnifiedCameraTrapPostValidationTest.class);
+
+    @Autowired
+    CamelContext context;
+
+    //@EndpointInject(value = "direct:addFITSDataStream")
+    @Autowired
+    ProducerTemplate template;
 
     //Test Data Directory contains the datastreams and other resources for the tests
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles/DatastreamTestFiles";
@@ -74,37 +103,22 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
     private ArrayList expectedBody = new ArrayList<>();
 
     /**
-     * Override this method, and return the location of our Blueprint XML file to be used for testing.
-     * The actual camera trap route that the maven lifecycle phase process-test-resources executes
-     * to copy test resources to output folder target/test-classes.
-     */
-    @Override
-    protected String getBlueprintDescriptor() {
-        //use the production route for testing that the pom copied into the test resources
-        return "Routes/unified-camera-trap-route.xml";
-    }
-
-    /**
      * Initialize the camel headers, deployment manifest, and test data
      * @throws Exception
      */
-    @Override
+    @BeforeEach
     public void setUp() throws Exception {
-        disableJMX();
-
         //Store the Deployment Manifest as string to set the camel ManifestXML header
-        manifest = FileUtils.readFileToString(manifestFile);
+        manifest = FileUtils.readFileToString(manifestFile, "utf-8");
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
         headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
-        headers.put("ValidationErrors", "ValidationErrors");
+        headers.put("validationErrors", "validationErrors");
         headers.put("ProjectPID", "test:0000");
         headers.put("SitePID", "test:0000");
-
-        super.setUp();
     }
 
     /**
@@ -147,40 +161,36 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
     public void runUnifiedCameraTrapValidatePostIngestResourceCountRoute_Test(Integer resourceCount, String resourceRels_Ext, String fcrepo_objectResponse) throws Exception {
         //Set headers
         headers.put("SitePID", "test:00000");
-        headers.put("ValidationErrors", "ValidationErrors"); //Set the header for aggregation correlation
+        headers.put("validationErrors", "validationErrors"); //Set the header for aggregation correlation
         headers.put("ResourceCount", resourceCount); //Header that's incremented after a resource obj is ingested.
 
         //The RELS-EXT datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return but modified for our test
-        datastream = FileUtils.readFileToString(new File(testDataDir + resourceRels_Ext));
+        datastream = FileUtils.readFileToString(new File(testDataDir + resourceRels_Ext), "utf-8");
 
         //add the mock:result endpoint to the end of the ValidationErrorMessageAggregationStrategy route using AdviceWith
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidatePostIngestResourceCount").adviceWith(context, new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidatePostIngestResourceCount", false, a -> {
 
                 //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return but modified for our test
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(datastream));
+                a.weaveByToString(".*getDatastreamDissemination.*").replace().setBody().simple(datastream);
 
                 //set body for fedora ri search result
-                weaveByType(ToDynamicDefinition.class)
+                a.weaveByType(ToDynamicDefinition.class)
                         .replace()
-                        .setBody(simple(FileUtils.readFileToString(new File(testDataDir + fcrepo_objectResponse))));
+                        .setBody().simple(FileUtils.readFileToString(new File(testDataDir + fcrepo_objectResponse), "utf-8"));
 
                 //Send Validation complete and stop route
-                weaveAddLast()
-                        .setHeader("ValidationComplete", simple("true"))
+                a.weaveAddLast()
+                        .setHeader("validationComplete").simple("true")
                         .to("direct:validationErrorMessageAggregationStrategy")
                         .stop();
-            }
         });
 
         //Set mock endpoint for assertion
-        mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
@@ -212,20 +222,20 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         }
 
         //assertions
-        if (!expectedBody.isEmpty()) {
+        if (expectedBody instanceof ArrayList) {
             log.debug("expectedBody:\n" + expectedBody + "\nresultBody:\n" + resultBody);
             log.debug("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-            assertEquals("mock:result Body assertEquals failed!", expectedBody, resultBody);
+            assertEquals(expectedBody, resultBody, "mock:result Body assertEquals failed!");
 
         } else {
             log.debug("expectedBody:\n" + datastream.trim() + "\nresultBody:\n" + resultBody);
             log.debug("expectedBody Type:\n" + datastream.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-            assertEquals("mock:result Body assertEquals failed!", datastream.trim(), resultBody);
+            assertEquals(datastream.trim(), resultBody, "mock:result Body assertEquals failed!");
         }
 
-        assertMockEndpointsSatisfied();
+        mockEndpoint.assertIsSatisfied();
     }
 
     /**
@@ -238,6 +248,8 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         //Set the headers used in the route
         headers.put("VolunteerObservationPID", "test:00000");
         headers.put("ImageObservationPID", "test:00000");
+        headers.put("ImageResourcePID", "test:00000");
+        headers.put("modsImageSequenceId", "d18981s1");
 
         //Setup each datastream validation route to use our test data and set the expected validation error message
         setupEAC_CPF(false, new File(testDataDir + "/EAC-CPF/fail_EAC_CPF.xml"));
@@ -270,6 +282,8 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         //Set the headers used in the route
         headers.put("VolunteerObservationPID", "test:00000");
         headers.put("ImageObservationPID", "test:00000");
+        headers.put("ImageResourcePID", "test:00000");
+        headers.put("modsImageSequenceId", "d18981s1");
 
         //Setup each datastream validation route to use our test data and set the expected validation error message
         setupEAC_CPF(true, new File(testDataDir + "/EAC-CPF/valid_EAC_CPF.xml"));
@@ -339,7 +353,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return but modified for our test
-        datastream = FileUtils.readFileToString(new File(testDataDir + "/ResearcherObservation/valid_ResearcherObservationCSV.csv"));
+        datastream = FileUtils.readFileToString(new File(testDataDir + "/ResearcherObservation/valid_ResearcherObservationCSV.csv"), "utf-8");
 
         //Setup the expected validation message for CSV validations
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
@@ -354,25 +368,22 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         setupValidationErrorMessageAggregationStrategyAdviceWith();
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, routeId, false, a -> {
 
                 //provide the datastream as Fedora normally would but with out test data
-                weaveByToString(".*getDatastreamDissemination.*")
+                a.weaveByToString(".*getDatastreamDissemination.*")
                         .replace()
-                        .setBody(simple(String.valueOf(datastream)));
+                        .setBody().simple(String.valueOf(datastream));
                 //at the end of the route send body to the validation aggregator to aggregate any validation errors
                 //and again with completion predicate set then stop the route
-                weaveAddLast()
+                a.weaveAddLast()
                         .to("direct:validationErrorMessageAggregationStrategy")
-                        .setHeader("ValidationComplete", simple("true"))
+                        .setHeader("validationComplete").simple("true")
                         .to("direct:validationErrorMessageAggregationStrategy")
                         .stop();
-            }
         });
 
-        mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
@@ -387,9 +398,9 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         log.debug("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-        assertEquals("mock:result expectedBody equals resultBodyBody assertEquals failed!", expectedBody, resultBody);
+        assertEquals(expectedBody, resultBody, "mock:result expectedBody equals resultBodyBody assertEquals failed!");
 
-        assertMockEndpointsSatisfied();
+        mockEndpoint.assertIsSatisfied();
 
     }
 
@@ -401,24 +412,21 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
     public void validate_DatastreamFieldsRoute_IT() throws Exception {
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidateDatastreamFields").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidateDatastreamFields", false, a ->  {
 
-                // need to set header for the test created in the setupCSV advicewithroutebuilder so that
+                // need to set header for the test created in the setupCSV AdviceWith so that
                 // the correct observation csv datastream is used for researcher, volunteer, or image.
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectFirst().after().setHeader("testingVolunteerObservation", simple("true"));
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectIndex(1).after().setHeader("testingImageObservation", simple("true"));
+                a.weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectFirst().after().setHeader("testingVolunteerObservation").simple("true");
+                a.weaveByToString(".*validationErrorMessageAggregationStrategy.*").selectIndex(1).after().setHeader("testingImageObservation").simple("true");
 
-                weaveAddLast().stop();
-            }
+                a.weaveAddLast().stop();
         });
 
-        mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
-        mockEndpoint.expectedBodiesReceived(expectedBody.toString());
+//        mockEndpoint.expectedBodiesReceived(expectedBody);
 
         template.sendBodyAndHeaders("direct:validateDatastreamFields", "test", headers);
 
@@ -428,9 +436,9 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         log.debug("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-        assertEquals("mock:result expectedBody equals resultBodyBody assertEquals failed!", expectedBody, resultBody);
+        assertEquals(expectedBody, resultBody, "mock:result expectedBody equals resultBodyBody assertEquals failed!");
 
-        assertMockEndpointsSatisfied();
+        mockEndpoint.assertIsSatisfied();
     }
 
     /**
@@ -444,7 +452,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return but modified for our test
-        datastream = FileUtils.readFileToString(datastreamFile);
+        datastream = FileUtils.readFileToString(datastreamFile, "utf-8");
 
         //Setup the expected validation error message for EAC-CPF validations
         StringBuilder message = new StringBuilder();
@@ -461,15 +469,9 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         }
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidate_EAC-CPF_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidate_EAC-CPF_Datastream", false, a ->
                 //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return but modified for our test
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-            }
-        });
+                a.weaveByToString(".*getDatastreamDissemination.*").replace().setBody().simple(String.valueOf(datastream)));
     }
 
     /**
@@ -483,7 +485,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return but modified for our test
-        datastream = FileUtils.readFileToString(datastreamFile);
+        datastream = FileUtils.readFileToString(datastreamFile, "utf-8");
 
         //Setup the expected validation error message for FGDC validations
         StringBuilder message = new StringBuilder();
@@ -500,15 +502,9 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         };
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidate_FGDC_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
-
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidate_FGDC_Datastream", false, a ->
                 //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return but modified for our test
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-            }
-        });
+                a.weaveByToString(".*getDatastreamDissemination.*").replace().setBody().simple(String.valueOf(datastream)));
     }
 
     /**
@@ -522,7 +518,7 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //The datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return but modified for our test
-        datastream = FileUtils.readFileToString(datastreamFile);
+        datastream = FileUtils.readFileToString(datastreamFile, "utf-8");
 
         //Setup the expected validation error message for MODS validations
         StringBuilder message = new StringBuilder();
@@ -539,21 +535,16 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         }
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidate_MODS_Datastream").adviceWith(context, new AdviceWithRouteBuilder() {
-
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidate_MODS_Datastream", false, a ->
                 //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return but modified for our test
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
-            }
-        });
+                a.weaveByToString(".*getDatastreamDissemination.*").replace().setBody().simple(String.valueOf(datastream)));
     }
 
     /**
      * Researcher and Volunteer CSV Datastream test setup
      *
      * NOTE: The csv route is modified slightly only for testing purposes. A header is created in the
-     * validate_DatastreamFieldsRoute_IT advicewithroutebuilder after the researcher csv validation completes
+     * validate_DatastreamFieldsRoute_IT AdviceWith after the researcher csv validation completes
      * The modified csv validation route will use the volunteer datastream if the header value is true.
      *
      * @throws Exception
@@ -565,9 +556,9 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
 
         //The researcher or volunteer datastream that will be used in adviceWith to replace the getDatastreamDissemination endpoint
         // with the same exchange body that fedora would return but modified for our test
-        String researcherCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[0]);
-        String volunteerCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[1]);
-        String imageCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[2]);
+        String researcherCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[0], "utf-8");
+        String volunteerCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[1], "utf-8");
+        String imageCSVdatastream = FileUtils.readFileToString(datastreamFileCSV[2], "utf-8");
 
         //Setup the Researcher Observation expected validation error message
         expectedValidationMessage = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
@@ -597,44 +588,43 @@ public class UnifiedCameraTrapPostValidationTest extends CT_BlueprintTestSupport
         }
 
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidateCSVFields", false, a ->
                 // The csv route is modified slightly only for testing purposes. A header is created in the
-                // validate_DatastreamFieldsRoute_IT advicewithroutebuilder after the researcher csv validation completes
+                // validate_DatastreamFieldsRoute_IT AdviceWith after the researcher csv validation completes
                 // The modified csv validation route will use the volunteer datastream if the header value is true.
-                weaveByToString(".*getDatastreamDissemination.*").replace()
+                a.weaveByToString(".*getDatastreamDissemination.*").replace()
                         .choice()
                         .when(header("testingImageObservation").isEqualTo("true"))
-                        .setBody(simple(String.valueOf(imageCSVdatastream)))
+                            .setBody().simple(String.valueOf(imageCSVdatastream))
+                        .endChoice()
                         .when(header("testingVolunteerObservation").isEqualTo("true"))
-                        .setBody(simple(String.valueOf(volunteerCSVdatastream)))
+                            .setBody().simple(String.valueOf(volunteerCSVdatastream))
+                        .endChoice()
                         .otherwise()
-                        .setBody(simple(String.valueOf(researcherCSVdatastream)));
-            }
-        });
+                            .setBody().simple(String.valueOf(researcherCSVdatastream)));
     }
 
     /**
-     * Adding the mock:result endpoint at the end of the ValidationErrorMessageAggregationStrategy for asertions
+     * Adding the mock:result endpoint at the end of the ValidationErrorMessageAggregationStrategy for assertion's
      * The calling tests will set the completion predicate to notify the aggregator that aggregation is complete.
      * @throws Exception
      */
     private void setupValidationErrorMessageAggregationStrategyAdviceWith() throws Exception {
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidationErrorMessageAggregationStrategy").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidationErrorMessageAggregationStrategy", false, a -> {
 
-                //weaveByType(LogDefinition.class).after().to("mock:result");
-                weaveByType(ChoiceDefinition.class).before()
+                a.weaveByType(ChoiceDefinition.class).after().to("mock:result");
+                /*a.weaveByType(ChoiceDefinition.class).before()
+                        .process(exchange -> {
+                            Message out = exchange.getIn();
+                            log.debug("debug here");
+                        })
                         .choice()
                             .when().simple("${body} not is 'java.util.List'")
                                 .to("mock:result").stop()
                             .endChoice()
                         .end()
-                        .to("mock:result");
-            }
+                        .to("mock:result");*/
         });
     }
 }

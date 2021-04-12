@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2019 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <groupId>edu.si.services</groupId>
+        <artifactId>migrated-or-deprecated</artifactId>
+        <version>1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>SI :: Services :: Karaf Archive</name>
+    <artifactId>sidora-deployment</artifactId>
+    <packaging>kar</packaging>
+    <description>The SIdora Services Karaf Archive deployment artifact</description>
+
+    <properties>
+        <!--<target-karaf-etc-path>${basedir}/target/classes/resources/etc</target-karaf-etc-path>-->
+        <target-karaf-etc-path>${basedir}/target/etc</target-karaf-etc-path> <!-- for now keep config files out of KAR -->
+        <target-karaf-input-path>${basedir}/target/classes/resources/Input</target-karaf-input-path>
+        <target-karaf-deploy-path>${basedir}/target/classes/resources/deploy</target-karaf-deploy-path>
+        <target-karaf-sql-path>${basedir}/target/classes/resources/sql</target-karaf-sql-path>
+        <target-karaf-faceblur-path>${basedir}/target/classes/resources/FaceBlurrer</target-karaf-faceblur-path>
+    </properties>
+
+    <dependencies>
+        <!-- SIdora Beans-->
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>CameraTrap</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>Excel</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>VelocityToolsHandler</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.beans</groupId>
+            <artifactId>FITS-Servlet</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <!-- SIdora Components-->
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Extractor</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FcrepoRest</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>FedoraRepo</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Reader</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.services.camel</groupId>
+            <artifactId>Thumbnailator</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <!-- SIdora Tabular Services-->
+        <!--<dependency>
+            <groupId>edu.si.sidora</groupId>
+            <artifactId>excel2tabular-translator</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.sidora</groupId>
+            <artifactId>tabular-metadata-cxf-services-SMX-blueprint</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.si.sidora</groupId>
+            <artifactId>tabular-metadata-generator</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>-->
+
+        <!-- Sidora Batch Service -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-batch</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+
+        <!-- Sidora MCI Service -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-mci</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+
+        <!-- Edan-Sidora -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>edansidora</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+
+        <!-- Edan-Sidora Test Service -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>edan-test-util</artifactId>
+            <version>1.0</version>
+            <classifier>features</classifier>
+            <type>xml</type>
+        </dependency>-->
+
+        <!-- Sidora Solr -->
+        <!--<dependency>
+            <groupId>edu.si.services</groupId>
+            <artifactId>sidora-solr</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+
+    </dependencies>
+
+    <build>
+        <!--The properties file that will be used for tests and token replacement during resource filtering-->
+        <!--<filters>
+            <filter>${karaf.properties}</filter>
+        </filters>-->
+
+        <!-- Copy resources to output folder -->
+        <!-- resources added to target/classes/resources will be included in the KAR and will be deployed to the correct locations when deploying the KAR itself. This way we make sure that any revisions or new velocity,xslt's get updated -->
+        <resources>
+            <!-- Camera Trap -->
+            <resource>
+                <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <excludes>
+                    <exclude>system.properties</exclude> <!-- missing default smx properties properties so exclude so we don't break smx we create it below -->
+                </excludes>
+                <filtering>true</filtering>
+            </resource>
+            <!-- copy the system properties file to target dir -->
+            <resource>
+                <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
+                <targetPath>target</targetPath>
+                <excludes>
+                    <exclude>edu.si.sidora.karaf.cfg</exclude>
+                </excludes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Routes/Camera Trap/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Routes/Camera Trap/Route</directory>
+                <targetPath>target</targetPath>
+            </resource>
+            <!--<resource>
+                <directory>../Routes/Derivatives/Route</directory>
+                <targetPath>${basedir}/target</targetPath>
+            </resource>-->
+
+            <!-- Edan-Sidora -->
+            <!--<resource>
+                <directory>../Beans/Edan-Sidora/Karaf-config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Beans/Edan-Sidora/Karaf-config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>-->
+
+            <!-- Sidora-Batch -->
+            <!--<resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/deploy</directory>
+                <targetPath>${basedir}/target</targetPath>
+            </resource>
+            <resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Routes/Sidora-Batch/Karaf-config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
+            </resource>-->
+
+            <!-- Sidora-MCI -->
+            <!--<resource>
+                <directory>../Sidora-MCI/Karaf-Config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Sidora-MCI/Karaf-Config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Sidora-MCI/Karaf-Config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
+            </resource>-->
+
+            <resource>
+                <directory>../../FaceBlurrer</directory>
+                <targetPath>target/classes/resources/FaceBlurrer</targetPath>
+                <includes>
+                    <include>FaceBlurrer.py</include>
+                    <include>haarcascades/**</include>
+                </includes>
+            </resource>
+              
+            <!-- Sidora-Solr -->
+            <!--<resource>
+                <directory>../Sidora-Solr/Karaf-Config/etc</directory>
+                <targetPath>${target-karaf-etc-path}</targetPath>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/Input</directory>
+                <targetPath>${target-karaf-input-path}</targetPath>
+            </resource>
+            <resource>
+                <directory>../Sidora-Solr/Karaf-Config/sql</directory>
+                <targetPath>${target-karaf-sql-path}</targetPath>
+            </resource>-->
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.karaf.tooling</groupId>
+                <artifactId>karaf-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <startLevel>80</startLevel>
+                    <aggregateFeatures>true</aggregateFeatures>
+                    <includeTransitiveDependency>false</includeTransitiveDependency>
+                </configuration>
+            </plugin>
+
+            <!--
+                Plugin to add property files to maven for karaf feature.xml
+                When using 'configfile' element in the karaf feature.xml a maven url is required
+                Uncomment the 'configfile' section in the feature.xml and this plugin to enable this feature
+                Enabling will allow Karaf to automatically create/update config files in <karaf.home>/etc when a KAR is deployed
+            -->
+            <!--<plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-artifact</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                &lt;!&ndash; karaf config files &ndash;&gt;
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.karaf.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.karaf</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/system.properties</file>
+                                    <type>properties</type>
+                                    <classifier>system</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.emammal.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.emammal</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.batch.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.batch</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${target-karaf-etc-path}/edu.si.sidora.mci.cfg</file>
+                                    <type>cfg</type>
+                                    <classifier>edu.si.sidora.mci</classifier>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>-->
+        </plugins>
+    </build>
+
+    <!-- Profile configuration -->
+    <profiles>
+        <!-- The configuration of the testing profile -->
+        <profile>
+            <id>test</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <executions>
+                            <!-- supply properties to generate new config files -->
+                            <execution>
+                                <id>loadTestProperties</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>read-project-properties</goal>
+                                </goals>
+                                <configuration>
+                                    <files combine.self="append">
+                                        <!--<file>${project.root.basedir}/test.properties</file>-->
+                                        <file>${project.root.basedir}/test.properties</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- The configuration of the production profile -->
+        <!-- The profile will be activated when the system property "smx.home.path" is specified with any value -->
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>smx.home.path</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <executions>
+                            <!-- use production properties to generate new config files -->
+                            <execution>
+                                <id>loadSMXProperties</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>read-project-properties</goal>
+                                </goals>
+                                <configuration>
+                                    <files combine.self="append">
+                                        <file>${smx.home.path}/etc/edu.si.sidora.batch.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.emammal.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.karaf.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.mci.cfg</file>
+                                        <file>${smx.home.path}/etc/edu.si.sidora.solr.cfg</file>
+                                        <file>${smx.home.path}/etc/system.properties</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

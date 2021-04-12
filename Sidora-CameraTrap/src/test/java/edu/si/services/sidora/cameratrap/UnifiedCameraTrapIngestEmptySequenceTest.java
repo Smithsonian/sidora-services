@@ -27,29 +27,57 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.*;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.model.ChoiceDefinition;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for the Unified Camera Trap Ingest Pipeline
  * TODO: Add more tests
  * @author jbirkhimer
  */
-public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSupport {
+@Disabled("test is not complete, still needs work")
+@CamelSpringBootTest
+@SpringBootTest(properties = {
+        "logging.file.path=target/logs",
+        "processing.dir.base.path=${user.dir}/target",
+        "si.ct.uscbi.enableS3Routes=false",
+        "camel.springboot.java-routes-exclude-pattern=UnifiedCameraTrapInFlightConceptStatusPolling,UnifiedCameraTrapStartProcessing"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class UnifiedCameraTrapIngestEmptySequenceTest {
 
-    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private static final Logger log = LoggerFactory.getLogger(UnifiedCameraTrapIngestEmptySequenceTest.class);
+
+    @Autowired
+    CamelContext context;
+
+    //@EndpointInject(value = "direct:addFITSDataStream")
+    @Autowired
+    ProducerTemplate template;
 
     //Test Data Directory contains the datastreams and other resources for the tests
-    private String testDataDir = KARAF_HOME + "/UnifiedManifest-TestFiles";
+    private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles";
 
     //Camera Trap Deployment Info for testing
     private String deploymentId = "10002000";
@@ -66,29 +94,19 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
     private String manifest;
     File deploymentZip;
 
+    @PropertyInject(value = "{{si.ct.uscbi.process.dir.path}}")
     private String processDirPath;
+    @PropertyInject(value = "{{si.ct.uscbi.process.done.dir.path}}")
     private String processDoneDirPath;
+    @PropertyInject(value = "{{si.ct.uscbi.process.error.dir.path}}")
     private String processErrorDirPath;
-
-    /**
-     * Override this method, and return the location of our Blueprint XML file to be used for testing.
-     * The actual camera trap route that the maven lifecycle phase process-test-resources executes
-     * to copy test resources to output folder target/test-classes.
-     */
-    @Override
-    protected String getBlueprintDescriptor() {
-        //use the production route for testing that the pom copied into the test resources
-        return "Routes/unified-camera-trap-route.xml";
-    }
 
     /**
      * Initialize the camel headers, deployment manifest, and test data
      * @throws Exception
      */
-    @Override
+    @BeforeEach
     public void setUp() throws Exception {
-        disableJMX();
-
         //Store the Deployment Manifest as string to set the camel ManifestXML header
         manifest = FileUtils.readFileToString(manifestFile);
 
@@ -97,29 +115,14 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
         headers.put("deploymentId", deploymentId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
-        headers.put("ValidationErrors", "ValidationErrors");
+        headers.put("validationErrors", "validationErrors");
         headers.put("ProjectPID", "test:0000");
         headers.put("SitePID", "test:0000");
         headers.put("CamelFedoraPid", "test:1");
 
-        super.setUp();
-
-        processDirPath = getExtra().getProperty("si.ct.uscbi.process.dir.path");
-        processDoneDirPath = getExtra().getProperty("si.ct.uscbi.process.done.dir.path");
-        processErrorDirPath = getExtra().getProperty("si.ct.uscbi.process.error.dir.path");
-
         deleteDirectory(processDirPath);
         deleteDirectory(processDoneDirPath);
         deleteDirectory(processErrorDirPath);
-
-        //Modify the default error handler so that we can send failed exchanges to mock:result for assertions
-        // Sending to dead letter does not seem to work as expected for this
-        context.setErrorHandlerBuilder(new DefaultErrorHandlerBuilder().onPrepareFailure(new Processor() {
-            @Override
-            public void process(Exchange exchange) throws Exception {
-                template.send("mock:result", exchange);
-            }
-        }));
     }
 
     /**
@@ -136,32 +139,38 @@ public class UnifiedCameraTrapIngestEmptySequenceTest extends CT_BlueprintTestSu
         //The expected header values
         int skippedImageCountHeaderExpected = 0;
 
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
+
+        MockEndpoint mockError = context.getEndpoint("mock:error", MockEndpoint.class);
+
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, routeId, false, a -> {
+                    a.onException(IllegalArgumentException.class).to("mock:error").continued(true);
 
-                //add the mock:result endpoint and stop the route after the headers we are testing have been created
-                weaveByToString(".*reader:file.*").before().to("mock:result").stop();
-            }
-        });
+                    //add the mock:result endpoint and stop the route after the headers we are testing have been created
+                    a.weaveByToString(".*reader:file.*").before().to("mock:result").stop();
 
-        mockEndpoint = getMockEndpoint("mock:result");
+                    a.weaveByType(ChoiceDefinition.class).before().process(exchange -> {
+                       Message out = exchange.getIn();
+                       log.debug("debug here");
+                    });
+                }
+        );
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
-        mockEndpoint.expectedHeaderReceived("adjustedResourceCount", "true");
+        mockEndpoint.expectedHeaderReceived("AdjustedResourceCount", 0);
 
-
+        mockError.expectedMessageCount(1);
 
         template.sendBodyAndHeaders(routeURI, "2970s1i1.JPG", headers);
 
-        int skippedImageCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("adjustedResourceCount", Integer.class);
+        mockEndpoint.assertIsSatisfied();
+        mockError.assertIsSatisfied();
+
+        int skippedImageCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("AdjustedResourceCount", Integer.class);
 
         //Assertions
-        assertEquals("imageid header assertEquals failed!", skippedImageCountHeaderExpected, skippedImageCountHeaderResult);
-
-
-        assertMockEndpointsSatisfied();
+        assertEquals(skippedImageCountHeaderExpected, skippedImageCountHeaderResult, "imageid header assertEquals failed!");
     }
 }

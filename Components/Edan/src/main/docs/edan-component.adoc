@@ -1,0 +1,74 @@
+[[edan-component]]
+= Edan Component
+:docTitle: Edan
+:artifactId: Edan
+:description: Represents a Edan endpoint.
+:since: 1.0
+:supportLevel: Preview
+:component-header: Only producer is supported
+include::{cq-version}@camel-quarkus:ROOT:partial$reference/components/edan.adoc[opts=optional]
+
+*Since Camel {since}*
+
+*{component-header}*
+
+// component options: START
+The Edan component supports 7 options, which are listed below.
+
+
+
+[width="100%",cols="2,5,^1,2",options="header"]
+|===
+| Name | Description | Default | Type
+| *app_id* (producer) | EDAN AppId |  | String
+| *auth_type* (producer) | int indicates the authentication type/level 0 for unsigned/trusted/T1 requests; (currently unused) 1 for signed/T2 requests; 2 for password based (unused) auth_type is only for future, this code is only for type 1 |  | int
+| *edan_key* (producer) | EDAN key |  | String
+| *edanBaseUrl* (producer) | EDAN base url |  | URL
+| *lazyStartProducer* (producer) | Whether the producer should be started lazy (on the first message). By starting lazy you can use this to allow CamelContext and routes to startup in situations where a producer may otherwise fail during starting and cause the route to fail being started. By deferring this startup to be lazy then the startup failure can be handled during routing messages via Camel's routing error handlers. Beware that when the first message is processed then creating and starting the producer may take a little time and prolong the total processing time of the processing. | false | boolean
+| *autowiredEnabled* (advanced) | Whether autowiring is enabled. This is used for automatic autowiring options (the option must be marked as autowired) by looking up in the registry to find if there is a single instance of matching type, which then gets configured on the component. This can be used for automatic configuring JDBC data sources, JMS connection factories, AWS Clients, etc. | true | boolean
+| *edanConfiguration* (advanced edan config) | Set the component's configuration. |  | EdanConfiguration
+|===
+// component options: END
+
+// endpoint options: START
+The Edan endpoint is configured using URI syntax:
+
+----
+edan:service
+----
+
+with the following path and query parameters:
+
+=== Path Parameters (1 parameters):
+
+
+[width="100%",cols="2,5,^1,2",options="header"]
+|===
+| Name | Description | Default | Type
+| *edanService* | *Required* The EDAN Action to be performed. There are 5 enums and the value can be one of: search, getContent, editContent, createContent, delete | search | String
+|===
+
+
+=== Query Parameters (15 parameters):
+
+
+[width="100%",cols="2,5,^1,2",options="header"]
+|===
+| Name | Description | Default | Type
+| *content* (producer) | the content to create or edit. Must be JSON. |  | String
+| *edanId* (producer) | The id of the content. Either the url or id fields are required. |  | String
+| *facet* (producer) | Include query facets in the results. | false | String
+| *fqs* (producer) | Filter query params. |  | String
+| *lazyStartProducer* (producer) | Whether the producer should be started lazy (on the first message). By starting lazy you can use this to allow CamelContext and routes to startup in situations where a producer may otherwise fail during starting and cause the route to fail being started. By deferring this startup to be lazy then the startup failure can be handled during routing messages via Camel's routing error handlers. Beware that when the first message is processed then creating and starting the producer may take a little time and prolong the total processing time of the processing. | false | boolean
+| *linkedContent* (producer) | A JSON array of EDAN search requests formatted with Solr join syntax. Each JSON object requires a name property. | [] | String
+| *linkedContentType* (producer) | The linked content type of the content | [] | String
+| *profile* (producer) | The search profile. | search | String
+| *q* (producer) | The search term. |  | String
+| *rows* (producer) | The number of rows returned. Default value notice: Size range: 0-100 | 10 | String
+| *sortDir* (producer) | The sort direction. Default value notice: Allowed values: asc, desc | asc | String
+| *start* (producer) | The offset to start the results from. | 0 | String
+| *type* (producer) | The type of the content. |  | String
+| *url* (producer) | The url of the content. Either the url or id fields are required. |  | String
+| *synchronous* (advanced) | Sets whether synchronous processing should be strictly used, or Camel is allowed to use asynchronous processing (if supported). | false | boolean
+|===
+// endpoint options: END

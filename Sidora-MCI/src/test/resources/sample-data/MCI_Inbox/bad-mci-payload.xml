@@ -117,8 +117,8 @@
     </Field>
     <Field Type="Text" Name="Approving_x0020_Official_x0020_E" DisplayName="Approving Official Email">testOfficial@email.com
     </Field>
-    <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
-    <Field Type="Text" Name="folderholderemail" DisplayName="Folder Holder Email">testFolderHolder@email.com</Field>
+    <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\camelWBUser</Field>
+    <Field Type="Text" Name="folderholderemail" DisplayName="Folder Holder Email">camelWBUser@email.com</Field>
     <Field Type="Text" Name="FolderHolderPhone" DisplayName="Pholder Holder Phone">111-222-3333</Field>
     <Field Type="Text" Name="KeywordType1" DisplayName="Keyword Type 1">type 1</Field>
     <Field Type="Text" Name="KeywordType2" DisplayName="Keyword Type 2">type 2</Field>

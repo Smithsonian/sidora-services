@@ -27,23 +27,20 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import edu.si.services.sidora.cameratrap.PostIngestionValidator;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import edu.si.services.sidora.cameratrap.validation.PostIngestionValidator;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit testing for the PostIngestionValidator class.
  *
  * @author parkjohn
  */
-public class PostIngestionValidatorTest extends CamelTestSupport {
+public class PostIngestionValidatorTest {
 
     private final PostIngestionValidator validator = new PostIngestionValidator();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     /**
      * Testing illegal argument exception thrown when null passed in for the expected Fedora Object's DSIDs into the validator
@@ -51,9 +48,9 @@ public class PostIngestionValidatorTest extends CamelTestSupport {
      */
     @Test
     public void testValidateDatastreamTypeCheckMissingArgument() {
-        thrown.expect(IllegalArgumentException.class);
-
-        validator.validateDatastreamExists(null,"OBJ, TN");
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->
+        validator.validateDatastreamExists(null,"OBJ, TN")
+        );
     }
 
     /**
@@ -62,9 +59,9 @@ public class PostIngestionValidatorTest extends CamelTestSupport {
      */
     @Test
     public void testValidateFedoraDSIDMissingArgument() {
-        thrown.expect(IllegalArgumentException.class);
-
-        validator.validateDatastreamExists("OBJ, TN", " ");
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->
+        validator.validateDatastreamExists("OBJ, TN", " ")
+        );
     }
 
     /**

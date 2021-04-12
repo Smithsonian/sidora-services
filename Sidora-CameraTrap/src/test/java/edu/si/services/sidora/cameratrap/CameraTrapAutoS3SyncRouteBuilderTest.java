@@ -27,44 +27,75 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import edu.si.services.sidora.cameratrap.CameraTrapAutoS3SyncRouteBuilder;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import edu.si.services.sidora.cameratrap.routes.CameraTrapAutoS3SyncRouteBuilder;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.RoutesBuilder;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.spring.boot.CamelAutoConfiguration;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.apache.camel.test.spring.junit5.UseAdviceWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
-/**
- * Integration testing for the CameraTrapAutoS3SyncRouteBuilder class.
- *
- * @author parkjohn
- */
-public class CameraTrapAutoS3SyncRouteBuilderTest extends CamelTestSupport {
+import static org.junit.jupiter.api.Assertions.*;
 
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+@CamelSpringBootTest
+@SpringBootTest(classes = {CamelAutoConfiguration.class, CameraTrapAutoS3SyncRouteBuilderTest.class},
+        properties = {"logging.file.path=target/logs", "si.ct.uscbi.enableS3Routes=false"}
+)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+@UseAdviceWith
+public class CameraTrapAutoS3SyncRouteBuilderTest extends CameraTrapAutoS3SyncRouteBuilder {
+
+    private static final Logger log = LoggerFactory.getLogger(AwsS3PollAndUploadRouteTest.class);
+
+    @Autowired
+    private CamelContext context;
+    @Autowired
+    private ProducerTemplate template;
+
+    RoutesBuilder routesBuilder = new RouteBuilder() {
+        @Override
+        public void configure() throws Exception {
+            if (enableS3Routes) {
+                from("timer:enableS3RoutesTest?fixedRate=true&repeatCount=5&period=5000").routeId("enableS3RoutesTest")
+                        .log("testing...")
+                        .to("mock:result");
+            } else if (enableS3Routes == null){
+                throw new IllegalArgumentException("si.ct.uscbi.enableS3Routes property must be set");
+            }
+        }
+    };
 
     @Test
     public void testEnableS3RoutesGetterMatching() {
-        Boolean enableS3Routes = true;
-        CameraTrapAutoS3SyncRouteBuilder routeBuilder = new CameraTrapAutoS3SyncRouteBuilder(enableS3Routes);
-
-        assertEquals(enableS3Routes, routeBuilder.getEnableS3Routes());
+        enableS3Routes = true;
+        Assertions.assertEquals(true, isEnableS3Routes());
     }
 
     @Test
     public void testEnableS3RoutesGetterNotMatching() {
-        Boolean enableS3Routes = true;
-        CameraTrapAutoS3SyncRouteBuilder routeBuilder = new CameraTrapAutoS3SyncRouteBuilder(enableS3Routes);
-
-        assertNotEquals(false, routeBuilder.getEnableS3Routes());
+        enableS3Routes = true;
+        assertNotEquals(false, isEnableS3Routes());
     }
 
     @Test
     public void testEnableS3RoutesException() {
-        thrown.expect(IllegalArgumentException.class);
-        Boolean enableS3Routes = null;
-        CameraTrapAutoS3SyncRouteBuilder routeBuilder = new CameraTrapAutoS3SyncRouteBuilder(enableS3Routes);
+        Exception exception = assertThrows(NullPointerException.class, () -> {
+            enableS3Routes = null;
+            context.addRoutes(routesBuilder);
+        });
+
+        assertTrue(exception instanceof NullPointerException);
 
     }
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=Sidora EDAN/IDS Service
+After=syslog.target ssd.mount networking.service
+
+[Service]
+User=fedora
+ExecStart=@project.build.directory@/@project.build.finalName@.jar
+SuccessExitStatus=143
+SyslogIdentifier=sidora-edan-ids-service
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

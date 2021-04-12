@@ -35,14 +35,18 @@ import org.apache.camel.Header;
 import org.apache.camel.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** This class is used to create the POJO that JAXB will use to return XML as a response
  * @author jbirkhimer
  */
+@Configuration(value = "responseControllerBean")
 public class ResponseControllerBean {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseControllerBean.class);
 
@@ -55,7 +59,9 @@ public class ResponseControllerBean {
      * @param statusResponse
      * @return
      */
-    public BatchStatus batchStatus(Exchange exchange, @Header("batchRequest") ArrayList<HashMap<String, Object>> requestMap, ArrayList<HashMap<String, Object>> statusResponse) {
+    public BatchStatus batchStatus(Exchange exchange,
+                                   @Header("batchRequest") List<LinkedCaseInsensitiveMap<String>> requestMap,
+                                   @Header("statusResponse") List<LinkedCaseInsensitiveMap<String>> statusResponse) {
 
         out = exchange.getIn();
 
@@ -76,7 +82,7 @@ public class ResponseControllerBean {
 
         ArrayList<ResourceStatus> resourceStatusArrayList = new ArrayList<>();
 
-        for (HashMap hashMap : statusResponse) {
+        for (LinkedCaseInsensitiveMap hashMap : statusResponse) {
             ResourceStatus resourceStatus = new ResourceStatus();
             resourceStatus.setFile(String.valueOf(hashMap.get("resourceFile")));
             //resourceStatus.setPid(String.valueOf(hashMap.get("pid")) == null ? "" : String.valueOf(hashMap.get("pid")));

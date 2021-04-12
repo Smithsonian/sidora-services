@@ -33,10 +33,12 @@ import org.apache.camel.PropertyInject;
 import org.apache.cxf.common.util.Base64Utility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Configuration;
 
 /** Setting the Fedora Auth UN/PW for Fedora REST calls
  * @author jbirkhimer
  */
+@Configuration(value = "requestProcessor")
 public class RequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(RequestProcessor.class);
 
@@ -45,8 +47,6 @@ public class RequestProcessor {
 
     @PropertyInject(value = "si.fedora.password")
     private String fedoraPasword;
-
-    private Message out;
 
     public void setAuthorization(Exchange exchange) {
         Message inMessage = exchange.getIn();

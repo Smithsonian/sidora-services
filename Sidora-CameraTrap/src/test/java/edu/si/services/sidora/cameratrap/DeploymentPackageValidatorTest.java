@@ -27,27 +27,21 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import edu.si.services.sidora.cameratrap.DeploymentPackageValidator;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import edu.si.services.sidora.cameratrap.validation.DeploymentPackageValidator;
+import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit testing for the DeploymentPackageValidator class.
  *
  * @author parkjohn
  */
-public class DeploymentPackageValidatorTest extends CamelTestSupport {
+public class DeploymentPackageValidatorTest {
 
-    /**
-     * Used to validate methods that throw expected exceptions
-     */
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
     private final DeploymentPackageValidator validator = new DeploymentPackageValidator();
 
     /**
@@ -57,10 +51,12 @@ public class DeploymentPackageValidatorTest extends CamelTestSupport {
      */
     @Test
     public void testValidatResourceCountIllegalArgument() throws IOException {
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("count not found");
+        //Used to validate methods that throw expected exceptions
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->
+        validator.validateResourceCount("/opt/sidora/smx/CameraTrapData/path...","jpg,jpeg",null)
+        );
 
-        validator.validateResourceCount("/opt/sidora/smx/CameraTrapData/path...","jpg,jpeg",null);
+        assertTrue(exception.getMessage().contains("count not found"));
     }
 
     /**
@@ -70,10 +66,12 @@ public class DeploymentPackageValidatorTest extends CamelTestSupport {
      */
     @Test
     public void testValidateAbsolutePathIllegalArgument() throws IOException {
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("absolute path");
+        //Used to validate methods that throw expected exceptions
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->
+        validator.validateResourceCount("","jpg,jpeg",23)
+        );
 
-        validator.validateResourceCount("","jpg,jpeg",23);
+        assertTrue(exception.getMessage().contains("absolute path"));
     }
 
     /**
@@ -83,10 +81,12 @@ public class DeploymentPackageValidatorTest extends CamelTestSupport {
      */
     @Test
     public void testValidateAbsolutePathNotFound() throws IOException {
-        thrown.expect(FileNotFoundException.class);
-        thrown.expectMessage("path not found");
+        //Used to validate methods that throw expected exceptions
+        Exception exception = assertThrows(FileNotFoundException.class, () ->
+        validator.validateResourceCount("/opt/sidora/smx/CameraTrapData/00000000/manifest.xml","jpg,jpeg",2)
+        );
 
-        validator.validateResourceCount("/opt/sidora/smx/CameraTrapData/00000000/manifest.xml","jpg,jpeg",2);
+        assertTrue(exception.getMessage().contains("path not found"));
     }
 
     /**

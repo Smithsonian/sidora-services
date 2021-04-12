@@ -40,7 +40,7 @@
     <name>SI :: Services :: Beans :: FITS-Servlet</name>
     <groupId>edu.si.services.beans</groupId>
     <artifactId>FITS-Servlet</artifactId>
-    <packaging>bundle</packaging>
+    <!--<packaging>bundle</packaging>-->
     <version>1.0</version>
 
     <properties>
@@ -49,7 +49,32 @@
 
     <dependencies>
 
+        <!-- Camel -->
         <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-spring-boot-starter</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-context</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-http-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-http-common-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!--<dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
             <scope>provided</scope>
@@ -57,12 +82,12 @@
 
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http4</artifactId>
+            <artifactId>camel-http</artifactId>
             <scope>provided</scope>
-        </dependency>
+        </dependency>-->
 
         <!-- Logging -->
-        <dependency>
+        <!--<dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <scope>provided</scope>
@@ -76,18 +101,35 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
-        </dependency>
+        </dependency>-->
+
+        <!-- Testing -->
+        <!--<dependency>
+            <groupId>org.apache.camel.karaf</groupId>
+            <artifactId>camel-test-blueprint</artifactId>
+            <scope>test</scope>
+        </dependency>-->
 
         <!-- Testing -->
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-blueprint</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.vaadin.external.google</groupId>
+                    <artifactId>android-json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-
+        <!--<dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>-->
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-test-blueprint</artifactId>
+            <artifactId>camel-test-spring-junit5</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -103,19 +145,29 @@
             <artifactId>xmlunit</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Test Logging -->
-        <dependency>
+        <!--<dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Integration Testing -->
+        &lt;!&ndash; Integration Testing &ndash;&gt;
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient-osgi</artifactId>
             <scope>compile</scope>
+        </dependency>-->
+
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
         </dependency>
 
     </dependencies>
@@ -147,20 +199,20 @@
             </plugin>
 
             <!-- To generate the MANIFEST-FILE of the bundle. -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>edu.si.services.beans.fitsservlet</Bundle-SymbolicName>
-                        <!-- <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency> -->
-                        <!-- <Embed-Transitive>true</Embed-Transitive> -->
+                        &lt;!&ndash; <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency> &ndash;&gt;
+                        &lt;!&ndash; <Embed-Transitive>true</Embed-Transitive> &ndash;&gt;
                         <Export-Package>edu.si.services.beans.fitsservlet</Export-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
             <!-- Reserve network ports for integration testing. -->
             <plugin>

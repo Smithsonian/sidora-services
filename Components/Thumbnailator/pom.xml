@@ -75,11 +75,11 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
 
         <!-- Testing -->
         <dependency>
@@ -100,8 +100,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.camel</groupId>
+            <groupId>org.apache.camel.karaf</groupId>
             <artifactId>camel-test-blueprint</artifactId>
+            <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
 

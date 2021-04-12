@@ -27,34 +27,62 @@
 
 package edu.si.services.camel.fcrepo;
 
-import org.apache.camel.Consumer;
-import org.apache.camel.Processor;
-import org.apache.camel.Producer;
-import org.apache.camel.RuntimeCamelException;
-import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.*;
+import org.apache.camel.api.management.ManagedResource;
+import org.apache.camel.spi.*;
+import org.apache.camel.support.DefaultEndpoint;
+import org.apache.camel.util.ObjectHelper;
+import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
+
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.util.Map;
 
 /**
  * FcrepoEndpoint is used with FcrepoComponent.  Currently only supports producer and the format parameter.
  *
  * @author parkjohn
  */
+@ManagedResource(description = "Managed FcrepoEndpoint")
+@UriEndpoint(firstVersion = "1.0", scheme = "fcrepo", title = "Fedora's REST API", syntax = "fcrepo:objects", apiSyntax = "objects/objectPID", producerOnly = true, category = {Category.WEBSERVICE, Category.REST, Category.API})
 class FcrepoEndpoint extends DefaultEndpoint {
 
-    private String format;
-    private String query;
+    @UriPath(description = "Fedora path")
+    @Metadata(required = true)
+    private String path;
+
+    @UriParam(defaultValue = "GET")
+    private String method = "GET";
+
+    @UriParam(name = "pid", description = "object pid")
     private String pid;
-    private String resultFormat;
 
-    private final FcrepoConfiguration fcrepoConfiguration;
+    @UriParam(name = "query", description = "Query for the fedora ri")
+    private String query;
 
+    @UriParam(name = "format", defaultValue = "xml")
+    private String format = "xml";
+
+    @UriParam(name = "resultFormat", defaultValue = "xml")
+    private String resultFormat = "xml";
+
+    @UriParam(label = "advanced")
+    private HeaderFilterStrategy headerFilterStrategy;
+
+    private FcrepoConfiguration configuration;
+    private String queryString;
+
+    /**
+     * Create a FcrepoEndpoint with a uri, path, component, and configuration
+     * @param uri
+     * @param component
+     */
     public FcrepoEndpoint(String uri, FcrepoComponent component) {
         super(uri, component);
-        if (component.getFcrepoConfiguration() != null) {
-            this.fcrepoConfiguration = component.getFcrepoConfiguration();
-        }
-        else {
-            this.fcrepoConfiguration = new FcrepoConfiguration();
-        }
     }
 
     /**
@@ -89,38 +117,44 @@ class FcrepoEndpoint extends DefaultEndpoint {
     }
 
     /**
-     * Fedora format parameter getter - ex) HTML, XML
-     * @return format
+     * FcrepoConfiguration getter
+     *
+     * @return fcrepoConfiguration
      */
-    public String getFormat() {
-        return format;
+    public FcrepoConfiguration getConfiguration() {
+        return configuration;
     }
 
     /**
-     * Fedora format parameter setter - ex) HTML, XML
+     * configuration setter
      *
-     * @param format passed in format parameter
+     * @param config The FcrepoConfiguration
      */
-    public void setFormat(String format) {
-        this.format = format;
+    public void setConfiguration(final FcrepoConfiguration config) {
+        configuration = config;
+    }
+
+    public String getPath() {
+        return path;
     }
 
     /**
-     * Fedora query parameter getter
-     *
-     * @return query
+     * Fedora path ex) objects, /objects/{pid}/datastreams/{dsID}
+     * @param path
      */
-    public String getQuery() {
-        return query;
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getMethod() {
+        return method;
     }
 
     /**
-     * Fedora query parameter setter - ex) query=pid%7Esi:121909
-     *
-     * @param query
+     * Sets the method to process the request
      */
-    public void setQuery(String query) {
-        this.query = query;
+    public void setMethod(String method) {
+        this.method = method;
     }
 
     /**
@@ -142,17 +176,46 @@ class FcrepoEndpoint extends DefaultEndpoint {
     }
 
     /**
-     * Fedora resultFormat parameter getter
+     * Fedora query parameter getter
      *
-     * @return resultFormat
+     * @return query
      */
+    public String getQuery() {
+        return query;
+    }
+
+    /**
+     * Fedora query parameter setter - ex) query=pid%7Esi:121909
+     *
+     * @param query
+     */
+    public void setQuery(String query) {
+        this.query = query;
+    }
+
+    /**
+     * Fedora format parameter getter - ex) HTML, XML
+     * @return format
+     */
+    public String getFormat() {
+        return format;
+    }
+
+    /**
+     * Fedora format parameter setter - ex) HTML, XML
+     *
+     * @param format passed in format parameter
+     */
+    public void setFormat(String format) {
+        this.format = format;
+    }
+
     public String getResultFormat() {
         return resultFormat;
     }
 
     /**
-     * Fedora resultFormat parameter setter - ex) resultFormat=xml
-     *
+     * Fedora format parameter setter - ex) HTML, XML
      * @param resultFormat
      */
     public void setResultFormat(String resultFormat) {
@@ -160,12 +223,60 @@ class FcrepoEndpoint extends DefaultEndpoint {
     }
 
     /**
-     * FcrepoConfiguration getter
-     *
-     * @return fcrepoConfiguration
+     * Fedora HeaderFilterStrategy
+     * @return HeaderFilterStrategy
      */
-    public FcrepoConfiguration getFcrepoConfiguration() {
-        return fcrepoConfiguration;
+    public HeaderFilterStrategy getHeaderFilterStrategy() {
+        return headerFilterStrategy;
     }
 
+    /**
+     * Fedora headerFilterStrategy
+     * @param headerFilterStrategy
+     */
+    public void setHeaderFilterStrategy(HeaderFilterStrategy headerFilterStrategy) {
+        this.headerFilterStrategy = headerFilterStrategy;
+    }
+
+    public String getQueryString() {
+        return queryString;
+    }
+
+    /**
+     * Sets the uriPattern
+     */
+    public void setQueryString(String queryString) {
+        this.queryString = queryString;
+    }
+
+    @Override
+    protected void doInit() throws Exception {
+        super.doInit();
+        // Validate mandatory user password
+        ObjectHelper.notNull(configuration.getUsername(), "username");
+        ObjectHelper.notNull(configuration.getPassword(), "password");
+    }
+
+    public WebTarget createWebClientTarget() {
+
+        final Client client = ClientBuilder.newBuilder().build();
+
+        URI uri = null;
+        if (ObjectHelper.isNotEmpty(configuration.getHost()) && ObjectHelper.isNotEmpty(getPath()) && ObjectHelper.isNotEmpty(getQueryString())) {
+            uri = UriBuilder.fromUri(configuration.getHost()).path(getPath()).replaceQuery(getQueryString()).build();
+        }
+
+        return client.target(uri);
+    }
+
+    /**
+     * Returns the base64 encoded basic authentication token.
+     *
+     * @return base64 encoded authorization header for the given username/password in configuration
+     * @param username
+     * @param password
+     */
+    private BasicAuthentication getBasicAuthToken(String username, String password) {
+        return new BasicAuthentication(username, password);
+    }
 }

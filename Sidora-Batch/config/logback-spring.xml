@@ -1,0 +1,76 @@
+<!--
+  ~ Copyright 2018-2019 Smithsonian Institution.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  ~ use this file except in compliance with the License.You may obtain a copy of
+  ~ the License at: http://www.apache.org/licenses/
+  ~
+  ~ This software and accompanying documentation is supplied without
+  ~ warranty of any kind. The copyright holder and the Smithsonian Institution:
+  ~ (1) expressly disclaim any warranties, express or implied, including but not
+  ~ limited to any implied warranties of merchantability, fitness for a
+  ~ particular purpose, title or non-infringement; (2) do not assume any legal
+  ~ liability or responsibility for the accuracy, completeness, or usefulness of
+  ~ the software; (3) do not represent that use of the software would not
+  ~ infringe privately owned rights; (4) do not warrant that the software
+  ~ is error-free or will be maintained, supported, updated or enhanced;
+  ~ (5) will not be liable for any indirect, incidental, consequential special
+  ~ or punitive damages of any kind or nature, including but not limited to lost
+  ~ profits or loss of data, on any basis arising from contract, tort or
+  ~ otherwise, even if any of the parties has been warned of the possibility of
+  ~ such loss or damage.
+  ~
+  ~ This distribution includes several third-party libraries, each with their own
+  ~ license terms. For a complete copy of all copyright and license terms, including
+  ~ those of third-party libraries, please see the product release notes.
+  -->
+
+<configuration scan="true">
+  <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+  <property name="LOG_FILE" value="${LOG_FILE:-${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}}/spring.log}"/>
+
+  <!--  <property name="FILE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN}"/>-->
+  <property name="FILE_LOG_PATTERN" value="%d{ISO8601} | %highlight(%-5.5p) | %-16.16t | %-32.32c{1} | %-32.32C %4L | RouteId: %X{camel.routeId} | %m%n"/>
+  <!--  <property name="FILE_LOG_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n"/>-->
+  <!--  <property name="FILE_LOG_PATTERN" value="%d{ISO8601} | %highlight(%-5.5p) | %-16.16t | %-32.32c{1} | %-32.32C %4L | %m%n"/>-->
+  <!--  <property name="FILE_LOG_PATTERN" value="%d{ISO8601} | %highlight(%-5.5p) | %-16.16t | %-32.32c{1} | %-32.32C %4L | ContextID: %X{camel.contextId} | RouteId: %X{camel.routeId} | %m%n"/>-->
+  <!--  <property name="FILE_LOG_PATTERN" value="%d{ISO8601} | %highlight(%-5.5p) | %-16.16t | %-32.32c{1} | %-32.32C %4L | RouteId: %X{camel.routeId} | %m%n"/>-->
+  <!--  <property name="FILE_LOG_PATTERN" value="[%-5p] | - %m%n"/>-->
+  <!--  <property name="FILE_LOG_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>-->
+  <!--  <property name="FILE_LOG_PATTERN" value="[%-5p] [%c{1}.%M\(\):%L] | - %m%n"/>  -->
+
+  <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(%-32.32logger{32}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+  <springProfile name="test,testSrv03,testSrv04">
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+    <root level="INFO">
+      <appender-ref ref="CONSOLE" />
+    </root>
+  </springProfile>
+
+  <include resource="org/springframework/boot/logging/logback/file-appender.xml" />
+
+  <logger name="edu.si" level="INFO"/>
+  <logger name="edu.si.services.sidora.cameratrap" level="INFO"/>
+  <logger name="edu.si.batch" level="INFO"/>
+  <logger name="edu.si.fits" level="INFO"/>
+  <logger name="org.apache.camel.component.http" level="DEBUG"/>
+  <logger name="org.apache.http" level="INFO"/>
+  <logger name="org.apache.commons.httpclient" level="DEBUG"/>
+  <logger name="org.apache.http.headers" level="DEBUG"/>
+  <logger name="org.apache.camel" level="INFO"/>
+  <logger name="org.springframework" level="INFO" />
+  <logger name="org.apache.camel.processor.SendDynamicProcessor" level="INFO"/>
+  <logger name="org.apache.camel.Tracing" level="TRACE"/>
+  <logger name="org.apache.cxf.cxf-rt-features-logging" level="DEBUG"/>
+  <logger name="org.apache.cxf.ext.logging.LoggingFeature" level="DEBUG"/>
+  <logger name="sun.rmi" level="OFF"/>
+  <logger name="org.apache.camel.support.processor.validation.ValidatingProcessor" level="ERROR"/>
+  <logger name="org.apache.camel.support.processor.validation.SchemaReader" level="ERROR"/>
+
+  <root level="INFO">
+    <appender-ref ref="FILE" />
+  </root>
+
+</configuration>

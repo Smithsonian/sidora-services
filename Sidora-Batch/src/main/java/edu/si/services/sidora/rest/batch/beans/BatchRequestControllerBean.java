@@ -29,12 +29,14 @@ package edu.si.services.sidora.rest.batch.beans;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.builder.xml.Namespaces;
-import org.apache.camel.builder.xml.XPathBuilder;
+import org.apache.camel.language.xpath.XPathBuilder;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -47,6 +49,7 @@ import java.util.UUID;
 /** This class generated the UUID for CorrelationId's and provides helper methods for the camel route.
  * @author jbirkhimer
  */
+@Configuration(value = "batchRequestControllerBean")
 public class BatchRequestControllerBean {
 
     private static final Logger LOG = LoggerFactory.getLogger(BatchRequestControllerBean.class);
@@ -138,7 +141,7 @@ public class BatchRequestControllerBean {
      * @throws URISyntaxException
      * @throws MalformedURLException
      */
-    public void getMIMEType(Exchange exchange) throws URISyntaxException, MalformedURLException {
+    public void getMIMEType(Exchange exchange, String resourceFile) throws URISyntaxException, MalformedURLException {
 
         /**
          * TODO:
@@ -150,13 +153,12 @@ public class BatchRequestControllerBean {
          *
          */
 
-        out = exchange.getIn();
-
-        URL url = new URL(out.getHeader("resourceFile", String.class));
+        //URL url = new URL(exchange.getIn().getHeader("resourceFile", String.class));
+        URL url = new URL(resourceFile);
 
         URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
 
-        String resourceFile = uri.toASCIIString();
+        resourceFile = uri.toASCIIString();
         String resourceFileExt = FilenameUtils.getExtension(resourceFile);
         String mimeType = null;
 
@@ -172,7 +174,7 @@ public class BatchRequestControllerBean {
 
         LOG.debug("Batch Process " + resourceFile + " || MIME=" + mimeType);
 
-        out.setHeader("dsMIME", mimeType);
+        exchange.getIn().setHeader("dsMIME", mimeType);
     }
 
     /**

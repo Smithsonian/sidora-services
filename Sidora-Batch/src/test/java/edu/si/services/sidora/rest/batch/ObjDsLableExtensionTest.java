@@ -28,14 +28,12 @@
 package edu.si.services.sidora.rest.batch;
 
 import org.apache.commons.io.FilenameUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author jbirkhimer
@@ -47,7 +45,7 @@ public class ObjDsLableExtensionTest {
 
     @Test
     public void setExtension() {
-        File path = new File("src/test/resources/test-data/mimetype-test-files");
+        File path = new File("src/test/resources/generator/test-data/mimetype-test-files");
 
         File [] files = path.listFiles();
 
@@ -55,13 +53,13 @@ public class ObjDsLableExtensionTest {
             if (files[i].isFile()){ //this line weeds out other directories/folders
                 String objDsLabelExtension = FilenameUtils.getExtension(files[i].getPath());
                 LOG.info("Found Extension: {}", objDsLabelExtension);
-                assertTrue(files[i].getName().endsWith(objDsLabelExtension));
+                Assertions.assertTrue(files[i].getName().endsWith(objDsLabelExtension));
             }
         }
 
         String fileHttpPath = "http://sidora0c.myquotient.net/~jbirkhimer/test.jpg";
         String  objDsLabelExtension = FilenameUtils.getExtension(fileHttpPath);
         LOG.info("Found Extension: {}", objDsLabelExtension);
-        assertEquals("jpg", objDsLabelExtension);
+        Assertions.assertEquals("jpg", objDsLabelExtension);
     }
 }

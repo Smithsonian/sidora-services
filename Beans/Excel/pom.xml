@@ -54,10 +54,15 @@
             <artifactId>poi</artifactId>
         </dependency>-->
 
-        <dependency>
+        <!--<dependency>
             <groupId>org.apache.servicemix.bundles</groupId>
             <artifactId>org.apache.servicemix.bundles.poi</artifactId>
             <scope>provided</scope>
+        </dependency>-->
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
         </dependency>
 
         <!-- Logging -->
@@ -73,11 +78,11 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
 
         <!-- Testing -->
         <dependency>

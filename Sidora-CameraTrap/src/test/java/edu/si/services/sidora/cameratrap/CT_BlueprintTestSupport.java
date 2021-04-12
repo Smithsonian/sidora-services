@@ -30,17 +30,24 @@ package edu.si.services.sidora.cameratrap;
 import edu.si.services.fedorarepo.FedoraComponent;
 import edu.si.services.fedorarepo.FedoraSettings;
 import org.apache.camel.CamelContext;
-import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
-import org.apache.camel.util.KeyValueHolder;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author jbirkhimer
  */
-public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
+@Deprecated
+public class CT_BlueprintTestSupport extends CamelTestSupport {
+
+    private static final Logger log = LoggerFactory.getLogger(CT_BlueprintTestSupport.class);
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
     private static Properties extra = new Properties();
@@ -55,7 +62,7 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
     }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.karaf.cfg", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg", KARAF_HOME + "/etc/test.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/application-test.properties", KARAF_HOME + "/etc/edu.si.sidora.emammal.cfg", KARAF_HOME + "/etc/test.properties");
     }
 
     protected String[] preventRoutesFromStarting() {
@@ -76,17 +83,17 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
         String[] routeList = preventRoutesFromStarting();
         if (routeList != null) {
             for (String route : routeList) {
-                context.getRouteDefinition(route).autoStartup(false);
+                context.getRoute(route).getCamelContext().setAutoStartup(false);
             }
         }
 
         return context;
     }
 
-    @Override
-    protected void addServicesOnStartup(Map<String, KeyValueHolder<Object, Dictionary>> services) {
-        services.put("amazonS3Client", asService(amazonS3Client, null));
-    }
+//    @Override
+//    protected void addServicesOnStartup(Map<String, KeyValueHolder<Object, Dictionary>> services) {
+//        services.put("amazonS3Client", asService(amazonS3Client, null));
+//    }
 
     @Override
     public void setUp() throws Exception {
@@ -118,9 +125,9 @@ public class CT_BlueprintTestSupport extends CamelBlueprintTestSupport {
         super.setUp();
     }
 
-    @Override
-    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
-        configAdmin.putAll(extra);
-        return "edu.si.sidora.karaf";
-    }
+//    @Override
+//    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
+//        configAdmin.putAll(extra);
+//        return "edu.si.sidora.karaf";
+//    }
 }

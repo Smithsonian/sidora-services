@@ -30,9 +30,12 @@ package edu.si.services.camel.thumbnailator;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Thumbnailator producer.
@@ -40,52 +43,46 @@ import org.apache.camel.impl.DefaultProducer;
  * @author jshingler
  * @version 1.0
  */
-public class ThumbnailatorProducer extends DefaultProducer
-{
+public class ThumbnailatorProducer extends DefaultProducer {
+
+    private static final Logger log = LoggerFactory.getLogger(ThumbnailatorProducer.class);
+
     private final ThumbnailatorEndpoint endpoint;
 
-    public ThumbnailatorProducer(ThumbnailatorEndpoint endpoint)
-    {
+    public ThumbnailatorProducer(ThumbnailatorEndpoint endpoint) {
         super(endpoint);
         this.endpoint = endpoint;
     }
 
     @Override
-    public void process(Exchange exchange) throws Exception
-    {
+    public void process(Exchange exchange) throws Exception {
         InputStream body = exchange.getIn().getBody(InputStream.class);
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
-        try
-        {
+        try {
             Thumbnails.Builder<? extends InputStream> tb = Thumbnails.of(body);
 
             // If size isn't set, there isn't anything to do?
-            if (endpoint.isSizeSet())
-            {
+            if (endpoint.isSizeSet()) {
                 tb.size(endpoint.getWidth(), endpoint.getHeight()).keepAspectRatio(endpoint.isKeepRatio());
 
                 //Setting quality will slow down the creation of the thumbnail
                 // even if the quality is set at (1.0 default). Issue with third party library
-                if (endpoint.isQualitySet())
-                {
+                if (endpoint.isQualitySet()) {
                     tb.outputQuality(endpoint.getQuality());
                 }//end if
             }//end if
 
-            
+
             tb.toOutputStream(bout);
 
         }//end try
-        catch (IOException exception)
-        {
+        catch (IOException exception) {
             String fileName = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
-            if (fileName != null && !fileName.isEmpty())
-            {
+            if (fileName != null && !fileName.isEmpty()) {
                 fileName = String.format(" for %s!", fileName);
             }//end if
-            else
-            {
+            else {
                 fileName = "!";
             }//end else
 
@@ -93,19 +90,14 @@ public class ThumbnailatorProducer extends DefaultProducer
 
             throw exception;
         }//end catch
-        finally
-        {
-            try
-            {
+        finally {
+            try {
                 body.close();
-            }
-            catch (IOException iOException)
-            {
+            } catch (IOException iOException) {
             }
         }
 
-        if (log.isTraceEnabled())
-        {
+        if (log.isTraceEnabled()) {
             log.trace(String.format("Created thumbnail with params: size=%s keepRatio=%b", endpoint.getSize(), endpoint.isKeepRatio()));
         }//end if
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=Sidora Camera Trap Service
+After=syslog.target ssd.mount networking.service
+
+[Service]
+User=fedora
+ExecStart=@project.build.directory@/@project.build.finalName@.jar
+SuccessExitStatus=143
+SyslogIdentifier=sidora-cameratrap-service
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

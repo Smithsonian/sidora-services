@@ -30,14 +30,15 @@ package edu.si.services.beans.fitsservlet;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
-import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.entity.ContentType;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
+
+import static org.apache.camel.Exchange.FILE_NAME;
+import static org.apache.camel.Exchange.FILE_NAME_PRODUCED;
 
 /**
  * The FITS Servlet Route Builder contains the configuration needed to execute FITS as a web service.
@@ -45,6 +46,7 @@ import java.io.File;
  * @author davisda
  * @author jbirkhimer
  */
+@Component
 public class FITSServletRouteBuilder extends RouteBuilder {
 
     static private String LOG_NAME = "edu.si.fits";
@@ -56,12 +58,23 @@ public class FITSServletRouteBuilder extends RouteBuilder {
     public void configure() {
 
         from("direct:getFITSReport").routeId("getFITSReport")
+                .onException(Exception.class)
+                        .logExhaustedMessageBody(true)
+                    .end()
+
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} FITS Report: Starting processing ...").id("FITSReportLogStart")
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
                         MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
-                        String filePath = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
+                        String filePath = null;
+                        if (exchange.getIn().getHeader(Exchange.FILE_NAME, String.class) != null) {
+                            filePath = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
+                        } else if (exchange.getIn().getHeader(Exchange.FILE_NAME_PRODUCED, String.class) != null) {
+                            filePath = exchange.getIn().getHeader(Exchange.FILE_NAME_PRODUCED, String.class);
+                        } else {
+                            throw new FITSServletException(FILE_NAME + " or " + FILE_NAME_PRODUCED + " is null!");
+                        }
                         File uploadFile = new File(filePath);
                         FileBody bin = new FileBody(uploadFile);
                         multipartEntityBuilder.addPart("datafile", bin);
@@ -69,16 +82,16 @@ public class FITSServletRouteBuilder extends RouteBuilder {
                     }
                 })
                 .toD("log:" + LOG_NAME + "?level=DEBUG&showHeaders=true")
-                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/examine")
-                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
+                .setHeader(Exchange.HTTP_URI).simple("{{fits.host}}/examine")
+                .to("http://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class, "UTF-8")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} FITS Report: Finished processing.")
                 .end();
 
         from("direct:getFITSVersion").routeId("getFITSVersion")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} FITS Version: Starting processing ...").id("FITSVersionLogStart")
-                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/version")
-                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy");
+                .setHeader(Exchange.HTTP_URI).simple("{{fits.host}}/version")
+                .to("http://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy");
 
     }
 }

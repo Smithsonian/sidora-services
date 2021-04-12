@@ -29,10 +29,11 @@ package edu.si.services.camel.thumbnailator;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.support.DefaultEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,145 +43,114 @@ import org.slf4j.LoggerFactory;
  * @author jshingler
  * @version 1.0
  */
-public class ThumbnailatorEndpoint extends DefaultEndpoint
-{
-    Logger log = LoggerFactory.getLogger(ThumbnailatorComponent.class);
-
+public class ThumbnailatorEndpoint extends DefaultEndpoint {
     protected Pattern sizePattern = Pattern.compile("\\(\\s*(?<width>\\d+)\\s*,\\s*(?<height>\\d+)\\s*\\)");
     protected Pattern qualityPattern = Pattern.compile("(?<quality>\\d+)%");
-
+    Logger log = LoggerFactory.getLogger(ThumbnailatorComponent.class);
     private boolean keepRatio = true;
     private int width = 0;
     private int height = 0;
     private double quality = 1.0;
 
 
-    public ThumbnailatorEndpoint()
-    {
+    public ThumbnailatorEndpoint() {
     }
 
-    public ThumbnailatorEndpoint(String uri, ThumbnailatorComponent component)
-    {
+    public ThumbnailatorEndpoint(String uri, ThumbnailatorComponent component) {
         super(uri, component);
     }
 
 
     @Override
-    public Producer createProducer() throws Exception
-    {
+    public Producer createProducer() throws Exception {
         return new ThumbnailatorProducer(this);
     }
 
     @Override
-    public boolean isSingleton()
-    {
+    public boolean isSingleton() {
         return true;
     }
 
     @Override
-    public Consumer createConsumer(Processor prcsr) throws Exception
-    {
+    public Consumer createConsumer(Processor prcsr) throws Exception {
         throw new UnsupportedOperationException("Thumbnailator cannot start a route");
     }
 
-    public boolean isKeepRatio()
-    {
+    public boolean isKeepRatio() {
         return keepRatio;
     }
 
-    public void setKeepRatio(boolean keepRatio)
-    {
+    public void setKeepRatio(boolean keepRatio) {
         this.keepRatio = keepRatio;
     }
 
-    public String getSize()
-    {
+    public String getSize() {
         return String.format("(%d,%d)", this.width, this.height);
     }
 
-    public boolean isSizeSet()
-    {
-        return (this.width > 0 && this.height > 0);
-    }
-
-    public void setSize(String size)
-    {
-        if (size != null && !size.isEmpty())
-        {
+    public void setSize(String size) {
+        if (size != null && !size.isEmpty()) {
             Matcher matcher = this.sizePattern.matcher(size);
-            if (matcher.matches())
-            {
-                try
-                {
+            if (matcher.matches()) {
+                try {
                     this.setSize(Integer.parseInt(matcher.group("width")), Integer.parseInt(matcher.group("height")));
                 }//end try
-                catch (NumberFormatException numberFormatException)
-                {
+                catch (NumberFormatException numberFormatException) {
                     log.warn(String.format("Could not parse size from -> %s", size), numberFormatException);
                 }//end catch
             }//end if
         }//end if
     }//end setSize
 
-    public void setSize(int width, int height)
-    {
+    public boolean isSizeSet() {
+        return (this.width > 0 && this.height > 0);
+    }
+
+    public void setSize(int width, int height) {
         this.setWidth(width);
         this.setHeight(height);
     }
 
-    public int getWidth()
-    {
+    public int getWidth() {
         return width;
     }
 
-    public void setWidth(int width)
-    {
+    public void setWidth(int width) {
         this.width = width;
     }
 
-    public int getHeight()
-    {
+    public int getHeight() {
         return height;
     }
 
-    public void setHeight(int height)
-    {
+    public void setHeight(int height) {
         this.height = height;
     }
 
-    public boolean isQualitySet()
-    {
+    public boolean isQualitySet() {
         return (this.quality < 1.0);
     }
 
-    public double getQuality()
-    {
+    public double getQuality() {
         return quality;
     }
 
-    public void setQuality(double quality)
-    {
+    public void setQuality(double quality) {
         this.quality = quality;
 
-        if (this.quality > 1.0)
-        {
+        if (this.quality > 1.0) {
             this.quality /= 100;
         }
     }
 
-    public void setQuality(String quality)
-    {
-        if (quality != null && !quality.isEmpty())
-        {
+    public void setQuality(String quality) {
+        if (quality != null && !quality.isEmpty()) {
             Matcher matcher = this.qualityPattern.matcher(quality);
-            if (matcher.matches())
-            {
-                try
-                {
+            if (matcher.matches()) {
+                try {
                     this.setQuality(Double.parseDouble(matcher.group("quality")));
                 }//end try
-                catch (NumberFormatException numberFormatException)
-                {
+                catch (NumberFormatException numberFormatException) {
                     log.warn(String.format("Could not parse quality from -> %s", quality), numberFormatException);
                 }//end catch
             }//end if

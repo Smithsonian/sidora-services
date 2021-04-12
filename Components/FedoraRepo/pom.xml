@@ -80,10 +80,18 @@
             <scope>runtime</scope>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
             <scope>provided</scope>
+        </dependency>-->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-support</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-spring</artifactId>
         </dependency>
 
         <!-- Logging -->
@@ -99,11 +107,11 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
 
         <!-- Testing -->
         <dependency>
@@ -132,6 +140,15 @@
             <type>war</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+        <!--<dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-spring-boot-starter</artifactId>
+            <scope>provided</scope>
+        </dependency>-->
 
     </dependencies>
 
@@ -145,7 +162,7 @@
                 <filtering>true</filtering>
             </testResource>
 
-            <testResource>
+            <!--<testResource>
                 <directory>../../Sidora-Test-Utils/src/test/resources/fedora-home</directory>
                 <targetPath>${fedora.home}</targetPath>
                 <filtering>true</filtering>
@@ -159,7 +176,7 @@
                 <directory>../../Sidora-Test-Utils/src/test/resources/foxml</directory>
                 <targetPath>${project.build.directory}/foxml</targetPath>
                 <filtering>true</filtering>
-            </testResource>
+            </testResource>-->
         </testResources>
 
         <plugins>

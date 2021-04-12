@@ -36,9 +36,11 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,21 +51,18 @@ import org.slf4j.LoggerFactory;
  * @author jshingler
  * @version 1.0
  */
-public class ReaderProducer extends DefaultProducer
-{
+public class ReaderProducer extends DefaultProducer {
     private static final Logger LOG = LoggerFactory.getLogger(ReaderProducer.class);
 
     private ReaderEndpoint endpoint;
 
-    public ReaderProducer(ReaderEndpoint endpoint)
-    {
+    public ReaderProducer(ReaderEndpoint endpoint) {
         super(endpoint);
         this.endpoint = endpoint;
     }
 
     @Override
-    public void process(Exchange exchange) throws Exception
-    {
+    public void process(Exchange exchange) throws Exception {
         String body = exchange.getIn().getBody(String.class);
         Map<String, Object> headers = exchange.getIn().getHeaders();
 
@@ -71,8 +70,7 @@ public class ReaderProducer extends DefaultProducer
         Map<String, Object> updateHeaders = updateHeaders(file, headers);
 
         Message out = exchange.getOut();
-        if ("text".equalsIgnoreCase(this.endpoint.getType()))
-        {
+        if ("text" .equalsIgnoreCase(this.endpoint.getType())) {
             //Scanner din = new Scanner(file, "UTF-8").useDelimiter("\\Z");
             //out.setBody(din.next(), String.class);
             //din.close();
@@ -80,9 +78,7 @@ public class ReaderProducer extends DefaultProducer
             Path filePath = file.toPath();
             byte[] encoded = Files.readAllBytes(filePath);
             out.setBody(new String(encoded, StandardCharsets.UTF_8), String.class);
-        }
-        else
-        {
+        } else {
             // Change to GenericFile...
             out.setBody(file, File.class);
         }
@@ -90,17 +86,13 @@ public class ReaderProducer extends DefaultProducer
         out.setHeaders(updateHeaders);
     }
 
-    private File findFile(String body, Map<String, Object> headers) throws FileNotFoundException
-    {
+    private File findFile(String body, Map<String, Object> headers) throws FileNotFoundException {
         File file = new File(body);
-        if (!file.exists())
-        {
+        if (!file.exists()) {
             Object path = headers.get("CamelFileAbsolutePath");
-            if (path != null && (path instanceof String))
-            {
+            if (path != null && (path instanceof String)) {
                 File parent = new File((String) path);
-                if (parent.isFile())
-                {
+                if (parent.isFile()) {
                     parent = parent.getParentFile();
                 }//end if
 
@@ -108,15 +100,13 @@ public class ReaderProducer extends DefaultProducer
             }//end if
         }//end if
 
-        if (!file.exists())
-        {
+        if (!file.exists()) {
             throw new FileNotFoundException("Could not find file " + body);
         }
         return file;
     }
 
-    private Map<String, Object> updateHeaders(File file, Map<String, Object> oldHeaders)
-    {
+    private Map<String, Object> updateHeaders(File file, Map<String, Object> oldHeaders) {
         Map<String, Object> headers = new HashMap<String, Object>(oldHeaders);
 
 //      FIXME: Use Camel GenericFile to correctly populate these fields!!!

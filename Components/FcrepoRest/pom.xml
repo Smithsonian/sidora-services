@@ -42,7 +42,7 @@
 
     <groupId>edu.si.services.camel</groupId>
     <artifactId>FcrepoRest</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
     <version>1.0.0</version>
 
     <name>SI :: Services :: Components :: Fedora Commons REST</name>
@@ -58,58 +58,38 @@
 
     <dependencies>
 
+        <!-- camel -->
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-core</artifactId>
-            <scope>provided</scope>
+            <artifactId>camel-support</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-cxf</artifactId>
-            <scope>provided</scope>
+            <artifactId>camel-http</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Logging -->
         <!--<dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
         </dependency>-->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+            <version>4.5.6.Final</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <scope>test</scope>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
+
+        <!-- logging -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>2.13.3</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- Testing -->
+        <!-- testing -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
@@ -117,7 +97,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -125,11 +105,6 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-            <scope>test</scope>
-        </dependency>-->
 
         <!-- Integration Testing gear -->
         <dependency>
@@ -161,14 +136,14 @@
     <build>
         <defaultGoal>install</defaultGoal>
 
-        <testResources>
-            <!-- don't forget to specify the default test resources directory -->
+        <!--<testResources>
+            &lt;!&ndash; don't forget to specify the default test resources directory &ndash;&gt;
             <testResource>
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
 
-            <testResource>
+            &lt;!&ndash;<testResource>
                 <directory>../../Sidora-Test-Utils/src/test/resources/fedora-home</directory>
                 <targetPath>${fedora.home}</targetPath>
                 <filtering>true</filtering>
@@ -182,8 +157,8 @@
                 <directory>../../Sidora-Test-Utils/src/test/resources/foxml</directory>
                 <targetPath>${project.build.directory}/foxml</targetPath>
                 <filtering>true</filtering>
-            </testResource>
-        </testResources>
+            </testResource>&ndash;&gt;
+        </testResources>-->
 
         <plugins>
       
@@ -198,7 +173,7 @@
             </plugin>
 
             <!-- to generate the MANIFEST-FILE of the bundle. -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -209,6 +184,22 @@
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                     </instructions>
                 </configuration>
+            </plugin>-->
+
+            <!-- generate camel meta-data -->
+            <plugin>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-component-maven-plugin</artifactId>
+                <version>${camel.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-classes</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- reserve network ports for integration testing -->
@@ -222,12 +213,30 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>reserve-network-port</id>
                         <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering, specifically
                           into fedora.fcfg -->
                         <phase>process-test-sources</phase>
                         <goals>
                             <goal>reserve-network-port</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>add-resource</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/generated/java</source>
+                            </sources>
+                            <resources>
+                                <resource>
+                                    <directory>src/generated/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -29,7 +29,7 @@ package edu.si.services.camel.extractor;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.commons.io.FilenameUtils;
 import org.rauschig.jarchivelib.ArchiveEntry;
 import org.rauschig.jarchivelib.ArchiveStream;
@@ -50,7 +50,7 @@ import java.util.Map;
  */
 public class ExtractorProducer extends DefaultProducer
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ExtractorProducer.class);
+    private static final Logger log = LoggerFactory.getLogger(ExtractorProducer.class);
     private final ExtractorEndpoint endpoint;
     private StringBuilder errorMsg;
 
@@ -65,16 +65,16 @@ public class ExtractorProducer extends DefaultProducer
     {
         Message in = exchange.getIn();
         File archiveFile = in.getBody(File.class);
-        LOG.debug("Archive file to extract: {}", archiveFile.getName());
+        log.debug("Archive file to extract: {}", archiveFile.getName());
 
         String archiveFileBaseName = FilenameUtils.getBaseName(archiveFile.getName());
         String archiveFileExt = FilenameUtils.getExtension(archiveFile.getName());
-        LOG.debug("Found archive file baseName={}, ext= {}", archiveFileBaseName, archiveFileExt);
+        log.debug("Found archive file baseName={}, ext= {}", archiveFileBaseName, archiveFileExt);
 
         if (archiveFileExt == null || archiveFileExt.isEmpty())
         {   errorMsg = new StringBuilder();
             errorMsg.append("Improperly formatted file. No, file extension found for " + archiveFile.getName());
-            LOG.error(errorMsg.toString());
+            log.error(errorMsg.toString());
             throw new ExtractorException(errorMsg.toString());
         }
 
@@ -83,7 +83,7 @@ public class ExtractorProducer extends DefaultProducer
 
         //The ArchiveFactory can detect archive types based on file extensions and hand you the correct Archiver.
         Archiver archiver = ArchiverFactory.createArchiver(archiveFile);
-        LOG.debug("Archive type: {}", archiver.getFilenameExtension());
+        log.debug("Archive type: {}", archiver.getFilenameExtension());
 
         //Stream the archive rather then extracting directly to the file system.
         ArchiveStream archiveStream = archiver.stream(archiveFile);
@@ -91,7 +91,7 @@ public class ExtractorProducer extends DefaultProducer
 
         //Extract each archive entry and check for the existence of a compressed folder otherwise create one
         while ((entry = archiveStream.getNextEntry()) != null) {
-            LOG.debug("ArchiveStream Current Entry Name = {}, isDirectory = {}", entry.getName(), entry.isDirectory());
+            log.debug("ArchiveStream Current Entry Name = {}, isDirectory = {}", entry.getName(), entry.isDirectory());
 
             //Check for a compressed folder
             if (entry.isDirectory()) {
@@ -108,14 +108,14 @@ public class ExtractorProducer extends DefaultProducer
 
         archiveStream.close();
 
-        LOG.debug("File path to be returned on exchange body: {}", cameraTrapDataOutputDir);
+        log.debug("File path to be returned on exchange body: {}", cameraTrapDataOutputDir);
 
         String parent = null;
 
         if (cameraTrapDataOutputDir.getParentFile() != null)
         {
             parent = cameraTrapDataOutputDir.getParentFile().getName();
-            LOG.debug("CamelFileParent: {}", cameraTrapDataOutputDir.getParentFile());
+            log.debug("CamelFileParent: {}", cameraTrapDataOutputDir.getParentFile());
         }
 
         Map<String, Object> headers = in.getHeaders();
@@ -131,7 +131,7 @@ public class ExtractorProducer extends DefaultProducer
         headers.put("CamelFileAbsolute", false);
         headers.put("CamelFileParent", parent);
 
-        LOG.debug("Headers: {}", headers);
+        log.debug("Headers: {}", headers);
 
         exchange.getOut().setBody(cameraTrapDataOutputDir, File.class);
 

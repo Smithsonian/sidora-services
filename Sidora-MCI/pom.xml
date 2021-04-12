@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>services</artifactId>
         <groupId>edu.si.services</groupId>
+        <artifactId>services</artifactId>
         <version>1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -11,124 +11,193 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sidora-mci</artifactId>
-    <packaging>bundle</packaging>
     <name>SI :: Services :: Sidora :: MCI</name>
+    <version>1.0</version>
+
     <description>Sidora RESTful Web Services takes MCI project data from Sharepoint and creates an MCI project concept in the SIdora repository</description>
 
     <properties>
-        <http-components.version>4.4</http-components.version>
-        <servicemix.osgi.dynamic.import>*</servicemix.osgi.dynamic.import>
-        <!-- Unit Test Properties-->
-        <karaf.home>${project.build.directory}/test-classes</karaf.home>
+        <velocity-tools-version>2.0</velocity-tools-version>
     </properties>
 
     <dependencies>
-        <!-- must be first to avoid library conflict, Only needed during testing so scope is test -->
+
+        <!-- Spring Boot -->
         <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-all</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+        <!--<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jetty</artifactId>
+        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!--  osgi -->
+        <!-- activemq -->
         <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.core</artifactId>
-            <scope>runtime</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-activemq</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logging</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.compendium</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <!--<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.hawt</groupId>
+            <artifactId>hawtio-springboot</artifactId>
+            <version>${hawtio-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
         <!-- Camel -->
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-core</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-spring-boot-starter</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-context</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-groovy</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-servlet-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-velocity</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-swagger-java-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-saxon</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-http-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-script</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-http-common-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-exec</artifactId>
-            <scope>test</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-cxf-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-mail-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <scope>compile</scope>
         </dependency>
 
-        <!-- CXF -->
+        <!-- The camel-jetty component no longer supports producer (eg to) which has been removed, use camel-http component instead. We have also renamed camel-jetty9 to camel-jetty. The supported scheme is now jetty -->
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-cxf</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <!-- Will pull other CXF modules such cxf-core and cxf-rt-transports-http, check the pom for more information -->
-        <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-jetty-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-rt-transports-http-jetty</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-groovy-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-rt-rs-extension-providers</artifactId>
-            <scope>test</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-velocity-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-cxf-transport</artifactId>
-            <scope>provided</scope>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-tools</artifactId>
+            <version>${velocity-tools-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-xslt-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-xslt-saxon-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-saxon-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-xpath-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-jackson-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-exec-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-stream-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-seda-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-csv-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-jacksonxml-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-jaxb-starter</artifactId>
         </dependency>
 
         <!-- Database -->
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-jdbc</artifactId>
+        <!--<dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-jdbc-starter</artifactId>
             <version>${camel.version}</version>
-            <scope>provided</scope>
-        </dependency>
+        </dependency>-->
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-sql</artifactId>
-            <version>${camel.version}</version>
-            <scope>provided</scope>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-sql-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-dbcp</groupId>
             <artifactId>commons-dbcp</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>10.11.1.1</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- Sidora Services -->
@@ -136,61 +205,39 @@
             <groupId>edu.si.services.beans</groupId>
             <artifactId>FITS-Servlet</artifactId>
             <version>1.0</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FedoraRepo</artifactId>
             <version>1.0</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>edu.si.services.camel</groupId>
             <artifactId>FcrepoRest</artifactId>
             <version>1.0.0</version>
-            <scope>provided</scope>
         </dependency>
 
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
 
         <!-- Testing -->
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-test</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.vaadin.external.google</groupId>
+                    <artifactId>android-json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+        <!--<dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>-->
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-test-blueprint</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <artifactId>camel-test-spring-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -204,81 +251,35 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Http client tests -->
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http4</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${http-components.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>${http-components.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Databinding -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jettison</groupId>
-            <artifactId>jettison</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
     </dependencies>
 
     <build>
         <defaultGoal>install</defaultGoal>
 
-        <!--The properties file that will be used for tests and token replacement during resource filtering-->
-        <!--<filters>
-            <filter>${test.properties}</filter>
-        </filters>-->
+        <resources>
+            <!-- copy the system properties file to target dir -->
+            <resource>
+                <directory>config</directory>
+                <targetPath>${project.build.directory}/config</targetPath>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
 
-        <!-- Copy test resources to output folder target/test-classes -->
+        <!-- Copy test resources to output folder target/test-classes. -->
         <testResources>
-            <!-- don't forget to specify the default test resources directory -->
+            <!-- Don't forget to specify the default test resources directory. -->
             <testResource>
                 <directory>src/test/resources</directory>
+                <filtering>true</filtering>
             </testResource>
 
-            <!-- add the Sidora-Batch Karaf-config directories -->
             <testResource>
-                <directory>Karaf-Config</directory>
-                <targetPath>${karaf.home}</targetPath>
+                <directory>config</directory>
+                <targetPath>${project.build.directory}/test-classes/config</targetPath>
                 <filtering>true</filtering>
-            </testResource>
-            <!-- add the Camera Trap Route directory as resources -->
-            <testResource>
-                <directory>../Routes/Camera Trap/Karaf-config/etc</directory>
-                <targetPath>${karaf.home}/etc</targetPath>
-                <filtering>true</filtering>
+                <excludes>
+                    <exclude>camel/**</exclude>
+                </excludes>
             </testResource>
         </testResources>
 
@@ -290,41 +291,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
                 <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <Bundle-Description>${project.description}</Bundle-Description>
-                        <Import-Package>org.apache.camel.osgi,*;resolution:=optional</Import-Package>
-                        <Private-Package>edu.si.services.sidora.rest.mci</Private-Package>
-                        <DynamicImport-Package>${servicemix.osgi.dynamic.import}</DynamicImport-Package>
-                    </instructions>
+                    <encoding>UTF-8</encoding>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>JPG</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
                 </configuration>
-            </plugin>
-
-            <!-- reserve network ports for integration testing -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <configuration>
-                    <portNames>
-                        <portName>dynamic.test.port</portName>
-                    </portNames>
-                </configuration>
-                <executions>
-                    <execution>
-                        <!-- we choose this phase to ensure that the chosen port number is available for test resource filtering, specifically
-                          into fedora.fcfg -->
-                        <phase>process-test-sources</phase>
-                        <goals>
-                            <goal>reserve-network-port</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
@@ -335,9 +308,9 @@
                         <exclude>**/*_IT</exclude>
                     </excludes>
                     <systemPropertyVariables>
+                        <baseDir>${project.basedir}</baseDir>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
-                        <karaf.home>${karaf.home}</karaf.home>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -346,8 +319,8 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <karaf.home>${karaf.home}</karaf.home>
                         <dynamic.test.port>${dynamic.test.port}</dynamic.test.port>
+                        <baseDir>${project.basedir}</baseDir>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                     <includes>
@@ -367,13 +340,110 @@
         </plugins>
     </build>
 
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </reporting>
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <addResources>false</addResources>
+                            <executable>true</executable>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>executable-jar</id>
+                                <goals>
+                                    <goal>repackage</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>dockerfile</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <addResources>false</addResources>
+                            <layers>
+                                <enabled>true</enabled>
+                            </layers>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>layerd-jar</id>
+                                <goals>
+                                    <goal>repackage</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.spotify</groupId>
+                        <artifactId>dockerfile-maven-plugin</artifactId>
+                        <version>${dockerfile-maven-plugin-version}</version>
+                        <configuration>
+                            <verbose>true</verbose>
+                            <repository>${project.artifactId}</repository>
+                            <tag>${project.version}</tag>
+                            <buildArgs>
+                                <UID>${uid}</UID>
+                                <GID>${gid}</GID>
+                                <USER>${user}</USER>
+                            </buildArgs>
+                            <skipDockerInfo>true</skipDockerInfo>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>dockerfile-build-image</id>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>build-cnb-image</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <image>
+                                <name>${project.artifactId}:${project.version}</name>
+                            </image>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>build-cnb-image</id>
+                                <goals>
+                                    <goal>build-image</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

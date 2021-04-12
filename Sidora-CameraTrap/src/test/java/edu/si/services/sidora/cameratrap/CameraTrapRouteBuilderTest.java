@@ -27,33 +27,62 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import edu.si.services.sidora.cameratrap.CameraTrapRouteBuilder;
-import edu.si.services.sidora.cameratrap.CameraTrapValidationMessage;
+import edu.si.services.sidora.cameratrap.routes.CameraTrapRouteBuilder;
+import edu.si.services.sidora.cameratrap.validation.CameraTrapValidationMessage;
+import org.apache.camel.CamelContext;
 import org.apache.camel.EndpointInject;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.spring.boot.CamelAutoConfiguration;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 /**
  * Integration testing for the CameraTrapRouteBuilder class.
  *
  * @author parkjohn
  */
-public class CameraTrapRouteBuilderTest extends CamelTestSupport {
+@CamelSpringBootTest
+@SpringBootTest(classes = {CamelAutoConfiguration.class}, properties = {"logging.file.path=target/logs"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class CameraTrapRouteBuilderTest {
 
-    @EndpointInject(uri = "mock:result")
+    private static final Logger log = LoggerFactory.getLogger(AwsS3PollAndUploadRouteTest.class);
+
+    @Autowired
+    private CamelContext context;
+    @Autowired
+    private ProducerTemplate template;
+
+    @EndpointInject(value = "mock:result")
     private MockEndpoint mockEndpoint;
 
-    @EndpointInject(uri = "mock:direct:validationErrorMessageAggregationStrategy")
+    @EndpointInject(value = "mock:direct:validationErrorMessageAggregationStrategy")
     private MockEndpoint mockAggregationStrategyEndpoint;
 
     CameraTrapValidationMessage cameraTrapValidationMessage = new CameraTrapValidationMessage();
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        context.getRegistry().bind("cameraTrapValidationMessage", cameraTrapValidationMessage);
+        context.addRoutes(new CameraTrapRouteBuilder());
+    }
+
     /**
      * Testing post ingestion validation route where the RELS-EXT resource object reference count
      * compared to the expected ingested resource count.  When the validation fails, aggregation strategy endpoint
@@ -69,12 +98,8 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         int relsExtResourceCount = 103;
 
         //using adviceWith to mock the dependencies for testing purpose
-        context.getRouteDefinition("CameraTrapValidatePostResourceCount").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                mockEndpointsAndSkip("direct:validationErrorMessageAggregationStrategy*");
-            }
-        });
+        AdviceWith.adviceWith(context, "CameraTrapValidatePostResourceCount", a ->
+                a.mockEndpointsAndSkip("direct:validationErrorMessageAggregationStrategy*"));
 
         //creating a new messageBean that is expected from the test route
         CameraTrapValidationMessage.MessageBean messageBean = cameraTrapValidationMessage.createValidationMessage(deploymentPackageId,
@@ -93,7 +118,7 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         headers.put("RelsExtResourceCount", relsExtResourceCount);
         template.sendBodyAndHeaders("direct:validatePostResourceCount", "body text", headers);
 
-        assertMockEndpointsSatisfied();
+        mockAggregationStrategyEndpoint.assertIsSatisfied();
     }
 
     /**
@@ -111,12 +136,8 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         String toSendBody = "some message";
 
         //using adviceWith to added mock endpoint with the id anchor for testing purpose
-        context.getRouteDefinition("CameraTrapValidatePostResourceCount").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("ValidatePostResourceCountWhenBlock").after().to("mock:result");
-            }
-        });
+        AdviceWith.adviceWith(context, "CameraTrapValidatePostResourceCount", a ->
+                a.weaveById("ValidatePostResourceCountWhenBlock").after().to("mock:result"));
 
         //setting up expected headers before sending message to test route
         Map<String, Object> headers = new HashMap<>();
@@ -129,30 +150,6 @@ public class CameraTrapRouteBuilderTest extends CamelTestSupport {
         assertEquals(mockEndpoint.getReceivedExchanges().get(0).getIn().getBody().toString(), toSendBody);
         mockEndpoint.expectedHeaderReceived("deploymentPackageId", deploymentPackageId);
         mockEndpoint.assertIsSatisfied();
-    }
-
-    /**
-     * Registering the cameraTrapValidationMessage bean
-     *
-     * @return JndiRegistry
-     * @throws Exception
-     */
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
-        jndi.bind("cameraTrapValidationMessage", cameraTrapValidationMessage);
-
-        return jndi;
-    }
-
-    /**
-     * Configure the route definition for the test class
-     *
-     * @return Returns CameraTrapRouteBuilder
-     */
-    @Override
-    protected RouteBuilder createRouteBuilder() {
-        return new CameraTrapRouteBuilder();
     }
 
 }

@@ -43,7 +43,7 @@ public class FedoraSettings
     //
     private FedoraCredentials credentials;
 
-    public FedoraSettings()
+    public FedoraSettings(FedoraCredentials fedoraCredentials)
     {
         this.credentials = null;
     }

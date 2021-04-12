@@ -28,8 +28,9 @@
 package edu.si.services.camel.thumbnailator;
 
 import java.util.Map;
+
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.DefaultComponent;
+import org.apache.camel.support.DefaultComponent;
 
 /**
  * Represents the component that manages {@link ThumbnailatorEndpoint}.
@@ -37,11 +38,9 @@ import org.apache.camel.impl.DefaultComponent;
  * @author jshingler
  * @version 1.0
  */
-public class ThumbnailatorComponent extends DefaultComponent
-{
+public class ThumbnailatorComponent extends DefaultComponent {
     @Override
-    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception
-    {
+    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         Endpoint endpoint = new ThumbnailatorEndpoint(uri, this);
         setProperties(endpoint, parameters);
         return endpoint;

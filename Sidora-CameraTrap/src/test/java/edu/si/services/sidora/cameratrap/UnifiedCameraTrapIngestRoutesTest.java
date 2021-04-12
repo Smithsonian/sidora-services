@@ -27,35 +27,58 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Message;
-import org.apache.camel.Processor;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.*;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
 import static org.apache.commons.io.FileUtils.readFileToString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for the Unified Camera Trap Ingest Pipeline
  * TODO: Add more tests
  * @author jbirkhimer
  */
-public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
+@CamelSpringBootTest
+@SpringBootTest(properties = {
+        "logging.file.path=target/logs",
+        "processing.dir.base.path=${user.dir}/target",
+        "si.ct.uscbi.enableS3Routes=false",
+        "si.ct.wi.faceBlur.script=target/config/FaceBlurrer/FaceBlurrer.py",
+        "si.ct.wi.faceBlur.classifier=target/config/FaceBlurrer/haarcascades/haarcascade_frontalface_alt.xml",
+        "camel.springboot.java-routes-exclude-pattern=UnifiedCameraTrapInFlightConceptStatusPolling,UnifiedCameraTrapStartProcessing"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class UnifiedCameraTrapIngestRoutesTest {
 
-    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private static final Logger log = LoggerFactory.getLogger(UnifiedCameraTrapIngestRoutesTest.class);
+
+    @Autowired
+    CamelContext context;
+
+    //@EndpointInject(value = "direct:addFITSDataStream")
+    @Autowired
+    ProducerTemplate template;
 
     //Test Data Directory contains the datastreams and other resources for the tests
-    private String testDataDir = KARAF_HOME + "/UnifiedManifest-TestFiles";
+    private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles";
 
     //Camera Trap Deployment Info for testing
     private String deploymentPackageId = "10002000";
@@ -72,46 +95,31 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
     private String manifest;
     File deploymentZip;
 
+    @PropertyInject(value = "{{si.ct.uscbi.process.dir.path}}")
     private String processDirPath;
+    @PropertyInject(value = "{{si.ct.uscbi.process.done.dir.path}}")
     private String processDoneDirPath;
+    @PropertyInject(value = "{{si.ct.uscbi.process.error.dir.path}}")
     private String processErrorDirPath;
-
-    /**
-     * Override this method, and return the location of our Blueprint XML file to be used for testing.
-     * The actual camera trap route that the maven lifecycle phase process-test-resources executes
-     * to copy test resources to output folder target/test-classes.
-     */
-    @Override
-    protected String getBlueprintDescriptor() {
-        //use the production route for testing that the pom copied into the test resources
-        return "Routes/unified-camera-trap-route.xml";
-    }
 
     /**
      * Initialize the camel headers, deployment manifest, and test data
      * @throws Exception
      */
-    @Override
+    @BeforeEach
     public void setUp() throws Exception {
-        disableJMX();
 
         //Store the Deployment Manifest as string to set the camel ManifestXML header
-        manifest = readFileToString(manifestFile);
+        manifest = readFileToString(manifestFile, "utf-8");
 
         //Initialize the expected camel headers
         headers = new HashMap<>();
         headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
-        headers.put("ValidationErrors", "ValidationErrors");
+        headers.put("validationErrors", "validationErrors");
         headers.put("ProjectPID", "test:0000");
         headers.put("SitePID", "test:0000");
-
-        super.setUp();
-
-        processDirPath = getExtra().getProperty("si.ct.uscbi.process.dir.path");
-        processDoneDirPath = getExtra().getProperty("si.ct.uscbi.process.done.dir.path");
-        processErrorDirPath = getExtra().getProperty("si.ct.uscbi.process.error.dir.path");
 
         deleteDirectory(processDirPath);
         deleteDirectory(processDoneDirPath);
@@ -119,7 +127,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
 
         //Modify the default error handler so that we can send failed exchanges to mock:result for assertions
         // Sending to dead letter does not seem to work as expected for this
-        context.setErrorHandlerBuilder(new DefaultErrorHandlerBuilder().onPrepareFailure(new Processor() {
+        context.adapt(ExtendedCamelContext.class).setErrorHandlerFactory(new DefaultErrorHandlerBuilder().onPrepareFailure(new Processor() {
             @Override
             public void process(Exchange exchange) throws Exception {
                 template.send("mock:result", exchange);
@@ -145,16 +153,11 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         String imageSequenceCountHeaderExpected = "2";
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-
+        AdviceWith.adviceWith(context, routeId, false, a ->
                 //add the mock:result endpoint and stop the route after the headers we are testing have been created
-                weaveById("readImageResource").before().to("mock:result").stop();
-            }
-        });
+                a.weaveById("readImageResource").before().to("mock:result").stop());
 
-        mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
@@ -172,12 +175,12 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         String imageSequenceCountHeaderResult = mockEndpoint.getExchanges().get(0).getIn().getHeader("ImageSequenceCount", String.class);
 
         //Assertions
-        assertEquals("imageid header assertEquals failed!", imageidHeaderExpected, imageidHeaderResult);
-        assertEquals("ImageSequenceID header assertEquals failed!", imageSequenceIDHeaderExpected, imageSequenceIDHeaderResult);
-        assertEquals("ImageSequenceIndex header assertEquals failed!", imageSequenceIndexHeaderExpected, imageSequenceIndexHeaderResult);
-        assertEquals("ImageSequenceCount header assertEquals failed!", imageSequenceCountHeaderExpected, imageSequenceCountHeaderResult);
+        assertEquals(imageidHeaderExpected, imageidHeaderResult, "imageid header assertEquals failed!");
+        assertEquals(imageSequenceIDHeaderExpected, imageSequenceIDHeaderResult, "ImageSequenceID header assertEquals failed!");
+        assertEquals(imageSequenceIndexHeaderExpected, imageSequenceIndexHeaderResult, "ImageSequenceIndex header assertEquals failed!");
+        assertEquals(imageSequenceCountHeaderExpected, imageSequenceCountHeaderResult, "ImageSequenceCount header assertEquals failed!");
 
-        assertMockEndpointsSatisfied();
+        mockEndpoint.assertIsSatisfied();
 
     }
 
@@ -193,7 +196,7 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
 
         File MODS_DatastreamTestFile = new File(testDataDir + "/DatastreamTestFiles/MODS/valid_MODS.xml");
 
-        String MODS_DatastreamExpected = readFileToString(MODS_DatastreamTestFile);
+        String MODS_DatastreamExpected = readFileToString(MODS_DatastreamTestFile, "utf-8");
 
         //the header thats used for the Unified_ManifestImage.xsl param
         headers.put("imageid", "d18981s1i1");
@@ -202,18 +205,13 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
         headers.put("FITSCreatedDate", "2016:02:13 12:11:26");
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-
+        AdviceWith.adviceWith(context, routeId, false, a ->
                 //Remove the setheader definition for FITSCreatedDate we are manually passing this header in already
                 //weaveByType(SetHeaderDefinition.class).selectFirst().remove();
                 //set the mockEndpoint result and stop the route before adding the MODS datastream to fedora
-                weaveByToString(".*fedora:addDatastream.*").before().log(LoggingLevel.DEBUG, "uct.test", "============ BODY ============\n${body}").to("mock:result").stop();
-            }
-        });
+                a.weaveByToString(".*fedora:addDatastream.*").before().log(LoggingLevel.DEBUG, "uct.test", "============ BODY ============\n${body}").to("mock:result").stop());
 
-        mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
@@ -228,38 +226,28 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
 
         log.debug("expectedBody Type:\n" + MODS_DatastreamExpected.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-        assertEquals("mock:result Body containing MODS datastream xml assertEquals failed!", MODS_DatastreamExpected, resultBody);
+        assertEquals(MODS_DatastreamExpected, resultBody, "mock:result Body containing MODS datastream xml assertEquals failed!");
 
-        assertMockEndpointsSatisfied();
+        mockEndpoint.assertIsSatisfied();
 
     }
 
     @Test
     public void testFitsSocketException() throws Exception {
 
-        Integer minSocketExRedelivery = Integer.valueOf(getExtra().getProperty("min.socketEx.redeliveries"));
+        Integer minSocketExRedelivery = Integer.valueOf(context.resolvePropertyPlaceholders("{{min.socketEx.redeliveries}}"));
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(1);
         mockResult.setAssertPeriod(1500);
 
-        MockEndpoint mockError = getMockEndpoint("mock:error");
+        MockEndpoint mockError = context.getEndpoint("mock:error", MockEndpoint.class);
         mockError.expectedMessageCount(1);
         mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(SocketException.class);
         mockError.expectedHeaderReceived("redeliveryCount", minSocketExRedelivery);
-        mockResult.setAssertPeriod(1500);
+        mockError.setAssertPeriod(1500);
 
-        context.addRoutes(new RouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                from("direct:start")
-                        .to("direct:addFITSDataStream");
-            }
-        });
-
-        context.getRouteDefinition("UnifiedCameraTrapAddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapAddFITSDataStream", false, a ->  {
                 //processor used to replace sql query to test onException and retries
                 final Processor processor = new Processor() {
                     public void process(Exchange exchange) throws Exception {
@@ -269,47 +257,36 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
                     }
                 };
 
-                weaveById("fitsServiceException").after().to("mock:error");
-                weaveById("fitsHttpRequest").replace().process(processor);
-                weaveById("fitsAddDatastream").replace().log(LoggingLevel.INFO, "Skipping Fedora addDatastream!!!").to("mock:result");
-
-            }
+                a.weaveById("fitsServiceException").after().to("mock:error");
+                a.weaveById("UnifiedCameraTrapAddFITSDataStream_getFITSReport").replace().process(processor);
+                a.weaveById("fitsAddDatastream").replace().log(LoggingLevel.INFO, "Skipping Fedora addDatastream!!!").to("mock:result");
         });
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/d18981s1i1.JPG");
+        exchange.getIn().setHeader("CamelFileAbsolutePath", "src/test/resources/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/d18981s1i1.JPG");
 
-        template.send("direct:start", exchange);
+        template.send("direct:addFITSDataStream", exchange);
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
+        mockError.assertIsSatisfied();
     }
 
     @Test
     public void testFitsSocketExceptionAndExecFail() throws Exception {
 
-        Integer minSocketExRedelivery = Integer.valueOf(getExtra().getProperty("min.socketEx.redeliveries"));
+        Integer minSocketExRedelivery = Integer.valueOf(context.resolvePropertyPlaceholders("{{min.socketEx.redeliveries}}"));
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(0); //we should not
         mockResult.setAssertPeriod(1500);
 
-        MockEndpoint mockError = getMockEndpoint("mock:error");
+        MockEndpoint mockError = context.getEndpoint("mock:error", MockEndpoint.class);
         mockError.expectedMessageCount(1);
         mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(SocketException.class);
         mockError.expectedHeaderReceived("redeliveryCount", minSocketExRedelivery);
-        mockResult.setAssertPeriod(1500);
+        mockError.setAssertPeriod(1500);
 
-        context.addRoutes(new RouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                from("direct:start")
-                        .to("direct:addFITSDataStream");
-            }
-        });
-
-        context.getRouteDefinition("UnifiedCameraTrapAddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapAddFITSDataStream", false, a ->  {
                 //processor used to replace sql query to test onException and retries
                 final Processor processor = new Processor() {
                     public void process(Exchange exchange) throws Exception {
@@ -319,120 +296,107 @@ public class UnifiedCameraTrapIngestRoutesTest extends CT_BlueprintTestSupport {
                     }
                 };
 
-                weaveById("fitsServiceException").after().to("mock:error");
-                weaveById("fitsHttpRequest").replace().process(processor);
-                weaveById("fitsAddDatastream").replace().log(LoggingLevel.INFO, "Skipping Fedora addDatastream!!!").to("mock:result");
-
-            }
+                a.weaveById("fitsServiceException").after().to("mock:error");
+                a.weaveById("UnifiedCameraTrapAddFITSDataStream_getFITSReport").replace().process(processor);
+                a.weaveById("fitsAddDatastream").replace().log(LoggingLevel.INFO, "Skipping Fedora addDatastream!!!").to("mock:result");
         });
 
         Exchange exchange = new DefaultExchange(context);
-        //exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/d18981s1i1.JPG");
+        //exchange.getIn().setHeader("CamelFileAbsolutePath", "UnifiedManifest-TestFiles/scbi_unified_stripped_p125d18981/d18981s1i1.JPG");
 
-        template.send("direct:start", exchange);
+        template.send("direct:addFITSDataStream", exchange);
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
+        mockError.assertIsSatisfied();
     }
 
     @Test
     public void testImageResourceFaceBlur() throws Exception {
-        String manifest = readFileToString(new File(KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"));
+        String manifest = readFileToString(new File("src/test/resources/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"), "utf-8");
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(1);
-        mockResult.expectedFileExists(KARAF_HOME + "/output/testWildLifeInsightsDeploymentIds1i3.JPG");
-        mockResult.expectedFileExists(KARAF_HOME + "/staging/testWildLifeInsightsDeploymentIds1i3.JPG");
+        mockResult.expectedFileExists("target/output/testWildLifeInsightsDeploymentIds1i3.JPG");
+        mockResult.expectedFileExists("target/staging/testWildLifeInsightsDeploymentIds1i3.JPG");
 
-        context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
-                weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
-                weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
-                weaveById("addSidoraDS").replace().log("Skipping fedora addSidoraDS OBJ");
-
-                weaveById("addResourceBlurVersion").before()
-                        .to("file:{{karaf.home}}/output")
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapAddImageResource", false, a ->  {
+                a.weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
+                a.weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
+                a.weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ").to("file:target/output")
                         .to("mock:result").stop();
-            }
+                a.weaveById("addSidoraDS").replace().log("Skipping fedora addSidoraDS OBJ");
         });
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", manifest);
-        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment");
+        exchange.getIn().setHeader("CamelFileAbsolutePath", "src/test/resources/wildlife_insights_test_data/unified-test-deployment");
         exchange.getIn().setBody("testWildLifeInsightsDeploymentIds1i3.JPG");
 
         template.send("direct:addImageResource", exchange);
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
     }
 
     @Test
     public void testImageResourceFaceBlurUseOriginalOnFail() throws Exception {
-        String manifest = readFileToString(new File(KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"));
+        String manifest = readFileToString(new File("src/test/resources/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"), "utf-8");
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(1);
-        mockResult.expectedFileExists(KARAF_HOME + "/output/testWildLifeInsightsDeploymentIds1i3.JPG");
+        mockResult.expectedFileExists("target/output/testWildLifeInsightsDeploymentIds1i3.JPG");
 
-        context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
-                weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
-                weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
-                weaveById("addSidoraDS").replace().log("Skipping fedora addSidoraDS OBJ");
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapAddImageResource", false, a -> {
+                a.weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
+                a.weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
+                a.weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
+                a.weaveById("addSidoraDS").replace().log("Skipping fedora addSidoraDS OBJ");
 
-                weaveById("execPythonFaceblur").after()
+                a.weaveById("execPythonFaceblur").after()
                         .setHeader("CamelExecExitValue").simple("1");
-                weaveById("addResourceCreateThumbnail").before()
-                        .to("file:{{karaf.home}}/output")
+                a.weaveById("addResourceCreateThumbnail").before()
+                        .to("file:target/output")
                         .to("mock:result").stop();
-            }
         });
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", manifest);
-        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment");
+        exchange.getIn().setHeader("CamelFileAbsolutePath", "src/test/resources/wildlife_insights_test_data/unified-test-deployment");
         exchange.getIn().setBody("testWildLifeInsightsDeploymentIds1i3.JPG");
 
         template.send("direct:addImageResource", exchange);
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
     }
 
     @Test
     public void testImageResourceExiftoolUseOriginalOnFail() throws Exception {
-        String manifest = readFileToString(new File(KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"));
+        String manifest = readFileToString(new File("src/test/resources/wildlife_insights_test_data/unified-test-deployment/deployment_manifest.xml"), "utf-8");
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(1);
-        mockResult.expectedFileExists(KARAF_HOME + "/output/testWildLifeInsightsDeploymentIds1i3.JPG");
-        mockResult.expectedFileExists(KARAF_HOME + "/staging/testWildLifeInsightsDeploymentIds1i3.JPG");
+        mockResult.expectedFileExists("target/output/testWildLifeInsightsDeploymentIds1i3.JPG");
+        mockResult.expectedFileExists("target/staging/testWildLifeInsightsDeploymentIds1i3.JPG");
 
-        context.getRouteDefinition("UnifiedCameraTrapAddImageResource").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
-                weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
-                weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapAddImageResource", false, a -> {
+                a.weaveById("createResourcePID").replace().log("Skipping fedora create!!!");
+                a.weaveById("addResourceOriginalVersion").replace().log("Skipping fedora addDatastream OBJ");
+                a.weaveById("addResourceBlurVersion").replace().log("Skipping fedora addDatastream OBJ");
 
-                weaveById("execExiftool").after()
+                a.weaveById("execExiftool").after()
                         .setHeader("CamelExecStderr").simple("Simulating Exiftool error!!!")
                         .setHeader("CamelExecExitValue").simple("1");
-                weaveById("addResourceCreateThumbnail").before()
-                        .to("file:{{karaf.home}}/output")
+                a.weaveById("addResourceCreateThumbnail").before()
+                        .to("file:target/output")
                         .to("mock:result").stop();
-            }
         });
 
         Exchange exchange = new DefaultExchange(context);
         exchange.getIn().setHeader("ManifestXML", manifest);
-        exchange.getIn().setHeader("CamelFileAbsolutePath", KARAF_HOME + "/wildlife_insights_test_data/unified-test-deployment");
+        exchange.getIn().setHeader("CamelFileAbsolutePath", "src/test/resources/wildlife_insights_test_data/unified-test-deployment");
         exchange.getIn().setBody("testWildLifeInsightsDeploymentIds1i3.JPG");
 
         template.send("direct:addImageResource", exchange);
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
     }
 }

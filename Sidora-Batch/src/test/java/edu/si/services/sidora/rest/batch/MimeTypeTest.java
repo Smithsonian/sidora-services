@@ -28,17 +28,10 @@
 package edu.si.services.sidora.rest.batch;
 
 import com.j256.simplemagic.ContentInfoUtil;
-import edu.si.services.sidora.rest.batch.beans.BatchRequestControllerBean;
 import eu.medsea.mimeutil.MimeUtil;
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -46,7 +39,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 
 /**
  * @author jbirkhimer
@@ -67,7 +59,7 @@ public class MimeTypeTest {
 
     @Test
     public void mimeTypeDetectionComparison() throws IOException {
-        File path = new File("src/test/resources/test-data/mimetype-test-files");
+        File path = new File("src/test/resources/generator/test-data/mimetype-test-files");
 
         String[] row = new String[] {"File Name", "ProbeContentType", "MimetypesFileTypeMap", "MimeUtil", "SimpleMagic", "Tika"};
         printRow(row);

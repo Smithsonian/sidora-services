@@ -31,11 +31,10 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AbstractAmazonS3;
 import com.amazonaws.services.s3.S3ResponseMetadata;
 import com.amazonaws.services.s3.model.*;
-import org.junit.Assert;
+import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +42,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * AmazonS3ClientMock for testing aws-s3 endpoints.
@@ -55,24 +57,30 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author jbirkhimer
  */
-public class AmazonS3ClientMock extends AmazonS3Client {
-
-    private static final Logger log = LoggerFactory.getLogger(AmazonS3ClientMock.class);
+public class AmazonS3ClientMock extends AbstractAmazonS3 {
+    private static final Logger LOG = LoggerFactory.getLogger(AmazonS3ClientMock.class);
 
     List<S3Object> objects = new CopyOnWriteArrayList<S3Object>();
     List<Bucket> buckets = new CopyOnWriteArrayList<Bucket>();
     List<PutObjectRequest> putObjectRequests = new CopyOnWriteArrayList<PutObjectRequest>();
+    List<UploadPartRequest> uploadPartRequests = new CopyOnWriteArrayList<UploadPartRequest>();
 
     private boolean nonExistingBucketCreated;
 
     private int maxCapacity = 100;
 
+    public AmazonS3ClientMock() {
+        LOG.debug("debug");
+    }
+
     public AmazonS3ClientMock(String accessKey, String secretKey) {
-        super(new BasicAWSCredentials(accessKey, secretKey));
+        LOG.debug("debug");
+//        super(new BasicAWSCredentials(accessKey, secretKey));
     }
 
     @Override
-    public VersionListing listNextBatchOfVersions(VersionListing previousVersionListing) throws AmazonClientException, AmazonServiceException {
+    public VersionListing listNextBatchOfVersions(VersionListing previousVersionListing)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -82,19 +90,29 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public VersionListing listVersions(String bucketName, String prefix, String keyMarker, String versionIdMarker, String delimiter, Integer maxKeys)
+    public VersionListing listVersions(
+            String bucketName, String prefix, String keyMarker, String versionIdMarker, String delimiter, Integer maxKeys)
             throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public VersionListing listVersions(ListVersionsRequest listVersionsRequest) throws AmazonClientException, AmazonServiceException {
+    public VersionListing listVersions(ListVersionsRequest listVersionsRequest)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public ObjectListing listObjects(String bucketName) throws AmazonClientException, AmazonServiceException {
-        //throw new UnsupportedOperationException();
+//        ObjectListing list = new ObjectListing();
+//        list.setBucketName("test");
+//        list.setTruncated(false);
+//        S3ObjectSummary summary = new S3ObjectSummary();
+//        summary.setBucketName("test");
+//        summary.setSize(10000L);
+//        summary.setKey("Myfile");
+//        list.getObjectSummaries().add(summary);
+//        return list;
         return listObjects(new ListObjectsRequest(bucketName, null, null, null, null));
     }
 
@@ -104,28 +122,35 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public ObjectListing listObjects(ListObjectsRequest listObjectsRequest) throws AmazonClientException, AmazonServiceException {
+    public ObjectListing listObjects(ListObjectsRequest listObjectsRequest)
+            throws AmazonClientException, AmazonServiceException {
         if ("nonExistingBucket".equals(listObjectsRequest.getBucketName()) && !nonExistingBucketCreated) {
             AmazonServiceException ex = new AmazonServiceException("Unknown bucket");
             ex.setStatusCode(404);
             throw ex;
         }
+        int capacity;
         ObjectListing objectListing = new ObjectListing();
-        for (int index = 0; index < objects.size(); index++) {
-            if (objects.get(index).getBucketName().equals(listObjectsRequest.getBucketName())) {
-                S3ObjectSummary s3ObjectSummary = new S3ObjectSummary();
-                s3ObjectSummary.setBucketName(objects.get(index).getBucketName());
-                s3ObjectSummary.setKey(objects.get(index).getKey());
+        if (!ObjectHelper.isEmpty(listObjectsRequest.getMaxKeys()) && listObjectsRequest.getMaxKeys() != null) {
+            capacity = listObjectsRequest.getMaxKeys();
+        } else {
+            capacity = maxCapacity;
+        }
 
-                objectListing.getObjectSummaries().add(s3ObjectSummary);
-            }
+        for (int index = 0; index < objects.size() && index < capacity; index++) {
+            S3ObjectSummary s3ObjectSummary = new S3ObjectSummary();
+            s3ObjectSummary.setBucketName(objects.get(index).getBucketName());
+            s3ObjectSummary.setKey(objects.get(index).getKey());
+
+            objectListing.getObjectSummaries().add(s3ObjectSummary);
         }
 
         return objectListing;
     }
 
     @Override
-    public ObjectListing listNextBatchOfObjects(ObjectListing previousObjectListing) throws AmazonClientException, AmazonServiceException {
+    public ObjectListing listNextBatchOfObjects(ObjectListing previousObjectListing)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -135,12 +160,19 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public List<Bucket> listBuckets(ListBucketsRequest listBucketsRequest) throws AmazonClientException, AmazonServiceException {
+    public List<Bucket> listBuckets(ListBucketsRequest listBucketsRequest)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public List<Bucket> listBuckets() throws AmazonClientException, AmazonServiceException {
+//        ArrayList<Bucket> list = new ArrayList<>();
+//        Bucket bucket = new Bucket("camel-bucket");
+//        bucket.setOwner(new Owner("Camel", "camel"));
+//        bucket.setCreationDate(new Date());
+//        list.add(bucket);
+//        return list;
         return buckets;
     }
 
@@ -185,27 +217,32 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public AccessControlList getObjectAcl(String bucketName, String key, String versionId) throws AmazonClientException, AmazonServiceException {
+    public AccessControlList getObjectAcl(String bucketName, String key, String versionId)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setObjectAcl(String bucketName, String key, AccessControlList acl) throws AmazonClientException, AmazonServiceException {
+    public void setObjectAcl(String bucketName, String key, AccessControlList acl)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setObjectAcl(String bucketName, String key, CannedAccessControlList acl) throws AmazonClientException, AmazonServiceException {
+    public void setObjectAcl(String bucketName, String key, CannedAccessControlList acl)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setObjectAcl(String bucketName, String key, String versionId, AccessControlList acl) throws AmazonClientException, AmazonServiceException {
+    public void setObjectAcl(String bucketName, String key, String versionId, AccessControlList acl)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setObjectAcl(String bucketName, String key, String versionId, CannedAccessControlList acl) throws AmazonClientException, AmazonServiceException {
+    public void setObjectAcl(String bucketName, String key, String versionId, CannedAccessControlList acl)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -220,20 +257,22 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public void setBucketAcl(String bucketName, CannedAccessControlList acl) throws AmazonClientException, AmazonServiceException {
+    public void setBucketAcl(String bucketName, CannedAccessControlList acl)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ObjectMetadata getObjectMetadata(String bucketName, String key) throws AmazonClientException, AmazonServiceException {
+    public ObjectMetadata getObjectMetadata(String bucketName, String key)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ObjectMetadata getObjectMetadata(GetObjectMetadataRequest getObjectMetadataRequest) throws AmazonClientException, AmazonServiceException {
+    public ObjectMetadata getObjectMetadata(GetObjectMetadataRequest getObjectMetadataRequest)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
-
 
     @Override
     public S3Object getObject(String bucketName, String key) throws AmazonClientException, AmazonServiceException {
@@ -252,7 +291,8 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public void changeObjectStorageClass(String bucketName, String key, StorageClass newStorageClass) throws AmazonClientException, AmazonServiceException {
+    public void changeObjectStorageClass(String bucketName, String key, StorageClass newStorageClass)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -262,7 +302,8 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public ObjectMetadata getObject(GetObjectRequest getObjectRequest, File destinationFile) throws AmazonClientException, AmazonServiceException {
+    public ObjectMetadata getObject(GetObjectRequest getObjectRequest, File destinationFile)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -277,12 +318,14 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public PutObjectResult putObject(String bucketName, String key, File file) throws AmazonClientException, AmazonServiceException {
+    public PutObjectResult putObject(String bucketName, String key, File file)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws AmazonClientException, AmazonServiceException {
+    public PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -294,6 +337,7 @@ public class AmazonS3ClientMock extends AmazonS3Client {
         S3Object s3Object = new S3Object();
         s3Object.setBucketName(putObjectRequest.getBucketName());
         s3Object.setKey(putObjectRequest.getKey());
+        s3Object.getObjectMetadata().setUserMetadata(putObjectRequest.getMetadata().getUserMetadata());
         if (putObjectRequest.getFile() != null) {
             try {
                 s3Object.setObjectContent(new FileInputStream(putObjectRequest.getFile()));
@@ -311,12 +355,15 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws AmazonClientException, AmazonServiceException {
+    public CopyObjectResult copyObject(
+            String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest) throws AmazonClientException, AmazonServiceException {
+    public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest)
+            throws AmazonClientException, AmazonServiceException {
         CopyObjectResult copyObjectResult = new CopyObjectResult();
         copyObjectResult.setETag("3a5c8b1ad448bca04584ecb55b836264");
         copyObjectResult.setVersionId("11192828ahsh2723");
@@ -325,14 +372,14 @@ public class AmazonS3ClientMock extends AmazonS3Client {
 
     @Override
     public void deleteObject(String bucketName, String key) throws AmazonClientException, AmazonServiceException {
-        log.debug("AmazonS3Client Object list Before Delete = {}", Arrays.toString(objects.toArray()));
+        LOG.debug("AmazonS3Client Object list Before Delete = {}", Arrays.toString(objects.toArray()));
 
         for (S3Object s3object :objects) {
             if (s3object.getKey().equals(key)) {
                 objects.remove(s3object);
             }
         }
-        log.debug("AmazonS3Client Object list After Delete = {}", Arrays.toString(objects.toArray()));
+        LOG.debug("AmazonS3Client Object list After Delete = {}", Arrays.toString(objects.toArray()));
     }
 
     @Override
@@ -341,7 +388,8 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public void deleteVersion(String bucketName, String key, String versionId) throws AmazonClientException, AmazonServiceException {
+    public void deleteVersion(String bucketName, String key, String versionId)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -351,32 +399,40 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public void setBucketVersioningConfiguration(SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationRequest) throws AmazonClientException, AmazonServiceException {
+    public void setBucketVersioningConfiguration(
+            SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationRequest)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public BucketVersioningConfiguration getBucketVersioningConfiguration(String bucketName) throws AmazonClientException, AmazonServiceException {
+    public BucketVersioningConfiguration getBucketVersioningConfiguration(String bucketName)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setBucketNotificationConfiguration(String bucketName, BucketNotificationConfiguration bucketNotificationConfiguration) throws AmazonClientException, AmazonServiceException {
+    public void setBucketNotificationConfiguration(
+            String bucketName, BucketNotificationConfiguration bucketNotificationConfiguration)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public BucketNotificationConfiguration getBucketNotificationConfiguration(String bucketName) throws AmazonClientException, AmazonServiceException {
+    public BucketNotificationConfiguration getBucketNotificationConfiguration(String bucketName)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public BucketLoggingConfiguration getBucketLoggingConfiguration(String bucketName) throws AmazonClientException, AmazonServiceException {
+    public BucketLoggingConfiguration getBucketLoggingConfiguration(String bucketName)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setBucketLoggingConfiguration(SetBucketLoggingConfigurationRequest setBucketLoggingConfigurationRequest) throws AmazonClientException, AmazonServiceException {
+    public void setBucketLoggingConfiguration(SetBucketLoggingConfigurationRequest setBucketLoggingConfigurationRequest)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -387,8 +443,8 @@ public class AmazonS3ClientMock extends AmazonS3Client {
 
     @Override
     public void setBucketPolicy(String bucketName, String policyText) throws AmazonClientException, AmazonServiceException {
-        Assert.assertEquals("nonExistingBucket", bucketName);
-        Assert.assertEquals("xxx", policyText);
+        assertEquals("nonExistingBucket", bucketName);
+        assertEquals("xxx", policyText);
     }
 
     @Override
@@ -402,32 +458,57 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public URL generatePresignedUrl(String bucketName, String key, Date expiration, HttpMethod method) throws AmazonClientException {
+    public URL generatePresignedUrl(String bucketName, String key, Date expiration, HttpMethod method)
+            throws AmazonClientException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public URL generatePresignedUrl(GeneratePresignedUrlRequest generatePresignedUrlRequest) throws AmazonClientException {
+        URL url = null;
+        try {
+            url = new URL("http://aws.amazonas.s3/file.zip");
+        } catch (MalformedURLException e) {
+            LOG.warn("Invalid URL: {}", e.getMessage(), e);
+        }
+        return url;
+    }
+
+    @Override
+    public void abortMultipartUpload(AbortMultipartUploadRequest abortMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void abortMultipartUpload(AbortMultipartUploadRequest abortMultipartUploadRequest) throws AmazonClientException, AmazonServiceException {
-        throw new UnsupportedOperationException();
+    public CompleteMultipartUploadResult completeMultipartUpload(CompleteMultipartUploadRequest completeMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
+//        throw new UnsupportedOperationException();
+
+        CompleteMultipartUploadResult completeMultipartUploadResult = new CompleteMultipartUploadResult();
+        completeMultipartUploadResult.setETag("3a5c8b1ad448bca04584ecb55b836264");
+        completeMultipartUploadResult.setBucketName(completeMultipartUploadRequest.getBucketName());
+        completeMultipartUploadResult.setKey(completeMultipartUploadRequest.getKey());
+
+        return completeMultipartUploadResult;
     }
 
     @Override
-    public CompleteMultipartUploadResult completeMultipartUpload(CompleteMultipartUploadRequest completeMultipartUploadRequest) throws AmazonClientException, AmazonServiceException {
-        throw new UnsupportedOperationException();
+    public InitiateMultipartUploadResult initiateMultipartUpload(InitiateMultipartUploadRequest initiateMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
+//        throw new UnsupportedOperationException();
+        InitiateMultipartUploadResult initiateMultipartUploadResult = new InitiateMultipartUploadResult();
+        initiateMultipartUploadResult.setUploadId("3a5c8b1ad448bca04584ecb55b836264");
+        initiateMultipartUploadResult.setBucketName(initiateMultipartUploadRequest.getBucketName());
+        initiateMultipartUploadResult.setKey(initiateMultipartUploadRequest.getKey());
+
+
+        return initiateMultipartUploadResult;
     }
 
     @Override
-    public InitiateMultipartUploadResult initiateMultipartUpload(InitiateMultipartUploadRequest initiateMultipartUploadRequest) throws AmazonClientException, AmazonServiceException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public MultipartUploadListing listMultipartUploads(ListMultipartUploadsRequest listMultipartUploadsRequest) throws AmazonClientException, AmazonServiceException {
+    public MultipartUploadListing listMultipartUploads(ListMultipartUploadsRequest listMultipartUploadsRequest)
+            throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 
@@ -437,8 +518,30 @@ public class AmazonS3ClientMock extends AmazonS3Client {
     }
 
     @Override
-    public UploadPartResult uploadPart(UploadPartRequest uploadPartRequest) throws AmazonClientException, AmazonServiceException {
-        throw new UnsupportedOperationException();
+    public UploadPartResult uploadPart(UploadPartRequest uploadPartRequest)
+            throws AmazonClientException, AmazonServiceException {
+//        throw new UnsupportedOperationException();
+        uploadPartRequests.add(uploadPartRequest);
+
+        S3Object s3Object = new S3Object();
+        s3Object.setBucketName(uploadPartRequest.getBucketName());
+        s3Object.setKey(uploadPartRequest.getKey());
+        if (uploadPartRequest.getFile() != null) {
+            try {
+                s3Object.setObjectContent(new FileInputStream(uploadPartRequest.getFile()));
+            } catch (FileNotFoundException e) {
+                throw new AmazonServiceException("Cannot store the file object.", e);
+            }
+        } else {
+            s3Object.setObjectContent(uploadPartRequest.getInputStream());
+        }
+        objects.add(s3Object);
+
+
+        UploadPartResult result = new UploadPartResult();
+        result.setETag("3a5c8b1ad448bca04584ecb55b836264");
+
+        return  result;
     }
 
     @Override

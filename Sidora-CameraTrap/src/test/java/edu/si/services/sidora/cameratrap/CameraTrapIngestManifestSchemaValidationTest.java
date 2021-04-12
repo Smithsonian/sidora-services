@@ -27,25 +27,44 @@
 
 package edu.si.services.sidora.cameratrap;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.spring.boot.CamelAutoConfiguration;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * @author jbirkhimer
  */
-public class CameraTrapIngestManifestSchemaValidationTest extends CamelTestSupport {
+@CamelSpringBootTest
+@SpringBootTest(classes = {CamelAutoConfiguration.class, CameraTrapIngestManifestSchemaValidationTest.Config.class},
+        properties = {"logging.file.path=target/logs"}
+)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class CameraTrapIngestManifestSchemaValidationTest {
+
+    private static final Logger log = LoggerFactory.getLogger(AwsS3PollAndUploadRouteTest.class);
+
+    @Autowired
+    private CamelContext context;
+    @Autowired
+    private ProducerTemplate template;
 
     //Camera Trap Deployment Manifest for tests
     private File manifestUnifiedFile = new File("src/test/resources/Manifest_Schema_Validation_TestFiles/unified_deployment_manifest.xml");
@@ -55,40 +74,6 @@ public class CameraTrapIngestManifestSchemaValidationTest extends CamelTestSuppo
 
     //Camel Headers Map
     private Map<String, Object> headers;
-
-    //Temp directories created for testing the camel validation route
-    private static File tempInputDirectory;
-
-    /**
-     * Sets up the Temp directories used by the
-     * camera trap route.
-     * @throws IOException
-     */
-    @BeforeClass
-    public static void setupSysPropsTempResourceDir() throws IOException {
-        //Create and Copy the Input dir xslt, etc. files used in the camera trap route
-        tempInputDirectory = new File("Input");
-        if(!tempInputDirectory.exists()){
-            tempInputDirectory.mkdir();
-        }
-
-        //The Location of the Input dir in the project
-        File inputSrcDirLoc = new File("../../Routes/Camera Trap/Input");
-
-        //Copy the Input src files to the CameraTrap root so the camel route can find them
-        FileUtils.copyDirectory(inputSrcDirLoc, tempInputDirectory);
-    }
-
-    /**
-     * Clean up the temp directories after tests are finished
-     * @throws IOException
-     */
-    @AfterClass
-    public static void teardown() throws IOException {
-        if(tempInputDirectory.exists()){
-            FileUtils.deleteDirectory(tempInputDirectory);
-        }
-    }
 
     @Test
     public void unifiedManifestSchematromValidationTests() throws Exception {
@@ -135,100 +120,64 @@ public class CameraTrapIngestManifestSchemaValidationTest extends CamelTestSuppo
         headers.put("xsdFile", xsdFile);
         headers.put("schFile", schFile);
 
-        MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
+        MockEndpoint mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
         mockEndpoint.setRetainLast(1);
         mockEndpoint.setMinimumExpectedMessageCount(1);
         mockEndpoint.expectedHeaderReceived("CamelSchematronValidationStatus", camelSchematronValidationStatus);
 
         template.sendBodyAndHeaders("direct:start", manifest, headers);
 
-        assertMockEndpointsSatisfied();
-
-        resetMocks();
-        //mockEndpoint.reset();
+        mockEndpoint.assertIsSatisfied();
+        mockEndpoint.reset();
     }
 
-    /**
-     * Registering the velocityToolsHandler
-     *
-     * @return JndiRegistry
-     * @throws Exception
-     */
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
-        jndi.bind("velocityToolsHandler", edu.si.services.beans.velocityToolsHandler.VelocityToolsHandler.class);
+    @TestConfiguration
+    public static class Config extends RouteBuilder {
+        @Override
+        public void configure() throws Exception {
+            // logging configuration for tracer and formatter
+            //Tracer tracer = new Tracer();
+            //tracer.setLogLevel(LoggingLevel.WARN);
+            //tracer.setTraceOutExchanges(true);
+            //DefaultTraceFormatter formatter = new DefaultTraceFormatter();
+            //formatter.setShowOutBody(true);
+            //formatter.setShowOutBodyType(true);
+            //formatter.setShowShortExchangeId(true);
+            //formatter.setMaxChars(500);
+            //tracer.setFormatter(formatter);
+            //getContext().addInterceptStrategy(tracer);
 
-        return jndi;
-    }
-
-    @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
-        return new RouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                // logging configuration for tracer and formatter
-                //Tracer tracer = new Tracer();
-                //tracer.setLogLevel(LoggingLevel.WARN);
-                //tracer.setTraceOutExchanges(true);
-                //DefaultTraceFormatter formatter = new DefaultTraceFormatter();
-                //formatter.setShowOutBody(true);
-                //formatter.setShowOutBodyType(true);
-                //formatter.setShowShortExchangeId(true);
-                //formatter.setMaxChars(500);
-                //tracer.setFormatter(formatter);
-                //getContext().addInterceptStrategy(tracer);
-
-                /**
-                 * Generic Route used for AdviceWithRouteBuilder
-                 */
-                from("direct:start")
-                        .routeId("testRoute")
-                        .choice()
-                            .when(header("fieldToTest"))
-                                .log(LoggingLevel.INFO, "=======(0)======= Testing Manifest with \"${header.newFieldValue}\" value for: ${header.fieldToTest}")
-                                //use and xslt transform to modify the manifest for testing purposes
-                                .to("xslt:file:src/test/resources/Manifest_Schema_Validation_TestFiles/paramUpdateManifest.xsl?saxon=true")
-                                .log(LoggingLevel.DEBUG, "=======(1)======= Modified manifest being tested:\n${body}")
-                            //.endChoice()
-                            .otherwise()
-                                .log(LoggingLevel.INFO, "=======(0)======= Testing Unmodified Manifest")
-                                .log(LoggingLevel.DEBUG, "=======(1)======= Unmodified manifest being tested:\n${body}")
-                            //.endChoice()
+            /**
+             * Generic Route used for AdviceWithRouteBuilder
+             */
+            from("direct:start")
+                    .routeId("testRoute")
+                    .choice()
+                        .when(header("fieldToTest"))
+                            .log(LoggingLevel.INFO, "=======(0)======= Testing Manifest with \"${header.newFieldValue}\" value for: ${header.fieldToTest}")
+                            //use and xslt transform to modify the manifest for testing purposes
+                            .to("xslt-saxon:file:src/test/resources/Manifest_Schema_Validation_TestFiles/paramUpdateManifest.xsl")
+                            .log(LoggingLevel.DEBUG, "=======(1)======= Modified manifest being tested:\n${body}")
+                        //.endChoice()
+                        .otherwise()
+                            .log(LoggingLevel.INFO, "=======(0)======= Testing Unmodified Manifest")
+                            .log(LoggingLevel.DEBUG, "=======(1)======= Unmodified manifest being tested:\n${body}")
+                        //.endChoice()
                         .end()
-                                //check the manifest using xsd schema
-                        .toD("validator:file:Input/schemas/${header.xsdFile}")
-                                //check the manifest using schematron
-                        .toD("schematron:file:Input/schemas/${header.schFile}")
-                        .log(LoggingLevel.INFO, "=======(2)======= Schematron Validation Status - ${header.CamelSchematronValidationStatus}")
-                        .choice()
-                            .when(simple("${header.CamelSchematronValidationStatus} == 'FAILED'"))
-                                .log(LoggingLevel.DEBUG, "*************************************************************\n"
-                                        + "Schematron Validation Status - ${header.CamelSchematronValidationStatus}\n"
-                                        + "----------------------------------------------------------------\n"
-                                        + "Schematron Validation Report -\n ${header.CamelSchematronValidationReport}\n"
-                                        + "*************************************************************\n")
+                    //check the manifest using xsd schema
+                    .toD("validator:file:config/schemas/${header.xsdFile}")
+                    //check the manifest using schematron
+                    .toD("schematron:file:config/schemas/${header.schFile}")
+                    .log(LoggingLevel.INFO, "=======(2)======= Schematron Validation Status - ${header.CamelSchematronValidationStatus}")
+                    .choice()
+                        .when(simple("${header.CamelSchematronValidationStatus} == 'FAILED'"))
+                            .log(LoggingLevel.DEBUG, "*************************************************************\n"
+                                    + "Schematron Validation Status - ${header.CamelSchematronValidationStatus}\n"
+                                    + "----------------------------------------------------------------\n"
+                                    + "Schematron Validation Report -\n ${header.CamelSchematronValidationReport}\n"
+                                    + "*************************************************************\n")
                         .end()
-                        .to("mock:result");
-            }
-        };
+                    .to("mock:result");
+        }
     }
-
-    /*@Override
-    public boolean isUseDebugger() {
-        // must enable debugger
-        return true;
-    }
-
-    @Override
-    protected void debugBefore(Exchange exchange, org.apache.camel.Processor processor, ProcessorDefinition<?> definition, String id, String label) {
-        // this method is invoked before we are about to enter the given processor
-        // from your Java editor you can just add a breakpoint in the code line below
-        log.info("Before " + definition + " with body " + exchange.getIn().getBody());
-    }
-
-    @Override
-    protected void debugAfter(Exchange exchange, org.apache.camel.Processor processor, ProcessorDefinition<?> definition, String id, String label, long timeTaken) {
-        log.info("After " + definition + " with body " + exchange.getIn().getBody());
-    }*/
 }

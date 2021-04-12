@@ -425,7 +425,7 @@ Property, configuration, and resource files (steps 1 - 3) are only needed for ne
         # required
         si.fuseki.endpoint=http://localhost:9080/fuseki/fedora3
 
-        si.fits.host=http://localhost:8080/fits-1.1.3
+        fits.host=http://localhost:8080/fits-1.1.3
 
         workbench.server = workbench.sidora.si.edu
         workbench.host = https://${workbench.server}
@@ -550,7 +550,7 @@ Property, configuration, and resource files (steps 1 - 3) are only needed for ne
                 <feature version="2.16.3">camel-jdbc</feature>
                 <feature version="2.16.3">camel-sql</feature>
                 <feature version="2.16.3">camel-gson</feature>
-                <feature version="2.16.3">camel-http4</feature>
+                <feature version="2.16.3">camel-http</feature>
                 <feature>hawtio-core</feature>
                 <feature>webconsole</feature>
                 <feature>activemq-web-console</feature>

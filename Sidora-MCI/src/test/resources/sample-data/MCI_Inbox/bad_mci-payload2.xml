@@ -117,8 +117,8 @@
   </Field>
   <Field Type="Text" Name="Approving_x0020_Official_x0020_E" DisplayName="Approving Official Email">testOfficial@email.com
   </Field>
-  <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
-  <Field Type="Text" Name="folderholderemail" DisplayName="Folder Holder Email">testFolderHolder@email.com</Field>
+  <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\camelWBUser</Field>
+  <Field Type="Text" Name="folderholderemail" DisplayName="Folder Holder Email">camelWBUser@email.com</Field>
   <Field Type="Text" Name="FolderHolderPhone" DisplayName="Pholder Holder Phone">111-222-3333</Field>
   <Field Type="Text" Name="KeywordType1" DisplayName="Keyword Type 1">type 1</Field>
   <Field Type="Text" Name="KeywordType2" DisplayName="Keyword Type 2">type 2</Field>
@@ -152,7 +152,7 @@
     8/31/2016 9:56 AM - 8/31/2016 10:02 AM (last, first) last, first is approving in testing for Director
     role of last, first.
   </Field>
-  <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\testFolderHolder</Field>
+  <Field Type="User" Name="Folder_x0020_Holder" DisplayName="Folder Holder">i:0#.w|us\camelWBUser</Field>
   <Field Type="Text" Name="Role1" DisplayName="Role (1)">aaa</Field>
   <Field Type="Text" Name="Role2" DisplayName="Role (2)">bbb</Field>
   <Field Type="Text" Name="Role3" DisplayName="Role (3)">ccc</Field>

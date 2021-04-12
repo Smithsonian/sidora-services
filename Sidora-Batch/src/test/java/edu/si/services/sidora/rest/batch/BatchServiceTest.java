@@ -32,12 +32,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.builder.xml.XPathBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.sql.SqlComponent;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
+import org.apache.camel.language.xpath.XPathBuilder;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
@@ -49,9 +48,12 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
@@ -63,11 +65,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
+import static org.apache.camel.test.junit5.TestSupport.assertIsInstanceOf;
+
 /**TODO: Fix Tests
  * @author jbirkhimer
  */
-@Ignore
-public class BatchServiceTest extends CamelBlueprintTestSupport {
+@Disabled
+public class BatchServiceTest extends CamelTestSupport {
+
+    private static final Logger log = LoggerFactory.getLogger(BatchServiceTest.class);
 
     private static final String KARAF_HOME = System.getProperty("karaf.home");
 
@@ -98,8 +104,8 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
     @Test
     public void newBatchRequest_addResourceObjects_Test() throws Exception {
 
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/association.xml"));
-        String resourceListXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/audioFiles.xml"));
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/audio/association.xml"));
+        String resourceListXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/audio/audioFiles.xml"));
 
         String expectedHTTPResponseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
                 "<Batch>\n" +
@@ -123,20 +129,17 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         context.getRouteDefinition("BatchProcessResources").autoStartup(false);
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("BatchProcessAddResourceObjects").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("httpGetAssociationDuringRequest").replace().setBody(simple(associationXML));
-                weaveById("httpGetResourceList").replace().setBody(simple(resourceListXML));
-                weaveById("sqlInsertResources").replace().log(LoggingLevel.INFO, "Skipping sqlInsertResources").to("mock:sqlInsertResourcesHeaders");
-                weaveById("sqlInsertNewBatchRequest").replace().log(LoggingLevel.INFO, "Skipping sqlInsertNewBatchRequest");
+        AdviceWithRouteBuilder.adviceWith(context, "BatchProcessAddResourceObjects", a -> {
+                a.weaveById("httpGetAssociationDuringRequest").replace().setBody().simple(associationXML);
+                a.weaveById("httpGetResourceList").replace().setBody().simple(resourceListXML);
+                a.weaveById("sqlInsertResources").replace().log(LoggingLevel.INFO, "Skipping sqlInsertResources").to("mock:sqlInsertResourcesHeaders");
+                a.weaveById("sqlInsertNewBatchRequest").replace().log(LoggingLevel.INFO, "Skipping sqlInsertNewBatchRequest");
 
-                weaveByToString(".*bean:batchRequestControllerBean.*").replace().setHeader("correlationId", simple(correlationId));
+                a.weaveByToString(".*bean:batchRequestControllerBean.*").replace().setHeader("correlationId").simple(correlationId);
 
-                weaveAddLast().to("mock:result");
+                a.weaveAddLast().to("mock:result");
 
-            }
-        });
+            });
 
         HttpPost post = new HttpPost(BASE_URL + "/addResourceObjects/" + parentPid);
 
@@ -156,11 +159,11 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         post.setEntity(builder.build());
 
         HttpResponse response = httpClient.execute(post);
-        assertEquals(200, response.getStatusLine().getStatusCode());
+        Assertions.assertEquals(200, response.getStatusLine().getStatusCode());
         String responseBody = EntityUtils.toString(response.getEntity());
         log.debug("======================== [ RESPONSE ] ========================\n" + responseBody);
 
-        assertEquals(expectedHTTPResponseBody, responseBody);
+        Assertions.assertEquals(expectedHTTPResponseBody, responseBody);
 
         log.debug("===============[ DB Requests ]================\n{}", jdbcTemplate.queryForList("select * from sidora.camelBatchRequests"));
         log.debug("===============[ DB Resources ]===============\n{}", jdbcTemplate.queryForList("select * from sidora.camelBatchResources"));
@@ -168,8 +171,8 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         BatchRequestResponse camelResultBody = (BatchRequestResponse) mockEndpoint.getExchanges().get(0).getIn().getBody();
 
         assertIsInstanceOf(BatchRequestResponse.class, camelResultBody);
-        assertEquals(camelResultBody.getParentPID(), parentPid);
-        assertEquals(camelResultBody.getCorrelationId(), correlationId);
+        Assertions.assertEquals(camelResultBody.getParentPID(), parentPid);
+        Assertions.assertEquals(camelResultBody.getCorrelationId(), correlationId);
 
         assertMockEndpointsSatisfied();
 
@@ -197,23 +200,19 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
         context.getRouteDefinition("BatchProcessResources").autoStartup(false);
 
         //Configure and use adviceWith to mock for testing purpose
-        context.getRouteDefinition("BatchProcessRequestStatus").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWithRouteBuilder.adviceWith(context, "BatchProcessRequestStatus", a -> {
 
-                //weaveByToString(".*sql.checkRequestStatus.*").replace().to("sql:select * from sidora.camelBatchRequests where (correlationId = :#correlationId AND parentId = :#parentId)?outputHeader=batchRequest&outputType=SelectList").to("log:{{edu.si.batch}}?level=INFO&multiline=true&showAll=true").to("mock:result").stop();
+                //a.weaveByToString(".*sql.checkRequestStatus.*").replace().to("sql:select * from sidora.camelBatchRequests where (correlationId = :#correlationId AND parentId = :#parentId)?outputHeader=batchRequest&outputType=SelectList").to("log:{{edu.si.batch}}?level=INFO&multiline=true&showAll=true").to("mock:result").stop();
 
-                //weaveByToString(".*sql.checkRequestStatus.*").replace().log("=========================\n{{sql.checkRequestStatus}}\n=================================").to("mock:result").stop();
+                //a.weaveByToString(".*sql.checkRequestStatus.*").replace().log("=========================\n{{sql.checkRequestStatus}}\n=================================").to("mock:result").stop();
 
-                weaveAddLast().to("mock:result");
-
-            }
+                a.weaveAddLast().to("mock:result");
         });
 
         HttpGet getClient = new HttpGet(BASE_URL + "/requestStatus/" + parentPid + "/" + correlationId);
 
         HttpResponse response = httpClient.execute(getClient);
-        assertEquals(200, response.getStatusLine().getStatusCode());
+        Assertions.assertEquals(200, response.getStatusLine().getStatusCode());
         String responseBody = EntityUtils.toString(response.getEntity());
         log.debug("======================== [ RESPONSE ] ========================\n" + responseBody);
 
@@ -224,11 +223,11 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
 
     @Test
     public void testTitleAndObjLabel() throws Exception {
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/association.xml"));
-        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/metadata.xml"));
-        String metadataNoTitleXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/metadata_no_title.xml"));
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/audio/association.xml"));
+        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/audio/metadata.xml"));
+        String metadataNoTitleXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/metadata_no_title.xml"));
 
-        String titlePath = template.requestBody("xslt:file:{{karaf.home}}/Input/xslt/BatchAssociationTitlePath.xsl?saxon=true", associationXML, String.class);
+        String titlePath = template.requestBody("xslt-saxon:file:{{karaf.home}}/Input/xslt/BatchAssociationTitlePath.xsl", associationXML, String.class);
         String objDsLabel = XPathBuilder.xpath("string(//file/@originalname)", String.class).evaluate(context, "<batch>\n" +
                         "    <file originalname=\"audio1.mp3\">audio1.mp3</file>\n" +
                         "</batch>");
@@ -247,14 +246,14 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
             public void configure() throws Exception {
                 from("direct:start")
                         .to("bean:batchRequestControllerBean?method=setPrimaryTitleLabel")
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
+                        .to("xslt-saxon:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl")
                         .to("bean:batchRequestControllerBean?method=setTitleLabel")
                         .log(LoggingLevel.INFO, "primaryTitleLabel: ${header.primaryTitleLabel}, titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
                         .to("mock:result");
 
                 from("direct:startNoTitleInfo")
                         .to("bean:batchRequestControllerBean?method=setPrimaryTitleLabel")
-                        .to("xslt:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
+                        .to("xslt-saxon:file:{{karaf.home}}/Input/xslt/BatchProcess_ManifestResource.xsl")
                         .to("bean:batchRequestControllerBean?method=setTitleLabel")
                         .log(LoggingLevel.INFO, "primaryTitleLabel: ${header.primaryTitleLabel}, titleLabel: ${header.titleLabel}, objDsLabel: ${header.objDsLabel}")
                         .to("mock:resultNoTitle");
@@ -281,42 +280,14 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
 
     }
 
-    @Override
-    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
-        configAdmin.putAll(props);
-        return "edu.si.sidora.batch";
-    }
-
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry reg = super.createRegistry();
-
-        if (USE_MYSQL_DB) {
-            BasicDataSource testMySQLdb = new BasicDataSource();
-            testMySQLdb.setDriverClassName("com.mysql.jdbc.Driver");
-            testMySQLdb.setUrl("jdbc:mysql://" + props.getProperty("mysql.host") + ":" + props.getProperty("mysql.port") + "/" + props.getProperty("mysql.database") + "?zeroDateTimeBehavior=convertToNull");
-            testMySQLdb.setUsername(props.getProperty("mysql.username").toString());
-            testMySQLdb.setPassword(props.getProperty("mysql.password").toString());
-            reg.bind("dataSource", testMySQLdb);
-        } else {
-            reg.bind("dataSource", db);
-        }
-
-        reg.bind("dataSource", db);
-
-        reg.bind("jsonProvider", org.apache.cxf.jaxrs.provider.json.JSONProvider.class);
-        reg.bind("jaxbProvider", org.apache.cxf.jaxrs.provider.JAXBElementProvider.class);
-
-        return reg;
-    }
-
-    @Override
-    protected String getBlueprintDescriptor() {
-        return "deploy/sidora-batch.xml";
-    }
+//    @Override
+//    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
+//        configAdmin.putAll(props);
+//        return "edu.si.sidora.batch";
+//    }
 
     protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/edu.si.sidora.batch.properties", KARAF_HOME + "/sql/batch.process.sql.properties");
+        return Arrays.asList(KARAF_HOME + "/etc/system.properties", KARAF_HOME + "/etc/application-test.properties", KARAF_HOME + "/sql/application-sql.properties");
     }
 
     @Override
@@ -355,10 +326,26 @@ public class BatchServiceTest extends CamelBlueprintTestSupport {
 //        sql.load(sqlFile);
 
         jdbcTemplate = new JdbcTemplate(db);
+
+        if (USE_MYSQL_DB) {
+            BasicDataSource testMySQLdb = new BasicDataSource();
+            testMySQLdb.setDriverClassName("com.mysql.jdbc.Driver");
+            testMySQLdb.setUrl("jdbc:mysql://" + props.getProperty("mysql.host") + ":" + props.getProperty("mysql.port") + "/" + props.getProperty("mysql.database") + "?zeroDateTimeBehavior=convertToNull");
+            testMySQLdb.setUsername(props.getProperty("mysql.username").toString());
+            testMySQLdb.setPassword(props.getProperty("mysql.password").toString());
+            context.getRegistry().bind("dataSource", testMySQLdb);
+        } else {
+            context.getRegistry().bind("dataSource", db);
+        }
+
+        context.getRegistry().bind("dataSource", db);
+
+//        context.getRegistry().bind("jsonProvider", org.apache.cxf.jaxrs.provider.json.JSONProvider.class);
+//        context.getRegistry().bind("jaxbProvider", org.apache.cxf.jaxrs.provider.JAXBElementProvider.class);
     }
 
     @Override
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         super.tearDown();
         httpClient.close();

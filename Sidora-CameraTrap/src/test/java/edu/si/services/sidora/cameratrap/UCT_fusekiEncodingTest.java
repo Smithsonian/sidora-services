@@ -27,66 +27,70 @@
 
 package edu.si.services.sidora.cameratrap;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.model.LogDefinition;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * @author jbirkhimer
  */
-public class UCT_fusekiEncodingTest extends CT_BlueprintTestSupport {
+@Disabled("Ignore this test b/c it needs fedora and fuseki running and have the correct object in the repo")
+@CamelSpringBootTest
+@SpringBootTest(properties = {
+        "logging.file.path=target/logs",
+        "processing.dir.base.path=${user.dir}/target",
+        "si.ct.uscbi.enableS3Routes=false",
+        "camel.springboot.java-routes-exclude-pattern=UnifiedCameraTrapInFlightConceptStatusPolling,UnifiedCameraTrapStartProcessing"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class UCT_fusekiEncodingTest {
 
-    @Override
-    protected String getBlueprintDescriptor() {
-        return "Routes/unified-camera-trap-route.xml";
-    }
+    private static final Logger log = LoggerFactory.getLogger(UCT_fusekiEncodingTest.class);
 
-    @Override
-    protected String[] preventRoutesFromStarting() {
-        return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
-    }
+    @Autowired
+    CamelContext context;
 
-    @Override
-    public boolean isUseAdviceWith() {
-        return true;
-    }
+    //@EndpointInject(value = "direct:addFITSDataStream")
+    @Autowired
+    ProducerTemplate template;
 
     @Test
-    @Ignore //Ignore this test b/c it needs fuseki running
+    @Disabled("Ignore this test b/c it needs fedora and fuseki running and have the correct object in the repo")
     public void findObjectTest() throws Exception {
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMessageCount(1);
 
-        MockEndpoint mockError = getMockEndpoint("mock:error");
+        MockEndpoint mockError = context.getEndpoint("mock:error", MockEndpoint.class);
         mockError.expectedMessageCount(8);
 
-        context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                interceptSendToEndpoint("direct:processParents").skipSendToOriginalEndpoint().to("direct:findObject")
-                        .to("mock:result");
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapProcessParents", a ->
+                a.interceptSendToEndpoint("direct:processParents").skipSendToOriginalEndpoint().to("direct:findObject")
+                        .to("mock:result"));
 
-            }
-        });
-
-        context.getRouteDefinition("UnifiedCameraTrapFindObject").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByType(LogDefinition.class).selectFirst().before().to("mock:error");
-            }
-        });
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapFindObject", a ->
+                a.weaveByType(LogDefinition.class).selectFirst().before().to("mock:error")).stop();
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader("CamelFedoraPid", "test:123456");
-        exchange.getIn().setBody("Panama: Ticks &amp; Climate Change");
+        exchange.getIn().setHeader("CamelFedoraPid", "si:121909");
+        exchange.getIn().setBody("eMammal");
 
         template.send("direct:processParents", exchange);
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
+        mockError.assertIsSatisfied();
     }
 }

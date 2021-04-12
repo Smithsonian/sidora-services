@@ -27,13 +27,9 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
-
-import java.io.InputStream;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests the operation of Excel utilities when used as a bean in a Camel route.
@@ -47,13 +43,13 @@ public class CameraTrapIT extends CamelTestSupport
         //InputStream input = this.getClass().getResourceAsStream("/BDD-SP-08.xls");
         //template.sendBody("direct:testXSLStream", input);
 
-        //MockEndpoint ep = getMockEndpoint("mock:result");
+        //MockEndpoint ep = context.getEndpoint("mock:result", MockEndpoint.class);
         //Message in = ep.getExchanges().get(0).getIn();
         //Object body = in.getBody();
 
         //String csv = body.toString();
-        //assertEquals("Año,Autor,", csv.substring(0, 10));
-        //assertEquals(97053, csv.length());
+        //Assertions.assertEquals("Año,Autor,", csv.substring(0, 10));
+        //Assertions.assertEquals(97053, csv.length());
     }
 
     @Override

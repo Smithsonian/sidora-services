@@ -30,7 +30,8 @@ package edu.si.services.sidora.rest.batch;
 import edu.si.services.sidora.rest.batch.model.response.BatchRequestResponse;
 import edu.si.services.sidora.rest.batch.model.status.BatchStatus;
 import edu.si.services.sidora.rest.batch.model.status.ResourceStatus;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +43,6 @@ import java.io.FileOutputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
 
 
 /**
@@ -76,7 +75,7 @@ public class BatchXMLResponseOutputTests {
 
         LOG.info("Request XML Generated:\n{}", sw.toString());
 
-        assertEquals(expectedOutput, sw.toString());
+        Assertions.assertEquals(expectedOutput, sw.toString());
     }
 
     @Test
@@ -112,7 +111,7 @@ public class BatchXMLResponseOutputTests {
 
         LOG.info("Status XML Generated:\n{}", sw.toString());
 
-        assertEquals(expectedOutput, sw.toString());
+        Assertions.assertEquals(expectedOutput, sw.toString());
     }
 
     @Test
@@ -148,7 +147,7 @@ public class BatchXMLResponseOutputTests {
 
         LOG.info("Status XML Generated:\n{}", sw.toString());
 
-        assertEquals(expectedOutput, sw.toString());
+        Assertions.assertEquals(expectedOutput, sw.toString());
     }
 
     private String getExpectedOutput(String expected) {

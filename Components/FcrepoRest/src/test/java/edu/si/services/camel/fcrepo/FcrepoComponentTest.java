@@ -32,7 +32,7 @@ import org.apache.camel.Endpoint;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Map;
 
@@ -61,7 +61,7 @@ public class FcrepoComponentTest {
      */
     @Test
     public void testCreateEndpoint() throws Exception {
-        final FcrepoComponent testComponent = new FcrepoComponent(mockContext);
+        final FcrepoComponent testComponent = new FcrepoComponent();
         final Endpoint testEndpoint = testComponent.createEndpoint(TEST_ENDPOINT_URI, "", EMPTY_MAP);
         assertEquals(mockContext, testEndpoint.getCamelContext());
         assertEquals(TEST_ENDPOINT_URI, testEndpoint.getEndpointUri());

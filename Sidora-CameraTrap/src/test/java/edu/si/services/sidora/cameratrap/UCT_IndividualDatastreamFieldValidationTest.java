@@ -27,22 +27,52 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import edu.si.services.sidora.cameratrap.validation.CameraTrapValidationMessage;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for the Camera Trap Validate Fields Route
  *
  * @author jbirkhimer
  */
-public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTestSupport {
+@CamelSpringBootTest
+@SpringBootTest(properties = {
+        "logging.file.path=target/logs",
+        "processing.dir.base.path=${user.dir}/target",
+        "si.ct.uscbi.enableS3Routes=false",
+        "camel.springboot.java-routes-exclude-pattern=UnifiedCameraTrapInFlightConceptStatusPolling,UnifiedCameraTrapStartProcessing"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class UCT_IndividualDatastreamFieldValidationTest {
 
-    private static final String KARAF_HOME = System.getProperty("karaf.home");
+    private static final Logger log = LoggerFactory.getLogger(UCT_IndividualDatastreamFieldValidationTest.class);
+
+    @Autowired
+    CamelContext context;
+
+    //@EndpointInject(value = "direct:addFITSDataStream")
+    @Autowired
+    ProducerTemplate template;
 
     //Test Data Directory contains the datastreams and other resources for the tests
     private String testDataDir = "src/test/resources/UnifiedManifest-TestFiles";
@@ -70,24 +100,11 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
     private CameraTrapValidationMessage.MessageBean expectedValidationMessage;
 
     /**
-     * Override this method, and return the location of our Blueprint XML file to be used for testing.
-     * The actual camera trap route that the maven lifecycle phase process-test-resources executes
-     * to copy test resources to output folder target/test-classes.
-     */
-    @Override
-    protected String getBlueprintDescriptor() {
-        //use the production route for testing that the pom copied into the test resources
-        return "Routes/unified-camera-trap-route.xml";
-    }
-
-    /**
      * Initialize the camel headers, deployment manifest, and test data
      * @throws Exception
      */
-    @Override
+    @BeforeEach
     public void setUp() throws Exception {
-        disableJMX();
-
         //Store the Deployment Manifest as string to set the camel ManifestXML header
         manifest = FileUtils.readFileToString(manifestFile);
 
@@ -96,11 +113,10 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         headers.put("deploymentPackageId", deploymentPackageId);
         headers.put("ManifestCameraDeploymentId", ManifestCameraDeploymentId);
         headers.put("ManifestXML", String.valueOf(manifest));
-        headers.put("ValidationErrors", "ValidationErrors");
+        headers.put("validationErrors", "validationErrors");
         headers.put("ProjectPID", "test:0000");
         headers.put("SitePID", "test:0000");
-
-        super.setUp();
+        headers.put("modsImageSequenceId", "d18981s1");
     }
 
     /**
@@ -114,19 +130,16 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
     private void runValidationAdviceWithTest(String validationRouteDefinition, String validateDatastreamFieldsRoute, Object expectedBody) throws Exception {
 
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition(validationRouteDefinition).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, validationRouteDefinition,false, a -> {
 
                 //replace the getDatastreamDissemination endpoint with the same exchange body that fedora would return but modified for our test
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
+                a.weaveByToString(".*getDatastreamDissemination.*").replace().setBody().simple(String.valueOf(datastream));
 
                 //replace the validationErrorMessage Aggregation with mock:result and stop the route from continuing
-                weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
-            }
+                a.weaveByToString(".*validationErrorMessageAggregationStrategy.*").replace().to("mock:result").stop();
         });
 
-        mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
@@ -140,9 +153,9 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
 
         log.info("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-        assertEquals("mock:result Body assertEquals failed!", expectedBody, resultBody);
+        assertEquals(expectedBody, resultBody, "mock:result Body assertEquals failed!");
 
-        assertMockEndpointsSatisfied();
+        mockEndpoint.assertIsSatisfied();
     }
 
     /**
@@ -292,7 +305,7 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         StringBuilder expectedBody = new StringBuilder();
         expectedBody.append("MODS ImageSequenceId|");
         expectedBody.append("//mods:relatedItem/mods:identifier/text()|");
-        expectedBody.append("//ImageSequence[1]/ImageSequenceId[1]/text()");
+        expectedBody.append("//ImageSequenceId[text()=\"d18981s1\"]/text()");
 
         runValidationAdviceWithTest("UnifiedCameraTrapValidate_MODS_Datastream", "direct:validate_MODS_Datastream", expectedBody.toString());
     }
@@ -430,18 +443,14 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
         headers.put("ManifestXML", String.valueOf(manifest));
 
         //using adviceWith to mock for testing purpose
-        context.getRouteDefinition("UnifiedCameraTrapValidateCSVFields").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidateCSVFields",false, a -> {
 
-                weaveByToString(".*getDatastreamDissemination.*").replace().setBody(simple(String.valueOf(datastream)));
+                a.weaveByToString(".*getDatastreamDissemination.*").replace().setBody().simple(String.valueOf(datastream));
 
-                weaveAddLast().to("mock:result").stop();
-
-            }
+            a.weaveAddLast().to("mock:result").stop();
         });
 
-        mockEndpoint = getMockEndpoint("mock:result");
+        mockEndpoint = context.getEndpoint("mock:result", MockEndpoint.class);
 
         // set mock expectations
         mockEndpoint.expectedMessageCount(1);
@@ -459,9 +468,9 @@ public class UCT_IndividualDatastreamFieldValidationTest extends CT_BlueprintTes
 
             log.info("expectedBody Type:\n" + expectedBody.getClass() + "\nresultBody Type:\n" + resultBody.getClass());
 
-            assertEquals("mock:result Body assertEquals failed!", expectedBody, resultBody);
+            assertEquals(expectedBody, resultBody, "mock:result Body assertEquals failed!");
         }
 
-        assertMockEndpointsSatisfied();
+        mockEndpoint.assertIsSatisfied();
     }
 }

@@ -33,8 +33,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.component.properties.PropertiesComponent;
-import org.apache.camel.impl.JndiRegistry;
+import org.apache.camel.spi.PropertiesComponent;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -199,14 +198,14 @@ public class FcrepoIntegrationTest extends CamelTestSupport {
     @Override
     protected CamelContext createCamelContext() throws Exception {
         CamelContext context = super.createCamelContext();
-        PropertiesComponent prop = context.getComponent("properties", PropertiesComponent.class);
+        PropertiesComponent prop = context.getPropertiesComponent();
         prop.setLocation("classpath:fcrepotest.properties");
 
         try {
             System.setProperty("si.fedora.host", context.resolvePropertyPlaceholders("{{si.fedora.host}}"));
-            fcrepoConfiguration.setFedoraHost(context.resolvePropertyPlaceholders("{{si.fedora.host}}"));
-            fcrepoConfiguration.setAuthUsername(context.resolvePropertyPlaceholders("{{si.fedora.user}}"));
-            fcrepoConfiguration.setAuthPassword(context.resolvePropertyPlaceholders("{{si.fedora.password}}"));
+            fcrepoConfiguration.setHost(context.resolvePropertyPlaceholders("{{si.fedora.host}}"));
+            fcrepoConfiguration.setUsername(context.resolvePropertyPlaceholders("{{si.fedora.user}}"));
+            fcrepoConfiguration.setPassword(context.resolvePropertyPlaceholders("{{si.fedora.password}}"));
         }
         catch (Exception ex) {
             ex.printStackTrace();
@@ -222,11 +221,9 @@ public class FcrepoIntegrationTest extends CamelTestSupport {
      * @throws Exception
      */
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
-        jndi.bind("fcrepoConfiguration", fcrepoConfiguration);
-
-        return jndi;
+    public void setUp() throws Exception {
+        super.setUp();
+        context.getRegistry().bind("fcrepoConfiguration", fcrepoConfiguration);
     }
 
     /**

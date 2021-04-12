@@ -92,11 +92,11 @@ mysql> DESCRIBE camelResources;
 ### Copy mci.sql.properties from `sidora-services/Sidora-MCI/Karaf-Config/sql/` to `<smx-install>/sql/`
 ```bash
 # mkdir <smx-install>/sql
-# cp sidora-services/Sidora-MCI/Karaf-Config/sql/mci.sql.properties <smx-install>/sql/
+# cp sidora-services/Sidora-MCI/Karaf-Config/sql/application-sql.properties <smx-install>/sql/
 ```
 
 ### Create MCI karaf config `<smx-install>/etc/edu.si.sidora.mci.cfg`
-[edu.si.sidora.mci.cfg](Karaf-Config/etc/edu.si.sidora.mci.cfg)
+[edu.si.sidora.mci.cfg](config/application-test.properties)
 
 # Deploy the Sidora-MCI service to ServiceMix
 - Shutdown ServiceMIX
@@ -117,7 +117,7 @@ mysql> DESCRIBE camelResources;
 
 # install -v -g fedora -o fedora -m 644 <git-repo>/sidora-services/Sidora-MCI/Karaf-Config/Input/xslt/* /opt/sidora/smx/Input/xslt/
 
-# install -v -g fedora -o fedora -m 644 <git-repo>/sidora-services/Sidora-MCI/Karaf-Config/sql/mci.sql.properties /opt/sidora/smx/sql/
+# install -v -g fedora -o fedora -m 644 <git-repo>/sidora-services/Sidora-MCI/Karaf-Config/sql/application-sql.properties /opt/sidora/smx/sql/
 ```
 - Compile sidora-services from git clone
 ```bash

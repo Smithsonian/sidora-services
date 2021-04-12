@@ -27,24 +27,74 @@
 
 package edu.si.services.camel.fcrepo;
 
+import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.UriParam;
+import org.apache.camel.spi.UriParams;
+
 /**
  * FcrepoConfiguration will hold the basic fedora configuration properties such as the username/password and Fedora hostname
  *
  * @author parkjohn
  */
-public class FcrepoConfiguration{
+@UriParams
+public class FcrepoConfiguration implements Cloneable {
 
-    private String authUsername = null;
-    private String authPassword = null;
-    private String fedoraHost = null;
+//    @UriParam(label = "security", secret = true)
+//    @Metadata(required = true)
+    private String username;
+
+//    @UriParam(label = "security", secret = true)
+//    @Metadata(required = true)
+    private String password;
+
+//    @UriParam(label = "common", defaultValue = "http://localhost")
+//    @Metadata(required = true)
+    private String host = "http://localhost";
+
+//    @UriParam(label = "common", defaultValue = "8080")
+//    @Metadata(required = true)
+//    private int port = 8080;
+
+//    @UriParam(label = "common", defaultValue = "fedora")
+//    @Metadata(required = true)
+//    private String contextPath = "fedora";
+
+    /**
+     * Create a new FcrepoConfiguration object
+     */
+    public FcrepoConfiguration() {
+    }
+
+    /**
+     * Create a new FcrepoConfiguration object
+     */
+    public FcrepoConfiguration(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
+    /**
+     * Copy an FcrepoConfiguration object.
+     *
+     * @return a copy of the component-wide configuration
+     */
+    @Override
+    public FcrepoConfiguration clone() {
+        try {
+            return (FcrepoConfiguration) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeCamelException(e);
+        }
+    }
 
     /**
      * authUsername getter
      *
      * @return the username used for repository authentication
      */
-    public String getAuthUsername() {
-        return authUsername;
+    public String getUsername() {
+        return username;
     }
 
     /**
@@ -52,8 +102,8 @@ public class FcrepoConfiguration{
      *
      * @param username used for repository authentication
      */
-    public void setAuthUsername(final String username) {
-        this.authUsername = username;
+    public void setUsername(final String username) {
+        this.username = username;
     }
 
     /**
@@ -61,8 +111,8 @@ public class FcrepoConfiguration{
      *
      * @return the password used for repository authentication
      */
-    public String getAuthPassword() {
-        return authPassword;
+    public String getPassword() {
+        return password;
     }
 
     /**
@@ -70,8 +120,8 @@ public class FcrepoConfiguration{
      *
      * @param password used for repository authentication
      */
-    public void setAuthPassword(final String password) {
-        this.authPassword = password;
+    public void setPassword(final String password) {
+        this.password = password;
     }
 
     /**
@@ -79,17 +129,40 @@ public class FcrepoConfiguration{
      *
      * @return the fedoraHost realm used for repository authentication
      */
-    public String getFedoraHost() {
-        return fedoraHost;
+    public String getHost() {
+        return host;
     }
 
     /**
      * fedoraHost setter
      *
-     * @param fedoraHost used for authentication
+     * @param host used for authentication
      */
-    public void setFedoraHost(final String fedoraHost) {
-        this.fedoraHost = fedoraHost;
+    public void setHost(final String host) {
+        this.host = host;
     }
 
+    /*public int getPort() {
+        return port;
+    }
+
+    *//**
+     * fedora port
+     * @param port
+     *//*
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public String getContextPath() {
+        return contextPath;
+    }
+
+    *//**
+     * fedora contextPath
+     * @param contextPath
+     *//*
+    public void setContextPath(String contextPath) {
+        this.contextPath = contextPath;
+    }*/
 }

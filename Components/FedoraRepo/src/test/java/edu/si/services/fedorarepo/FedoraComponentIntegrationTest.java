@@ -31,7 +31,7 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Message;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.component.properties.PropertiesComponent;
+import org.apache.camel.spi.PropertiesComponent;
 import org.apache.camel.test.junit4.CamelTestSupport;
 
 public abstract class FedoraComponentIntegrationTest extends CamelTestSupport
@@ -53,7 +53,7 @@ public abstract class FedoraComponentIntegrationTest extends CamelTestSupport
     protected CamelContext createCamelContext() throws Exception
     {
         CamelContext context = super.createCamelContext();
-        PropertiesComponent prop = context.getComponent("properties", PropertiesComponent.class);
+        PropertiesComponent prop = context.getPropertiesComponent();
         prop.setLocation("classpath:test.properties");
 
         try

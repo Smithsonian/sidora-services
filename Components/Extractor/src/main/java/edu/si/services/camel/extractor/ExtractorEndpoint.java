@@ -27,10 +27,15 @@
 
 package edu.si.services.camel.extractor;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.UriEndpoint;
+import org.apache.camel.spi.UriParam;
+import org.apache.camel.spi.UriPath;
+import org.apache.camel.support.DefaultEndpoint;
 
 /**
  * Represents a Extractor endpoint.
@@ -38,8 +43,16 @@ import org.apache.camel.impl.DefaultEndpoint;
  * @author jshingler
  * @version 1.0
  */
+@UriEndpoint(firstVersion = "1.0", scheme = "extractor", title = "Extractor", syntax="extractor:extract", producerOnly = true,
+        category = {Category.FILE, Category.JAVA})
 public class ExtractorEndpoint extends DefaultEndpoint
 {
+    @UriPath(description = "Action to be taken")
+    @Metadata(required = true)
+    private String extract;
+
+    @UriParam(description = "Location to extract to")
+    @Metadata(required = true)
     private String location;
 
     public ExtractorEndpoint()

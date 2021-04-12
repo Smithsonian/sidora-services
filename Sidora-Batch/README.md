@@ -167,7 +167,7 @@ mysql> DESCRIBE camelBatchResources;
 ### Copy batch.process.sql.properties from `Routes/Sidora-Batch/Karaf-config/sql/` to `<smx-install>/sql/`
 ```bash
 # mkdir <smx-install>/sql
-# cp sidora-services/Routes/Sidora-Batch/Karaf-config/sql/batch.process.sql.properties <smx-install>/sql/
+# cp sidora-services/Routes/Sidora-Batch/Karaf-config/sql/application-sql.properties <smx-install>/sql/
 ```
 
 ### Create camel batch karaf config file `<smx-install>/etc/edu.si.sidora.batch.cfg` (Make sure to the properties are correct)

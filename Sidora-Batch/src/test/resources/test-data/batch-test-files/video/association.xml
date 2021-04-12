@@ -7,7 +7,7 @@
         <item0>titleInfo</item0>
         <item1>title</item1>
     </title_field>
-    <transform>file://sidora-services/Sidora-Batch/src/test/resources/xslt/mods_to_dc.xsl</transform>
+    <transform>http://localhost:{{server.port}}/test-data/xslt/mods_to_dc.xsl</transform>
     <template></template>
     <id>islandora_video_mods_form</id>
     <in_db></in_db>

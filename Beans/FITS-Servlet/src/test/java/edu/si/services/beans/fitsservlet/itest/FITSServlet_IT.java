@@ -27,98 +27,77 @@
 
 package edu.si.services.beans.fitsservlet.itest;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Message;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import edu.si.services.beans.fitsservlet.FITSServletRouteBuilder;
+import org.apache.camel.*;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
+import org.apache.camel.spring.boot.CamelAutoConfiguration;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.support.DefaultHeaderFilterStrategy;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.custommonkey.xmlunit.exceptions.XpathException;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.xml.sax.SAXException;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author jbirkhimer
  * @author davisda
  */
-public class FITSServlet_IT extends CamelBlueprintTestSupport {
+@CamelSpringBootTest
+@SpringBootTest(classes = CamelAutoConfiguration.class, properties = {"fits.host=http://localhost:9180/fits"})
+//@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+//@DisableJmx
+@ActiveProfiles("test")
+public class FITSServlet_IT {
 
-    private static final String KARAF_HOME = System.getProperty("karaf.home");
-    private static Properties extra = new Properties();
-    private static String TEST_FILENAME = KARAF_HOME + "/BBB_9425.NEF";
+    private static final Logger log = LoggerFactory.getLogger(FITSServlet_IT.class);
 
-    protected static String FITS_URI;
+    @Autowired
+    private CamelContext context;
+    @Autowired
+    private ProducerTemplate template;
 
-    private static final Logger logger = LoggerFactory.getLogger(FITSServlet_IT.class);
+    private static String TEST_FILENAME = "src/test/resources/BBB_9425.NEF";
 
-    @Override
-    protected String getBlueprintDescriptor() {
-        return "fits-servlet-test-route.xml";
-    }
+    @Value(value = "${fits.host}")
+    private String FITS_URI;
 
-    @Override
-    public void setUp() throws Exception {
-        //System.getProperties().list(System.out);
-        log.info("===================[ KARAF_HOME = {} ]===================", System.getProperty("karaf.home"));
-
-        List<String> propFileList = loadAdditionalPropertyFiles();
-        if (loadAdditionalPropertyFiles() != null) {
-            for (String propFile : propFileList) {
-                Properties extra = new Properties();
-                try {
-                    extra.load(new FileInputStream(propFile));
-                    this.extra.putAll(extra);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        for (Map.Entry<Object, Object> p : System.getProperties().entrySet()) {
-            if (extra.containsKey(p.getKey())) {
-                extra.setProperty(p.getKey().toString(), p.getValue().toString());
-            }
-        }
-
-        FITS_URI = extra.getProperty("si.fits.host");
-
-        super.setUp();
-    }
-
-    protected List<String> loadAdditionalPropertyFiles() {
-        return Arrays.asList(KARAF_HOME + "/edu.si.sidora.fits.cfg");
-    }
-
-    @Override
-    protected String setConfigAdminInitialConfiguration(Properties configAdmin) {
-        configAdmin.putAll(extra);
-        return "edu.si.sidora.karaf";
-    }
-
-    @Override
-    public boolean isUseAdviceWith() {
-        return true;
+    @BeforeEach
+    public void dropHeadersStrategy() throws Exception {
+        DefaultHeaderFilterStrategy dropHeadersStrategy = new DefaultHeaderFilterStrategy();
+        dropHeadersStrategy.setOutFilterPattern(".*");
+        context.getRegistry().bind("dropHeadersStrategy", dropHeadersStrategy);
+        context.addRoutes(new FITSServletRouteBuilder());
     }
 
     @Test
     public void fitsVersionTest() {
-        logger.info("FITS_URI = {}", FITS_URI);
+        log.info("FITS_URI = {}", FITS_URI);
 
         Exchange exchange = new DefaultExchange(context);
         template.send("direct:getFITSVersion", exchange);
         String fitsVersion = exchange.getOut().getBody(String.class);
-        logger.info("Found FITS Version:{}", fitsVersion.trim());
-        String expectedVersion = "1.2.0";
+        log.info("Found FITS Version:{}", fitsVersion.trim());
+        String expectedVersion = "1.5.0";
         assertEquals(expectedVersion, fitsVersion.trim());
     }
 
@@ -131,49 +110,12 @@ public class FITSServlet_IT extends CamelBlueprintTestSupport {
         template.send("direct:getFITSReport", exchange);
 
         String fitsOutput = exchange.getIn().getBody(String.class);
-        logger.info("FITS Response: {}", fitsOutput);
+        log.info("FITS Response: {}", fitsOutput);
 
         Map nsMap = new HashMap();
         nsMap.put("fits", "http://hul.harvard.edu/ois/xml/ns/fits/fits_output");
         XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(nsMap));
 
         assertXpathEvaluatesTo("image/x-nikon-nef", "/fits:fits/fits:identification/fits:identity[1]/@mimetype", fitsOutput.trim());
-    }
-
-    /**
-     * Testing AddFITSDataStream Route
-     *
-     * @throws Exception
-     */
-    @Test
-    public void fitsRouteTest() throws Exception {
-
-        // The mock endpoint we are sending to for assertions.
-        MockEndpoint mockResult = getMockEndpoint("mock:mockResult");
-        mockResult.expectedMessageCount(1);
-        mockResult.expectedHeaderReceived("dsMIME", "image/x-nikon-nef");
-
-        // AdviceWith the routes as needed for this test.
-        context.getRouteDefinition("AddFITSDataStream").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                interceptSendToEndpoint("fedora:addDatastream.*").skipSendToOriginalEndpoint().log(LoggingLevel.INFO, "Skipping add datastream to Fedora").to("mock:mockResult");
-            }
-        });
-
-        context.start();
-
-        // Initialize the exchange with body and headers as needed.
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader(Exchange.FILE_NAME, TEST_FILENAME);
-        exchange.getIn().setHeader("CamelFedoraPid", "test:0001");
-
-        // The endpoint we want to start from with the exchange body and headers we want
-        template.send("direct:addFITSDataStream", exchange);
-
-        // Check the result
-        Message result = mockResult.getExchanges().get(0).getIn();
-        assertEquals("image/x-nikon-nef", result.getHeader("dsMIME"));
-        assertMockEndpointsSatisfied();
     }
 }

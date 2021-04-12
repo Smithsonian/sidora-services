@@ -32,20 +32,18 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.support.builder.Namespaces;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Properties;
 
 /**
  * Testing incrementing resource titles
@@ -65,8 +63,8 @@ public class BatchTitleTest extends CamelTestSupport {
     @Test
     public void audioTitleTest() throws Exception {
 
-        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/metadata.xml"));
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/audio/association.xml"));
+        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/audio/metadata.xml"));
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/audio/association.xml"));
 
         runTitleTest(metadataXML, associationXML, "batch-audio-test");
     }
@@ -78,8 +76,8 @@ public class BatchTitleTest extends CamelTestSupport {
     @Test
     public void codebookTitleTest() throws Exception {
 
-        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/codebook/metadata.xml"));
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/codebook/association.xml"));
+        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/codebook/metadata.xml"));
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/codebook/association.xml"));
         
         runTitleTest(metadataXML, associationXML, "batch-codebook-test");
     }
@@ -91,8 +89,8 @@ public class BatchTitleTest extends CamelTestSupport {
     @Test
     public void imageTitleTest() throws Exception {
 
-        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/image/metadata.xml"));
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/image/association.xml"));
+        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/image/metadata.xml"));
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/image/association.xml"));
 
         runTitleTest(metadataXML, associationXML, "batch-image-test");
     }
@@ -104,8 +102,8 @@ public class BatchTitleTest extends CamelTestSupport {
     @Test
     public void pdfTitleTest() throws Exception {
 
-        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/pdf/metadata.xml"));
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/pdf/association.xml"));
+        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/pdf/metadata.xml"));
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/pdf/association.xml"));
 
         runTitleTest(metadataXML, associationXML, "batch-pdf-test");
     }
@@ -117,8 +115,8 @@ public class BatchTitleTest extends CamelTestSupport {
     @Test
     public void videoTitleTest() throws Exception {
 
-        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/video/metadata.xml"));
-        String associationXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/video/association.xml"));
+        String metadataXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/video/metadata.xml"));
+        String associationXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/video/association.xml"));
 
         runTitleTest(metadataXML, associationXML, "batch-video-test");
     }
@@ -140,17 +138,17 @@ public class BatchTitleTest extends CamelTestSupport {
 
         template.send("direct:start", exchange);
 
-        assertEquals(title + "(1)", mockEndpoint.getExchanges().get(0).getIn().getHeader("titleLabel"));
-        assertEquals(title + "(2)", mockEndpoint.getExchanges().get(1).getIn().getHeader("titleLabel"));
-        assertEquals(title + "(3)", mockEndpoint.getExchanges().get(2).getIn().getHeader("titleLabel"));
-        assertEquals(title + "(4)", mockEndpoint.getExchanges().get(3).getIn().getHeader("titleLabel"));
+        Assertions.assertEquals(title + "(1)", mockEndpoint.getExchanges().get(0).getIn().getHeader("titleLabel"));
+        Assertions.assertEquals(title + "(2)", mockEndpoint.getExchanges().get(1).getIn().getHeader("titleLabel"));
+        Assertions.assertEquals(title + "(3)", mockEndpoint.getExchanges().get(2).getIn().getHeader("titleLabel"));
+        Assertions.assertEquals(title + "(4)", mockEndpoint.getExchanges().get(3).getIn().getHeader("titleLabel"));
 
         assertMockEndpointsSatisfied();
     }
 
     @Test
     public void testObjDsLabel() throws Exception {
-        String resourceFileXML = FileUtils.readFileToString(new File("src/test/resources/test-data/batch-test-files/image/imageFiles.xml"));
+        String resourceFileXML = FileUtils.readFileToString(new File("src/test/resources/generator/test-data/batch-test-files/image/imageFiles.xml"));
 
         MockEndpoint mockEndpoint = getMockEndpoint("mock:result");
         mockEndpoint.expectedHeaderValuesReceivedInAnyOrder("resourceFile", "image1.jpg","image2.jpg","image3.jpg");
@@ -170,12 +168,12 @@ public class BatchTitleTest extends CamelTestSupport {
                 Namespaces ns = new Namespaces("ns1", "urn:shop");
 
                 from("direct:start")
-                        .to("xslt:file:Input/xslt/BatchAssociationTitlePath.xsl?saxon=true")
+                        .to("xslt-saxon:file:Input/xslt/BatchAssociationTitlePath.xsl")
                         .setHeader("titlePath", simple("${body}"))
                         .setBody(simple("1,2,3,4"))
                         .split().tokenize(",")
                         .setBody(simple("${header.ds_metadataXML}", String.class))
-                        .to("xslt:file:Input/xslt/BatchProcess_ManifestResource.xsl?saxon=true")
+                        .to("xslt-saxon:file:Input/xslt/BatchProcess_ManifestResource.xsl")
                         .to("bean:batchRequestControllerBean?method=setTitleLabel")
                         .log(LoggingLevel.INFO, "Metadata = ${body}")
                         .log(LoggingLevel.INFO, "TitlePath = ${header.titlePath}")
@@ -211,11 +209,9 @@ public class BatchTitleTest extends CamelTestSupport {
      * @throws Exception
      */
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
-        jndi.bind("batchRequestControllerBean", edu.si.services.sidora.rest.batch.beans.BatchRequestControllerBean.class);
-
-        return jndi;
+    public void setUp() throws Exception {
+        super.setUp();
+        context.getRegistry().bind("batchRequestControllerBean", edu.si.services.sidora.rest.batch.beans.BatchRequestControllerBean.class);
     }
 
     /**
@@ -223,7 +219,7 @@ public class BatchTitleTest extends CamelTestSupport {
      * route.
      * @throws IOException
      */
-    @BeforeClass
+    @BeforeAll
     public static void setupSysPropsTempResourceDir() throws IOException {
         //Create and Copy the Input dir xslt, etc. files used in the route
         tempInputDirectory = new File("Input");
@@ -242,7 +238,7 @@ public class BatchTitleTest extends CamelTestSupport {
      * Clean up the temp directories after tests are finished
      * @throws IOException
      */
-    @AfterClass
+    @AfterAll
     public static void teardown() throws IOException {
         if(tempInputDirectory.exists()){
             FileUtils.deleteDirectory(tempInputDirectory);

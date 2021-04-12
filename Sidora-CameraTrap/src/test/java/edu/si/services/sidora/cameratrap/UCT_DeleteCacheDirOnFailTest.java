@@ -27,62 +27,76 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Message;
-import org.apache.camel.Processor;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.*;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.*;
-import org.junit.Test;
+import org.apache.camel.model.ChoiceDefinition;
+import org.apache.camel.model.SetBodyDefinition;
+import org.apache.camel.model.SplitDefinition;
+import org.apache.camel.model.ToDynamicDefinition;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * @author jbirkhimer
  */
-public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
+@CamelSpringBootTest
+@SpringBootTest(properties = {
+        "logging.file.path=target/logs",
+        "processing.dir.base.path=${user.dir}/target",
+        "si.ct.uscbi.enableS3Routes=false",
+        "camel.springboot.java-routes-exclude-pattern=UnifiedCameraTrapInFlightConceptStatusPolling,UnifiedCameraTrapStartProcessing"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+public class UCT_DeleteCacheDirOnFailTest {
+
+    private static final Logger log = LoggerFactory.getLogger(UCT_DeleteCacheDirOnFailTest.class);
+
+    @Autowired
+    CamelContext context;
+
+    //@EndpointInject(value = "direct:addFITSDataStream")
+    @Autowired
+    ProducerTemplate template;
 
     private static String LOG_NAME = "edu.si.mci";
 
-    private static final String KARAF_HOME = System.getProperty("karaf.home");
-
-    String testDataDir = KARAF_HOME + "/UnifiedManifest-TestFiles";
+    String testDataDir = "src/test/resources/UnifiedManifest-TestFiles";
     File deploymentZip = new File(testDataDir + "/scbi_unified_test_deployment.zip");
     String deploymentCacheDir;
     String expectedFileExists;
+
+    @PropertyInject(value = "{{si.ct.uscbi.data.dir.path}}")
     private String processDirPath;
+    @PropertyInject(value = "{{si.ct.uscbi.process.done.dir.path}}")
     private String processDoneDirPath;
+    @PropertyInject(value = "{{si.ct.uscbi.process.error.dir.path}}")
     private String processErrorDirPath;
+    @PropertyInject(value = "{{si.ct.uscbi.process.dir.path}}")
     private String processDataDirPath;
+
     private String s3UploadSuccessDirPath;
     private String s3UploadErrorDirPath;
 
-    @Override
-    protected String getBlueprintDescriptor() {
-        return "Routes/unified-camera-trap-route.xml";
-    }
-
-    @Override
-    protected String[] preventRoutesFromStarting() {
-        return new String[]{"UnifiedCameraTrapInFlightConceptStatusPolling"};
-    }
-
-    @Override
+    @BeforeEach
     public void setUp() throws Exception {
-        //We dont want the S3 routes moving our files during tests
-        System.setProperty("si.ct.uscbi.enableS3Routes", "false");
-
-        super.setUp();
-
-        processDirPath = getExtra().getProperty("si.ct.uscbi.process.dir.path");
-        processDataDirPath = getExtra().getProperty("si.ct.uscbi.data.dir.path");
-        processDoneDirPath = getExtra().getProperty("si.ct.uscbi.process.done.dir.path");
-        processErrorDirPath = getExtra().getProperty("si.ct.uscbi.process.error.dir.path");
 
         deleteDirectory(processDirPath);
         deleteDirectory(processDataDirPath);
@@ -91,57 +105,38 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
         //Modify the default error handler so that we can send failed exchanges to mock:result for assertions
         // Sending to dead letter does not seem to work as expected for this
-        context.setErrorHandlerBuilder(new DefaultErrorHandlerBuilder().onPrepareFailure(new Processor() {
-            @Override
-            public void process(Exchange exchange) throws Exception {
-                template.send("mock:result", exchange);
-            }
-        }));
+        context.adapt(ExtendedCamelContext.class).setErrorHandlerFactory(new DefaultErrorHandlerBuilder().onPrepareFailure(exchange -> template.send("mock:result", exchange)));
 
         log.debug("Exchange_FILE_NAME = {}", deploymentZip.getName());
         template.sendBodyAndHeader("file:{{si.ct.uscbi.process.dir.path}}", deploymentZip, Exchange.FILE_NAME, deploymentZip.getName());
     }
 
-    @Override
-    public boolean isUseAdviceWith() {
-        return true;
+    @Test
+    public void testIllegalArgumentException(TestInfo testInfo) throws Exception {
+        expectedFileExists = processErrorDirPath + "/" + deploymentZip.getName();
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapStartProcessing", false, a ->
+                a.weaveById("schematronValidation").replace().setHeader("CamelSchematronValidationStatus").simple("FAILED"));
+        runTest(testInfo);
     }
 
     @Test
-    public void testIllegalArgumentException() throws Exception {
-        expectedFileExists = processErrorDirPath + "/" + deploymentZip.getName();
-        context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("schematronValidation").replace().setHeader("CamelSchematronValidationStatus").simple("FAILED");
-            }
-        });
-        runTest();
-    }
-
-    @Test
-    public void testConnectException() throws Exception {
+    public void testConnectException(TestInfo testInfo) throws Exception {
         expectedFileExists = processErrorDirPath + "/" + deploymentZip.getName();
 
-        MockEndpoint mockError = getMockEndpoint("mock:error");
+        MockEndpoint mockError = context.getEndpoint("mock:error", MockEndpoint.class);
         mockError.expectedMessageCount(1);
         mockError.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(ConnectException.class);
-        mockError.expectedHeaderReceived("redeliveryCount", getExtra().getProperty("min.connectEx.redeliveries"));
+        mockError.expectedHeaderReceived("redeliveryCount", context.resolvePropertyPlaceholders("{{min.connectEx.redeliveries}}"));
         mockError.expectedFileExists(expectedFileExists);
         mockError.setAssertPeriod(7000);
 
-        context.getRouteDefinition("UnifiedCameraTrapProcessParents").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByType(SetBodyDefinition.class).selectFirst().before().to("mock:result");
-                weaveById("logConnectException").after().to("mock:error");
-            }
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapProcessParents", false, a ->{
+                a.weaveByType(SetBodyDefinition.class).selectFirst().before().to("mock:result");
+                a.weaveById("logConnectException").after().to("mock:error");
         });
 
-        context.getRouteDefinition("UnifiedCameraTrapFindObjectByPIDPredicate").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByType(ToDynamicDefinition.class).selectFirst().replace().process(new Processor() {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapFindObjectByPIDPredicate", false, a ->{
+                a.weaveByType(ToDynamicDefinition.class).selectFirst().replace().process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
                         Message in = exchange.getIn();
@@ -149,65 +144,48 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
                         throw new ConnectException("Simulating Connection Exception");
                     }
                 });
-
-            }
         });
 
-        runTest();
+        runTest(testInfo);
     }
 
     @Test
-    public void testDeploymentPackageException() throws Exception {
+    public void testDeploymentPackageException(TestInfo testInfo) throws Exception {
         expectedFileExists = processErrorDirPath + "/" + deploymentZip.getName();
-        context.getRouteDefinition("UnifiedCameraTrapValidatePackage").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByType(ChoiceDefinition.class).selectFirst().replace().throwException(DeploymentPackageException.class, "Simulating resource counts do not match Exception");
-            }
-        });
-        runTest();
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidatePackage", false, a ->
+                a.weaveByType(ChoiceDefinition.class).selectFirst().replace().throwException(DeploymentPackageException.class, "Simulating resource counts do not match Exception"));
+        runTest(testInfo);
     }
 
     @Test
-    public void testFileNotFoundException() throws Exception {
+    public void testFileNotFoundException(TestInfo testInfo) throws Exception {
         expectedFileExists = processErrorDirPath + "/" + deploymentZip.getName();
-        context.getRouteDefinition("UnifiedCameraTrapValidatePackage").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByType(SplitDefinition.class).selectFirst().replace().throwException(FileNotFoundException.class, "Simulating File Not Found Exception");
-            }
-        });
-        runTest();
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapValidatePackage", false, a ->
+                a.weaveByType(SplitDefinition.class).selectFirst().replace().throwException(FileNotFoundException.class, "Simulating File Not Found Exception"));
+        runTest(testInfo);
     }
 
     @Test
-    public void testFedoraObjectNotFoundException() throws Exception {
+    public void testFedoraObjectNotFoundException(TestInfo testInfo) throws Exception {
         expectedFileExists = processDoneDirPath + "/" + deploymentZip.getName();
-        context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByType(ChoiceDefinition.class).selectLast().replace().to("direct:findObjectByPIDPredicate").to("mock:result");
-            }
-        });
-        context.getRouteDefinition("UnifiedCameraTrapFindObjectByPIDPredicate").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByType(ToDynamicDefinition.class).replace().log(LoggingLevel.INFO, "Skipping Fuseki Call").setBody().simple("<?xml version=\"1.0\"?>\n" +
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapStartProcessing", true, a ->
+                a.weaveByType(ChoiceDefinition.class).selectLast().replace().to("direct:findObjectByPIDPredicate").to("mock:result"));
+
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapFindObjectByPIDPredicate", true, a ->
+                a.weaveByType(ToDynamicDefinition.class).replace().log(LoggingLevel.INFO, "Skipping Fuseki Call").setBody().simple("<?xml version=\"1.0\"?>\n" +
                         "<sparql xmlns=\"http://www.w3.org/2005/sparql-results#\">\n" +
                         "  <head>\n" +
                         "  </head>\n" +
                         "  <boolean>false</boolean>\n" +
-                        "</sparql>");
-            }
-        });
-        runTest();
+                        "</sparql>"));
+        runTest(testInfo);
     }
 
-    public void runTest() throws Exception {
+    public void runTest(TestInfo testInfo) throws Exception {
 
-        String exceptionTestName = this.getTestMethodName();
+        String exceptionTestName = testInfo.getDisplayName();
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
         mockResult.setAssertPeriod(7000);
@@ -216,7 +194,7 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
 
         Thread.sleep(1500);
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
 
         deploymentCacheDir = mockResult.getExchanges().get(0).getIn().getHeader("deploymentDataDir", String.class);
 
@@ -224,61 +202,54 @@ public class UCT_DeleteCacheDirOnFailTest extends CT_BlueprintTestSupport {
         boolean cacheDirExists = Files.exists(new File(deploymentCacheDir).toPath());
         log.debug("deploymentCacheDir exists: {}", cacheDirExists);
         //log.debug("CamelExceptionCaught = {}", mockResult.getExchanges().get(0).getProperty("CamelExceptionCaught"));
-        if (exceptionTestName.contains("FedoraObjectNotFoundException")) {
-            assertTrue("Cache directory should exist", cacheDirExists);
+        /*if (exceptionTestName.contains("FedoraObjectNotFoundException")) {
+            assertTrue(cacheDirExists, "Cache directory should exist");
         } else {
-            assertTrue("Cache directory should not exist", !cacheDirExists);
-        }
-        assertTrue("There should be a File in the Dir", Files.exists(new File(expectedFileExists).toPath()));
+            assertTrue(!cacheDirExists, "Cache directory should not exist");
+        }*/
+        assertTrue(!cacheDirExists, "Cache directory should not exist");
+        assertTrue(Files.exists(new File(expectedFileExists).toPath()), "There should be a File in the Dir");
     }
 
     @Test
-    public void testCtIngestDoneDir() throws Exception {
+    public void testCtIngestDoneDir(TestInfo testInfo) throws Exception {
         expectedFileExists = processDoneDirPath + "/" + deploymentZip.getName();
 
         log.info("Expected Done File: {}", expectedFileExists);
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
-        mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
+        mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(1);
         mockResult.expectedFileExists(expectedFileExists);
 
-        context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("ctThreads").replace().to("mock:result");
-            }
-        });
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapStartProcessing", false, a ->
+                a.weaveById("ctThreads").before().to("mock:result").stop());
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
     }
 
     @Test
-    public void testCtIngestErrorDir() throws Exception {
+    public void testCtIngestErrorDir(TestInfo testInfo) throws Exception {
         expectedFileExists = processErrorDirPath + "/" + deploymentZip.getName();
 
         log.info("Expected Error File: {}", expectedFileExists);
 
-        MockEndpoint mockResult = getMockEndpoint("mock:result");
+        MockEndpoint mockResult = context.getEndpoint("mock:result", MockEndpoint.class);
         mockResult.expectedMinimumMessageCount(1);
         mockResult.message(0).exchangeProperty(Exchange.EXCEPTION_CAUGHT).isInstanceOf(Exception.class);
         mockResult.expectedFileExists(expectedFileExists);
         mockResult.setAssertPeriod(7000);
 
-        context.getRouteDefinition("UnifiedCameraTrapStartProcessing").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveById("ctThreads").replace().process(new Processor() {
+        AdviceWith.adviceWith(context, "UnifiedCameraTrapStartProcessing", false, a ->
+                a.weaveById("ctThreads").before().process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
                         Message in = exchange.getIn();
                         in.setHeader("redeliveryCount", in.getHeader(Exchange.REDELIVERY_COUNTER, Integer.class));
                         throw new Exception("Simulating Exception");
                     }
-                });
-            }
-        });
+                }));
 
-        assertMockEndpointsSatisfied();
+        mockResult.assertIsSatisfied();
     }
 }

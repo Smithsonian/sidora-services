@@ -27,10 +27,7 @@
 
 package edu.si.services.sidora.cameratrap;
 
-import static org.junit.Assert.*;
-import org.junit.Test;
-
-import java.io.*;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests conversions of Excel (xls and xlsx) streams to csv.
@@ -49,7 +46,7 @@ public class CameraTrapTest
         //OutputStream outStream = e2csv.convertExcelToCSV(input, null);
 
         //String csv = outStream.toString();
-        //assertEquals("Año,Autor,", csv.substring(0, 10));
-        //assertEquals(97053, csv.length());
+        //Assertions.assertEquals("Año,Autor,", csv.substring(0, 10));
+        //Assertions.assertEquals(97053, csv.length());
     }
 }

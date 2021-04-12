@@ -30,7 +30,11 @@ package edu.si.services.camel.fcrepo;
 import org.apache.camel.BeanInject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.HeaderFilterStrategy;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.util.URISupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,26 +48,20 @@ import java.util.Map;
  *
  * @author parkjohn
  */
-public class FcrepoComponent extends UriEndpointComponent {
+@Component("fcrepo")
+public class FcrepoComponent extends DefaultComponent {
 
     private static final Logger log = LoggerFactory.getLogger(FcrepoComponent.class);
 
+    @Metadata
     @BeanInject
-    private FcrepoConfiguration fcrepoConfiguration;
+    private FcrepoConfiguration configuration = new FcrepoConfiguration();
 
-    /**
-     * Default FcrepoComponent constructor
-     */
     public FcrepoComponent() {
-        super(FcrepoEndpoint.class);
     }
 
-    /**
-     * Creates FcrepoComponent instance with given camel context
-     * @param context the camel context for the component.
-     */
-    public FcrepoComponent(final CamelContext context) {
-        super(context, FcrepoEndpoint.class);
+    public FcrepoComponent(CamelContext context) {
+        super(context);
     }
 
     /**
@@ -82,9 +80,25 @@ public class FcrepoComponent extends UriEndpointComponent {
         log.debug("createEndpoint remaining: "+ remaining);
         log.debug("createEndpoint parameters: "+ parameters.toString());
 
-        Endpoint endpoint = new FcrepoEndpoint(uri, this);
+        HeaderFilterStrategy headerFilterStrategy = resolveAndRemoveReferenceParameter(parameters, "headerFilterStrategy", HeaderFilterStrategy.class);
+        String uriParameters = URISupport.createQueryString(parameters);
+        // restructure uri to be based on the parameters left as we don't want to include the Camel internal options
+        String queryString = URISupport.createQueryString(parameters);
+
+        final FcrepoConfiguration configuration = this.configuration != null ? this.configuration.clone() : new FcrepoConfiguration();
+
+        FcrepoEndpoint endpoint = new FcrepoEndpoint(uri, this);
         setProperties(endpoint, parameters);
 
+        if (headerFilterStrategy != null) {
+            endpoint.setHeaderFilterStrategy(headerFilterStrategy);
+        }
+
+        endpoint.setConfiguration(configuration);
+        endpoint.setPath(remaining);
+        endpoint.setQueryString(queryString);
+
+        log.debug("Created Fcrepo Endpoint [{}]", endpoint);
         return endpoint;
     }
 
@@ -93,16 +107,16 @@ public class FcrepoComponent extends UriEndpointComponent {
      *
      * @return FcrepoConfiguration
      */
-    public FcrepoConfiguration getFcrepoConfiguration() {
-        return fcrepoConfiguration;
+    public FcrepoConfiguration getConfiguration() {
+        return configuration;
     }
 
     /**
      * FcrepoConfiguration setter
      *
-     * @param fcrepoConfiguration passed in fcrepo configuration
+     * @param configuration passed in fcrepo configuration
      */
-    public void setFcrepoConfiguration(FcrepoConfiguration fcrepoConfiguration) {
-        this.fcrepoConfiguration = fcrepoConfiguration;
+    public void setConfiguration(FcrepoConfiguration configuration) {
+        this.configuration = configuration;
     }
 }

@@ -35,7 +35,7 @@ import javax.ws.rs.core.Response;
 /** Batch REST API
  * @author jbirkhimer
  */
-
+@Deprecated
 @Path("/")
 public class BatchResourcesService {
 
