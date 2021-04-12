@@ -37,7 +37,7 @@
 	</parent>
 
 	<artifactId>excel2tabular-translator</artifactId>
-	<packaging>bundle</packaging>
+	<packaging>jar</packaging>
 
 	<name>SI :: Services :: Tabular :: Excel2Tabular</name>
 	<description>Simple transformation from Excel spreadsheets to tabular data files, e.g. CSV or TSV.</description>

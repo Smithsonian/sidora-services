@@ -41,7 +41,7 @@
     <name>SI :: Sidora :: Test :: Utils :: Edan</name>
     <groupId>edu.si.services</groupId>
     <artifactId>edan-test-util</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
     <version>1.0</version>
 
 

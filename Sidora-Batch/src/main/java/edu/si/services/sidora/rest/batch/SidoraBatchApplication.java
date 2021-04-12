@@ -37,7 +37,7 @@ import javax.xml.xpath.XPathFactory;
  * @author jbirkhimer
  */
 @SpringBootApplication
-@EnableConfigurationProperties
+//@EnableConfigurationProperties
 public class SidoraBatchApplication {
     public static void main(String[] args) {
         System.setProperty(XPathFactory.DEFAULT_PROPERTY_NAME + ":" + "http://saxon.sf.net/jaxp/xpath/om", "net.sf.saxon.xpath.XPathFactoryImpl");

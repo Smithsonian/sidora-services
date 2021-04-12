@@ -42,7 +42,7 @@
 
     <groupId>edu.si.services.beans</groupId>
     <artifactId>Excel</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
     <version>1.0</version>
 
     <name>SI :: Services :: Beans :: Excel</name>
@@ -115,7 +115,7 @@
             </plugin>
 
             <!-- To generate the MANIFEST-FILE of the bundle. -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -127,7 +127,7 @@
                         <Export-Package>edu.si.services.beans.excel</Export-Package>
                     </instructions>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
         </plugins>
     </build>

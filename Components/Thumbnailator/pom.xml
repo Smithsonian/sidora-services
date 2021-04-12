@@ -42,7 +42,7 @@
 
     <groupId>edu.si.services.camel</groupId>
     <artifactId>Thumbnailator</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
     <version>1.0</version>
 
     <name>SI :: Services :: Components :: Thumbnailator</name>
@@ -136,7 +136,7 @@
             </plugin>
 
             <!-- to generate the MANIFEST-FILE of the bundle. -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -147,7 +147,7 @@
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                     </instructions>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
         </plugins>
     </build>

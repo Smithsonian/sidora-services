@@ -37,7 +37,7 @@ import javax.xml.xpath.XPathFactory;
  * @author jbirkhimer
  */
 @SpringBootApplication
-@EnableConfigurationProperties
+//@EnableConfigurationProperties
 //@ImportResource({"file:config/camel/sidora-tabular-camel-spring-boot-context.xml"})
 public class SidoraTabularApplication {
     public static void main(String[] args) {

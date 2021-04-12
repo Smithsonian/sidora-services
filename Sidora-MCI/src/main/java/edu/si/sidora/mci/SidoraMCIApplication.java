@@ -31,7 +31,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,7 +41,7 @@ import javax.xml.xpath.XPathFactory;
  * @author jbirkhimer
  */
 @SpringBootApplication
-@EnableConfigurationProperties
+//@EnableConfigurationProperties
 //@ImportResource({"file:config/camel/sidora-mci-spring-boot-camel-context.xml"})
 public class SidoraMCIApplication {
     public static void main(String[] args) {

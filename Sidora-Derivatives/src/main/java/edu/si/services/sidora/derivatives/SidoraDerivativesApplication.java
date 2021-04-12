@@ -8,7 +8,7 @@ import org.springframework.context.annotation.ImportResource;
 import javax.xml.xpath.XPathFactory;
 
 @SpringBootApplication
-@EnableConfigurationProperties
+//@EnableConfigurationProperties
 //@ImportResource({"file:config/camel/derivatives-route.xml"})
 public class SidoraDerivativesApplication {
 

@@ -40,7 +40,7 @@
     <name>SI :: Services :: Beans :: FITS-Servlet</name>
     <groupId>edu.si.services.beans</groupId>
     <artifactId>FITS-Servlet</artifactId>
-    <!--<packaging>bundle</packaging>-->
+    <!--<packaging>jar</packaging>-->
     <version>1.0</version>
 
     <properties>

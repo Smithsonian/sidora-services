@@ -38,7 +38,7 @@ import javax.xml.xpath.XPathFactory;
  * @author jbirkhimer
  */
 @SpringBootApplication
-@EnableConfigurationProperties
+//@EnableConfigurationProperties
 //@ImportResource({"file:config/camel/unified-camera-trap-route-context.xml"})
 public class SidoraCameraTrapApplication {
     public static void main(String[] args) {

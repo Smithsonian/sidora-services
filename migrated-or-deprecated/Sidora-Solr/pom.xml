@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sidora-solr</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
 
     <name>SI :: Services :: Sidora :: Solr</name>
 

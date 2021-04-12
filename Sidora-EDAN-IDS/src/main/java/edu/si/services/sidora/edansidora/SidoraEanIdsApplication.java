@@ -38,7 +38,7 @@ import javax.xml.xpath.XPathFactory;
  * @author jbirkhimer
  */
 @SpringBootApplication
-@EnableConfigurationProperties
+//@EnableConfigurationProperties
 //@ImportResource({"file:config/camel/edan-ids-sidora-route.xml"})
 public class SidoraEanIdsApplication {
     public static void main(String[] args) {

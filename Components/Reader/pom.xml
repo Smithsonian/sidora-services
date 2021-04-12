@@ -42,7 +42,7 @@
 
     <groupId>edu.si.services.camel</groupId>
     <artifactId>Reader</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
     <version>1.0</version>
 
     <name>SI :: Services :: Components :: Reader</name>
@@ -104,7 +104,7 @@
             </plugin>
 
             <!-- to generate the MANIFEST-FILE of the bundle -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -114,7 +114,7 @@
                         <Export-Service>org.apache.camel.spi.ComponentResolver;component=reader</Export-Service>
                     </instructions>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
         </plugins>
     </build>

@@ -42,7 +42,7 @@
 
     <groupId>edu.si.services.camel</groupId>
     <artifactId>FedoraRepo</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
     <version>1.0</version>
 
     <name>SI :: Services :: Components :: Fedora Commons</name>
@@ -192,7 +192,7 @@
             </plugin>
 
             <!-- To generate the MANIFEST-FILE of the bundle. -->
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -203,7 +203,7 @@
                         <Import-Package>*;resolution:="optional"</Import-Package>
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
-                        <!--<DynamicImport-Package>com.fasterxml.jackson.*</DynamicImport-Package>-->
+                        &lt;!&ndash;<DynamicImport-Package>com.fasterxml.jackson.*</DynamicImport-Package>&ndash;&gt;
                         <Export-Package>
                             edu.si.services.fedorarepo,
                             edu.si.services.fedorarepo.aggregators,
@@ -215,7 +215,7 @@
                         <Private-Package>edu.si.services.fedorarepo.*</Private-Package>
                     </instructions>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
             <!-- reserve network ports for integration testing -->
             <plugin>

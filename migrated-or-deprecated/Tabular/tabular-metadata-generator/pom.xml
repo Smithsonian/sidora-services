@@ -37,7 +37,7 @@
 	</parent>
 
 	<artifactId>tabular-metadata-generator</artifactId>
-	<packaging>bundle</packaging>
+	<packaging>jar</packaging>
 
 	<name>SI :: Services :: Tabular :: Tabular Metadata Generator</name>
 	<description>Core machinery for developing metadata from tabular data files.</description>
