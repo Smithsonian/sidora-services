@@ -172,7 +172,7 @@ public class AwsS3PollAndUploadRouteTest extends CT_BlueprintTestSupport {
             @Override
             public void configure() throws Exception {
                 from("direct:listBuckets")
-                        .to("aws-s3:{{si.ct.uscbi.s3.approved.bucketName}}?amazonS3Client=#amazonS3Client&operation=listBuckets")
+                        .to("aws-s3:{{si.ct.uscbi.s3.approved.bucketName}}?multiPartUpload=true&amazonS3Client=#amazonS3Client&operation=listBuckets")
                         .to("mock:result");
 
             }

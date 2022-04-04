@@ -126,7 +126,7 @@
         <property name="outFilterPattern" value=".*"/>
     </bean>
 
-    <bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>
+    <!--<bean id="dataDirRollback" class="edu.si.services.beans.cameratrap.FailedDeploymentDataDirRollback"/>-->
 
     <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
     <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
@@ -165,6 +165,8 @@
     <bean id="dropHeadersStrategy" class="org.apache.camel.impl.DefaultHeaderFilterStrategy">
         <property name="outFilterPattern" value=".*"/>
     </bean>
+
+    <bean id="deploymentPackageDataCleanUpProcessor" class="edu.si.services.beans.cameratrap.DeploymentPackageDataCleanUpProcessor"/>
 
     <camelContext id="UnifiedCTIngestCamelContext"
                   xmlns="http://camel.apache.org/schema/blueprint"
@@ -259,7 +261,17 @@
         -->
 
         <route id="UnifiedCameraTrapStartProcessing">
-            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.uscbi.process.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
+            <from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed={{si.ct.uscbi.process.error.dir.path}}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>
+            <!--<from uri="file:{{si.ct.uscbi.process.dir.path}}?delay=9000&amp;moveFailed=${bean:dataDirRollback.dataDirRollback(*, {{si.ct.uscbi.process.error.dir.path}}/${file:onlyname})}&amp;move={{si.ct.uscbi.process.done.dir.path}}&amp;maxMessagesPerPoll=1"/>-->
+            <!-- this onCompletion block will only be executed when the exchange is done being routed -->
+            <!-- this callback is always triggered even if the exchange failed -->
+            <onCompletion>
+                <process ref="deploymentPackageDataCleanUpProcessor"/>
+                <log message="${id}: Camera Trap deployment package data clean up removed ${header.deploymentDataDir} ..."
+                     loggingLevel="INFO"
+                     logName="{{si.ct.id}}"/>
+            </onCompletion>
+
             <log message="${id}: Starting Camera Trap processing ..."
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
@@ -281,6 +293,10 @@
             <log message="${id}: Finished Extraction"
                  loggingLevel="INFO"
                  logName="{{si.ct.id}}"/>
+
+            <setHeader headerName="deploymentPackageId">
+                <simple>${header.CamelFileParent}</simple>
+            </setHeader>
 
             <setHeader headerName="deploymentDataDir">
                 <simple>
@@ -324,6 +340,12 @@
                              logName="{{si.ct.id}}"/>
                         <log message="${id}: Schematron Validation Report -\n ${header.CamelSchematronValidationReport}"
                              loggingLevel="WARN"
+                             logName="{{si.ct.id}}"/>
+                        <setBody>
+                            <xpath resultType="java.util.List" headerName="CamelSchematronValidationReport">//svrl:failed-assert/svrl:text/text()</xpath>
+                        </setBody>
+                        <log message="${id}: Schematron Validation Error(s):\n ${body}"
+                             loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                         <throwException ref="validationFailure"/>
                     </when>
@@ -538,7 +560,7 @@
                             not(//findObjects:objectFields/findObjects:pid/text())
                         </xpath>
 
-                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${header.ValidationResourceObjectPID}
+                        <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId}, ${header.ValidationResourceObjectPID}
                             ,'Resource Object not found from Fedora Repository', ${body})"/>
                         <to uri="direct:validationErrorMessageAggregationStrategy"/>
                         <log message="${id}: Resource Object not found from Fedora Repository"
@@ -767,7 +789,7 @@
                     <choice>
                         <when>
                             <simple>${body} == false</simple>
-                            <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                            <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId},
                                     '${header.ValidationDatastreamObjectType} Object Datastreams validation failed', ${body})"/>
                             <to uri="direct:validationErrorMessageAggregationStrategy"/>
                             <log message="${id}: ${header.ValidationDatastreamObjectType} Object Datastreams validation failed - ${body}"
@@ -778,7 +800,7 @@
                 </when>
 
                 <otherwise>
-                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent},
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId},
                             '${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation', false)"/>
                     <to uri="direct:validationErrorMessageAggregationStrategy"/>
                     <log message="${id}: ${header.ValidationDatastreamObjectType} Object with PID - ${header.ValidationDatastreamObjectPID} not found in Fedora.. skipping datastreams validation"
@@ -2705,7 +2727,7 @@
                          loggingLevel="WARN"
                          logName="{{si.ct.id}}"/>
 
-                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.CamelFileParent}, ${body}, false)"/>
+                    <to uri="bean:cameraTrapValidationMessage?method=createValidationMessage(${header.deploymentPackageId}, ${body}, false)"/>
                 </when>
                 <otherwise>
                     <setBody>
@@ -2734,13 +2756,13 @@
                     <when>
                         <simple>${body.size} == 0</simple>
 
-                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}"
+                        <log message="${id}: Successful Ingest: DeploymentPackage=${header.deploymentPackageId}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}"
                              loggingLevel="INFO"
                              logName="{{si.ct.id}}"/>
 
                     </when>
                     <otherwise>
-                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.CamelFileParent}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
+                        <log message="${id}: Ingest Validation Errors for: DeploymentPackage=${header.deploymentPackageId}, DeploymentId=${header.SiteId}, DeploymentName=${header.SiteName}, ProjectID=${header.ProjectId}, ProjectName=${header.ProjectName}, SubprojectID=${header.SubprojectId}, SubprojectName=${header.SubprojectName}, AdjustedResourceCount=${header.AdjustedResourceCount}\nValidation Errors:\n${body}"
                              loggingLevel="ERROR"
                              logName="{{si.ct.id}}"/>
                     </otherwise>
@@ -2759,7 +2781,7 @@
             <to uri="bean:cameraTrapStaticStore?method=getInFlightCorrelationIds()"/>
             <split>
                 <simple>${body.keySet}</simple>
-                <!-- retrieve the correlation information from the storage; such as the deployment id, correlation label etc-->
+                <!-- retrieve the correlation information from the storage; such as the deploymentPackageId, correlation label etc-->
                 <to uri="bean:cameraTrapStaticStore?method=getCorrelationInformationById(${body})"/>
 
                 <!-- stash correlation identifier so we can remove it from the storage if the concept is found in the RI -->
@@ -2787,9 +2809,9 @@
                         ${body.parentObjectPid}
                     </simple>
                 </setHeader>
-                <setHeader headerName="CamelFileParent">
+                <setHeader headerName="deploymentPackageId">
                     <simple>
-                        ${body.deploymentId}
+                        ${body.deploymentPackageId}
                     </simple>
                 </setHeader>
 

@@ -100,17 +100,17 @@ public class CameraTrapStaticStore {
     }
 
     /**
-     * Removes all correlation Ids based on the passed in deploymentId.  (Reverse look up on the data structure map)
+     * Removes all correlation Ids based on the passed in deploymentPackageId.  (Reverse look up on the data structure map)
      *
-     * @param deploymentId deployment package ID; mainly the package directory name used during the ingestion process
+     * @param deploymentPackageId deployment package ID; mainly the package directory name used during the ingestion process
      */
-    public synchronized void removeCorrelationIdsByDeploymentId(String deploymentId) {
+    public synchronized void removeCorrelationIdsByDeploymentId(String deploymentPackageId) {
 
         final Iterator<Map.Entry<String, DeploymentCorrelationInformation>> iterator = inFlightCorrelationIds.entrySet().iterator();
         while(iterator.hasNext())
         {
             Map.Entry<String, DeploymentCorrelationInformation> entry = iterator.next();
-            if(entry.getValue().getDeploymentId().equals(deploymentId))
+            if(entry.getValue().getDeploymentPackageId().equals(deploymentPackageId))
             {
                 //removes correlationId from the storage
                 iterator.remove();

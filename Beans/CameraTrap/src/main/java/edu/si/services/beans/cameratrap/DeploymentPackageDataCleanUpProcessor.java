@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Smithsonian Institution.
+ * Copyright 2019-2020 Smithsonian Institution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.You may obtain a copy of
@@ -29,7 +29,9 @@ package edu.si.services.beans.cameratrap;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,28 +41,24 @@ import java.nio.file.Files;
 /**
  * @author jbirkhimer
  */
-@Deprecated
-public class FailedDeploymentDataDirRollback {
+public class DeploymentPackageDataCleanUpProcessor implements Processor {
 
-    private static final Logger log = LoggerFactory.getLogger(FailedDeploymentDataDirRollback.class);
-    private static String deploymentDataDir;
+    private static final Logger log = LoggerFactory.getLogger(DeploymentPackageDataCleanUpProcessor.class);
 
-    public String dataDirRollback(Exchange exchange, String moveFailedDir) throws Exception {
-
+    @Override
+    public void process(Exchange exchange) throws Exception {
         Message out = exchange.getIn();
-        deploymentDataDir = out.getHeader("deploymentDataDir", String.class);
+        String deploymentDataDir = out.getHeader("deploymentDataDir", String.class);
 
-        log.debug("=================[ Headers ]=================\n" + String.valueOf(out.getHeaders()));
-        log.debug("=================[ Properties ]=================\n" + String.valueOf(exchange.getProperties()));
+        if (deploymentDataDir == null) {
+            deploymentDataDir = exchange.getContext().resolvePropertyPlaceholders("{{si.ct.uscbi.data.dir.path}}") + "/" + FilenameUtils.getBaseName(out.getHeader("CamelFileAbsolutePath", String.class));
+        }
 
-            if (Files.exists(new File(deploymentDataDir).toPath())) {
-                log.info("DELETING FAILED DEPLOYMENT DATA DIR = {}", deploymentDataDir);
-                FileUtils.deleteDirectory(new File(deploymentDataDir));
-            } else {
-                log.error("Camera Trap Deployment Data Dir '{}' does not exist", deploymentDataDir);
-            }
-
-        log.debug("Return value for moveFailed = {}", moveFailedDir);
-        return moveFailedDir;
+        if (Files.exists(new File(deploymentDataDir).toPath())) {
+            log.info("CLEANING UP DEPLOYMENT DATA DIR = {}", deploymentDataDir);
+            FileUtils.deleteDirectory(new File(deploymentDataDir));
+        } else {
+            log.error("Camera Trap Deployment Data Dir '{}' does not exist", deploymentDataDir);
+        }
     }
 }
