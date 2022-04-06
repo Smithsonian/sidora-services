@@ -33,7 +33,6 @@ import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 
@@ -46,7 +45,7 @@ import static org.apache.camel.Exchange.FILE_NAME_PRODUCED;
  * @author davisda
  * @author jbirkhimer
  */
-@Component
+//@Component
 public class FITSServletRouteBuilder extends RouteBuilder {
 
     static private String LOG_NAME = "edu.si.fits";
@@ -59,7 +58,7 @@ public class FITSServletRouteBuilder extends RouteBuilder {
 
         from("direct:getFITSReport").routeId("getFITSReport")
                 .onException(Exception.class)
-                        .logExhaustedMessageBody(true)
+                        .logExhaustedMessageHistory(true)
                     .end()
 
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} FITS Report: Starting processing ...").id("FITSReportLogStart")
@@ -82,15 +81,15 @@ public class FITSServletRouteBuilder extends RouteBuilder {
                     }
                 })
                 .toD("log:" + LOG_NAME + "?level=DEBUG&showHeaders=true")
-                .setHeader(Exchange.HTTP_URI).simple("{{fits.host}}/examine")
-                .to("http://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/examine")
+                .to("http4://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy")
                 .convertBodyTo(String.class, "UTF-8")
                 .log(LoggingLevel.DEBUG, LOG_NAME, "${id} FITS Report: Finished processing.")
                 .end();
 
         from("direct:getFITSVersion").routeId("getFITSVersion")
                 .log(LoggingLevel.INFO, LOG_NAME, "${id} FITS Version: Starting processing ...").id("FITSVersionLogStart")
-                .setHeader(Exchange.HTTP_URI).simple("{{fits.host}}/version")
+                .setHeader(Exchange.HTTP_URI).simple("{{si.fits.host}}/version")
                 .to("http://useHttpUriHeader?headerFilterStrategy=#dropHeadersStrategy");
 
     }
